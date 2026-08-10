@@ -1,0 +1,285 @@
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '../../components/Icon';
+import { Avatar, OpenBadge } from '../../components/primitives';
+import { ProductRow } from '../../components/ProductRow';
+import { ConflictSheet } from '../../components/ConflictSheet';
+import { ProductThumb } from '../../components/ProductThumb';
+import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
+import {
+  getCategoriesFor,
+  getProductsFor,
+  getRestaurant,
+  Product,
+  Restaurant,
+} from '../../data/mock';
+import { useCart } from '../../store/cart';
+
+/** Écran 03 — Menu du restaurant (catégories + produits + panier flottant). */
+export default function RestaurantMenuScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const restaurant = getRestaurant(id!);
+
+  const cartLines = useCart((s) => s.lines);
+  const cartRestaurantId = useCart((s) => s.restaurantId);
+  const add = useCart((s) => s.add);
+  const setQuantity = useCart((s) => s.setQuantity);
+  const replaceWith = useCart((s) => s.replaceWith);
+  const canAdd = useCart((s) => s.canAdd);
+  const count = useCart((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
+  const total = useCart((s) => s.subtotal() + s.deliveryFee());
+
+  const categories = useMemo(() => getCategoriesFor(id!), [id]);
+  const productsByCat = useMemo(() => getProductsFor(id!), [id]);
+  const [activeCat, setActiveCat] = useState(categories[0]?.id);
+  const [pending, setPending] = useState<Product | null>(null);
+
+  const scrollRef = useRef<ScrollView>(null);
+
+  if (!restaurant) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.notFound}>Restaurant introuvable.</Text>
+      </View>
+    );
+  }
+
+  const qtyOf = (productId: string) =>
+    cartLines.find((l) => l.product.id === productId)?.quantity ?? 0;
+
+  function tryAdd(product: Product) {
+    if (canAdd(product)) add(product);
+    else setPending(product);
+  }
+
+  const currentName = cartRestaurantId ? getRestaurant(cartRestaurantId)?.name ?? '' : '';
+  const activeCategory = categories.find((c) => c.id === activeCat) ?? categories[0];
+  const visibleProducts = productsByCat.filter((p) => p.categoryId === activeCategory?.id);
+
+  return (
+    <View style={styles.container}>
+      {/* Bandeau photo (placeholder) + actions */}
+      <View style={[styles.banner, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.bannerActions}>
+          <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
+            <Icon name="arrow_back" size={22} color={colors.ink} />
+          </Pressable>
+          <Pressable style={styles.roundBtn} hitSlop={8}>
+            <Icon name="favorite" size={22} color={colors.ink} />
+          </Pressable>
+        </View>
+        <Text style={styles.bannerHint}>photo bannière resto</Text>
+      </View>
+
+      <ScrollView
+        ref={scrollRef}
+        style={styles.sheet}
+        contentContainerStyle={{ paddingBottom: count > 0 ? 120 : 40 }}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+      >
+        {/* En-tête restaurant */}
+        <RestaurantHeader r={restaurant} />
+
+        {/* Barre de catégories (collante) */}
+        <View style={styles.catBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {categories.map((c) => {
+              const active = c.id === activeCategory?.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => setActiveCat(c.id)}
+                  style={[styles.catChip, active ? styles.catChipActive : styles.catChipIdle]}
+                >
+                  <Text style={[styles.catText, { color: active ? colors.white : colors.textDark }]}>
+                    {c.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Produits de la catégorie active */}
+        <View style={{ paddingHorizontal: spacing.screen, paddingTop: 16 }}>
+          <Text style={styles.catTitle}>
+            {activeCategory?.name}{' '}
+            <Text style={styles.catCount}>· {visibleProducts.length} produits</Text>
+          </Text>
+          <View style={{ gap: 10 }}>
+            {visibleProducts.map((p) => (
+              <ProductRow
+                key={p.id}
+                product={p}
+                qty={qtyOf(p.id)}
+                onOpen={() => router.push(`/product/${p.id}`)}
+                onInc={() => tryAdd(p)}
+                onDec={() => setQuantity(p.id, qtyOf(p.id) - 1)}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Panier flottant */}
+      {count > 0 ? (
+        <Pressable
+          style={[styles.floatingCart, { bottom: Math.max(insets.bottom, 16) + 10 }]}
+          onPress={() => router.push('/(tabs)/cart')}
+        >
+          <View style={styles.floatingLeft}>
+            <Icon name="shopping_bag" size={22} color={colors.accent} />
+            <Text style={styles.floatingText}>Voir le panier · {count} art.</Text>
+          </View>
+          <View style={styles.floatingTotal}>
+            <Text style={styles.floatingTotalText}>{formatAr(total)}</Text>
+          </View>
+        </Pressable>
+      ) : null}
+
+      <ConflictSheet
+        visible={pending !== null}
+        currentName={currentName}
+        newName={restaurant.name}
+        onKeep={() => setPending(null)}
+        onClear={() => {
+          if (pending) replaceWith(pending);
+          setPending(null);
+        }}
+      />
+    </View>
+  );
+}
+
+function RestaurantHeader({ r }: { r: Restaurant }) {
+  return (
+    <View style={styles.rHeader}>
+      <View style={styles.rHeadTop}>
+        <Avatar initials={r.initials} size={52} r={14} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rName}>{r.name}</Text>
+          <Text style={styles.rSub}>
+            {r.cuisineType} — {r.zone}
+          </Text>
+        </View>
+        <OpenBadge open={r.isOpen} />
+      </View>
+      <View style={styles.rMeta}>
+        <View style={styles.rMetaItem}>
+          <Icon name="schedule" size={16} color={colors.secondary} />
+          <Text style={styles.rMetaText}>{r.hoursLabel}</Text>
+        </View>
+        <View style={styles.rMetaItem}>
+          <Icon name="two_wheeler" size={16} color={colors.secondary} />
+          <Text style={styles.rMetaText}>{formatAr(r.deliveryFee)}</Text>
+        </View>
+        <View style={styles.rMetaItem}>
+          <Icon name="shopping_basket" size={16} color={colors.secondary} />
+          <Text style={styles.rMetaText}>Min. {formatAr(r.minOrder)}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
+  banner: {
+    height: 200,
+    backgroundColor: colors.photoWarmB,
+    paddingHorizontal: spacing.screen,
+    justifyContent: 'flex-start',
+  },
+  bannerActions: { flexDirection: 'row', justifyContent: 'space-between' },
+  roundBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.card,
+  },
+  bannerHint: {
+    position: 'absolute',
+    left: spacing.screen,
+    bottom: 10,
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    color: colors.photoWarmText,
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: radius.hero,
+    borderTopRightRadius: radius.hero,
+    marginTop: -26,
+  },
+  rHeader: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.screen,
+    paddingTop: 18,
+    paddingBottom: 16,
+    borderTopLeftRadius: radius.hero,
+    borderTopRightRadius: radius.hero,
+  },
+  rHeadTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  rName: { fontFamily: fonts.bold, fontSize: 21, letterSpacing: -0.4, color: colors.ink },
+  rSub: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted, marginTop: 3 },
+  rMeta: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    flexWrap: 'wrap',
+  },
+  rMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  rMetaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },
+  catBar: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  catChip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  catChipActive: { backgroundColor: colors.ink },
+  catChipIdle: { backgroundColor: colors.fieldBg },
+  catText: { fontFamily: fonts.semibold, fontSize: 12 },
+  catTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginBottom: 12 },
+  catCount: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
+  floatingCart: {
+    position: 'absolute',
+    left: spacing.screen,
+    right: spacing.screen,
+    height: 58,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 18,
+    paddingRight: 8,
+    ...shadow.floating,
+  },
+  floatingLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  floatingText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+  floatingTotal: {
+    height: 42,
+    paddingHorizontal: 18,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingTotalText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+});

@@ -1,0 +1,188 @@
+import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '../../components/Icon';
+import { Avatar, Card, SectionLabel } from '../../components/primitives';
+import { StatusBadge } from '../../components/StatusBadge';
+import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
+import { getProduct, Order } from '../../data/mock';
+import { useOrders } from '../../store/orders';
+import { useCart } from '../../store/cart';
+
+/** Écran 10 — Historique des commandes (et 10b — état vide). */
+export default function OrdersScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const orders = useOrders((s) => s.orders);
+  const clear = useCart((s) => s.clear);
+  const add = useCart((s) => s.add);
+
+  const active = orders.filter((o) => o.status !== 'livree' && o.status !== 'annulee');
+  const past = orders.filter((o) => o.status === 'livree' || o.status === 'annulee');
+
+  function reorder(order: Order) {
+    clear();
+    order.items.forEach((it) => {
+      const product = getProduct(it.productId);
+      if (product) add(product, it.quantity, it.comment);
+    });
+    router.push('/(tabs)/cart');
+  }
+
+  const itemsSummary = (o: Order) =>
+    o.items.map((it) => `${it.quantity} × ${it.name}`).join(' · ');
+
+  if (orders.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+          <Text style={styles.headerTitle}>Mes commandes</Text>
+        </View>
+        <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <Icon name="receipt_long" size={44} color={colors.secondary} />
+          </View>
+          <Text style={styles.emptyTitle}>Aucune commande</Text>
+          <Text style={styles.emptyText}>
+            Vos commandes apparaîtront ici, avec la possibilité de les recommander en un geste.
+          </Text>
+          <Pressable style={styles.emptyBtn} onPress={() => router.replace('/(tabs)')}>
+            <Text style={styles.emptyBtnText}>Commander maintenant</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+        <Text style={styles.headerTitle}>Mes commandes</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        {active.map((o) => (
+          <Card key={o.id} style={[styles.card, styles.activeCard]}>
+            <OrderHead o={o} />
+            <Text style={styles.summary}>{itemsSummary(o)}</Text>
+            <View style={styles.foot}>
+              <Text style={styles.total}>{formatAr(o.total)}</Text>
+              <Pressable style={styles.trackBtn} onPress={() => router.push(`/order/${o.id}`)}>
+                <Icon name="local_shipping" size={17} color={colors.accent} />
+                <Text style={styles.trackText}>Suivre</Text>
+              </Pressable>
+            </View>
+          </Card>
+        ))}
+
+        {past.length > 0 ? (
+          <>
+            <SectionLabel style={{ marginTop: active.length ? 20 : 0, marginBottom: 10 }}>
+              Précédemment
+            </SectionLabel>
+            <View style={{ gap: 10 }}>
+              {past.map((o) => (
+                <Card key={o.id} style={styles.card}>
+                  <OrderHead o={o} muted />
+                  <Text style={styles.summary}>{itemsSummary(o)}</Text>
+                  <View style={styles.foot}>
+                    <Text style={styles.total}>{formatAr(o.total)}</Text>
+                    <Pressable style={styles.reorderBtn} onPress={() => reorder(o)}>
+                      <Icon name="replay" size={17} color={colors.white} />
+                      <Text style={styles.reorderText}>Recommander</Text>
+                    </Pressable>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          </>
+        ) : null}
+      </ScrollView>
+    </View>
+  );
+}
+
+function OrderHead({ o, muted }: { o: Order; muted?: boolean }) {
+  return (
+    <View style={styles.head}>
+      <View style={styles.headLeft}>
+        <Avatar
+          initials={o.restaurantInitials}
+          size={36}
+          r={10}
+          bg={muted ? colors.fieldBg : colors.warnBg}
+          color={muted ? colors.textDark : colors.primary}
+        />
+        <View>
+          <Text style={styles.restoName}>{o.restaurantName}</Text>
+          <Text style={styles.meta}>
+            {o.createdLabel} · #{o.orderNumber}
+          </Text>
+        </View>
+      </View>
+      <StatusBadge status={o.status} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: { fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, color: colors.ink },
+  card: { padding: 16 },
+  activeCard: { borderWidth: 1.5, borderColor: colors.accent },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  restoName: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
+  meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  summary: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.textMuted, marginTop: 10 },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
+  total: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink },
+  trackBtn: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  trackText: { fontFamily: fonts.bold, fontSize: 12, color: colors.white },
+  reorderBtn: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reorderText: { fontFamily: fonts.bold, fontSize: 12, color: colors.white },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  emptyIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.iconTile,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: { fontFamily: fonts.bold, fontSize: 20, color: colors.ink, marginTop: 20 },
+  emptyText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 22, color: colors.textMuted, textAlign: 'center', marginTop: 8 },
+  emptyBtn: {
+    marginTop: 22,
+    height: 50,
+    paddingHorizontal: 24,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyBtnText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+});

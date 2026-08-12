@@ -28,7 +28,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    // Pas de redirection navigateur à parser : flux natif (expo-auth-session).
+    // Flux OAuth mobile : PKCE (échange d'un `code` contre une session).
+    flowType: 'pkce',
+    // Le retour d'OAuth est traité manuellement via un deep link (voir lib/auth.ts).
     detectSessionInUrl: false,
   },
 });

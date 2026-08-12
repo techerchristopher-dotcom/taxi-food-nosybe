@@ -4,17 +4,22 @@
  * Le SEUL point de contact avec le backend d'auth. Le reste de l'app ne connaît que
  * le type `Session` et les fonctions exportées ici.
  *
- * Flux : l'écran de connexion obtient un `id_token` Google (via expo-auth-session),
- * puis l'échange contre une session Supabase avec `signInWithIdToken`. Le trigger
- * `handle_new_user` crée automatiquement la ligne `profiles` côté base.
+ * Flux retenu : `supabase.auth.signInWithOAuth({ provider: 'google' })`, cohérent avec
+ * la config Google (seule l'URI de callback Supabase est déclarée côté Google, et le
+ * provider Google est configuré côté tableau de bord Supabase avec Client ID + Secret).
+ *   1. signInWithOAuth renvoie l'URL d'autorisation Google (via Supabase).
+ *   2. On l'ouvre dans un onglet d'auth (expo-web-browser).
+ *   3. Google → callback Supabase → redirection vers le deep link de l'app (redirectTo),
+ *      avec un `code` PKCE.
+ *   4. On échange ce code contre une session (exchangeCodeForSession).
+ *   5. Le trigger `handle_new_user` crée automatiquement la ligne `profiles`.
  *
- * ⚠️ CONFIGURATION REQUISE (à faire par Christopher avant que la connexion marche) :
- *   1. Google Cloud Console → identifiants OAuth 2.0 (Web client ID au minimum).
- *   2. Supabase → Authentication → Providers → Google : coller Client ID + Secret.
- *   3. Renseigner l'URI de redirection Supabase dans Google Cloud Console.
- * Tant que EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID est vide, `googleConfigured()` renvoie false
- * et l'écran de connexion affiche un message clair au lieu de lancer le flux.
+ * ⚠️ CÔTÉ SUPABASE : le deep link de retour (`redirectTo` ci-dessous) doit figurer dans
+ * Authentication → URL Configuration → Redirect URLs (ex. `taxifood://*`, et l'URL de dev
+ * `exp://...` si test en Expo Go). Il est loggé au lancement du flux pour être recopié.
  */
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
 import { initialsFromName } from '../data/types';
 
@@ -27,16 +32,75 @@ export type Session = {
   phone: string | null;
 };
 
-/** Client IDs Google (env). Le Web client ID est requis pour le flux Expo/Supabase. */
-export const googleClientIds = {
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
-};
+/** Deep link de retour de l'OAuth (scheme `taxifood` en natif, origine en web). */
+export const redirectTo = makeRedirectUri({ scheme: 'taxifood' });
 
-/** true si la connexion Google est configurée (au moins le Web client ID). */
+/**
+ * Présence du Client ID Google en env = drapeau « configuration Google faite ».
+ * (Le flux signInWithOAuth s'appuie sur le provider configuré côté Supabase ; ce Client ID
+ * n'est pas transmis par l'app, mais sa présence sert de garde avant de lancer le flux.)
+ */
 export function googleConfigured(): boolean {
-  return Boolean(googleClientIds.webClientId);
+  return Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+}
+
+/** Extrait les paramètres d'un deep link (query et fragment). */
+function parseParams(url: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const afterQ = url.split('?')[1]?.split('#')[0];
+  const afterHash = url.split('#')[1];
+  for (const part of [afterQ, afterHash]) {
+    if (!part) continue;
+    for (const kv of part.split('&')) {
+      const [k, v] = kv.split('=');
+      if (k) out[decodeURIComponent(k)] = decodeURIComponent(v ?? '');
+    }
+  }
+  return out;
+}
+
+/** Finalise la session à partir de l'URL de retour (code PKCE ou tokens implicites). */
+export async function createSessionFromUrl(url: string): Promise<Session | null> {
+  const params = parseParams(url);
+  if (params.error || params.error_description) {
+    throw new Error(params.error_description || params.error);
+  }
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) throw error;
+    return buildSession();
+  }
+  if (params.access_token) {
+    const { error } = await supabase.auth.setSession({
+      access_token: params.access_token,
+      refresh_token: params.refresh_token,
+    });
+    if (error) throw error;
+    return buildSession();
+  }
+  return null;
+}
+
+/**
+ * Lance le flux Google et renvoie la session (ou null si l'utilisateur annule).
+ * L'obtention et l'échange du code se font ici ; l'écran n'a qu'à appeler cette fonction.
+ */
+export async function signInWithGoogle(): Promise<Session | null> {
+  // Utile au diagnostic : l'URI à autoriser dans Supabase (Redirect URLs).
+  console.log('[auth] redirectTo =', redirectTo);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error) throw error;
+  if (!data?.url) throw new Error("URL d'autorisation Google indisponible.");
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type === 'success' && result.url) {
+    return createSessionFromUrl(result.url);
+  }
+  // 'cancel' / 'dismiss' : l'utilisateur a fermé la fenêtre.
+  return null;
 }
 
 /** Construit la session applicative à partir de l'utilisateur Auth + sa ligne profiles. */
@@ -64,18 +128,6 @@ async function buildSession(): Promise<Session | null> {
     initials: initialsFromName(fullName),
     phone: profile?.phone ?? null,
   };
-}
-
-/**
- * Échange un id_token Google contre une session Supabase.
- * L'obtention du token se fait côté écran (expo-auth-session) ; ici on ne fait que l'échange.
- */
-export async function signInWithGoogleIdToken(idToken: string): Promise<Session> {
-  const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
-  if (error) throw error;
-  const session = await buildSession();
-  if (!session) throw new Error('Session introuvable après connexion.');
-  return session;
 }
 
 export async function signOut(): Promise<void> {

@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
-import { googleClientIds, googleConfigured } from '../lib/auth';
+import { googleConfigured } from '../lib/auth';
 
 // Nécessaire pour finaliser le retour du navigateur d'authentification.
 WebBrowser.maybeCompleteAuthSession();
@@ -17,49 +17,51 @@ export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const signInWithGoogle = useSession((s) => s.signInWithGoogle);
+  const completeFromUrl = useSession((s) => s.completeFromUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Flux Google → id_token (échangé ensuite contre une session Supabase).
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: googleClientIds.webClientId,
-    iosClientId: googleClientIds.iosClientId,
-    androidClientId: googleClientIds.androidClientId,
-  });
-
+  // Filet de sécurité : si l'app est rouverte via le deep link OAuth (cold start),
+  // on finalise la session à partir de l'URL entrante.
+  const incomingUrl = Linking.useURL();
   useEffect(() => {
-    if (!response) return;
-    if (response.type === 'success' && response.params?.id_token) {
-      void completeSignIn(response.params.id_token);
-    } else if (response.type === 'error' || response.type === 'dismiss' || response.type === 'cancel') {
-      setLoading(false);
-    }
+    if (!incomingUrl || !/[?#].*(code|access_token)=/.test(incomingUrl)) return;
+    void (async () => {
+      try {
+        const session = await completeFromUrl(incomingUrl);
+        if (session) router.replace(session.phone ? '/(tabs)' : '/phone');
+      } catch {
+        setError('Connexion impossible pour le moment. Réessayez.');
+      } finally {
+        setLoading(false);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [response]);
+  }, [incomingUrl]);
 
-  async function completeSignIn(idToken: string) {
-    try {
-      const session = await signInWithGoogle(idToken);
-      // 1re connexion : téléphone non renseigné → on le demande une fois.
-      router.replace(session.phone ? '/(tabs)' : '/phone');
-    } catch {
-      setError('Connexion impossible pour le moment. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleGoogle() {
-    if (!googleConfigured() || !request) {
+  async function handleGoogle() {
+    if (!googleConfigured()) {
       setError(
-        "Connexion Google pas encore configurée. Renseigne les client IDs Google " +
-          '(app/.env) et active le provider Google côté Supabase.',
+        "Connexion Google pas encore configurée (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID absent " +
+          'de app/.env, et provider Google à activer côté Supabase).',
       );
       return;
     }
     setError(null);
     setLoading(true);
-    void promptAsync();
+    try {
+      const session = await signInWithGoogle();
+      if (session) {
+        // 1re connexion : téléphone non renseigné → on le demande une fois.
+        router.replace(session.phone ? '/(tabs)' : '/phone');
+      } else {
+        // Annulé par l'utilisateur (fenêtre fermée).
+        setLoading(false);
+      }
+    } catch {
+      setError('Connexion impossible pour le moment. Réessayez.');
+      setLoading(false);
+    }
   }
 
   return (

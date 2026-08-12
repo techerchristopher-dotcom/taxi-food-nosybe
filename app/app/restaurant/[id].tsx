@@ -10,7 +10,7 @@ import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/to
 import { Product, Restaurant } from '../../data/types';
 import { getMenu, getRestaurant } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
-import { RestaurantContext, useCart } from '../../store/cart';
+import { lineKey, RestaurantContext, useCart } from '../../store/cart';
 
 /** Écran 03 — Menu du restaurant (catégories + produits + panier flottant). */
 export default function RestaurantMenuScreen() {
@@ -58,8 +58,9 @@ export default function RestaurantMenuScreen() {
     deliveryFee: restaurant.deliveryFee,
   };
 
+  // Le stepper rapide du menu agit sur la ligne « ajout rapide » (sans commentaire).
   const qtyOf = (productId: string) =>
-    cartLines.find((l) => l.product.id === productId)?.quantity ?? 0;
+    cartLines.find((l) => l.key === lineKey(productId))?.quantity ?? 0;
 
   function tryAdd(product: Product) {
     if (canAdd(product)) add(product, ctx);
@@ -124,7 +125,7 @@ export default function RestaurantMenuScreen() {
                 qty={qtyOf(p.id)}
                 onOpen={() => router.push(`/product/${p.id}`)}
                 onInc={() => tryAdd(p)}
-                onDec={() => setQuantity(p.id, qtyOf(p.id) - 1)}
+                onDec={() => setQuantity(lineKey(p.id), qtyOf(p.id) - 1)}
               />
             ))}
           </View>

@@ -69,12 +69,12 @@ export default function CartScreen() {
         {/* Lignes */}
         <View style={{ gap: 10, marginTop: 14 }}>
           {lines.map((l) => (
-            <Card key={l.product.id} style={styles.lineCard}>
+            <Card key={l.key} style={styles.lineCard}>
               <ProductThumb size={64} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={styles.lineHead}>
                   <Text style={styles.lineName}>{l.product.name}</Text>
-                  <Pressable onPress={() => remove(l.product.id)} hitSlop={8}>
+                  <Pressable onPress={() => remove(l.key)} hitSlop={8}>
                     <Icon name="delete" size={20} color={colors.textFaint} />
                   </Pressable>
                 </View>
@@ -82,8 +82,8 @@ export default function CartScreen() {
                 <View style={styles.lineFoot}>
                   <QtyStepper
                     value={l.quantity}
-                    onDec={() => setQuantity(l.product.id, l.quantity - 1)}
-                    onInc={() => setQuantity(l.product.id, l.quantity + 1)}
+                    onDec={() => setQuantity(l.key, l.quantity - 1)}
+                    onInc={() => setQuantity(l.key, l.quantity + 1)}
                     size="sm"
                   />
                   <Text style={styles.linePrice}>{formatAr(l.product.price * l.quantity)}</Text>

@@ -4,6 +4,10 @@
  * Règle métier clé : un panier ne contient QUE des produits d'un seul restaurant.
  * Ajouter un produit d'un autre restaurant déclenche un conflit (écran « Changer de restaurant ? »).
  *
+ * Identité d'une ligne : `product.id` + le commentaire (clé composite). Deux ajouts du même
+ * produit avec des commentaires différents = deux lignes distinctes (ex. Tacos « poulet » vs
+ * « steak »). Même produit + même commentaire = fusion des quantités.
+ *
  * Le contexte restaurant (nom, initiales, frais de livraison) est mémorisé DANS le panier
  * au moment du premier ajout : ni le panier ni la validation n'ont besoin de re-requêter
  * le restaurant, et le total survit hors-ligne.
@@ -15,10 +19,17 @@ import { Product } from '../data/types';
 const CART_KEY = 'taxi-food.cart';
 
 export type CartLine = {
+  /** Clé stable d'identification de la ligne (product.id + commentaire). */
+  key: string;
   product: Product;
   quantity: number;
   comment?: string;
 };
+
+/** Clé composite d'une ligne : produit + commentaire normalisé. */
+export function lineKey(productId: string, comment?: string): string {
+  return productId + '::' + (comment ?? '');
+}
 
 /** Contexte restaurant fourni à l'ajout (l'écran qui ajoute connaît déjà le restaurant). */
 export type RestaurantContext = {
@@ -45,8 +56,10 @@ type CartState = Persisted & {
   add: (product: Product, ctx: RestaurantContext, quantity?: number, comment?: string) => void;
   /** Vide puis ajoute (utilisé après confirmation du conflit). */
   replaceWith: (product: Product, ctx: RestaurantContext, quantity?: number, comment?: string) => void;
-  setQuantity: (productId: string, quantity: number) => void;
-  remove: (productId: string) => void;
+  /** Quantité de la ligne « ajout rapide » (sans commentaire) d'un produit. */
+  quantityOf: (productId: string) => number;
+  setQuantity: (key: string, quantity: number) => void;
+  remove: (key: string) => void;
   clear: () => void;
 
   count: () => number;
@@ -76,7 +89,12 @@ export const useCart = create<CartState>((set, get) => ({
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as Persisted;
-        set({ ...parsed, hydrated: true });
+        // Rétro-compat : recalcule la clé pour les paniers persistés avant l'ajout de `key`.
+        const lines = (parsed.lines ?? []).map((l) => ({
+          ...l,
+          key: l.key ?? lineKey(l.product.id, l.comment),
+        }));
+        set({ ...parsed, lines, hydrated: true });
         return;
       } catch {
         // ignore
@@ -91,15 +109,12 @@ export const useCart = create<CartState>((set, get) => ({
   },
 
   add: (product, ctx, quantity = 1, comment) => {
+    const key = lineKey(product.id, comment);
     const { lines } = get();
-    const existing = lines.find((l) => l.product.id === product.id);
+    const existing = lines.find((l) => l.key === key);
     const nextLines = existing
-      ? lines.map((l) =>
-          l.product.id === product.id
-            ? { ...l, quantity: l.quantity + quantity, comment: comment ?? l.comment }
-            : l,
-        )
-      : [...lines, { product, quantity, comment }];
+      ? lines.map((l) => (l.key === key ? { ...l, quantity: l.quantity + quantity } : l))
+      : [...lines, { key, product, quantity, comment }];
     const next: Persisted = {
       restaurantId: ctx.id,
       restaurantName: ctx.name,
@@ -117,27 +132,28 @@ export const useCart = create<CartState>((set, get) => ({
       restaurantName: ctx.name,
       restaurantInitials: ctx.initials,
       deliveryFeeValue: ctx.deliveryFee,
-      lines: [{ product, quantity, comment }],
+      lines: [{ key: lineKey(product.id, comment), product, quantity, comment }],
     };
     set(next);
     void persist(next);
   },
 
-  setQuantity: (productId, quantity) => {
+  quantityOf: (productId) =>
+    get().lines.find((l) => l.key === lineKey(productId))?.quantity ?? 0,
+
+  setQuantity: (key, quantity) => {
     if (quantity <= 0) {
-      get().remove(productId);
+      get().remove(key);
       return;
     }
-    const lines = get().lines.map((l) =>
-      l.product.id === productId ? { ...l, quantity } : l,
-    );
+    const lines = get().lines.map((l) => (l.key === key ? { ...l, quantity } : l));
     const next: Persisted = { ...toPersisted(get()), lines };
     set(next);
     void persist(next);
   },
 
-  remove: (productId) => {
-    const lines = get().lines.filter((l) => l.product.id !== productId);
+  remove: (key) => {
+    const lines = get().lines.filter((l) => l.key !== key);
     const next: Persisted =
       lines.length === 0 ? { ...EMPTY } : { ...toPersisted(get()), lines };
     set(next);

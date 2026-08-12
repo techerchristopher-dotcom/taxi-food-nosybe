@@ -112,11 +112,16 @@ export default function OrderTrackingScreen() {
 
         <Card style={{ marginTop: 14 }}>
           <SectionLabel style={{ marginBottom: 12 }}>Récapitulatif</SectionLabel>
-          {order.items.map((it) => (
-            <View key={it.productId} style={styles.itemRow}>
-              <Text style={styles.itemName}>
-                {it.quantity} × {it.name}
-              </Text>
+          {order.items.map((it, i) => (
+            <View key={i} style={styles.itemRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemName}>
+                  {it.quantity} × {it.name}
+                </Text>
+                {it.options && it.options.length > 0 ? (
+                  <Text style={styles.itemOptions}>{it.options.map((o) => o.name).join(', ')}</Text>
+                ) : null}
+              </View>
               <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
             </View>
           ))}
@@ -179,8 +184,9 @@ const styles = StyleSheet.create({
   stepBody: { paddingBottom: 18, flex: 1 },
   stepTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   stepSub: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 3 },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  itemName: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
+  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
+  itemName: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
+  itemOptions: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   totalLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },

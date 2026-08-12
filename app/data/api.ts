@@ -2,11 +2,10 @@
  * Couche d'accès aux données — Supabase.
  *
  * Toutes les lectures/écritures passent par ici. Les fonctions renvoient les FORMES
- * définies dans data/types.ts (mêmes objets que ceux consommés par les écrans),
- * pour que brancher le vrai backend ne change rien à l'UI.
+ * définies dans data/types.ts (mêmes objets que ceux consommés par les écrans).
  *
- * RLS : restaurants/categories/products sont en lecture publique ; addresses et orders
- * sont filtrés automatiquement sur l'utilisateur connecté (auth.uid()).
+ * RLS : restaurants/categories/products + product_option_groups/product_options sont en
+ * lecture publique ; addresses et orders/order_item_options sont filtrés sur l'utilisateur.
  */
 import { supabase } from '../lib/supabase';
 import {
@@ -18,10 +17,12 @@ import {
   formatTime,
   hoursLabel,
   initialsFromName,
+  OptionGroup,
   Order,
   OrderStatus,
   PaymentMethod,
   Product,
+  ProductOption,
   Restaurant,
 } from './types';
 
@@ -60,6 +61,24 @@ type AddressRow = {
   is_default: boolean;
 };
 
+type OptionRow = {
+  id: string;
+  name: string;
+  price_delta: number;
+  is_available: boolean;
+  sort_order: number;
+};
+
+type OptionGroupRow = {
+  id: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  required: boolean;
+  sort_order: number;
+  product_options: OptionRow[];
+};
+
 // --- Mappers ----------------------------------------------------------------
 function mapRestaurant(r: RestaurantRow): Restaurant {
   return {
@@ -80,7 +99,7 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
   };
 }
 
-function mapProduct(p: ProductRow): Product {
+function mapProduct(p: ProductRow, hasOptions = false): Product {
   return {
     id: p.id,
     restaurantId: p.restaurant_id,
@@ -89,14 +108,35 @@ function mapProduct(p: ProductRow): Product {
     description: p.description ?? '',
     price: p.price,
     isAvailable: p.is_available,
+    hasOptions,
   };
 }
 
-function mapCategory(c: CategoryRow): Category {
-  return { id: c.id, restaurantId: c.restaurant_id, name: c.name, sortOrder: c.sort_order };
+function mapOption(o: OptionRow): ProductOption {
+  return {
+    id: o.id,
+    name: o.name,
+    priceDelta: o.price_delta,
+    isAvailable: o.is_available,
+    sortOrder: o.sort_order,
+  };
 }
 
-/** Dernier segment d'un libellé « Maison — Villa Bleue » → « Villa Bleue ». */
+function mapOptionGroup(g: OptionGroupRow): OptionGroup {
+  return {
+    id: g.id,
+    name: g.name,
+    minSelect: g.min_select,
+    maxSelect: g.max_select,
+    required: g.required,
+    sortOrder: g.sort_order,
+    options: (g.product_options ?? [])
+      .filter((o) => o.is_available)
+      .map(mapOption)
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+  };
+}
+
 function lastSegment(label: string): string {
   return label.split('—').pop()?.trim() ?? label;
 }
@@ -121,7 +161,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
     .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data as RestaurantRow[]).map(mapRestaurant);
+  return (data as RestaurantRow[]).map((r) => mapRestaurant(r));
 }
 
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
@@ -150,16 +190,36 @@ export async function getMenu(
   ]);
   if (cats.error) throw cats.error;
   if (prods.error) throw prods.error;
+
+  const productRows = prods.data as ProductRow[];
+  // Quels produits ont des groupes d'options (→ le menu envoie vers le détail).
+  const ids = productRows.map((p) => p.id);
+  const withOptions = new Set<string>();
+  if (ids.length > 0) {
+    const { data: groups, error } = await supabase
+      .from('product_option_groups')
+      .select('product_id')
+      .in('product_id', ids);
+    if (error) throw error;
+    for (const g of groups as { product_id: string }[]) withOptions.add(g.product_id);
+  }
+
   return {
     categories: (cats.data as CategoryRow[]).map(mapCategory),
-    products: (prods.data as ProductRow[]).map(mapProduct),
+    products: productRows.map((p) => mapProduct(p, withOptions.has(p.id))),
   };
 }
 
-/** Produit + son restaurant (pour composer le contexte panier : frais, nom, initiales). */
-export async function getProductWithRestaurant(
-  id: string,
-): Promise<{ product: Product; restaurant: Restaurant | null } | null> {
+function mapCategory(c: CategoryRow): Category {
+  return { id: c.id, restaurantId: c.restaurant_id, name: c.name, sortOrder: c.sort_order };
+}
+
+/** Produit + restaurant + groupes d'options (pour l'écran de détail / configuration). */
+export async function getProductDetail(id: string): Promise<{
+  product: Product;
+  restaurant: Restaurant | null;
+  groups: OptionGroup[];
+} | null> {
   const { data, error } = await supabase
     .from('products')
     .select('id, restaurant_id, category_id, name, description, price, is_available')
@@ -167,9 +227,20 @@ export async function getProductWithRestaurant(
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const product = mapProduct(data as ProductRow);
-  const restaurant = await getRestaurant(product.restaurantId);
-  return { product, restaurant };
+
+  const [groupsRes, restaurant] = await Promise.all([
+    supabase
+      .from('product_option_groups')
+      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order )')
+      .eq('product_id', id)
+      .order('sort_order', { ascending: true }),
+    getRestaurant((data as ProductRow).restaurant_id),
+  ]);
+  if (groupsRes.error) throw groupsRes.error;
+
+  const groups = (groupsRes.data as unknown as OptionGroupRow[]).map(mapOptionGroup);
+  const product = mapProduct(data as ProductRow, groups.length > 0);
+  return { product, restaurant, groups };
 }
 
 // --- Adresses ---------------------------------------------------------------
@@ -195,7 +266,6 @@ export async function createAddress(input: {
   const userId = userData.user?.id;
   if (!userId) throw new Error('Non connecté');
 
-  // Première adresse de l'utilisateur → défaut d'office.
   const { count } = await supabase
     .from('addresses')
     .select('id', { count: 'exact', head: true });
@@ -236,14 +306,20 @@ type OrderJoinRow = {
     product_name_snapshot: string;
     quantity: number;
     unit_price: number;
-    comment: string | null;
+    order_item_options: {
+      option_id: string | null;
+      option_name_snapshot: string;
+      price_delta_snapshot: number;
+      quantity: number;
+    }[];
   }[];
 };
 
 const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, created_at, ' +
   'restaurants ( name ), addresses ( label, zone, landmark ), ' +
-  'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment )';
+  'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
+  'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
 function mapOrder(o: OrderJoinRow): Order {
   const restaurantName = o.restaurants?.name ?? 'Restaurant';
@@ -262,7 +338,12 @@ function mapOrder(o: OrderJoinRow): Order {
       name: it.product_name_snapshot,
       quantity: it.quantity,
       unitPrice: it.unit_price,
-      comment: it.comment ?? undefined,
+      options: (it.order_item_options ?? []).map((op) => ({
+        optionId: op.option_id,
+        name: op.option_name_snapshot,
+        priceDelta: op.price_delta_snapshot,
+        quantity: op.quantity,
+      })),
     })),
     subtotal: o.subtotal,
     deliveryFee: o.delivery_fee,
@@ -306,16 +387,22 @@ export async function getOrderStatus(id: string): Promise<OrderStatus | null> {
   return (data?.status as OrderStatus) ?? null;
 }
 
+export type CreateOrderItem = {
+  productId: string;
+  quantity: number;
+  options: { optionId: string; quantity: number }[];
+};
+
 export type CreateOrderInput = {
   restaurantId: string;
   addressId: string;
   paymentMethod: PaymentMethod;
-  items: { productId: string; quantity: number; comment?: string }[];
+  items: CreateOrderItem[];
 };
 
 /**
- * Crée une commande via la fonction RPC `create_order` (atomique, prix recalculés
- * côté serveur). Renvoie le numéro généré par la base (ex. TF-2419) et l'id.
+ * Crée une commande via la RPC `create_order` (atomique, options validées et prix
+ * recalculés côté serveur). Renvoie le numéro généré par la base (ex. TF-1).
  */
 export async function createOrder(input: CreateOrderInput): Promise<{
   id: string;
@@ -331,7 +418,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     p_items: input.items.map((i) => ({
       product_id: i.productId,
       quantity: i.quantity,
-      comment: i.comment ?? null,
+      options: i.options.map((o) => ({ option_id: o.optionId, quantity: o.quantity })),
     })),
   });
   if (error) throw error;

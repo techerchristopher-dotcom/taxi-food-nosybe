@@ -8,7 +8,7 @@ import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { useCart } from '../../store/cart';
+import { lineUnitPrice, useCart } from '../../store/cart';
 
 /** Écran 05 — Panier (et 05b — état vide). */
 export default function CartScreen() {
@@ -78,7 +78,9 @@ export default function CartScreen() {
                     <Icon name="delete" size={20} color={colors.textFaint} />
                   </Pressable>
                 </View>
-                {l.comment ? <Text style={styles.lineComment}>{l.comment}</Text> : null}
+                {l.options.length > 0 ? (
+                  <Text style={styles.lineComment}>{l.options.map((o) => o.name).join(', ')}</Text>
+                ) : null}
                 <View style={styles.lineFoot}>
                   <QtyStepper
                     value={l.quantity}
@@ -86,7 +88,7 @@ export default function CartScreen() {
                     onInc={() => setQuantity(l.key, l.quantity + 1)}
                     size="sm"
                   />
-                  <Text style={styles.linePrice}>{formatAr(l.product.price * l.quantity)}</Text>
+                  <Text style={styles.linePrice}>{formatAr(lineUnitPrice(l) * l.quantity)}</Text>
                 </View>
               </View>
             </Card>

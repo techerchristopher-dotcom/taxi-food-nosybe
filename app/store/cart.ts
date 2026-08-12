@@ -4,31 +4,35 @@
  * Règle métier clé : un panier ne contient QUE des produits d'un seul restaurant.
  * Ajouter un produit d'un autre restaurant déclenche un conflit (écran « Changer de restaurant ? »).
  *
- * Identité d'une ligne : `product.id` + le commentaire (clé composite). Deux ajouts du même
- * produit avec des commentaires différents = deux lignes distinctes (ex. Tacos « poulet » vs
- * « steak »). Même produit + même commentaire = fusion des quantités.
+ * Identité d'une ligne : `product.id` + la combinaison des options choisies (clé composite).
+ * Deux ajouts du même produit avec des options différentes = deux lignes distinctes
+ * (ex. Tacos « Poulet + Andalouse » vs « Steak + Harissa + Fromage »). Mêmes options = fusion.
  *
- * Le contexte restaurant (nom, initiales, frais de livraison) est mémorisé DANS le panier
- * au moment du premier ajout : ni le panier ni la validation n'ont besoin de re-requêter
- * le restaurant, et le total survit hors-ligne.
+ * Le prix unitaire d'une ligne = prix de base du produit + somme des suppléments choisis.
+ * (Le serveur recalcule ce prix de façon autoritaire dans create_order — ici c'est l'affichage.)
  */
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Product } from '../data/types';
+import { optionsTotal, Product, SelectedOption } from '../data/types';
 
 const CART_KEY = 'taxi-food.cart';
 
 export type CartLine = {
-  /** Clé stable d'identification de la ligne (product.id + commentaire). */
+  /** Clé stable : product.id + options triées. */
   key: string;
   product: Product;
   quantity: number;
-  comment?: string;
+  options: SelectedOption[];
 };
 
-/** Clé composite d'une ligne : produit + commentaire normalisé. */
-export function lineKey(productId: string, comment?: string): string {
-  return productId + '::' + (comment ?? '');
+/** Clé composite d'une ligne : produit + ids d'options triés. */
+export function lineKey(productId: string, optionIds: string[] = []): string {
+  return productId + '::' + [...optionIds].sort().join(',');
+}
+
+/** Prix unitaire d'une ligne = base + suppléments. */
+export function lineUnitPrice(line: CartLine): number {
+  return line.product.price + optionsTotal(line.options);
 }
 
 /** Contexte restaurant fourni à l'ajout (l'écran qui ajoute connaît déjà le restaurant). */
@@ -53,10 +57,10 @@ type CartState = Persisted & {
   hydrate: () => Promise<void>;
   /** true si le produit peut être ajouté sans conflit de restaurant. */
   canAdd: (product: Product) => boolean;
-  add: (product: Product, ctx: RestaurantContext, quantity?: number, comment?: string) => void;
+  add: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[]) => void;
   /** Vide puis ajoute (utilisé après confirmation du conflit). */
-  replaceWith: (product: Product, ctx: RestaurantContext, quantity?: number, comment?: string) => void;
-  /** Quantité de la ligne « ajout rapide » (sans commentaire) d'un produit. */
+  replaceWith: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[]) => void;
+  /** Quantité de la ligne « ajout rapide » (sans option) d'un produit. */
   quantityOf: (productId: string) => number;
   setQuantity: (key: string, quantity: number) => void;
   remove: (key: string) => void;
@@ -89,10 +93,10 @@ export const useCart = create<CartState>((set, get) => ({
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as Persisted;
-        // Rétro-compat : recalcule la clé pour les paniers persistés avant l'ajout de `key`.
         const lines = (parsed.lines ?? []).map((l) => ({
           ...l,
-          key: l.key ?? lineKey(l.product.id, l.comment),
+          options: l.options ?? [],
+          key: l.key ?? lineKey(l.product.id, (l.options ?? []).map((o) => o.optionId)),
         }));
         set({ ...parsed, lines, hydrated: true });
         return;
@@ -108,13 +112,13 @@ export const useCart = create<CartState>((set, get) => ({
     return lines.length === 0 || restaurantId === product.restaurantId;
   },
 
-  add: (product, ctx, quantity = 1, comment) => {
-    const key = lineKey(product.id, comment);
+  add: (product, ctx, quantity = 1, options = []) => {
+    const key = lineKey(product.id, options.map((o) => o.optionId));
     const { lines } = get();
     const existing = lines.find((l) => l.key === key);
     const nextLines = existing
       ? lines.map((l) => (l.key === key ? { ...l, quantity: l.quantity + quantity } : l))
-      : [...lines, { key, product, quantity, comment }];
+      : [...lines, { key, product, quantity, options }];
     const next: Persisted = {
       restaurantId: ctx.id,
       restaurantName: ctx.name,
@@ -126,13 +130,13 @@ export const useCart = create<CartState>((set, get) => ({
     void persist(next);
   },
 
-  replaceWith: (product, ctx, quantity = 1, comment) => {
+  replaceWith: (product, ctx, quantity = 1, options = []) => {
     const next: Persisted = {
       restaurantId: ctx.id,
       restaurantName: ctx.name,
       restaurantInitials: ctx.initials,
       deliveryFeeValue: ctx.deliveryFee,
-      lines: [{ key: lineKey(product.id, comment), product, quantity, comment }],
+      lines: [{ key: lineKey(product.id, options.map((o) => o.optionId)), product, quantity, options }],
     };
     set(next);
     void persist(next);
@@ -167,7 +171,7 @@ export const useCart = create<CartState>((set, get) => ({
   },
 
   count: () => get().lines.reduce((n, l) => n + l.quantity, 0),
-  subtotal: () => get().lines.reduce((n, l) => n + l.product.price * l.quantity, 0),
+  subtotal: () => get().lines.reduce((n, l) => n + lineUnitPrice(l) * l.quantity, 0),
   deliveryFee: () => get().deliveryFeeValue,
   total: () => get().subtotal() + get().deliveryFeeValue,
 }));

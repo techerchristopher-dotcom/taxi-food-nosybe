@@ -10,7 +10,7 @@ import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
 import { PaymentMethod, paymentShort } from '../data/types';
 import { createOrder, listAddresses } from '../data/api';
 import { useLoad } from '../lib/useLoad';
-import { useCart } from '../store/cart';
+import { lineUnitPrice, useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
 
 const METHODS: { key: PaymentMethod; icon: string; iconColor: string; title: string; sub: string }[] = [
@@ -55,7 +55,7 @@ export default function CheckoutScreen() {
         items: lines.map((l) => ({
           productId: l.product.id,
           quantity: l.quantity,
-          comment: l.comment,
+          options: l.options.map((o) => ({ optionId: o.optionId, quantity: o.quantity })),
         })),
       });
       clear();
@@ -78,11 +78,16 @@ export default function CheckoutScreen() {
           </View>
           <Divider style={{ marginVertical: 14 }} />
           {lines.map((l) => (
-            <View key={l.product.id} style={styles.itemRow}>
-              <Text style={styles.itemName}>
-                {l.quantity} × {l.product.name}
-              </Text>
-              <Text style={styles.itemPrice}>{formatAr(l.product.price * l.quantity)}</Text>
+            <View key={l.key} style={styles.itemRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemName}>
+                  {l.quantity} × {l.product.name}
+                </Text>
+                {l.options.length > 0 ? (
+                  <Text style={styles.itemOptions}>{l.options.map((o) => o.name).join(', ')}</Text>
+                ) : null}
+              </View>
+              <Text style={styles.itemPrice}>{formatAr(lineUnitPrice(l) * l.quantity)}</Text>
             </View>
           ))}
         </Card>
@@ -155,8 +160,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   restoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   restoName: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  itemName: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
+  itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
+  itemName: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
+  itemOptions: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   addrCard: { marginTop: 12, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   addrLabel: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },

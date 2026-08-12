@@ -124,7 +124,7 @@ export default function RestaurantMenuScreen() {
                 product={p}
                 qty={qtyOf(p.id)}
                 onOpen={() => router.push(`/product/${p.id}`)}
-                onInc={() => tryAdd(p)}
+                onInc={() => (p.hasOptions ? router.push(`/product/${p.id}`) : tryAdd(p))}
                 onDec={() => setQuantity(lineKey(p.id), qtyOf(p.id) - 1)}
               />
             ))}

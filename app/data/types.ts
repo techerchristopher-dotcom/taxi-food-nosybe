@@ -27,8 +27,43 @@ export type Product = {
   description: string;
   price: number; // ariary
   isAvailable: boolean;
+  hasOptions?: boolean; // true si le produit a des groupes d'options (→ passer par le détail)
   tags?: string[]; // cosmétique — non stocké en base
 };
+
+/** Une option d'un groupe (ex. « Poulet », « + Fromage »). */
+export type ProductOption = {
+  id: string;
+  name: string;
+  priceDelta: number; // 0 = gratuit, >0 = supplément payant (ariary)
+  isAvailable: boolean;
+  sortOrder: number;
+};
+
+/** Un groupe d'options d'un produit (ex. « Choix de la viande », obligatoire, 1 choix). */
+export type OptionGroup = {
+  id: string;
+  name: string;
+  minSelect: number;
+  maxSelect: number;
+  required: boolean;
+  sortOrder: number;
+  options: ProductOption[];
+};
+
+/** Une option choisie par le client, mémorisée dans la ligne de panier. */
+export type SelectedOption = {
+  optionId: string;
+  groupId: string;
+  name: string;
+  priceDelta: number;
+  quantity: number;
+};
+
+/** Total des suppléments d'une sélection d'options. */
+export function optionsTotal(options: SelectedOption[]): number {
+  return options.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
+}
 
 export type Category = {
   id: string;
@@ -70,7 +105,7 @@ export type OrderItemSnapshot = {
   name: string;
   quantity: number;
   unitPrice: number;
-  comment?: string;
+  options?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[];
 };
 
 export type Order = {

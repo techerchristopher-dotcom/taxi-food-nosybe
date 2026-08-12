@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon';
 import { Avatar, Card, SectionLabel } from '../../components/primitives';
 import { StatusBadge } from '../../components/StatusBadge';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { Order, Product } from '../../data/types';
+import { Order, Product, SelectedOption } from '../../data/types';
 import { listOrders } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useCart } from '../../store/cart';
@@ -31,21 +31,32 @@ export default function OrdersScreen() {
       deliveryFee: order.deliveryFee,
     };
     order.items.forEach((it) => {
+      const opts = it.options ?? [];
+      const optionsTotal = opts.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
       const product: Product = {
         id: it.productId,
         restaurantId: order.restaurantId,
         categoryId: '',
         name: it.name,
         description: '',
-        price: it.unitPrice,
+        price: it.unitPrice - optionsTotal, // prix de base reconstitué (unitPrice = base + options)
         isAvailable: true,
       };
-      add(product, ctx, it.quantity, it.comment);
+      const selected: SelectedOption[] = opts
+        .filter((o) => o.optionId)
+        .map((o) => ({ optionId: o.optionId as string, groupId: '', name: o.name, priceDelta: o.priceDelta, quantity: o.quantity }));
+      add(product, ctx, it.quantity, selected);
     });
     router.push('/(tabs)/cart');
   }
 
-  const itemsSummary = (o: Order) => o.items.map((it) => `${it.quantity} × ${it.name}`).join(' · ');
+  const itemsSummary = (o: Order) =>
+    o.items
+      .map((it) => {
+        const opts = (it.options ?? []).map((o) => o.name).join(', ');
+        return `${it.quantity} × ${it.name}${opts ? ` (${opts})` : ''}`;
+      })
+      .join(' · ');
 
   if (loading && !orders) {
     return (

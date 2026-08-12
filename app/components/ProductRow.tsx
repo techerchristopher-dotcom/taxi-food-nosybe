@@ -3,7 +3,7 @@ import { Icon } from './Icon';
 import { ProductThumb } from './ProductThumb';
 import { QtyStepper } from './QtyStepper';
 import { colors, fonts, formatAr, radius, shadow } from '../theme/tokens';
-import { Product } from '../data/mock';
+import { Product } from '../data/types';
 
 /**
  * Ligne produit du menu. Affiche vignette + nom + description + prix.

@@ -1,34 +1,49 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { Card, Divider, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { paymentShort, statusStep } from '../../data/mock';
-import { useOrders } from '../../store/orders';
+import { paymentShort, statusStep } from '../../data/types';
+import { getOrderById } from '../../data/api';
+import { useLoad } from '../../lib/useLoad';
 
 /**
  * Écran 09 — Suivi de commande (timeline 5 statuts).
- * Les étapes sont cliquables pour illustrer la progression (démo, comme la maquette).
- * En production, l'étape courante sera pilotée par orders.status (back-office).
+ * L'étape courante vient de `orders.status` en base ; l'écran se rafraîchit
+ * périodiquement (le statut est avancé par le back-office / futur écran restaurant).
  */
 const STEPS = [
   { icon: 'inbox', title: 'Commande reçue', sub: 'Transmise au restaurant', head: 'Le restaurant va confirmer dans un instant' },
   { icon: 'restaurant', title: 'Confirmée par le restaurant', sub: 'Préparation dans ~20 min', head: 'Préparation dans environ 20 minutes' },
   { icon: 'soup_kitchen', title: 'En préparation', sub: 'En cuisine', head: 'Votre commande est en préparation' },
-  { icon: 'two_wheeler', title: 'En livraison', sub: 'Le livreur arrive · +261 33 12 345 67', head: 'Arrivée estimée bientôt' },
+  { icon: 'two_wheeler', title: 'En livraison', sub: 'Le livreur arrive', head: 'Arrivée estimée bientôt' },
   { icon: 'check_circle', title: 'Livrée', sub: 'Paiement au livreur', head: 'Bon appétit ! Merci pour votre commande' },
 ] as const;
+
+const POLL_MS = 15000;
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const order = useOrders((s) => s.getById(id!));
 
-  const [step, setStep] = useState(order ? statusStep(order.status) : 0);
+  const { data: order, loading, reload } = useLoad(() => getOrderById(id!), [id]);
 
+  // Rafraîchissement périodique du statut tant que l'écran est monté.
+  useEffect(() => {
+    const t = setInterval(reload, POLL_MS);
+    return () => clearInterval(t);
+  }, [reload]);
+
+  if (loading && !order) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
   if (!order) {
     return (
       <View style={styles.center}>
@@ -37,11 +52,11 @@ export default function OrderTrackingScreen() {
     );
   }
 
+  const step = statusStep(order.status);
   const head = STEPS[step];
 
   return (
     <View style={styles.container}>
-      {/* En-tête sombre */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTop}>
           <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={8}>
@@ -64,23 +79,19 @@ export default function OrderTrackingScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        {/* Timeline */}
         <Card style={{ paddingBottom: 6 }}>
           {STEPS.map((s, i) => {
             const done = i <= step;
             const current = i === step;
             const isLast = i === STEPS.length - 1;
-            const sub =
-              i === 4 ? `Paiement en ${paymentShort(order.paymentMethod)} au livreur` : s.sub;
+            const sub = i === 4 ? `Paiement en ${paymentShort(order.paymentMethod)} au livreur` : s.sub;
             return (
-              <Pressable key={i} onPress={() => setStep(i)} style={styles.stepRow}>
+              <View key={i} style={styles.stepRow}>
                 <View style={styles.stepMarker}>
                   <View
                     style={[
                       styles.dot,
-                      {
-                        backgroundColor: done ? (current ? colors.primary : colors.success) : colors.photoGrayA,
-                      },
+                      { backgroundColor: done ? (current ? colors.primary : colors.success) : colors.photoGrayA },
                       current && styles.dotGlow,
                     ]}
                   >
@@ -94,12 +105,11 @@ export default function OrderTrackingScreen() {
                   <Text style={styles.stepTitle}>{s.title}</Text>
                   <Text style={styles.stepSub}>{sub}</Text>
                 </View>
-              </Pressable>
+              </View>
             );
           })}
         </Card>
 
-        {/* Récapitulatif */}
         <Card style={{ marginTop: 14 }}>
           <SectionLabel style={{ marginBottom: 12 }}>Récapitulatif</SectionLabel>
           {order.items.map((it) => (
@@ -162,10 +172,6 @@ const styles = StyleSheet.create({
   stepMarker: { alignItems: 'center' },
   dot: { width: 26, height: 26, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   dotGlow: {
-    shadowColor: colors.primary,
-    shadowOpacity: 0.16,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
     borderWidth: 5,
     borderColor: 'rgba(232,52,42,0.16)',
   },

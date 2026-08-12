@@ -1,30 +1,41 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { QtyStepper } from '../../components/QtyStepper';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { getProduct, getRestaurant } from '../../data/mock';
-import { useCart } from '../../store/cart';
+import { getProductWithRestaurant } from '../../data/api';
+import { useLoad } from '../../lib/useLoad';
+import { RestaurantContext, useCart } from '../../store/cart';
 
 /** Écran 04 — Détail d'un produit (feuille montante / modale). */
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const product = getProduct(id!);
+
+  const { data, loading } = useLoad(() => getProductWithRestaurant(id!), [id]);
+  const product = data?.product ?? null;
+  const restaurant = data?.restaurant ?? null;
 
   const add = useCart((s) => s.add);
   const replaceWith = useCart((s) => s.replaceWith);
   const canAdd = useCart((s) => s.canAdd);
-  const cartRestaurantId = useCart((s) => s.restaurantId);
+  const cartRestaurantName = useCart((s) => s.restaurantName);
 
   const [qty, setQty] = useState(1);
   const [comment, setComment] = useState('');
   const [conflict, setConflict] = useState(false);
 
+  if (loading && !product) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
   if (!product) {
     return (
       <View style={styles.center}>
@@ -33,22 +44,27 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const ctx: RestaurantContext | null = restaurant
+    ? {
+        id: restaurant.id,
+        name: restaurant.name,
+        initials: restaurant.initials,
+        deliveryFee: restaurant.deliveryFee,
+      }
+    : null;
+
   function handleAdd() {
-    if (!product) return;
+    if (!product || !ctx) return;
     if (canAdd(product)) {
-      add(product, qty, comment.trim() || undefined);
+      add(product, ctx, qty, comment.trim() || undefined);
       router.back();
     } else {
       setConflict(true);
     }
   }
 
-  const currentName = cartRestaurantId ? getRestaurant(cartRestaurantId)?.name ?? '' : '';
-  const newName = getRestaurant(product.restaurantId)?.name ?? '';
-
   return (
     <View style={styles.container}>
-      {/* Zone photo (placeholder) */}
       <View style={[styles.photo, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
           <Icon name="close" size={22} color={colors.ink} />
@@ -56,7 +72,6 @@ export default function ProductDetailScreen() {
         <Text style={styles.photoHint}>photo produit plein cadre</Text>
       </View>
 
-      {/* Feuille de détail */}
       <View style={styles.sheet}>
         <View style={styles.grabber} />
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -105,11 +120,11 @@ export default function ProductDetailScreen() {
 
       <ConflictSheet
         visible={conflict}
-        currentName={currentName}
-        newName={newName}
+        currentName={cartRestaurantName}
+        newName={restaurant?.name ?? ''}
         onKeep={() => setConflict(false)}
         onClear={() => {
-          replaceWith(product, qty, comment.trim() || undefined);
+          if (ctx) replaceWith(product, ctx, qty, comment.trim() || undefined);
           setConflict(false);
           router.back();
         }}

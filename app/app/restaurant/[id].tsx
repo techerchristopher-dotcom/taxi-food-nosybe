@@ -1,45 +1,48 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { Avatar, OpenBadge } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ConflictSheet } from '../../components/ConflictSheet';
-import { ProductThumb } from '../../components/ProductThumb';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import {
-  getCategoriesFor,
-  getProductsFor,
-  getRestaurant,
-  Product,
-  Restaurant,
-} from '../../data/mock';
-import { useCart } from '../../store/cart';
+import { Product, Restaurant } from '../../data/types';
+import { getMenu, getRestaurant } from '../../data/api';
+import { useLoad } from '../../lib/useLoad';
+import { RestaurantContext, useCart } from '../../store/cart';
 
 /** Écran 03 — Menu du restaurant (catégories + produits + panier flottant). */
 export default function RestaurantMenuScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const restaurant = getRestaurant(id!);
+
+  const { data: restaurant, loading } = useLoad(() => getRestaurant(id!), [id]);
+  const { data: menu } = useLoad(() => getMenu(id!), [id]);
+  const categories = menu?.categories ?? [];
+  const productsByCat = menu?.products ?? [];
 
   const cartLines = useCart((s) => s.lines);
-  const cartRestaurantId = useCart((s) => s.restaurantId);
   const add = useCart((s) => s.add);
   const setQuantity = useCart((s) => s.setQuantity);
   const replaceWith = useCart((s) => s.replaceWith);
   const canAdd = useCart((s) => s.canAdd);
   const count = useCart((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
-  const total = useCart((s) => s.subtotal() + s.deliveryFee());
+  const total = useCart((s) => s.total());
+  const cartRestaurantName = useCart((s) => s.restaurantName);
 
-  const categories = useMemo(() => getCategoriesFor(id!), [id]);
-  const productsByCat = useMemo(() => getProductsFor(id!), [id]);
-  const [activeCat, setActiveCat] = useState(categories[0]?.id);
+  const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState<Product | null>(null);
-
   const scrollRef = useRef<ScrollView>(null);
 
+  if (loading && !restaurant) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
   if (!restaurant) {
     return (
       <View style={styles.center}>
@@ -48,21 +51,26 @@ export default function RestaurantMenuScreen() {
     );
   }
 
+  const ctx: RestaurantContext = {
+    id: restaurant.id,
+    name: restaurant.name,
+    initials: restaurant.initials,
+    deliveryFee: restaurant.deliveryFee,
+  };
+
   const qtyOf = (productId: string) =>
     cartLines.find((l) => l.product.id === productId)?.quantity ?? 0;
 
   function tryAdd(product: Product) {
-    if (canAdd(product)) add(product);
+    if (canAdd(product)) add(product, ctx);
     else setPending(product);
   }
 
-  const currentName = cartRestaurantId ? getRestaurant(cartRestaurantId)?.name ?? '' : '';
   const activeCategory = categories.find((c) => c.id === activeCat) ?? categories[0];
   const visibleProducts = productsByCat.filter((p) => p.categoryId === activeCategory?.id);
 
   return (
     <View style={styles.container}>
-      {/* Bandeau photo (placeholder) + actions */}
       <View style={[styles.banner, { paddingTop: insets.top + 12 }]}>
         <View style={styles.bannerActions}>
           <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
@@ -82,10 +90,8 @@ export default function RestaurantMenuScreen() {
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[1]}
       >
-        {/* En-tête restaurant */}
         <RestaurantHeader r={restaurant} />
 
-        {/* Barre de catégories (collante) */}
         <View style={styles.catBar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
             {categories.map((c) => {
@@ -105,7 +111,6 @@ export default function RestaurantMenuScreen() {
           </ScrollView>
         </View>
 
-        {/* Produits de la catégorie active */}
         <View style={{ paddingHorizontal: spacing.screen, paddingTop: 16 }}>
           <Text style={styles.catTitle}>
             {activeCategory?.name}{' '}
@@ -126,7 +131,6 @@ export default function RestaurantMenuScreen() {
         </View>
       </ScrollView>
 
-      {/* Panier flottant */}
       {count > 0 ? (
         <Pressable
           style={[styles.floatingCart, { bottom: Math.max(insets.bottom, 16) + 10 }]}
@@ -144,11 +148,11 @@ export default function RestaurantMenuScreen() {
 
       <ConflictSheet
         visible={pending !== null}
-        currentName={currentName}
+        currentName={cartRestaurantName}
         newName={restaurant.name}
         onKeep={() => setPending(null)}
         onClear={() => {
-          if (pending) replaceWith(pending);
+          if (pending) replaceWith(pending, ctx);
           setPending(null);
         }}
       />
@@ -189,7 +193,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
   banner: {
     height: 200,

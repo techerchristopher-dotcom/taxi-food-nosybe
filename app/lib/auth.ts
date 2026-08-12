@@ -1,24 +1,22 @@
 /**
- * Couche d'authentification — ISOLÉE derrière une interface claire.
+ * Couche d'authentification — Supabase Auth (connexion Google).
  *
- * ⚠️ SCAFFOLD MVP : pour l'instant, aucune vraie authentification réseau.
- * Le bouton « Continuer avec Google » simule une connexion et stocke la session en local
- * (AsyncStorage). Le flux d'écran et l'UI sont en place ; le vrai OAuth Google via
- * Supabase Auth sera branché plus tard.
+ * Le SEUL point de contact avec le backend d'auth. Le reste de l'app ne connaît que
+ * le type `Session` et les fonctions exportées ici.
  *
- * ➜ Pour brancher Supabase Auth (Google OAuth), il ne faut modifier QUE ce fichier :
- *    - signIn()  : lancer le flux expo-auth-session / supabase.auth.signInWithOAuth
- *    - signOut() : supabase.auth.signOut()
- *    - getSession() : supabase.auth.getSession()
- *    Le reste de l'app ne connaît que ces trois fonctions et le type Session.
+ * Flux : l'écran de connexion obtient un `id_token` Google (via expo-auth-session),
+ * puis l'échange contre une session Supabase avec `signInWithIdToken`. Le trigger
+ * `handle_new_user` crée automatiquement la ligne `profiles` côté base.
  *
- * NB : expo-auth-session / expo-web-browser / expo-crypto sont déjà installés et prêts
- * à être utilisés ici lorsque le vrai provider Google sera configuré (client IDs à fournir).
+ * ⚠️ CONFIGURATION REQUISE (à faire par Christopher avant que la connexion marche) :
+ *   1. Google Cloud Console → identifiants OAuth 2.0 (Web client ID au minimum).
+ *   2. Supabase → Authentication → Providers → Google : coller Client ID + Secret.
+ *   3. Renseigner l'URI de redirection Supabase dans Google Cloud Console.
+ * Tant que EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID est vide, `googleConfigured()` renvoie false
+ * et l'écran de connexion affiche un message clair au lieu de lancer le flux.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mockProfile } from '../data/mock';
-
-const SESSION_KEY = 'taxi-food.session';
+import { supabase } from './supabase';
+import { initialsFromName } from '../data/types';
 
 export type Session = {
   userId: string;
@@ -29,41 +27,72 @@ export type Session = {
   phone: string | null;
 };
 
-/**
- * Simule la connexion Google. Renvoie une session SANS téléphone : l'app redirige alors
- * vers l'écran de saisie du numéro (obligatoire avant de commander), comme au 1er login réel.
- */
-export async function signIn(): Promise<Session> {
-  const session: Session = {
-    userId: mockProfile.id,
-    fullName: mockProfile.fullName,
-    email: mockProfile.email,
-    initials: mockProfile.initials,
-    phone: null,
+/** Client IDs Google (env). Le Web client ID est requis pour le flux Expo/Supabase. */
+export const googleClientIds = {
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || undefined,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined,
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || undefined,
+};
+
+/** true si la connexion Google est configurée (au moins le Web client ID). */
+export function googleConfigured(): boolean {
+  return Boolean(googleClientIds.webClientId);
+}
+
+/** Construit la session applicative à partir de l'utilisateur Auth + sa ligne profiles. */
+async function buildSession(): Promise<Session | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+  const user = session.user;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email, phone')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
+  const fullName = profile?.full_name ?? meta.full_name ?? meta.name ?? 'Client';
+  const email = profile?.email ?? user.email ?? '';
+
+  return {
+    userId: user.id,
+    fullName,
+    email,
+    initials: initialsFromName(fullName),
+    phone: profile?.phone ?? null,
   };
-  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+/**
+ * Échange un id_token Google contre une session Supabase.
+ * L'obtention du token se fait côté écran (expo-auth-session) ; ici on ne fait que l'échange.
+ */
+export async function signInWithGoogleIdToken(idToken: string): Promise<Session> {
+  const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+  if (error) throw error;
+  const session = await buildSession();
+  if (!session) throw new Error('Session introuvable après connexion.');
   return session;
 }
 
 export async function signOut(): Promise<void> {
-  await AsyncStorage.removeItem(SESSION_KEY);
+  await supabase.auth.signOut();
 }
 
 export async function getSession(): Promise<Session | null> {
-  const raw = await AsyncStorage.getItem(SESSION_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as Session;
-  } catch {
-    return null;
-  }
+  return buildSession();
 }
 
-/** Enregistre le numéro de téléphone (saisi une fois après la 1re connexion). */
+/** Enregistre le numéro de téléphone (saisi une fois après la 1re connexion) dans profiles. */
 export async function setPhone(phone: string): Promise<Session | null> {
-  const session = await getSession();
-  if (!session) return null;
-  const updated = { ...session, phone };
-  await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(updated));
-  return updated;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { error } = await supabase.from('profiles').update({ phone }).eq('id', user.id);
+  if (error) throw error;
+  return buildSession();
 }

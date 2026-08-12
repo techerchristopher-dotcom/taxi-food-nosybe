@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Card, SectionLabel } from '../../components/primitives';
 import { colors, fonts, radius, shadow, spacing } from '../../theme/tokens';
-import { mockAddresses, mockProfile } from '../../data/mock';
+import { listAddresses } from '../../data/api';
+import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 
 /** Écran 11 — Profil. */
@@ -16,11 +17,12 @@ export default function ProfileScreen() {
   const session = useSession((s) => s.session);
   const signOut = useSession((s) => s.signOut);
   const [notif, setNotif] = useState(true);
+  const { data: addresses } = useLoad(() => listAddresses(), []);
 
-  const name = session?.fullName ?? mockProfile.fullName;
-  const email = session?.email ?? mockProfile.email;
-  const phone = session?.phone ?? mockProfile.phone;
-  const initials = session?.initials ?? mockProfile.initials;
+  const name = session?.fullName ?? 'Client';
+  const email = session?.email ?? '';
+  const phone = session?.phone ?? '—';
+  const initials = session?.initials ?? '··';
 
   async function handleSignOut() {
     await signOut();
@@ -70,7 +72,7 @@ export default function ProfileScreen() {
           <Text style={styles.action}>Ajouter</Text>
         </View>
         <View style={{ gap: 10 }}>
-          {mockAddresses.map((a) => (
+          {(addresses ?? []).map((a) => (
             <Card key={a.id} style={styles.addrCard}>
               <Icon name={a.icon} size={22} color={a.isDefault ? colors.primary : colors.textMuted} />
               <View style={{ flex: 1 }}>
@@ -82,6 +84,9 @@ export default function ProfileScreen() {
               <Icon name="more_horiz" size={20} color={colors.textFaint} />
             </Card>
           ))}
+          {(addresses ?? []).length === 0 ? (
+            <Text style={styles.noAddr}>Aucune adresse enregistrée pour l'instant.</Text>
+          ) : null}
         </View>
 
         <Card style={{ padding: 0, overflow: 'hidden', marginTop: 20 }}>
@@ -147,6 +152,7 @@ const styles = StyleSheet.create({
   addrCard: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', padding: 14 },
   addrLabel: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   addrDetail: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.textMuted, marginTop: 3 },
+  noAddr: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted, paddingVertical: 6 },
   settingLabel: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink },
   logout: {
     height: 52,

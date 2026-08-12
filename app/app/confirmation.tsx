@@ -4,15 +4,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
-import { paymentLabel } from '../data/mock';
-import { useOrders } from '../store/orders';
+import { paymentLabel } from '../data/types';
+import { getOrderById } from '../data/api';
+import { useLoad } from '../lib/useLoad';
 
 /** Écran 08 — Confirmation de commande. */
 export default function ConfirmationScreen() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const order = useOrders((s) => s.getById(orderId!));
+  const { data: order } = useLoad(() => getOrderById(orderId!), [orderId]);
 
   return (
     <LinearGradient

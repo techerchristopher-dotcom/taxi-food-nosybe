@@ -3,7 +3,7 @@ import { Icon } from './Icon';
 import { Avatar, OpenBadge } from './primitives';
 import { ProductThumb } from './ProductThumb';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { Restaurant } from '../data/mock';
+import { Restaurant } from '../data/types';
 import { formatAr } from '../theme/tokens';
 
 /** Ligne « meta » : délai estimé + frais de livraison. */

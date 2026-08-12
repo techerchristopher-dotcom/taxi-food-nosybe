@@ -8,7 +8,6 @@ import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { getRestaurant } from '../../data/mock';
 import { useCart } from '../../store/cart';
 
 /** Écran 05 — Panier (et 05b — état vide). */
@@ -18,13 +17,13 @@ export default function CartScreen() {
 
   const lines = useCart((s) => s.lines);
   const restaurantId = useCart((s) => s.restaurantId);
+  const restaurantName = useCart((s) => s.restaurantName);
+  const restaurantInitials = useCart((s) => s.restaurantInitials);
   const setQuantity = useCart((s) => s.setQuantity);
   const remove = useCart((s) => s.remove);
   const subtotal = useCart((s) => s.subtotal());
   const deliveryFee = useCart((s) => s.deliveryFee());
   const total = useCart((s) => s.total());
-
-  const restaurant = restaurantId ? getRestaurant(restaurantId) : null;
 
   if (lines.length === 0) {
     return (
@@ -56,11 +55,11 @@ export default function CartScreen() {
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Bandeau restaurant */}
-        {restaurant ? (
+        {restaurantId ? (
           <View style={styles.restoBanner}>
-            <Avatar initials={restaurant.initials} size={36} r={10} />
+            <Avatar initials={restaurantInitials} size={36} r={10} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.restoName}>{restaurant.name}</Text>
+              <Text style={styles.restoName}>{restaurantName}</Text>
               <Text style={styles.restoHint}>Un panier = un seul restaurant</Text>
             </View>
             <Icon name="chevron_right" size={20} color={colors.textFaint} />

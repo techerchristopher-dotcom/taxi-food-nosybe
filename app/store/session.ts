@@ -10,7 +10,8 @@ type SessionState = {
   session: Session | null;
   loading: boolean;
   hydrate: () => Promise<void>;
-  signIn: () => Promise<Session>;
+  /** Échange un id_token Google (obtenu par l'écran de connexion) contre une session. */
+  signInWithGoogle: (idToken: string) => Promise<Session>;
   signOut: () => Promise<void>;
   setPhone: (phone: string) => Promise<void>;
 };
@@ -22,8 +23,8 @@ export const useSession = create<SessionState>((set) => ({
     const session = await auth.getSession();
     set({ session, loading: false });
   },
-  signIn: async () => {
-    const session = await auth.signIn();
+  signInWithGoogle: async (idToken: string) => {
+    const session = await auth.signInWithGoogleIdToken(idToken);
     set({ session });
     return session;
   },

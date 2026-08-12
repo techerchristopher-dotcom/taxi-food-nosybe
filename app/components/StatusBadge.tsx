@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radius } from '../theme/tokens';
-import { OrderStatus, statusLabel } from '../data/mock';
+import { OrderStatus, statusLabel } from '../data/types';
 
 /**
  * Pastille de statut de commande.

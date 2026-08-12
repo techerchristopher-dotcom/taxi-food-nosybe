@@ -1,12 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
-import { mockAddresses, restaurants } from '../../data/mock';
+import { useLoad } from '../../lib/useLoad';
+import { listAddresses, listRestaurants } from '../../data/api';
 
 const FILTERS = ['Tout', 'Pizza', 'Tacos', 'Burgers'] as const;
 
@@ -16,14 +17,20 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Tout');
 
-  const defaultAddress = mockAddresses.find((a) => a.isDefault) ?? mockAddresses[0];
+  const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
+  const { data: addresses } = useLoad(() => listAddresses(), []);
+
+  const defaultAddress = addresses?.find((a) => a.isDefault) ?? addresses?.[0] ?? null;
 
   const list = useMemo(() => {
-    if (filter === 'Tout') return restaurants;
-    return restaurants.filter((r) => r.cuisineType.toLowerCase().includes(filter.toLowerCase().replace('s', '')));
-  }, [filter]);
+    const all = restaurants ?? [];
+    if (filter === 'Tout') return all;
+    return all.filter((r) =>
+      r.cuisineType.toLowerCase().includes(filter.toLowerCase().replace('s', '')),
+    );
+  }, [filter, restaurants]);
 
-  const openCount = restaurants.filter((r) => r.isOpen).length;
+  const openCount = (restaurants ?? []).filter((r) => r.isOpen).length;
   const [featured, ...rows] = list;
 
   return (
@@ -40,7 +47,9 @@ export default function HomeScreen() {
             <View style={styles.addressRow}>
               <Icon name="location_on" size={20} color={colors.accent} />
               <Text style={styles.addressText} numberOfLines={1}>
-                {defaultAddress.zone} — {defaultAddress.label.split('—').pop()?.trim()}
+                {defaultAddress
+                  ? `${defaultAddress.zone} — ${defaultAddress.label.split('—').pop()?.trim()}`
+                  : 'Choisir une adresse'}
               </Text>
               <Icon name="expand_more" size={18} color={colors.white} />
             </View>
@@ -72,18 +81,27 @@ export default function HomeScreen() {
           })}
         </View>
 
-        <Text style={styles.count}>
-          {openCount} restaurant{openCount > 1 ? 's' : ''} ouvert{openCount > 1 ? 's' : ''}
-        </Text>
+        {loading && !restaurants ? (
+          <View style={styles.loading}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : (
+          <>
+            <Text style={styles.count}>
+              {openCount} restaurant{openCount > 1 ? 's' : ''} ouvert{openCount > 1 ? 's' : ''}
+            </Text>
 
-        <View style={{ gap: 12 }}>
-          {featured ? (
-            <FeaturedRestaurantCard r={featured} onPress={() => router.push(`/restaurant/${featured.id}`)} />
-          ) : null}
-          {rows.map((r) => (
-            <RestaurantRow key={r.id} r={r} onPress={() => router.push(`/restaurant/${r.id}`)} />
-          ))}
-        </View>
+            <View style={{ gap: 12 }}>
+              {featured ? (
+                <FeaturedRestaurantCard r={featured} onPress={() => router.push(`/restaurant/${featured.id}`)} />
+              ) : null}
+              {rows.map((r) => (
+                <RestaurantRow key={r.id} r={r} onPress={() => router.push(`/restaurant/${r.id}`)} />
+              ))}
+              {list.length === 0 ? <Text style={styles.emptyFilter}>Aucun restaurant pour ce filtre.</Text> : null}
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -132,4 +150,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: 10,
   },
+  loading: { paddingVertical: 60, alignItems: 'center' },
+  emptyFilter: { fontFamily: fonts.regular, fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingVertical: 30 },
 });

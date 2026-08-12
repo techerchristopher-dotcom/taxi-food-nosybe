@@ -1,38 +1,66 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { Avatar, Card, SectionLabel } from '../../components/primitives';
 import { StatusBadge } from '../../components/StatusBadge';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { getProduct, Order } from '../../data/mock';
-import { useOrders } from '../../store/orders';
+import { Order, Product } from '../../data/types';
+import { listOrders } from '../../data/api';
+import { useLoad } from '../../lib/useLoad';
 import { useCart } from '../../store/cart';
 
 /** Écran 10 — Historique des commandes (et 10b — état vide). */
 export default function OrdersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const orders = useOrders((s) => s.orders);
+  const { data: orders, loading } = useLoad(() => listOrders(), []);
   const clear = useCart((s) => s.clear);
   const add = useCart((s) => s.add);
 
-  const active = orders.filter((o) => o.status !== 'livree' && o.status !== 'annulee');
-  const past = orders.filter((o) => o.status === 'livree' || o.status === 'annulee');
+  const all = orders ?? [];
+  const active = all.filter((o) => o.status !== 'livree' && o.status !== 'annulee');
+  const past = all.filter((o) => o.status === 'livree' || o.status === 'annulee');
 
   function reorder(order: Order) {
     clear();
+    const ctx = {
+      id: order.restaurantId,
+      name: order.restaurantName,
+      initials: order.restaurantInitials,
+      deliveryFee: order.deliveryFee,
+    };
     order.items.forEach((it) => {
-      const product = getProduct(it.productId);
-      if (product) add(product, it.quantity, it.comment);
+      const product: Product = {
+        id: it.productId,
+        restaurantId: order.restaurantId,
+        categoryId: '',
+        name: it.name,
+        description: '',
+        price: it.unitPrice,
+        isAvailable: true,
+      };
+      add(product, ctx, it.quantity, it.comment);
     });
     router.push('/(tabs)/cart');
   }
 
-  const itemsSummary = (o: Order) =>
-    o.items.map((it) => `${it.quantity} × ${it.name}`).join(' · ');
+  const itemsSummary = (o: Order) => o.items.map((it) => `${it.quantity} × ${it.name}`).join(' · ');
 
-  if (orders.length === 0) {
+  if (loading && !orders) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+          <Text style={styles.headerTitle}>Mes commandes</Text>
+        </View>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
+  if (all.length === 0) {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
@@ -135,6 +163,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: { fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, color: colors.ink },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card: { padding: 16 },
   activeCard: { borderWidth: 1.5, borderColor: colors.accent },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

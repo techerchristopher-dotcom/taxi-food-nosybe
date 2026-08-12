@@ -1,13 +1,15 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Icon } from '../components/Icon';
 import { Card, SectionLabel } from '../components/primitives';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
 import { BottomBar } from '../components/BottomBar';
 import { colors, fonts, radius, spacing } from '../theme/tokens';
-import { mockAddresses, nosyBeZones } from '../data/mock';
+import { nosyBeZones } from '../data/types';
+import { createAddress, listAddresses } from '../data/api';
+import { useLoad } from '../lib/useLoad';
 import { useCheckout } from '../store/checkout';
 
 /** Écran 06 — Adresse de livraison (choix d'une adresse enregistrée ou saisie). */
@@ -16,54 +18,109 @@ export default function AddressScreen() {
   const selectedId = useCheckout((s) => s.addressId);
   const setAddress = useCheckout((s) => s.setAddress);
 
+  const { data: saved } = useLoad(() => listAddresses(), []);
+
   const [zone, setZone] = useState(nosyBeZones[3]); // Madirokely
   const [zoneOpen, setZoneOpen] = useState(false);
   const [landmark, setLandmark] = useState('');
-  const [phone, setPhone] = useState('+261 32 45 678 90');
+  const [phone, setPhone] = useState('+261 ');
   const [instructions, setInstructions] = useState('');
   const [save, setSave] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Présélectionne l'adresse par défaut une fois les adresses chargées.
+  useEffect(() => {
+    if (!selectedId && saved && saved.length > 0) {
+      const def = saved.find((a) => a.isDefault) ?? saved[0];
+      setAddress(def.id);
+    }
+  }, [saved, selectedId, setAddress]);
+
+  async function confirm() {
+    setError(null);
+    // Une adresse enregistrée est sélectionnée → on l'utilise telle quelle.
+    if (selectedId && saved?.some((a) => a.id === selectedId)) {
+      router.push('/checkout');
+      return;
+    }
+    // Sinon, on crée la nouvelle adresse saisie.
+    if (!landmark.trim() || phone.trim().length < 6) {
+      setError('Renseigne au moins un point de repère et un téléphone.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const addr = await createAddress({
+        label: landmark.trim(),
+        zone,
+        landmark: landmark.trim(),
+        phone: phone.trim(),
+        instructions: instructions.trim() || undefined,
+        isDefault: save,
+      });
+      setAddress(addr.id);
+      router.push('/checkout');
+    } catch {
+      setError("Impossible d'enregistrer l'adresse. Réessaie.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
       <Header title="Adresse de livraison" />
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        <SectionLabel style={{ marginBottom: 10 }}>Mes adresses</SectionLabel>
-        <View style={{ gap: 10 }}>
-          {mockAddresses.map((a) => {
-            const active = a.id === selectedId;
-            return (
-              <Pressable
-                key={a.id}
-                onPress={() => setAddress(a.id)}
-                style={[styles.addrCard, { borderColor: active ? colors.primary : colors.border }]}
-              >
-                <Icon name={a.icon} size={22} color={active ? colors.primary : colors.textMuted} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addrLabel}>{a.label}</Text>
-                  <Text style={styles.addrDetail}>
-                    {a.landmark} · {a.phone}
-                  </Text>
-                </View>
-                <Icon
-                  name={active ? 'radio_button_checked' : 'radio_button_unchecked'}
-                  size={22}
-                  color={active ? colors.primary : colors.borderStrong}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
+        {saved && saved.length > 0 ? (
+          <>
+            <SectionLabel style={{ marginBottom: 10 }}>Mes adresses</SectionLabel>
+            <View style={{ gap: 10 }}>
+              {saved.map((a) => {
+                const active = a.id === selectedId;
+                return (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => setAddress(a.id)}
+                    style={[styles.addrCard, { borderColor: active ? colors.primary : colors.border }]}
+                  >
+                    <Icon name={a.icon} size={22} color={active ? colors.primary : colors.textMuted} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.addrLabel}>{a.label}</Text>
+                      <Text style={styles.addrDetail}>
+                        {a.zone} · {a.phone}
+                      </Text>
+                    </View>
+                    <Icon
+                      name={active ? 'radio_button_checked' : 'radio_button_unchecked'}
+                      size={22}
+                      color={active ? colors.primary : colors.borderStrong}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
 
-        <View style={styles.dividerRow}>
-          <View style={styles.hr} />
-          <SectionLabel>Nouvelle adresse</SectionLabel>
-          <View style={styles.hr} />
-        </View>
+            <View style={styles.dividerRow}>
+              <View style={styles.hr} />
+              <SectionLabel>Nouvelle adresse</SectionLabel>
+              <View style={styles.hr} />
+            </View>
+          </>
+        ) : (
+          <SectionLabel style={{ marginBottom: 10 }}>Où livrer ?</SectionLabel>
+        )}
 
         <Card style={{ gap: 14 }}>
           <Field label="Quartier / zone">
-            <Pressable style={styles.select} onPress={() => setZoneOpen((v) => !v)}>
+            <Pressable
+              style={styles.select}
+              onPress={() => {
+                setZoneOpen((v) => !v);
+                setAddress('');
+              }}
+            >
               <Text style={styles.selectText}>{zone}</Text>
               <Icon name="expand_more" size={20} color={colors.textMuted} />
             </Pressable>
@@ -90,7 +147,10 @@ export default function AddressScreen() {
           <Field label="Point de repère">
             <TextInput
               value={landmark}
-              onChangeText={setLandmark}
+              onChangeText={(t) => {
+                setLandmark(t);
+                setAddress('');
+              }}
               placeholder="Ex. hôtel, boutique, école…"
               placeholderTextColor={colors.textFaint}
               style={styles.input}
@@ -124,10 +184,12 @@ export default function AddressScreen() {
             <Text style={styles.saveText}>Enregistrer cette adresse</Text>
           </Pressable>
         </Card>
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
       <BottomBar>
-        <Button label="Confirmer l'adresse" onPress={() => router.push('/checkout')} />
+        <Button label="Confirmer l'adresse" onPress={confirm} loading={saving} />
       </BottomBar>
     </View>
   );
@@ -199,4 +261,5 @@ const styles = StyleSheet.create({
   toggle: { width: 44, height: 26, borderRadius: radius.pill, justifyContent: 'center', paddingHorizontal: 3 },
   knob: { width: 20, height: 20, borderRadius: radius.pill, backgroundColor: colors.white },
   saveText: { fontFamily: fonts.medium, fontSize: 13, color: colors.ink },
+  error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
 });

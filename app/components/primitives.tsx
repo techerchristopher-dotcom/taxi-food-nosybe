@@ -1,7 +1,8 @@
-import { ReactNode } from 'react';
-import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { ReactNode, useEffect, useState } from 'react';
+import { Image, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { Icon } from './Icon';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
+import { thumbnailUrl } from '../data/types';
 
 /** Carte blanche arrondie avec ombre douce (le conteneur de base de la maquette). */
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
@@ -46,6 +47,41 @@ export function Avatar({
       <Text style={{ fontFamily: fonts.extrabold, fontSize: size * 0.34, color }}>{initials}</Text>
     </View>
   );
+}
+
+/**
+ * Logo de restaurant : affiche l'image `logo_url` (redimensionnée) si présente et chargeable,
+ * sinon un repli propre = pastille d'initiales (jamais de case vide).
+ */
+export function RestaurantLogo({
+  uri,
+  initials,
+  size = 44,
+  r = radius.tile,
+  bg = colors.warnBg,
+  color = colors.primary,
+}: {
+  uri?: string | null;
+  initials: string;
+  size?: number;
+  r?: number;
+  bg?: string;
+  color?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [uri]);
+
+  if (uri && !failed) {
+    return (
+      <Image
+        source={{ uri: thumbnailUrl(uri, size) }}
+        resizeMode="cover"
+        onError={() => setFailed(true)}
+        style={{ width: size, height: size, borderRadius: r, backgroundColor: colors.fieldBg }}
+      />
+    );
+  }
+  return <Avatar initials={initials} size={size} r={r} bg={bg} color={color} />;
 }
 
 /** Pastille « Ouvert » / « Fermé » à point coloré. */

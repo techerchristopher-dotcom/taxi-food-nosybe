@@ -1,9 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from './Icon';
-import { Avatar, OpenBadge } from './primitives';
-import { ProductThumb } from './ProductThumb';
+import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { Restaurant } from '../data/types';
+import { CategoryTag, Restaurant } from '../data/types';
 import { formatAr } from '../theme/tokens';
 
 /** Ligne « meta » : délai estimé + frais de livraison. */
@@ -22,21 +21,16 @@ function Meta({ eta, fee }: { eta: string; fee: number }) {
   );
 }
 
-/** Badges des types de plats proposés ; met en avant le type filtré (`active`). */
-function TypeBadges({ types, active }: { types: string[]; active?: string }) {
-  if (!types || types.length === 0) return null;
-  // Type actif en premier pour la mise en avant.
-  const ordered = active ? [active, ...types.filter((t) => t !== active)] : types;
+/** Tags des catégories actives du restaurant : emoji + nom (ex. « 🍕 Pizza »). */
+function CategoryTags({ tags }: { tags: CategoryTag[] }) {
+  if (!tags || tags.length === 0) return null;
   return (
     <View style={styles.typesRow}>
-      {ordered.map((t) => {
-        const on = t === active;
-        return (
-          <View key={t} style={[styles.typeBadge, on ? styles.typeBadgeOn : styles.typeBadgeOff]}>
-            <Text style={[styles.typeBadgeText, { color: on ? colors.white : colors.textDark }]}>{t}</Text>
-          </View>
-        );
-      })}
+      {tags.map((t) => (
+        <View key={t.name} style={[styles.typeBadge, styles.typeBadgeOff]}>
+          <Text style={styles.typeBadgeText}>{t.icon ? `${t.icon} ${t.name}` : t.name}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -45,11 +39,9 @@ function TypeBadges({ types, active }: { types: string[]; active?: string }) {
 export function FeaturedRestaurantCard({
   r,
   onPress,
-  activeType,
 }: {
   r: Restaurant;
   onPress: () => void;
-  activeType?: string;
 }) {
   return (
     <Pressable onPress={onPress} style={styles.featured}>
@@ -62,13 +54,13 @@ export function FeaturedRestaurantCard({
         ) : null}
       </View>
       <View style={styles.featuredBody}>
-        <Avatar initials={r.initials} size={44} r={12} bg={colors.white} color={colors.primary} />
+        <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={44} r={12} bg={colors.white} color={colors.primary} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name}>{r.name}</Text>
           <Text style={styles.sub}>
             {r.cuisineType} — {r.zone}
           </Text>
-          <TypeBadges types={r.foodTypes} active={activeType} />
+          <CategoryTags tags={r.categoryTags} />
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         </View>
       </View>
@@ -80,15 +72,13 @@ export function FeaturedRestaurantCard({
 export function RestaurantRow({
   r,
   onPress,
-  activeType,
 }: {
   r: Restaurant;
   onPress: () => void;
-  activeType?: string;
 }) {
   return (
     <Pressable onPress={onPress} style={[styles.row, !r.isOpen && { opacity: 0.55 }]}>
-      <ProductThumb size={64} muted={!r.isOpen} />
+      <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={64} r={radius.tile} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowHead}>
           <Text style={styles.rowName}>{r.name}</Text>
@@ -97,7 +87,7 @@ export function RestaurantRow({
         <Text style={styles.sub}>
           {r.cuisineType} — {r.zone}
         </Text>
-        <TypeBadges types={r.foodTypes} active={activeType} />
+        <CategoryTags tags={r.categoryTags} />
         {r.isOpen ? (
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         ) : (
@@ -150,7 +140,7 @@ const styles = StyleSheet.create({
   typeBadge: { height: 22, paddingHorizontal: 9, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   typeBadgeOn: { backgroundColor: colors.primary },
   typeBadgeOff: { backgroundColor: colors.fieldBg },
-  typeBadgeText: { fontFamily: fonts.semibold, fontSize: 10 },
+  typeBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.textDark },
   metaRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },

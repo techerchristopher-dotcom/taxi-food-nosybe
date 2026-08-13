@@ -86,13 +86,19 @@ export type Category = {
   id: string;
   restaurantId: string;
   name: string;
+  icon?: string | null; // emoji de la catégorie (ex. 🍕)
   sortOrder: number;
 };
+
+/** Tag de catégorie affiché sur la carte restaurant (emoji + nom). */
+export type CategoryTag = { name: string; icon: string | null };
 
 export type Restaurant = {
   id: string;
   name: string;
   initials: string; // dérivé du nom
+  logoUrl?: string | null; // logo du restaurant (Supabase Storage), null si absent
+  coverUrl?: string | null; // bannière du restaurant, null si absente
   cuisineType: string;
   zone: string; // = zone_served
   isOpen: boolean;
@@ -103,6 +109,7 @@ export type Restaurant = {
   deliveryFee: number; // ariary
   minOrder: number; // ariary
   foodTypes: string[]; // types de plats proposés (ex. ['Tacos','Kebab','Burger']) — filtre accueil
+  categoryTags: CategoryTag[]; // catégories ACTIVES du resto (emoji + nom) — tags de la carte
   popular?: boolean; // non stocké — toujours false pour l'instant
   closedLabel?: string; // dérivé si fermé
 };

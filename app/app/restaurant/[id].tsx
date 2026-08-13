@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
-import { Avatar, OpenBadge } from '../../components/primitives';
+import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
@@ -73,6 +73,14 @@ export default function RestaurantMenuScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.banner, { paddingTop: insets.top + 12 }]}>
+        {restaurant.coverUrl ? (
+          <Image
+            source={{ uri: restaurant.coverUrl }}
+            resizeMode="cover"
+            style={StyleSheet.absoluteFill}
+            onError={(e) => console.warn('[resto] échec bannière', restaurant.coverUrl, e?.nativeEvent?.error)}
+          />
+        ) : null}
         <View style={styles.bannerActions}>
           <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
             <Icon name="arrow_back" size={22} color={colors.ink} />
@@ -81,7 +89,7 @@ export default function RestaurantMenuScreen() {
             <Icon name="favorite" size={22} color={colors.ink} />
           </Pressable>
         </View>
-        <Text style={styles.bannerHint}>photo bannière resto</Text>
+        {!restaurant.coverUrl ? <Text style={styles.bannerHint}>photo bannière resto</Text> : null}
       </View>
 
       <ScrollView
@@ -104,7 +112,7 @@ export default function RestaurantMenuScreen() {
                   style={[styles.catChip, active ? styles.catChipActive : styles.catChipIdle]}
                 >
                   <Text style={[styles.catText, { color: active ? colors.white : colors.textDark }]}>
-                    {c.name}
+                    {c.icon ? `${c.icon} ${c.name}` : c.name}
                   </Text>
                 </Pressable>
               );
@@ -114,7 +122,7 @@ export default function RestaurantMenuScreen() {
 
         <View style={{ paddingHorizontal: spacing.screen, paddingTop: 16 }}>
           <Text style={styles.catTitle}>
-            {activeCategory?.name}{' '}
+            {activeCategory?.icon ? `${activeCategory.icon} ` : ''}{activeCategory?.name}{' '}
             <Text style={styles.catCount}>· {visibleProducts.length} produits</Text>
           </Text>
           <View style={{ gap: 10 }}>
@@ -165,7 +173,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
   return (
     <View style={styles.rHeader}>
       <View style={styles.rHeadTop}>
-        <Avatar initials={r.initials} size={52} r={14} />
+        <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={52} r={14} />
         <View style={{ flex: 1 }}>
           <Text style={styles.rName}>{r.name}</Text>
           <Text style={styles.rSub}>

@@ -111,7 +111,6 @@ export default function HomeScreen() {
               {featured ? (
                 <FeaturedRestaurantCard
                   r={featured}
-                  activeType={filter === TOUT ? undefined : filter}
                   onPress={() => router.push(`/restaurant/${featured.id}`)}
                 />
               ) : null}
@@ -119,7 +118,6 @@ export default function HomeScreen() {
                 <RestaurantRow
                   key={r.id}
                   r={r}
-                  activeType={filter === TOUT ? undefined : filter}
                   onPress={() => router.push(`/restaurant/${r.id}`)}
                 />
               ))}

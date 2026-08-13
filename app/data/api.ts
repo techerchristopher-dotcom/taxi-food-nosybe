@@ -31,6 +31,8 @@ type RestaurantRow = {
   id: string;
   name: string;
   cuisine_type: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
   is_open: boolean;
   opens_at: string | null;
   closes_at: string | null;
@@ -51,7 +53,7 @@ type ProductRow = {
   photo_url: string | null;
 };
 
-type CategoryRow = { id: string; restaurant_id: string; name: string; sort_order: number };
+type CategoryRow = { id: string; restaurant_id: string; name: string; icon: string | null; sort_order: number };
 
 type AddressRow = {
   id: string;
@@ -87,6 +89,8 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     id: r.id,
     name: r.name,
     initials: initialsFromName(r.name),
+    logoUrl: r.logo_url,
+    coverUrl: r.cover_url,
     cuisineType: r.cuisine_type ?? '',
     zone: r.zone_served ?? '',
     isOpen: r.is_open,
@@ -97,6 +101,7 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     deliveryFee: r.delivery_fee,
     minOrder: r.min_order,
     foodTypes: r.food_types ?? [],
+    categoryTags: [],
     popular: false,
     closedLabel: r.is_open ? undefined : r.opens_at ? `Ouvre à ${formatTime(r.opens_at)}` : 'Fermé',
   };
@@ -162,16 +167,36 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data as RestaurantRow[]).map((r) => mapRestaurant(r));
+  const rows = data as RestaurantRow[];
+
+  // Catégories ACTIVES (emoji + nom) par restaurant, pour les tags des cartes.
+  const ids = rows.map((r) => r.id);
+  const tagsByResto = new Map<string, { name: string; icon: string | null }[]>();
+  if (ids.length > 0) {
+    const { data: cats, error: e2 } = await supabase
+      .from('categories')
+      .select('restaurant_id, name, icon, sort_order')
+      .in('restaurant_id', ids)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    if (e2) throw e2;
+    for (const c of cats as { restaurant_id: string; name: string; icon: string | null }[]) {
+      const arr = tagsByResto.get(c.restaurant_id) ?? [];
+      arr.push({ name: c.name, icon: c.icon });
+      tagsByResto.set(c.restaurant_id, arr);
+    }
+  }
+
+  return rows.map((r) => ({ ...mapRestaurant(r), categoryTags: tagsByResto.get(r.id) ?? [] }));
 }
 
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -184,8 +209,9 @@ export async function getMenu(
   const [cats, prods] = await Promise.all([
     supabase
       .from('categories')
-      .select('id, restaurant_id, name, sort_order')
+      .select('id, restaurant_id, name, icon, sort_order')
       .eq('restaurant_id', restaurantId)
+      .eq('is_active', true)
       .order('sort_order', { ascending: true }),
     supabase
       .from('products')
@@ -195,7 +221,13 @@ export async function getMenu(
   if (cats.error) throw cats.error;
   if (prods.error) throw prods.error;
 
-  const productRows = prods.data as ProductRow[];
+  const categories = (cats.data as CategoryRow[]).map(mapCategory);
+  // Masquage doux : on ne garde que les produits d'une catégorie ACTIVE.
+  const activeCatIds = new Set(categories.map((c) => c.id));
+  const productRows = (prods.data as ProductRow[]).filter(
+    (p) => p.category_id != null && activeCatIds.has(p.category_id),
+  );
+
   // Quels produits ont des groupes d'options (→ le menu envoie vers le détail).
   const ids = productRows.map((p) => p.id);
   const withOptions = new Set<string>();
@@ -209,13 +241,13 @@ export async function getMenu(
   }
 
   return {
-    categories: (cats.data as CategoryRow[]).map(mapCategory),
+    categories,
     products: productRows.map((p) => mapProduct(p, withOptions.has(p.id))),
   };
 }
 
 function mapCategory(c: CategoryRow): Category {
-  return { id: c.id, restaurantId: c.restaurant_id, name: c.name, sortOrder: c.sort_order };
+  return { id: c.id, restaurantId: c.restaurant_id, name: c.name, icon: c.icon, sortOrder: c.sort_order };
 }
 
 /** Produit + restaurant + groupes d'options (pour l'écran de détail / configuration). */

@@ -15,6 +15,7 @@
       "bundleIdentifier": "com.chris97416.taxi-food-nosybe"
     },
     "android": {
+      "package": "com.chris97416.taxifoodnosybe",
       "adaptiveIcon": {
         "backgroundColor": "#E8342A",
         "foregroundImage": "./assets/android-icon-foreground.png",

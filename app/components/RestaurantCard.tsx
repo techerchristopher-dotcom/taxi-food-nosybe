@@ -22,8 +22,35 @@ function Meta({ eta, fee }: { eta: string; fee: number }) {
   );
 }
 
+/** Badges des types de plats proposés ; met en avant le type filtré (`active`). */
+function TypeBadges({ types, active }: { types: string[]; active?: string }) {
+  if (!types || types.length === 0) return null;
+  // Type actif en premier pour la mise en avant.
+  const ordered = active ? [active, ...types.filter((t) => t !== active)] : types;
+  return (
+    <View style={styles.typesRow}>
+      {ordered.map((t) => {
+        const on = t === active;
+        return (
+          <View key={t} style={[styles.typeBadge, on ? styles.typeBadgeOn : styles.typeBadgeOff]}>
+            <Text style={[styles.typeBadgeText, { color: on ? colors.white : colors.textDark }]}>{t}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Carte vedette avec bandeau (1er restaurant de la liste), badges Ouvert/Populaire. */
-export function FeaturedRestaurantCard({ r, onPress }: { r: Restaurant; onPress: () => void }) {
+export function FeaturedRestaurantCard({
+  r,
+  onPress,
+  activeType,
+}: {
+  r: Restaurant;
+  onPress: () => void;
+  activeType?: string;
+}) {
   return (
     <Pressable onPress={onPress} style={styles.featured}>
       <View style={styles.banner}>
@@ -41,6 +68,7 @@ export function FeaturedRestaurantCard({ r, onPress }: { r: Restaurant; onPress:
           <Text style={styles.sub}>
             {r.cuisineType} — {r.zone}
           </Text>
+          <TypeBadges types={r.foodTypes} active={activeType} />
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         </View>
       </View>
@@ -49,7 +77,15 @@ export function FeaturedRestaurantCard({ r, onPress }: { r: Restaurant; onPress:
 }
 
 /** Carte compacte (ligne) : vignette + infos. Grisée si fermé. */
-export function RestaurantRow({ r, onPress }: { r: Restaurant; onPress: () => void }) {
+export function RestaurantRow({
+  r,
+  onPress,
+  activeType,
+}: {
+  r: Restaurant;
+  onPress: () => void;
+  activeType?: string;
+}) {
   return (
     <Pressable onPress={onPress} style={[styles.row, !r.isOpen && { opacity: 0.55 }]}>
       <ProductThumb size={64} muted={!r.isOpen} />
@@ -61,6 +97,7 @@ export function RestaurantRow({ r, onPress }: { r: Restaurant; onPress: () => vo
         <Text style={styles.sub}>
           {r.cuisineType} — {r.zone}
         </Text>
+        <TypeBadges types={r.foodTypes} active={activeType} />
         {r.isOpen ? (
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         ) : (
@@ -109,6 +146,11 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.semibold, fontSize: 16, color: colors.ink },
   rowName: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink, flexShrink: 1 },
   sub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  typesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  typeBadge: { height: 22, paddingHorizontal: 9, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  typeBadgeOn: { backgroundColor: colors.primary },
+  typeBadgeOff: { backgroundColor: colors.fieldBg },
+  typeBadgeText: { fontFamily: fonts.semibold, fontSize: 10 },
   metaRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },

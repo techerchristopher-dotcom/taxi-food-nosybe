@@ -8,26 +8,37 @@ import { FeaturedRestaurantCard, RestaurantRow } from '../../components/Restaura
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
 import { listAddresses, listRestaurants } from '../../data/api';
+import { FOOD_TYPE_ORDER } from '../../data/types';
 
-const FILTERS = ['Tout', 'Pizza', 'Tacos', 'Burgers'] as const;
+const TOUT = 'Tout';
 
 /** Écran 02 — Accueil : restaurants de Nosy Be. */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Tout');
+  const [filter, setFilter] = useState<string>(TOUT);
 
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
   const { data: addresses } = useLoad(() => listAddresses(), []);
 
   const defaultAddress = addresses?.find((a) => a.isDefault) ?? addresses?.[0] ?? null;
 
+  // Filtres dynamiques : union des types de plats réellement proposés par les restaurants.
+  const filters = useMemo(() => {
+    const set = new Set<string>();
+    (restaurants ?? []).forEach((r) => r.foodTypes.forEach((t) => set.add(t)));
+    const types = [...set].sort((a, b) => {
+      const ia = FOOD_TYPE_ORDER.indexOf(a);
+      const ib = FOOD_TYPE_ORDER.indexOf(b);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.localeCompare(b);
+    });
+    return [TOUT, ...types];
+  }, [restaurants]);
+
   const list = useMemo(() => {
     const all = restaurants ?? [];
-    if (filter === 'Tout') return all;
-    return all.filter((r) =>
-      r.cuisineType.toLowerCase().includes(filter.toLowerCase().replace('s', '')),
-    );
+    if (filter === TOUT) return all;
+    return all.filter((r) => r.foodTypes.includes(filter));
   }, [filter, restaurants]);
 
   const openCount = (restaurants ?? []).filter((r) => r.isOpen).length;
@@ -66,8 +77,13 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.filters}>
-          {FILTERS.map((f) => {
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersScroll}
+          contentContainerStyle={styles.filters}
+        >
+          {filters.map((f) => {
             const active = f === filter;
             return (
               <Pressable
@@ -79,7 +95,7 @@ export default function HomeScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
         {loading && !restaurants ? (
           <View style={styles.loading}>
@@ -93,10 +109,19 @@ export default function HomeScreen() {
 
             <View style={{ gap: 12 }}>
               {featured ? (
-                <FeaturedRestaurantCard r={featured} onPress={() => router.push(`/restaurant/${featured.id}`)} />
+                <FeaturedRestaurantCard
+                  r={featured}
+                  activeType={filter === TOUT ? undefined : filter}
+                  onPress={() => router.push(`/restaurant/${featured.id}`)}
+                />
               ) : null}
               {rows.map((r) => (
-                <RestaurantRow key={r.id} r={r} onPress={() => router.push(`/restaurant/${r.id}`)} />
+                <RestaurantRow
+                  key={r.id}
+                  r={r}
+                  activeType={filter === TOUT ? undefined : filter}
+                  onPress={() => router.push(`/restaurant/${r.id}`)}
+                />
               ))}
               {list.length === 0 ? <Text style={styles.emptyFilter}>Aucun restaurant pour ce filtre.</Text> : null}
             </View>
@@ -137,7 +162,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchText: { fontFamily: fonts.regular, fontSize: 14, color: colors.textMuted },
-  filters: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  filtersScroll: { marginBottom: 16, marginHorizontal: -spacing.screen },
+  filters: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.screen },
   chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   chipActive: { backgroundColor: colors.ink },
   chipIdle: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },

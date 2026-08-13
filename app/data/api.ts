@@ -37,6 +37,7 @@ type RestaurantRow = {
   delivery_fee: number;
   min_order: number;
   zone_served: string | null;
+  food_types: string[] | null;
 };
 
 type ProductRow = {
@@ -94,6 +95,7 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     etaLabel: DEFAULT_ETA,
     deliveryFee: r.delivery_fee,
     minOrder: r.min_order,
+    foodTypes: r.food_types ?? [],
     popular: false,
     closedLabel: r.is_open ? undefined : r.opens_at ? `Ouvre à ${formatTime(r.opens_at)}` : 'Fermé',
   };
@@ -158,7 +160,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served')
+    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data as RestaurantRow[]).map((r) => mapRestaurant(r));
@@ -167,7 +169,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served')
+    .select('id, name, cuisine_type, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

@@ -85,9 +85,23 @@ export type Restaurant = {
   etaLabel: string; // cosmétique (non stocké) — placeholder
   deliveryFee: number; // ariary
   minOrder: number; // ariary
+  foodTypes: string[]; // types de plats proposés (ex. ['Tacos','Kebab','Burger']) — filtre accueil
   popular?: boolean; // non stocké — toujours false pour l'instant
   closedLabel?: string; // dérivé si fermé
 };
+
+/** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */
+export const FOOD_TYPE_ORDER = [
+  'Pizza',
+  'Tacos',
+  'Kebab',
+  'Burger',
+  'Américain',
+  'Panini',
+  'Crêpe',
+  'Milkshake',
+  'Tapas',
+];
 
 export type Address = {
   id: string;

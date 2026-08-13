@@ -136,7 +136,18 @@ export type Address = {
   instructions?: string;
   isDefault: boolean;
   icon: 'home' | 'work' | 'location_on';
+  // Position GPS (obligatoire pour commander — pas d'adressage postal à Nosy Be).
+  latitude?: number | null;
+  longitude?: number | null;
 };
+
+/**
+ * Lien d'itinéraire Maps (ouvre l'app Maps native, calcul d'itinéraire automatique).
+ * Aucune clé API requise. Pour un futur écran livreur / back-office.
+ */
+export function getMapsNavigationUrl(latitude: number, longitude: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+}
 
 export type OrderItemSnapshot = {
   productId: string;

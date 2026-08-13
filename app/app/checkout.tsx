@@ -60,8 +60,13 @@ export default function CheckoutScreen() {
       });
       clear();
       router.replace(`/confirmation?orderId=${order.id}`);
-    } catch {
-      setError("La commande n'a pas pu être créée. Réessaie.");
+    } catch (e) {
+      const msg = (e as { message?: string })?.message ?? '';
+      setError(
+        /position gps|localisation/i.test(msg)
+          ? "Position GPS manquante sur cette adresse. Reviens à l'étape adresse et capte ta position."
+          : "La commande n'a pas pu être créée. Réessaie.",
+      );
       setSubmitting(false);
     }
   }

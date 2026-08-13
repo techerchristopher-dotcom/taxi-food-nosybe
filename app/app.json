@@ -29,7 +29,13 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Taxi Food utilise ta position pour enregistrer précisément ton adresse de livraison."
+        }
+      ]
     ]
   }
 }

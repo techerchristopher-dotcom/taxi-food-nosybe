@@ -63,6 +63,8 @@ type AddressRow = {
   phone: string | null;
   instructions: string | null;
   is_default: boolean;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type OptionRow = {
@@ -160,6 +162,8 @@ function mapAddress(a: AddressRow): Address {
     instructions: a.instructions ?? undefined,
     isDefault: a.is_default,
     icon: addressIcon(a.label),
+    latitude: a.latitude,
+    longitude: a.longitude,
   };
 }
 
@@ -283,7 +287,7 @@ export async function getProductDetail(id: string): Promise<{
 export async function listAddresses(): Promise<Address[]> {
   const { data, error } = await supabase
     .from('addresses')
-    .select('id, label, zone, landmark, phone, instructions, is_default')
+    .select('id, label, zone, landmark, phone, instructions, is_default, latitude, longitude')
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -297,6 +301,10 @@ export async function createAddress(input: {
   phone: string;
   instructions?: string;
   isDefault?: boolean;
+  // Position GPS optionnelle (null si le client ne l'a pas partagée).
+  latitude?: number | null;
+  longitude?: number | null;
+  capturedAt?: string | null;
 }): Promise<Address> {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
@@ -317,8 +325,11 @@ export async function createAddress(input: {
       phone: input.phone,
       instructions: input.instructions ?? null,
       is_default: isDefault,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      location_captured_at: input.capturedAt ?? null,
     })
-    .select('id, label, zone, landmark, phone, instructions, is_default')
+    .select('id, label, zone, landmark, phone, instructions, is_default, latitude, longitude')
     .single();
   if (error) throw error;
   return mapAddress(data as AddressRow);

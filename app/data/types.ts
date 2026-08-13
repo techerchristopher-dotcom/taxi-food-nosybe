@@ -27,6 +27,7 @@ export type Product = {
   description: string;
   price: number; // ariary
   isAvailable: boolean;
+  photoUrl?: string | null; // URL photo produit (Supabase Storage), null si absente
   hasOptions?: boolean; // true si le produit a des groupes d'options (→ passer par le détail)
   tags?: string[]; // cosmétique — non stocké en base
 };
@@ -63,6 +64,22 @@ export type SelectedOption = {
 /** Total des suppléments d'une sélection d'options. */
 export function optionsTotal(options: SelectedOption[]): number {
   return options.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
+}
+
+/**
+ * Vignette redimensionnée à partir d'une URL Supabase Storage publique
+ * (endpoint /render/image). Évite de charger des images 1 Mo+ pour des miniatures
+ * de 76 px. Renvoie l'URL d'origine si ce n'est pas une URL Storage publique.
+ */
+export function thumbnailUrl(url: string | null | undefined, size: number): string | undefined {
+  if (!url) return undefined;
+  const marker = '/storage/v1/object/public/';
+  const i = url.indexOf(marker);
+  if (i < 0) return url;
+  const base = url.slice(0, i);
+  const path = url.slice(i + marker.length);
+  const px = Math.round(size * 2); // densité écran (retina)
+  return `${base}/storage/v1/render/image/public/${path}?width=${px}&height=${px}&resize=cover&quality=75`;
 }
 
 export type Category = {

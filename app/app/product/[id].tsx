@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { QtyStepper } from '../../components/QtyStepper';
@@ -90,10 +90,18 @@ export default function ProductDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.photo, { paddingTop: insets.top + 12 }]}>
+        {product.photoUrl ? (
+          <Image
+            source={{ uri: product.photoUrl }}
+            resizeMode="cover"
+            style={StyleSheet.absoluteFill}
+            onError={(e) => console.warn('[product] échec photo', product.photoUrl, e?.nativeEvent?.error)}
+          />
+        ) : null}
         <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
           <Icon name="close" size={22} color={colors.ink} />
         </Pressable>
-        <Text style={styles.photoHint}>photo produit</Text>
+        {!product.photoUrl ? <Text style={styles.photoHint}>photo produit</Text> : null}
       </View>
 
       <View style={styles.sheet}>

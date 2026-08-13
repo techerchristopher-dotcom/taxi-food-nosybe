@@ -48,6 +48,7 @@ type ProductRow = {
   description: string | null;
   price: number;
   is_available: boolean;
+  photo_url: string | null;
 };
 
 type CategoryRow = { id: string; restaurant_id: string; name: string; sort_order: number };
@@ -110,6 +111,7 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     description: p.description ?? '',
     price: p.price,
     isAvailable: p.is_available,
+    photoUrl: p.photo_url,
     hasOptions,
   };
 }
@@ -187,7 +189,7 @@ export async function getMenu(
       .order('sort_order', { ascending: true }),
     supabase
       .from('products')
-      .select('id, restaurant_id, category_id, name, description, price, is_available')
+      .select('id, restaurant_id, category_id, name, description, price, is_available, photo_url')
       .eq('restaurant_id', restaurantId),
   ]);
   if (cats.error) throw cats.error;
@@ -224,7 +226,7 @@ export async function getProductDetail(id: string): Promise<{
 } | null> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, restaurant_id, category_id, name, description, price, is_available')
+    .select('id, restaurant_id, category_id, name, description, price, is_available, photo_url')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

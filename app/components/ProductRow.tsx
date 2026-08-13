@@ -33,10 +33,10 @@ export function ProductRow({
       style={[styles.card, !available && styles.muted, inCart && styles.selected]}
     >
       <ProductThumb
+        uri={product.photoUrl}
         size={76}
         radius={radius.tile}
         muted={!available}
-        label={product.name.split(' ').slice(-1)[0].toLowerCase()}
       />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.name, !available && { color: colors.textDark }]}>{product.name}</Text>

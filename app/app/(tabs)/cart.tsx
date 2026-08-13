@@ -70,7 +70,7 @@ export default function CartScreen() {
         <View style={{ gap: 10, marginTop: 14 }}>
           {lines.map((l) => (
             <Card key={l.key} style={styles.lineCard}>
-              <ProductThumb size={64} />
+              <ProductThumb uri={l.product.photoUrl} size={64} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={styles.lineHead}>
                   <Text style={styles.lineName}>{l.product.name}</Text>

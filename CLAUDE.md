@@ -41,6 +41,18 @@ Colonnes/tables ajoutées au fil de l'eau (migrations appliquées via MCP) :
 - RPC **`create_order`** (**SECURITY DEFINER**) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon). La fonction fixe elle-même `user_id = auth.uid()` et exige que l'adresse appartienne à l'appelant → elle n'écrit jamais pour autrui, DEFINER est sûr.
   - ⚠️ **Pourquoi DEFINER et pas INVOKER** : la fonction fait un `UPDATE orders SET subtotal/total` après avoir inséré les lignes. `orders` n'a **volontairement aucune politique RLS UPDATE** (un client ne doit pas pouvoir modifier ses commandes via l'API REST). En INVOKER, cet UPDATE touchait **0 ligne** sous RLS → `returning into v_order` = NULL → la fonction renvoyait NULL et laissait `total = frais de livraison` (bug corrigé le 2026-08-14 : montant 0 en confirmation, « commande introuvable », total faux). DEFINER exécute les écritures hors RLS. **Ne pas repasser en INVOKER sans supprimer l'UPDATE final.**
 
+## Multi-rôle & espace restaurant
+
+Un même compte Google peut être **client** et/ou **restaurant** (et **livreur** en Phase 3).
+
+- **Base** : enums `app_role` {client,restaurant,livreur} / `role_status` {pending,active,revoked} ; tables `user_roles`, `restaurant_staff` (lie un compte à un `restaurants.id`), `couriers`. RPC `request_role(p_role)` : `client` → `active` immédiat ; `restaurant`/`livreur` → `pending` jusqu'à validation **manuelle** (toi, en base).
+- **Helpers rôle** (SECURITY DEFINER) : `is_active_restaurant_staff_of(rid)`, `current_restaurant_id()`. Un « restaurant actif » = rôle restaurant `active` **ET** lien `restaurant_staff`.
+- **RLS restaurant** : policies SELECT additives sur `orders`/`order_items`/`order_item_options` → le staff voit les commandes de **son** restaurant (les policies client, par `user_id`, restent inchangées).
+- **Transitions de statut** : RPC **`set_order_status(order_id, new_status, reason)`** (SECURITY DEFINER, comme `create_order` — aucune policy UPDATE ouverte sur `orders`). Vérifie l'appartenance au restaurant et n'autorise que les transitions valides : `recue→confirmee|annulee`, `confirmee→en_preparation|annulee`, `en_preparation→en_livraison`. `annulee` exige un motif (stocké dans `orders.cancellation_reason`, visible côté client).
+- **Routage app** (`app/index.tsx`) : client **sans** rôle pro → parcours inchangé (aucun écran de sélection) ; compte multi-rôle → `mode` persisté (AsyncStorage `tf_mode`) respecté, sinon `role-select`. Espace restaurant = groupe de routes `app/(restaurant)/` (onglets **Commandes en cours** avec polling 12 s + **Historique**). Le suivi client affiche l'état **refusée + motif**.
+- ⚠️ **Compte de test** : le compte `techerchristopher@gmail.com` (`9ca91352…`) a été lié à **Angelo** comme staff restaurant **actif** (pour tester). À sa prochaine connexion il verra l'écran de sélection de rôle. Pour lier un **vrai** compte restaurant : insérer `user_roles(user_id,'restaurant','active',now())` + `restaurant_staff(user_id, restaurant_id)`.
+- **Non fait (Phase 3+)** : espace livreur (une commande `en_livraison` sort de la file resto, suite manuelle), notifications push (prévoir `push_tokens`), édition menu/horaires depuis l'app.
+
 ## Règles produit importantes (déjà implémentées)
 
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.

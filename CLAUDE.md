@@ -1,0 +1,75 @@
+# Taxi Food — Livraison de repas (Nosy Be)
+
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. Reste à faire : test bout-en-bout sur appareil réel (build EAS, compte Apple Developer en cours), puis mise en service.
+
+## Lancer l'app en local
+
+```bash
+npm run dev --prefix app        # équiv. `cd app && npx expo start`
+npx expo start --web --port 8081 --prefix app   # aperçu web direct
+```
+
+⚠️ **Expo Go NE MARCHE PAS** : le projet est en **Expo SDK 57** (RN 0.86, React 19.2), plus récent que ce qu'Expo Go du store embarque → « projet incompatible ». Pour tester sur téléphone, il faut une **build de dev EAS** (voir `app/eas.json`), pas Expo Go.
+
+- **Web** (aperçu rapide) : `http://localhost:8081`. L'accueil est derrière le login Google ; pour voir l'app sans se connecter, ouvrir directement `http://localhost:8081/(tabs)` (les routes ne sont pas gardées individuellement, et les lectures resto/produit sont en RLS publique).
+- Compte de test : connexion **Google réelle** uniquement (pas de démo). Voir Auth ci-dessous.
+
+## Stack & backend
+
+- **Expo SDK 57** + expo-router (navigation par fichiers) + **zustand** (panier/checkout/session) + AsyncStorage.
+- **Supabase** projet `bmdveawomizjpiebgtkj` (accès via le connecteur MCP claude.ai ; c'est un projet distinct des autres — voir aussi le projet frère `addition-appli`).
+- **Clés** dans `app/.env` (git-ignoré, à recréer depuis `app/.env.example`) : `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (clé **publishable/anon**, publique par conception — RLS protège), `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
+
+## Les deux vrais restaurants
+
+- **Taxi Be** — bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs).
+- **La Cabane** — snacks (Sandwichs & Repas, Burgers, Bières, Softs, Milkshakes, Crêpes).
+
+⚠️ Les 4 restaurants de **démo** (Pizzeria Papillon, Tacos du Boulevard, Burger Baobab, Chez Loulou) ont été **supprimés de la base**. Ne pas les réintroduire ; aucun nom en dur dans le code (juste un exemple dans un commentaire de `data/types.ts`).
+
+Les menus, compositions et photos viennent de photos de carte déposées dans le **bucket Storage `MENU`** (`MENU/TAXI BE/`, `MENU/LA CABANE/`) ; les logos dans le bucket `logo`. Buckets **publics**.
+
+## Modèle de données (au-delà de `SCHEMA-TAXI-FOOD.md`)
+
+Colonnes/tables ajoutées au fil de l'eau (migrations appliquées via MCP) :
+
+- `restaurants` : `logo_url`, `cover_url`, `food_types text[]` (types de plats pour le **filtre** de l'accueil).
+- `categories` : `icon` (emoji, ex. 🍕), `is_active` (masquage doux d'une catégorie sans supprimer ses produits).
+- `products` : `photo_url`.
+- **Options/suppléments** : `product_option_groups` (name, min_select, max_select, required, sort_order) + `product_options` (name, price_delta, is_available, sort_order) ; snapshot commande `order_item_options`.
+- `addresses` : `latitude`, `longitude`, `location_captured_at` (**GPS obligatoire**, voir plus bas).
+- RPC **`create_order`** (SECURITY INVOKER) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon).
+
+## Règles produit importantes (déjà implémentées)
+
+- **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
+- **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
+- **Filtre accueil** = `restaurants.food_types` (Pizza, Tacos, Kebab, Burger, Américain, Panini, Crêpe, Milkshake, Tapas) ; un resto multi-types ressort dans chaque filtre. **Les tags sur la carte resto = les CATÉGORIES actives** (emoji + nom), différent des food types.
+- **Photos** : `products.photo_url` via `ProductThumb`, logos resto via `RestaurantLogo` (image + repli initiales) ; repli propre si `null`/échec, jamais le nom en texte.
+- **GPS OBLIGATOIRE** pour valider une commande (pas d'adressage postal à Nosy Be) : l'écran adresse bloque « Confirmer » tant qu'aucune position n'est captée (`expo-location`) ; refus → réessayer/Réglages, aucun contournement. Adresses enregistrées sans GPS = signalées et bloquées. Utilitaire `getMapsNavigationUrl(lat,lng)` prêt pour un futur back-office livreur.
+
+## Auth Google (⚠️ flux spécifique)
+
+- Flux **`supabase.auth.signInWithOAuth`** (PKCE) + `expo-web-browser` + deep link, **PAS** `signInWithIdToken`. Raison : côté Google seul l'URI de callback Supabase est déclaré → c'est le flux médié par Supabase qui marche. Tout est dans `app/lib/auth.ts`.
+- Provider Google activé côté Supabase (Client ID + Secret). Redirect URLs Supabase autorisées : `taxifood://*`, `exp://*`, `http://localhost:8081`.
+- **Le login réel ne peut pas être testé par Claude** (saisie d'identifiants Google = action humaine). Vérifié : la chaîne serveur renvoie bien un 302 vers Google.
+
+## Build de test (EAS) — état
+
+- `app/eas.json` : profils `development` (dev client), `preview` (autonome interne), `production`.
+- Bundle ids : iOS `com.chris97416.taxi-food-nosybe`, Android `com.chris97416.taxifoodnosybe` (Android interdit les tirets).
+- `expo-dev-client` installé. `extra.eas.projectId` sera écrit par `eas init` (nécessite `eas login`).
+- **iOS réel** : nécessite un compte **Apple Developer** (en cours de création par Christopher). Commande finale : `cd app && eas build --profile development --platform ios`.
+- **Android** : `eas build --profile development --platform android` marche tout de suite (APK, aucun compte payant).
+
+## Ce qui est vérifié vs pas encore
+
+- ✅ Vérifié en web (lectures publiques, sans login) : accueil/filtres/logos/emojis, menu, configurateur d'options + prix temps réel, panier (clé par produit+options), blocage GPS obligatoire + capture (position simulée), `tsc --noEmit`, bundle web.
+- ⏳ **Non testé** (nécessite un login Google réel, donc un humain) : la connexion de bout en bout, l'écriture réelle en base (`addresses` GPS, `orders`/`order_items`). Tables encore vides. À dérouler sur la build EAS.
+
+## Conventions
+
+- Dépôt git **isolé** dans `taxi-food-nosybe/`. GitHub : https://github.com/techerchristopher-dotcom/taxi-food-nosybe . **Commit + push (HTTPS) après chaque étape.**
+- Après toute migration touchant le schéma : penser à régénérer les types si un fichier `db-types` est réintroduit (actuellement les types sont mappés à la main dans `app/data/api.ts`).
+- Documentation en français.
+- Docs de référence : `CAHIER-DES-CHARGES-MVP.md`, `SCHEMA-TAXI-FOOD.md`, `PROMPT_BUILD_APP_CLIENT.md`.

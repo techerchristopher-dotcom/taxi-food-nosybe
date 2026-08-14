@@ -59,7 +59,18 @@ export default function CheckoutScreen() {
         })),
       });
       clear();
-      router.replace(`/confirmation?orderId=${order.id}`);
+      // On transmet le total et le numéro renvoyés par la RPC (source autoritative,
+      // déjà recalculée côté serveur) : la confirmation affiche le bon montant tout de
+      // suite, sans dépendre du refetch (évite le « 0 Ar » transitoire).
+      router.replace({
+        pathname: '/confirmation',
+        params: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          total: String(order.total),
+          payment: paymentMethod,
+        },
+      });
     } catch (e) {
       const msg = (e as { message?: string })?.message ?? '';
       setError(

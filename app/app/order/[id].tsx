@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
@@ -37,7 +37,22 @@ export default function OrderTrackingScreen() {
     return () => clearInterval(t);
   }, [reload]);
 
-  if (loading && !order) {
+  // On arrive souvent ici juste après la création : la commande peut n'être pas encore
+  // lisible à la première requête. On réessaie brièvement avant de conclure « introuvable ».
+  const MAX_RETRIES = 4;
+  const [retries, setRetries] = useState(0);
+  useEffect(() => setRetries(0), [id]);
+  useEffect(() => {
+    if (!loading && !order && retries < MAX_RETRIES) {
+      const t = setTimeout(() => {
+        setRetries((n) => n + 1);
+        reload();
+      }, 1000);
+      return () => clearTimeout(t);
+    }
+  }, [loading, order, retries, reload]);
+
+  if (!order && (loading || retries < MAX_RETRIES)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />

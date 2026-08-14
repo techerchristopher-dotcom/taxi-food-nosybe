@@ -469,13 +469,17 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     })),
   });
   if (error) throw error;
-  const row = data as {
-    id: string;
-    order_number: string;
-    subtotal: number;
-    delivery_fee: number;
-    total: number;
-  };
+  // La RPC `RETURNS orders` : selon PostgREST/supabase-js, `data` peut arriver soit
+  // comme objet unique, soit comme tableau à un élément. On tolère les deux, et on
+  // échoue bruyamment si l'id manque — plutôt que de laisser l'écran suivant naviguer
+  // vers `/order/undefined` (page « introuvable ») avec un montant à 0.
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { id: string; order_number: string; subtotal: number; delivery_fee: number; total: number }
+    | null
+    | undefined;
+  if (!row?.id) {
+    throw new Error("La commande a été créée mais le serveur a renvoyé une réponse inattendue.");
+  }
   return {
     id: row.id,
     orderNumber: row.order_number,

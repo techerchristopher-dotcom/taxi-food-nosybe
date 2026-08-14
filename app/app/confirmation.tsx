@@ -4,16 +4,29 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
-import { paymentLabel } from '../data/types';
+import { paymentLabel, PaymentMethod } from '../data/types';
 import { getOrderById } from '../data/api';
 import { useLoad } from '../lib/useLoad';
 
 /** Écran 08 — Confirmation de commande. */
 export default function ConfirmationScreen() {
-  const { orderId } = useLocalSearchParams<{ orderId: string }>();
+  // orderId sert au suivi et au refetch ; total/orderNumber/payment viennent de la RPC
+  // (source autoritative) pour un affichage immédiat sans attendre le refetch.
+  const params = useLocalSearchParams<{
+    orderId: string;
+    orderNumber?: string;
+    total?: string;
+    payment?: PaymentMethod;
+  }>();
+  const orderId = params.orderId;
+  const passedTotal = params.total ? Number(params.total) : null;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { data: order } = useLoad(() => getOrderById(orderId!), [orderId]);
+
+  const displayTotal = order?.total ?? passedTotal ?? 0;
+  const displayNumber = order?.orderNumber ?? params.orderNumber ?? 'TF-••••';
+  const displayPayment = order?.paymentMethod ?? params.payment ?? 'especes';
 
   return (
     <LinearGradient
@@ -37,13 +50,13 @@ export default function ConfirmationScreen() {
         <View style={styles.card}>
           <View style={styles.cardRow}>
             <Text style={styles.cardLabel}>Commande</Text>
-            <Text style={styles.orderNumber}>#{order?.orderNumber ?? 'TF-••••'}</Text>
+            <Text style={styles.orderNumber}>#{displayNumber}</Text>
           </View>
           <View style={styles.cardDivider} />
-          <Detail label="Montant" value={formatAr(order?.total ?? 0)} valueColor={colors.primary} />
+          <Detail label="Montant" value={formatAr(displayTotal)} valueColor={colors.primary} />
           <Detail
             label="Paiement"
-            value={`${order ? paymentLabel(order.paymentMethod) : 'Espèces'} — à la livraison`}
+            value={`${paymentLabel(displayPayment)} — à la livraison`}
           />
           {order?.etaLabel ? <Detail label="Livraison estimée" value={order.etaLabel} /> : null}
         </View>
@@ -54,7 +67,9 @@ export default function ConfirmationScreen() {
           dark
           icon="local_shipping"
           label="Suivre ma commande"
-          onPress={() => router.replace(`/order/${order?.id}`)}
+          // On navigue avec l'orderId reçu en param (toujours défini), pas `order?.id`
+          // qui est null tant que le refetch n'a pas répondu → évitait « introuvable ».
+          onPress={() => orderId && router.replace(`/order/${orderId}`)}
         />
         <ActionButton label="Retour à l'accueil" onPress={() => router.replace('/(tabs)')} />
       </View>

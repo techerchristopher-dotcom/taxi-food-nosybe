@@ -17,6 +17,7 @@ export default function Index() {
   const activeRestaurant =
     session.roles.some((r) => r.role === 'restaurant' && r.status === 'active') &&
     !!session.restaurantId;
+  const activeCourier = session.roles.some((r) => r.role === 'livreur' && r.status === 'active');
 
   // Client sans rôle pro : comportement historique, pas d'écran de sélection.
   if (!hasStaffRole) {
@@ -26,6 +27,7 @@ export default function Index() {
 
   // Comptes multi-rôle : on respecte le mode choisi, sinon on demande de choisir.
   if (mode === 'restaurant' && activeRestaurant) return <Redirect href="/(restaurant)" />;
+  if (mode === 'livreur' && activeCourier) return <Redirect href="/(livreur)" />;
   if (mode === 'client') {
     if (!session.phone) return <Redirect href="/phone" />;
     return <Redirect href="/(tabs)" />;

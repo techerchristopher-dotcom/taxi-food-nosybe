@@ -17,7 +17,7 @@ export type RoleStatus = 'pending' | 'active' | 'revoked';
 export type RoleEntry = { role: AppRole; status: RoleStatus };
 
 /** Mode d'usage courant choisi sur l'écran de sélection (persisté localement). */
-export type AppMode = 'client' | 'restaurant';
+export type AppMode = 'client' | 'restaurant' | 'livreur';
 
 /** Motifs de refus proposés au restaurant (liste rapide + précision libre optionnelle). */
 export const REFUSAL_REASONS = [
@@ -196,6 +196,10 @@ export type Order = {
   mapsUrl?: string | null;
   /** Téléphone du client sur l'adresse de livraison (pour le restaurant/livreur). */
   clientPhone?: string | null;
+  /** Livreur ayant pris la commande (null tant qu'aucun livreur ne l'a prise). */
+  courierId?: string | null;
+  /** true dès que le livreur a récupéré la commande au restaurant (picked_up_at non nul). */
+  pickedUp?: boolean;
 };
 
 // ---------------------------------------------------------------------------

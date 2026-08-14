@@ -52,6 +52,12 @@ export default function RoleSelectScreen() {
       router.replace('/(restaurant)');
     });
 
+  const enterCourier = () =>
+    run('livreur', async () => {
+      await setMode('livreur');
+      router.replace('/(livreur)');
+    });
+
   const askRole = (role: AppRole) => run(role, async () => void (await requestRole(role)));
 
   return (
@@ -115,22 +121,22 @@ export default function RoleSelectScreen() {
           title="Je suis livreur"
           subtitle={
             statusOf('livreur') === 'active'
-              ? 'Espace livreur bientôt disponible.'
+              ? 'Voir les commandes prêtes à livrer et les prendre en charge.'
               : statusOf('livreur') === 'pending'
                 ? 'Ta demande est en cours de validation par Taxi Food.'
-                : 'Prendre des livraisons (bientôt).'
+                : 'Prendre des livraisons dans tout Nosy Be.'
           }
           actionLabel={
             statusOf('livreur') === 'active'
-              ? 'Bientôt disponible'
+              ? 'Entrer — espace livreur'
               : statusOf('livreur') === 'pending'
                 ? 'En attente de validation'
                 : "Demander l'accès livreur"
           }
-          disabled={statusOf('livreur') === 'pending' || statusOf('livreur') === 'active'}
+          disabled={statusOf('livreur') === 'pending'}
           pending={statusOf('livreur') === 'pending'}
           loading={busy === 'livreur'}
-          onPress={() => askRole('livreur')}
+          onPress={statusOf('livreur') === 'active' ? enterCourier : () => askRole('livreur')}
         />
       </ScrollView>
     </View>

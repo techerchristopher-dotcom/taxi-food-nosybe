@@ -347,6 +347,8 @@ type OrderJoinRow = {
   payment_method: PaymentMethod;
   status: OrderStatus;
   cancellation_reason: string | null;
+  courier_id: string | null;
+  picked_up_at: string | null;
   created_at: string;
   restaurants: { name: string } | null;
   addresses: {
@@ -372,7 +374,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, cancellation_reason, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
   'restaurants ( name ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
@@ -416,6 +418,8 @@ function mapOrder(o: OrderJoinRow): Order {
         ? getMapsNavigationUrl(addr.latitude, addr.longitude)
         : null,
     clientPhone: addr?.phone ?? null,
+    courierId: o.courier_id,
+    pickedUp: o.picked_up_at != null,
   };
 }
 
@@ -542,6 +546,99 @@ export async function setOrderStatus(
     p_order_id: orderId,
     p_new_status: status,
     p_reason: reason ?? null,
+  });
+  if (error) throw error;
+}
+
+// --- Espace livreur ---------------------------------------------------------
+
+/**
+ * Commandes DISPONIBLES à livrer (en_livraison, pas encore prises), tous restaurants
+ * confondus. Filtre explicite `courier_id is null` (pas seulement la RLS).
+ */
+export async function listAvailableDeliveries(): Promise<Order[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('status', 'en_livraison')
+    .is('courier_id', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data as unknown as OrderJoinRow[]).map(mapOrder);
+}
+
+/**
+ * La livraison en cours du livreur courant (en_livraison prise par lui), ou null.
+ * Filtre explicite par `courierId` (compte multi-rôle : évite toute fuite).
+ */
+export async function getMyActiveDelivery(courierId: string): Promise<Order | null> {
+  if (!courierId) return null;
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('courier_id', courierId)
+    .eq('status', 'en_livraison')
+    .order('created_at', { ascending: true })
+    .limit(1);
+  if (error) throw error;
+  const rows = data as unknown as OrderJoinRow[];
+  return rows.length ? mapOrder(rows[0]) : null;
+}
+
+/** Historique des livraisons du livreur courant (livree), plus récent d'abord. */
+export async function listMyDeliveries(courierId: string): Promise<Order[]> {
+  if (!courierId) return [];
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .eq('courier_id', courierId)
+    .eq('status', 'livree')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as OrderJoinRow[]).map(mapOrder);
+}
+
+/** Disponibilité courante du livreur (false si aucune ligne couriers). */
+export async function getCourierAvailability(courierId: string): Promise<boolean> {
+  if (!courierId) return false;
+  const { data, error } = await supabase
+    .from('couriers')
+    .select('is_available')
+    .eq('user_id', courierId)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean((data as { is_available: boolean } | null)?.is_available);
+}
+
+/** Bascule la disponibilité (upsert via RPC). */
+export async function setCourierAvailability(available: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_courier_availability', { p_available: available });
+  if (error) throw error;
+}
+
+/** Prend une commande disponible (attribution atomique). Lève si déjà prise. */
+export async function claimDelivery(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('claim_order', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** Abandonne une commande prise (repasse disponible). */
+export async function releaseDelivery(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('release_order', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** Confirme la récupération au restaurant. */
+export async function markPickedUp(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_order_picked_up', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** Confirme la livraison (+ encaissement espèces si applicable). */
+export async function markDelivered(orderId: string, cashConfirmed: boolean): Promise<void> {
+  const { error } = await supabase.rpc('mark_order_delivered', {
+    p_order_id: orderId,
+    p_cash_confirmed: cashConfirmed,
   });
   if (error) throw error;
 }

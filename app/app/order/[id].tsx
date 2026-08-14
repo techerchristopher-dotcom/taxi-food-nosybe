@@ -71,6 +71,24 @@ export default function OrderTrackingScreen() {
   const step = statusStep(order.status);
   const head = STEPS[step];
 
+  // Sous-états de "en_livraison" : en attente d'un livreur vs récupérée, en route.
+  const enLivraison = order.status === 'en_livraison';
+  const bannerIcon = cancelled ? 'cancel' : enLivraison && !order.pickedUp ? 'schedule' : head.icon;
+  const bannerTitle = cancelled
+    ? 'Commande refusée'
+    : enLivraison
+      ? order.pickedUp
+        ? 'En route vers vous'
+        : 'Bientôt en route'
+      : head.title;
+  const bannerSub = cancelled
+    ? (order.cancellationReason ?? "Le restaurant n'a pas pu honorer cette commande.")
+    : enLivraison
+      ? order.pickedUp
+        ? 'Un livreur a récupéré votre commande et arrive.'
+        : 'Votre commande est prête — un livreur va la prendre en charge.'
+      : head.head;
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -86,14 +104,10 @@ export default function OrderTrackingScreen() {
           </View>
         </View>
         <View style={styles.statusBanner}>
-          <Icon name={cancelled ? 'cancel' : head.icon} size={26} color={cancelled ? colors.primary : colors.accent} />
+          <Icon name={bannerIcon} size={26} color={cancelled ? colors.primary : colors.accent} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusTitle}>{cancelled ? 'Commande refusée' : head.title}</Text>
-            <Text style={styles.statusSub}>
-              {cancelled
-                ? (order.cancellationReason ?? "Le restaurant n'a pas pu honorer cette commande.")
-                : head.head}
-            </Text>
+            <Text style={styles.statusTitle}>{bannerTitle}</Text>
+            <Text style={styles.statusSub}>{bannerSub}</Text>
           </View>
         </View>
       </View>
@@ -114,7 +128,14 @@ export default function OrderTrackingScreen() {
             const done = i <= step;
             const current = i === step;
             const isLast = i === STEPS.length - 1;
-            const sub = i === 4 ? `Paiement en ${paymentShort(order.paymentMethod)} au livreur` : s.sub;
+            const sub =
+              i === 4
+                ? `Paiement en ${paymentShort(order.paymentMethod)} au livreur`
+                : i === 3 && enLivraison
+                  ? order.pickedUp
+                    ? 'Le livreur a récupéré votre commande'
+                    : 'En attente de prise en charge par un livreur'
+                  : s.sub;
             return (
               <View key={i} style={styles.stepRow}>
                 <View style={styles.stepMarker}>

@@ -6,8 +6,9 @@ import { supabase } from '../lib/supabase';
 import { Realtime } from '../components/Realtime';
 import { Report } from '../components/Report';
 import { Requests } from '../components/Requests';
+import { Restaurants } from '../components/Restaurants';
 
-type Tab = 'realtime' | 'report' | 'requests';
+type Tab = 'realtime' | 'report' | 'requests' | 'restaurants';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -103,11 +104,15 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'requests' ? 'active' : ''}`} onClick={() => setTab('requests')}>
           Demandes de rôle
         </button>
+        <button className={`tab ${tab === 'restaurants' ? 'active' : ''}`} onClick={() => setTab('restaurants')}>
+          Restaurants & menus
+        </button>
       </div>
 
       {tab === 'realtime' && <Realtime />}
       {tab === 'report' && <Report />}
       {tab === 'requests' && <Requests />}
+      {tab === 'restaurants' && <Restaurants />}
     </div>
   );
 }

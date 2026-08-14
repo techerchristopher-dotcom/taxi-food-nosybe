@@ -10,6 +10,7 @@ import { listRestaurantOrders, setOrderStatus } from '../../data/api';
 import { Order, OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { useRestaurantQueue } from '../../store/restaurantQueue';
 
 // Statuts « actifs » : demandent une action ou un suivi. en_livraison sort de la liste.
 const ACTIVE: OrderStatus[] = ['recue', 'confirmee', 'en_preparation'];
@@ -18,6 +19,7 @@ const POLL_MS = 12000;
 /** Espace restaurant — Commandes en cours (rafraîchissement automatique). */
 export default function RestaurantOrdersScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
+  const setActiveCount = useRestaurantQueue((s) => s.setActiveCount);
   const { data: orders, loading, reload } = useLoad(
     () => listRestaurantOrders(ACTIVE, restaurantId),
     [restaurantId],
@@ -28,6 +30,11 @@ export default function RestaurantOrdersScreen() {
     const t = setInterval(reload, POLL_MS);
     return () => clearInterval(t);
   }, [reload]);
+
+  // Alimente le badge de l'onglet (nombre de commandes en attente d'action).
+  useEffect(() => {
+    if (orders) setActiveCount(orders.length);
+  }, [orders, setActiveCount]);
 
   const [working, setWorking] = useState<string | null>(null);
   const [refuseTarget, setRefuseTarget] = useState<Order | null>(null);

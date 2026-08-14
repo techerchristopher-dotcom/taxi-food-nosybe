@@ -29,7 +29,8 @@ export default function LoginScreen() {
     void (async () => {
       try {
         const session = await completeFromUrl(incomingUrl);
-        if (session) router.replace(session.phone ? '/(tabs)' : '/phone');
+        // L'aiguillage (index) décide : téléphone, sélection de rôle, ou app.
+        if (session) router.replace('/');
       } catch {
         setError('Connexion impossible pour le moment. Réessayez.');
       } finally {
@@ -52,8 +53,8 @@ export default function LoginScreen() {
     try {
       const session = await signInWithGoogle();
       if (session) {
-        // 1re connexion : téléphone non renseigné → on le demande une fois.
-        router.replace(session.phone ? '/(tabs)' : '/phone');
+        // L'aiguillage (index) décide : téléphone, sélection de rôle, ou app.
+        router.replace('/');
       } else {
         // Annulé par l'utilisateur (fenêtre fermée).
         setLoading(false);

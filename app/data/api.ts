@@ -15,6 +15,7 @@ import {
   createdLabel,
   DEFAULT_ETA,
   formatTime,
+  getMapsNavigationUrl,
   hoursLabel,
   initialsFromName,
   OptionGroup,
@@ -345,9 +346,17 @@ type OrderJoinRow = {
   total: number;
   payment_method: PaymentMethod;
   status: OrderStatus;
+  cancellation_reason: string | null;
   created_at: string;
   restaurants: { name: string } | null;
-  addresses: { label: string | null; zone: string; landmark: string | null } | null;
+  addresses: {
+    label: string | null;
+    zone: string;
+    landmark: string | null;
+    phone: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
   order_items: {
     product_id: string | null;
     product_name_snapshot: string;
@@ -363,8 +372,8 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, created_at, ' +
-  'restaurants ( name ), addresses ( label, zone, landmark ), ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, cancellation_reason, created_at, ' +
+  'restaurants ( name ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
@@ -401,6 +410,12 @@ function mapOrder(o: OrderJoinRow): Order {
     addressDetail: addr?.landmark ?? '',
     createdLabel: createdLabel(o.created_at),
     etaLabel: DEFAULT_ETA,
+    cancellationReason: o.cancellation_reason,
+    mapsUrl:
+      addr?.latitude != null && addr?.longitude != null
+        ? getMapsNavigationUrl(addr.latitude, addr.longitude)
+        : null,
+    clientPhone: addr?.phone ?? null,
   };
 }
 
@@ -487,4 +502,39 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     deliveryFee: row.delivery_fee,
     total: row.total,
   };
+}
+
+// --- Espace restaurant ------------------------------------------------------
+
+/**
+ * Commandes du restaurant du compte courant, filtrées par statut. La RLS restreint
+ * déjà aux commandes du restaurant lié (staff actif) — pas besoin de filtrer par
+ * restaurant côté client. Les plus récentes d'abord.
+ */
+export async function listRestaurantOrders(statuses: OrderStatus[]): Promise<Order[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(ORDER_SELECT)
+    .in('status', statuses)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as OrderJoinRow[]).map(mapOrder);
+}
+
+/**
+ * Fait évoluer le statut d'une commande via la RPC `set_order_status` (vérifie
+ * l'appartenance au restaurant et n'autorise que les transitions valides côté serveur).
+ * `reason` obligatoire pour un refus (`annulee`).
+ */
+export async function setOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  reason?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_order_status', {
+    p_order_id: orderId,
+    p_new_status: status,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
 }

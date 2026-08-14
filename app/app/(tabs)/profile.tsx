@@ -107,6 +107,15 @@ export default function ProfileScreen() {
           </Pressable>
         </Card>
 
+        <Pressable style={styles.partner} onPress={() => router.push('/role-select')}>
+          <Icon name="storefront" size={22} color={colors.secondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.partnerLabel}>Espace partenaire</Text>
+            <Text style={styles.partnerSub}>Restaurant ou livreur ? Gérer / demander l'accès.</Text>
+          </View>
+          <Icon name="chevron_right" size={20} color={colors.textFaint} />
+        </Pressable>
+
         <Pressable style={styles.logout} onPress={handleSignOut}>
           <Icon name="logout" size={20} color={colors.primary} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
@@ -167,6 +176,19 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   logoutText: { fontFamily: fonts.bold, fontSize: 15, color: colors.primary },
+  partner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.tile,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    marginTop: 20,
+  },
+  partnerLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  partnerSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   version: {
     textAlign: 'center',
     fontFamily: fonts.mono,

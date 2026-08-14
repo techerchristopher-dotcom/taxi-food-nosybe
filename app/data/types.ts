@@ -11,6 +11,23 @@
 
 export type PaymentMethod = 'cb' | 'especes' | 'orange_money';
 
+/** Rôles applicatifs (multi-rôle : un compte peut être client ET restaurant, etc.). */
+export type AppRole = 'client' | 'restaurant' | 'livreur';
+export type RoleStatus = 'pending' | 'active' | 'revoked';
+export type RoleEntry = { role: AppRole; status: RoleStatus };
+
+/** Mode d'usage courant choisi sur l'écran de sélection (persisté localement). */
+export type AppMode = 'client' | 'restaurant';
+
+/** Motifs de refus proposés au restaurant (liste rapide + précision libre optionnelle). */
+export const REFUSAL_REASONS = [
+  'Rupture de stock',
+  'Fermé exceptionnellement',
+  'Trop de commandes',
+  'Article indisponible',
+  'Hors zone de livraison',
+] as const;
+
 export type OrderStatus =
   | 'recue'
   | 'confirmee'
@@ -173,6 +190,12 @@ export type Order = {
   addressDetail: string;
   createdLabel: string;
   etaLabel?: string;
+  /** Motif de refus (rempli quand status = annulee), visible côté client et resto. */
+  cancellationReason?: string | null;
+  /** Lien d'itinéraire Google Maps vers la position du client (null si pas de GPS). */
+  mapsUrl?: string | null;
+  /** Téléphone du client sur l'adresse de livraison (pour le restaurant/livreur). */
+  clientPhone?: string | null;
 };
 
 // ---------------------------------------------------------------------------

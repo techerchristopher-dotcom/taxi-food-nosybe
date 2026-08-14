@@ -21,7 +21,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
-import { initialsFromName } from '../data/types';
+import { AppRole, initialsFromName, RoleEntry } from '../data/types';
 
 export type Session = {
   userId: string;
@@ -30,6 +30,11 @@ export type Session = {
   initials: string;
   /** Téléphone : null tant que l'utilisateur ne l'a pas renseigné (1re connexion). */
   phone: string | null;
+  /** Rôles du compte (multi-rôle). Vide pour un client « simple » jamais passé par request_role. */
+  roles: RoleEntry[];
+  /** Restaurant lié si le compte est staff restaurant ACTIF (V1 : un compte = un resto). */
+  restaurantId: string | null;
+  restaurantName: string | null;
 };
 
 /** Deep link de retour de l'OAuth (scheme `taxifood` en natif, origine en web). */
@@ -111,15 +116,27 @@ async function buildSession(): Promise<Session | null> {
   if (!session) return null;
   const user = session.user;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, email, phone')
-    .eq('id', user.id)
-    .maybeSingle();
+  // Profil + rôles + restaurant lié en parallèle.
+  const [{ data: profile }, { data: roleRows }, { data: staffRows }] = await Promise.all([
+    supabase.from('profiles').select('full_name, email, phone').eq('id', user.id).maybeSingle(),
+    supabase.from('user_roles').select('role, status'),
+    supabase.from('restaurant_staff').select('restaurant_id, restaurants ( name )'),
+  ]);
 
   const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
   const fullName = profile?.full_name ?? meta.full_name ?? meta.name ?? 'Client';
   const email = profile?.email ?? user.email ?? '';
+
+  const roles = (roleRows ?? []) as RoleEntry[];
+  const hasActiveRestaurant = roles.some((r) => r.role === 'restaurant' && r.status === 'active');
+  // Le lien staff n'est retenu que si le rôle restaurant est ACTIF (sinon pas d'accès).
+  // L'embed `restaurants` peut arriver en objet ou en tableau selon l'inférence — on normalise.
+  const staff = (staffRows ?? []) as unknown as {
+    restaurant_id: string;
+    restaurants: { name: string } | { name: string }[] | null;
+  }[];
+  const link = hasActiveRestaurant ? staff[0] : undefined;
+  const linkRestaurant = Array.isArray(link?.restaurants) ? link?.restaurants[0] : link?.restaurants;
 
   return {
     userId: user.id,
@@ -127,7 +144,21 @@ async function buildSession(): Promise<Session | null> {
     email,
     initials: initialsFromName(fullName),
     phone: profile?.phone ?? null,
+    roles,
+    restaurantId: link?.restaurant_id ?? null,
+    restaurantName: linkRestaurant?.name ?? null,
   };
+}
+
+/**
+ * Demande un rôle (`request_role`) : `client` s'active tout de suite, `restaurant`/
+ * `livreur` restent `pending` jusqu'à validation manuelle de l'admin. Renvoie la session
+ * rafraîchie (rôles à jour).
+ */
+export async function requestRole(role: AppRole): Promise<Session | null> {
+  const { error } = await supabase.rpc('request_role', { p_role: role });
+  if (error) throw error;
+  return buildSession();
 }
 
 export async function signOut(): Promise<void> {

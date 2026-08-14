@@ -67,6 +67,7 @@ export default function OrderTrackingScreen() {
     );
   }
 
+  const cancelled = order.status === 'annulee';
   const step = statusStep(order.status);
   const head = STEPS[step];
 
@@ -85,15 +86,29 @@ export default function OrderTrackingScreen() {
           </View>
         </View>
         <View style={styles.statusBanner}>
-          <Icon name={head.icon} size={26} color={colors.accent} />
+          <Icon name={cancelled ? 'cancel' : head.icon} size={26} color={cancelled ? colors.primary : colors.accent} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusTitle}>{head.title}</Text>
-            <Text style={styles.statusSub}>{head.head}</Text>
+            <Text style={styles.statusTitle}>{cancelled ? 'Commande refusée' : head.title}</Text>
+            <Text style={styles.statusSub}>
+              {cancelled
+                ? (order.cancellationReason ?? "Le restaurant n'a pas pu honorer cette commande.")
+                : head.head}
+            </Text>
           </View>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        {cancelled ? (
+          <Card style={styles.cancelledCard}>
+            <Icon name="cancel" size={22} color={colors.dangerText} />
+            <Text style={styles.cancelledTitle}>Commande refusée par le restaurant</Text>
+            {order.cancellationReason ? (
+              <Text style={styles.cancelledReason}>Motif : {order.cancellationReason}</Text>
+            ) : null}
+            <Text style={styles.cancelledHint}>Aucun montant ne vous sera débité.</Text>
+          </Card>
+        ) : (
         <Card style={{ paddingBottom: 6 }}>
           {STEPS.map((s, i) => {
             const done = i <= step;
@@ -124,6 +139,7 @@ export default function OrderTrackingScreen() {
             );
           })}
         </Card>
+        )}
 
         <Card style={{ marginTop: 14 }}>
           <SectionLabel style={{ marginBottom: 12 }}>Récapitulatif</SectionLabel>
@@ -165,6 +181,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
+  cancelledCard: { alignItems: 'center', gap: 6, paddingVertical: 22 },
+  cancelledTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, textAlign: 'center', marginTop: 4 },
+  cancelledReason: { fontFamily: fonts.medium, fontSize: 13, color: colors.dangerText, textAlign: 'center' },
+  cancelledHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
   header: { backgroundColor: colors.ink, paddingHorizontal: spacing.screen, paddingBottom: 20 },
   headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: {

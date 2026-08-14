@@ -9,6 +9,7 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import { listRestaurantOrders, setOrderStatus } from '../../data/api';
 import { Order, OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
+import { useSession } from '../../store/session';
 
 // Statuts « actifs » : demandent une action ou un suivi. en_livraison sort de la liste.
 const ACTIVE: OrderStatus[] = ['recue', 'confirmee', 'en_preparation'];
@@ -16,7 +17,11 @@ const POLL_MS = 12000;
 
 /** Espace restaurant — Commandes en cours (rafraîchissement automatique). */
 export default function RestaurantOrdersScreen() {
-  const { data: orders, loading, reload } = useLoad(() => listRestaurantOrders(ACTIVE), []);
+  const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
+  const { data: orders, loading, reload } = useLoad(
+    () => listRestaurantOrders(ACTIVE, restaurantId),
+    [restaurantId],
+  );
 
   // Rafraîchissement automatique tant que l'écran est monté (pas de push en V1).
   useEffect(() => {

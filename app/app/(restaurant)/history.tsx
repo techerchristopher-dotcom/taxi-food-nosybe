@@ -6,13 +6,15 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import { listRestaurantOrders } from '../../data/api';
 import { OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
+import { useSession } from '../../store/session';
 
 // Commandes terminées : livrées ou refusées. Lecture seule.
 const DONE: OrderStatus[] = ['livree', 'annulee'];
 
 /** Espace restaurant — Historique (plus récent en premier, lecture seule). */
 export default function RestaurantHistoryScreen() {
-  const { data: orders, loading } = useLoad(() => listRestaurantOrders(DONE), []);
+  const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
+  const { data: orders, loading } = useLoad(() => listRestaurantOrders(DONE, restaurantId), [restaurantId]);
   const list = orders ?? [];
 
   return (

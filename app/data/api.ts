@@ -507,14 +507,21 @@ export async function createOrder(input: CreateOrderInput): Promise<{
 // --- Espace restaurant ------------------------------------------------------
 
 /**
- * Commandes du restaurant du compte courant, filtrées par statut. La RLS restreint
- * déjà aux commandes du restaurant lié (staff actif) — pas besoin de filtrer par
- * restaurant côté client. Les plus récentes d'abord.
+ * Commandes d'UN restaurant, filtrées par statut. On filtre explicitement par
+ * `restaurantId` : un compte multi-rôle (restaurant ET client) a deux politiques SELECT
+ * (staff OU propriétaire) qui se cumulent en OR — sans ce filtre, ses commandes passées
+ * en tant que client (y compris chez d'autres restaurants) fuiteraient dans la liste, et
+ * toute action dessus serait refusée par `set_order_status`. Les plus récentes d'abord.
  */
-export async function listRestaurantOrders(statuses: OrderStatus[]): Promise<Order[]> {
+export async function listRestaurantOrders(
+  statuses: OrderStatus[],
+  restaurantId: string,
+): Promise<Order[]> {
+  if (!restaurantId) return [];
   const { data, error } = await supabase
     .from('orders')
     .select(ORDER_SELECT)
+    .eq('restaurant_id', restaurantId)
     .in('status', statuses)
     .order('created_at', { ascending: false });
   if (error) throw error;

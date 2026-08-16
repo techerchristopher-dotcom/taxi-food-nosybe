@@ -1,8 +1,13 @@
-# Déploiement Netlify du dashboard admin (Next.js).
-# Créer un site Netlify pointant sur ce dossier (base directory = "admin").
-# Netlify installe automatiquement @netlify/plugin-nextjs en détectant Next.
+# Déploiement Netlify du dashboard admin (Next.js exporté en statique — output: 'export').
+# Base directory = "admin". Site statique : aucun plugin/runtime Next requis.
 # Variables d'env à définir dans Netlify (Site settings → Environment variables) :
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "out"
+
+# SPA fallback (routing client).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

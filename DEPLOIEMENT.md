@@ -1,5 +1,20 @@
 # Déploiement — Taxi Food (Nosy Be)
 
+## ✅ En ligne (déployé via la CLI Netlify)
+
+- **App (PWA)** : https://taxi-food-nosybe.netlify.app — à ouvrir sur ton téléphone → « Ajouter à l'écran d'accueil ».
+- **Dashboard admin** : https://taxi-food-admin-nosybe.netlify.app — réservé au compte rôle `admin`.
+
+⚠️ **Dernière étape pour que le login Google marche sur ces URLs** — dans Supabase :
+*Authentication → URL Configuration → Redirect URLs*, ajouter :
+`https://taxi-food-nosybe.netlify.app` et `https://taxi-food-admin-nosybe.netlify.app`.
+Tant que ce n'est pas fait, « Continuer avec Google » échoue au retour.
+
+**Redéployer** (après un changement) : `cd app && npx expo export -p web && netlify deploy --prod --dir=dist --site=taxi-food-nosybe`
+pour l'app ; `cd admin && npm run build && netlify deploy --prod --dir=out --site=taxi-food-admin-nosybe` pour l'admin.
+
+---
+
 Deux surfaces web, **même dépôt**, **même projet Supabase** (`bmdveawomizjpiebgtkj`), deux
 sites Netlify distincts (chacun avec son *base directory*). Aucune des deux ne dépend du
 compte Apple/Google Developer : elles tournent dans le navigateur (ordinateur **et téléphone**).

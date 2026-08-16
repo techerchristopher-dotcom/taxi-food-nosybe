@@ -8,6 +8,9 @@ type DeliveredRow = {
   restaurant_id: string;
   subtotal: number;
   delivery_fee: number;
+  total: number;
+  payment_method: string;
+  courier_id: string | null;
   commission_amount: number | null;
   commission_rate: number | null;
 };
@@ -39,6 +42,7 @@ export function Report() {
   const [rows, setRows] = useState<DeliveredRow[]>([]);
   const [restos, setRestos] = useState<Resto[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [courierNames, setCourierNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export function Report() {
     const [o, r, s] = await Promise.all([
       supabase
         .from('orders')
-        .select('restaurant_id, subtotal, delivery_fee, commission_amount, commission_rate')
+        .select('restaurant_id, subtotal, delivery_fee, total, payment_method, courier_id, commission_amount, commission_rate')
         .eq('status', 'livree')
         .gte('delivered_at', startISO)
         .lte('delivered_at', endISO),
@@ -64,9 +68,19 @@ export function Report() {
     if (o.error || r.error || s.error) {
       setErr(o.error?.message || r.error?.message || s.error?.message || 'Erreur');
     } else {
-      setRows((o.data ?? []) as DeliveredRow[]);
+      const orderRows = (o.data ?? []) as DeliveredRow[];
+      setRows(orderRows);
       setRestos((r.data ?? []) as Resto[]);
       setSettlements((s.data ?? []) as Settlement[]);
+      const ids = Array.from(new Set(orderRows.map((x) => x.courier_id).filter(Boolean) as string[]));
+      if (ids.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, full_name').in('id', ids);
+        const map: Record<string, string> = {};
+        for (const p of (profs ?? []) as { id: string; full_name: string | null }[]) map[p.id] = p.full_name ?? '—';
+        setCourierNames(map);
+      } else {
+        setCourierNames({});
+      }
     }
     setLoading(false);
   }, [start, end]);
@@ -105,6 +119,22 @@ export function Report() {
     ),
     [lines],
   );
+
+  // Livreurs salariés → ils te remettent 100% du cash encaissé. Ta marge = commission + frais
+  // de livraison (les salaires sont gérés hors app).
+  const margin = totals.commission + totals.deliveryFees;
+
+  const courierCash = useMemo(() => {
+    const map = new Map<string, { count: number; cash: number }>();
+    for (const row of rows) {
+      if (!row.courier_id || row.payment_method !== 'especes') continue;
+      const cur = map.get(row.courier_id) ?? { count: 0, cash: 0 };
+      cur.count += 1;
+      cur.cash += row.total;
+      map.set(row.courier_id, cur);
+    }
+    return Array.from(map.entries()).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.cash - a.cash);
+  }, [rows]);
 
   async function settle(l: Line) {
     const input = window.prompt(`Montant réellement versé à ${l.name} (net calculé : ${l.net}) :`, String(l.net));
@@ -157,6 +187,7 @@ export function Report() {
         <div className="stat"><div className="label">Ma commission</div><div className="value">{formatAr(totals.commission)}</div></div>
         <div className="stat"><div className="label">Frais de livraison</div><div className="value">{formatAr(totals.deliveryFees)}</div></div>
         <div className="stat"><div className="label">À reverser (net)</div><div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div></div>
+        <div className="stat"><div className="label">Ma marge (comm. + livraison)</div><div className="value" style={{ color: 'var(--green)' }}>{formatAr(margin)}</div></div>
       </div>
 
       {err ? <div className="card" style={{ marginBottom: 16, color: 'var(--red)' }}>Erreur : {err}</div> : null}
@@ -197,6 +228,29 @@ export function Report() {
             </tbody>
           </table>
         )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Cash à remettre par livreur (espèces)</h2>
+        {courierCash.length === 0 ? (
+          <div className="empty">Aucune livraison en espèces sur cette période.</div>
+        ) : (
+          <table>
+            <thead><tr><th>Livreur</th><th className="num">Livraisons</th><th className="num">Cash encaissé (à te remettre)</th></tr></thead>
+            <tbody>
+              {courierCash.map((c) => (
+                <tr key={c.id}>
+                  <td>{courierNames[c.id] ?? '—'}</td>
+                  <td className="num">{c.count}</td>
+                  <td className="num" style={{ fontWeight: 700 }}>{formatAr(c.cash)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+          Livreurs salariés : ils te remettent l'intégralité du cash encaissé. Leur salaire est géré hors application.
+        </p>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

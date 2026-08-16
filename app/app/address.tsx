@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { Icon } from '../components/Icon';
 import { SectionLabel } from '../components/primitives';
@@ -38,6 +38,24 @@ export default function AddressScreen() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number; capturedAt: string } | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [newMode, setNewMode] = useState(false);
+
+  // Pulsation du bouton « Partager ma position » tant qu'aucune position n'est captée,
+  // pour signaler au client qu'il doit appuyer dessus.
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (coords || gpsStatus === 'loading') {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.45, duration: 650, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulse, { toValue: 1, duration: 650, easing: Easing.inOut(Easing.ease), useNativeDriver: Platform.OS !== 'web' }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [coords, gpsStatus, pulse]);
 
   async function captureLocation() {
     setNewMode(true);
@@ -121,24 +139,31 @@ export default function AddressScreen() {
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* ===== POSITION GPS — action principale ===== */}
         {!coords ? (
-          <Pressable
-            style={[styles.gpsHero, gpsStatus === 'error' && styles.gpsHeroError]}
-            onPress={captureLocation}
-            disabled={gpsStatus === 'loading'}
+          <Animated.View
+            style={{
+              opacity: pulse,
+              transform: [{ scale: pulse.interpolate({ inputRange: [0.45, 1], outputRange: [0.985, 1] }) }],
+            }}
           >
-            {gpsStatus === 'loading' ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <>
-                <Icon name="my_location" size={30} color={colors.white} />
-                <Text style={styles.gpsHeroTitle}>Partager ma position</Text>
-                <Text style={styles.gpsHeroSub}>
-                  Obligatoire pour être livré — le livreur vous trouve grâce à votre position
-                  (pas d'adressage postal à Nosy Be).
-                </Text>
-              </>
-            )}
-          </Pressable>
+            <Pressable
+              style={[styles.gpsHero, gpsStatus === 'error' && styles.gpsHeroError]}
+              onPress={captureLocation}
+              disabled={gpsStatus === 'loading'}
+            >
+              {gpsStatus === 'loading' ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <>
+                  <Icon name="my_location" size={30} color={colors.white} />
+                  <Text style={styles.gpsHeroTitle}>Partager ma position</Text>
+                  <Text style={styles.gpsHeroSub}>
+                    Obligatoire pour être livré — le livreur vous trouve grâce à votre position
+                    (pas d'adressage postal à Nosy Be).
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </Animated.View>
         ) : (
           <View style={styles.gpsOk}>
             <View style={styles.gpsOkTop}>

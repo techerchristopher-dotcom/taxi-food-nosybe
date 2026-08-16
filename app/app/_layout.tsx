@@ -29,7 +29,10 @@ function Splash() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  // On charge les polices, mais on NE bloque PAS le rendu dessus : sur réseau lent
+  // (Nosy Be), attendre les 8 fichiers fige l'app sur le splash. Elles s'appliquent
+  // dès qu'elles arrivent (repli système en attendant).
+  useFonts({
     Archivo_400Regular,
     Archivo_500Medium,
     Archivo_600SemiBold,
@@ -50,7 +53,7 @@ export default function RootLayout() {
     hydrateCart();
   }, [hydrateSession, hydrateCart]);
 
-  const ready = fontsLoaded && !sessionLoading && cartHydrated;
+  const ready = !sessionLoading && cartHydrated;
   if (!ready) return <Splash />;
 
   return (

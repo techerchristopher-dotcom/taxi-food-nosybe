@@ -18,6 +18,7 @@
  * Authentication → URL Configuration → Redirect URLs (ex. `taxifood://*`, et l'URL de dev
  * `exp://...` si test en Expo Go). Il est loggé au lancement du flux pour être recopié.
  */
+import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
@@ -91,7 +92,19 @@ export async function createSessionFromUrl(url: string): Promise<Session | null>
  * L'obtention et l'échange du code se font ici ; l'écran n'a qu'à appeler cette fonction.
  */
 export async function signInWithGoogle(): Promise<Session | null> {
-  // Utile au diagnostic : l'URI à autoriser dans Supabase (Redirect URLs).
+  // WEB / PWA : redirection pleine page vers Google (pas de fenêtre d'auth séparée, qui
+  // sort de la PWA sur iOS et ne revient jamais). Au retour sur l'origine, supabase-js
+  // échange le `code` (detectSessionInUrl) et onAuthChange met la session à jour.
+  if (Platform.OS === 'web') {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw error;
+    return null; // la page est en train de rediriger ; la session arrive au retour.
+  }
+
+  // NATIF : on ouvre un onglet d'auth et on capte le deep link de retour.
   console.log('[auth] redirectTo =', redirectTo);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -106,6 +119,20 @@ export async function signInWithGoogle(): Promise<Session | null> {
   }
   // 'cancel' / 'dismiss' : l'utilisateur a fermé la fenêtre.
   return null;
+}
+
+/**
+ * S'abonne aux changements d'état d'auth Supabase (utile sur web : après la redirection
+ * OAuth, la session est établie au chargement — on la propage au store).
+ */
+export function onAuthChange(cb: (session: Session | null) => void) {
+  return supabase.auth.onAuthStateChange(async (event) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+      cb(await buildSession());
+    } else if (event === 'SIGNED_OUT') {
+      cb(null);
+    }
+  });
 }
 
 /** Construit la session applicative à partir de l'utilisateur Auth + sa ligne profiles. */

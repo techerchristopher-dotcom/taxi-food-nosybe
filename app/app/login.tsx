@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
@@ -25,6 +25,9 @@ export default function LoginScreen() {
   // on finalise la session à partir de l'URL entrante.
   const incomingUrl = Linking.useURL();
   useEffect(() => {
+    // Sur web, supabase-js (detectSessionInUrl) échange déjà le code du retour OAuth :
+    // ne pas le refaire ici (double échange → erreur).
+    if (Platform.OS === 'web') return;
     if (!incomingUrl || !/[?#].*(code|access_token)=/.test(incomingUrl)) return;
     void (async () => {
       try {

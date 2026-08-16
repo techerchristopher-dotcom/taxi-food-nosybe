@@ -9,7 +9,7 @@
  * La session Auth est persistée avec AsyncStorage et rafraîchie automatiquement.
  */
 import 'react-native-url-polyfill/auto';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
@@ -30,8 +30,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     // Flux OAuth mobile : PKCE (échange d'un `code` contre une session).
     flowType: 'pkce',
-    // Le retour d'OAuth est traité manuellement via un deep link (voir lib/auth.ts).
-    detectSessionInUrl: false,
+    // Natif : retour OAuth traité manuellement via deep link (voir lib/auth.ts).
+    // Web/PWA : redirection pleine page → supabase-js échange le `code` de l'URL au retour.
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
 

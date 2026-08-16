@@ -14,6 +14,9 @@ import type { AppMode, AppRole } from '../data/types';
 
 const MODE_KEY = 'tf_mode';
 
+// Abonnement unique aux changements d'auth (récupère la session au retour OAuth web).
+let authSubscribed = false;
+
 type SessionState = {
   session: Session | null;
   loading: boolean;
@@ -44,6 +47,12 @@ export const useSession = create<SessionState>((set) => ({
       AsyncStorage.getItem(MODE_KEY),
     ]);
     set({ session, mode: (mode as AppMode | null) ?? null, loading: false });
+    // Sur web, le retour de la redirection OAuth établit la session au chargement :
+    // on la propage ici (sinon l'écran reste bloqué sur le login).
+    if (!authSubscribed) {
+      authSubscribed = true;
+      auth.onAuthChange((s) => set({ session: s, loading: false }));
+    }
   },
   refresh: async () => {
     const session = await auth.getSession();

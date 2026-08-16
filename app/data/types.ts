@@ -200,6 +200,9 @@ export type Order = {
   courierId?: string | null;
   /** true dès que le livreur a récupéré la commande au restaurant (picked_up_at non nul). */
   pickedUp?: boolean;
+  /** Nom/téléphone du livreur assigné (visible côté restaurant et client). */
+  courierName?: string | null;
+  courierPhone?: string | null;
 };
 
 // ---------------------------------------------------------------------------

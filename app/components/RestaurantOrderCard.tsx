@@ -74,6 +74,22 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
         </View>
       </View>
 
+      {order.courierId ? (
+        <View style={styles.courierRow}>
+          <Icon name="two_wheeler" size={16} color={colors.textDark} />
+          <Text style={styles.courierText}>
+            Livreur : {order.courierName ?? '—'}
+            {order.pickedUp ? ' · récupérée' : ''}
+          </Text>
+          {order.courierPhone ? (
+            <Pressable style={styles.chip} onPress={() => Linking.openURL(`tel:${order.courierPhone}`)}>
+              <Icon name="call" size={14} color={colors.ink} />
+              <Text style={styles.chipText}>{order.courierPhone}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
       {order.status === 'annulee' && order.cancellationReason ? (
         <View style={styles.reason}>
           <Icon name="info" size={16} color={colors.dangerText} />
@@ -135,5 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerBg,
   },
   reasonText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText },
+  courierRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+  courierText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.textDark },
   footer: { marginTop: 14, gap: 10 },
 });

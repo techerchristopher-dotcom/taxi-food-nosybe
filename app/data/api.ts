@@ -439,7 +439,26 @@ export async function getOrderById(id: string): Promise<Order | null> {
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? mapOrder(data as unknown as OrderJoinRow) : null;
+  if (!data) return null;
+  const [enriched] = await attachCourierProfiles([mapOrder(data as unknown as OrderJoinRow)]);
+  return enriched;
+}
+
+/**
+ * Renseigne courierName/courierPhone à partir des profils des livreurs assignés.
+ * La RLS n'autorise cette lecture qu'au client de la commande et au staff du restaurant.
+ */
+async function attachCourierProfiles(orders: Order[]): Promise<Order[]> {
+  const ids = Array.from(new Set(orders.map((o) => o.courierId).filter(Boolean) as string[]));
+  if (ids.length === 0) return orders;
+  const { data } = await supabase.from('profiles').select('id, full_name, phone').in('id', ids);
+  const map = new Map(
+    ((data ?? []) as { id: string; full_name: string | null; phone: string | null }[]).map((p) => [p.id, p]),
+  );
+  return orders.map((o) => {
+    const p = o.courierId ? map.get(o.courierId) : undefined;
+    return p ? { ...o, courierName: p.full_name ?? null, courierPhone: p.phone ?? null } : o;
+  });
 }
 
 /** Statut seul (pour le rafraîchissement périodique de l'écran de suivi). */
@@ -529,7 +548,7 @@ export async function listRestaurantOrders(
     .in('status', statuses)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data as unknown as OrderJoinRow[]).map(mapOrder);
+  return attachCourierProfiles((data as unknown as OrderJoinRow[]).map(mapOrder));
 }
 
 /**

@@ -85,7 +85,9 @@ export default function OrderTrackingScreen() {
     ? (order.cancellationReason ?? "Le restaurant n'a pas pu honorer cette commande.")
     : enLivraison
       ? order.pickedUp
-        ? 'Un livreur a récupéré votre commande et arrive.'
+        ? order.courierName
+          ? `${order.courierName} a récupéré votre commande et arrive.`
+          : 'Un livreur a récupéré votre commande et arrive.'
         : 'Votre commande est prête — un livreur va la prendre en charge.'
       : head.head;
 

@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import type { CSSProperties } from 'react';
 import { formatAr, minutesSince, PAYMENT_LABEL, STATUS_LABEL, timeLabel } from '../lib/util';
+
+const fInp: CSSProperties = {
+  background: 'var(--panel-2)', border: '1px solid var(--border)', color: 'var(--text)',
+  padding: '6px 10px', borderRadius: 8, fontSize: 13,
+};
 
 const POLL_MS = 10000;
 const LATE_RECUE_MIN = 10; // reçue depuis > 10 min
@@ -41,6 +47,9 @@ export function Realtime() {
   const [couriers, setCouriers] = useState<CourierRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
+  const [fResto, setFResto] = useState('');
+  const [fStatus, setFStatus] = useState('');
+  const [fSearch, setFSearch] = useState('');
 
   const load = useCallback(async () => {
     const [o, c] = await Promise.all([
@@ -81,6 +90,14 @@ export function Realtime() {
   const activeCourier = (uid: string) =>
     orders.find((o) => o.courier_id === uid && o.status === 'en_livraison') ?? null;
 
+  const restaurantNames = Array.from(new Set(orders.map((o) => restoName(o.restaurants)))).sort();
+  const filtered = orders.filter(
+    (o) =>
+      (!fResto || restoName(o.restaurants) === fResto) &&
+      (!fStatus || o.status === fStatus) &&
+      (!fSearch || o.order_number.toLowerCase().includes(fSearch.toLowerCase())),
+  );
+
   return (
     <>
       <div className="stat-row">
@@ -95,9 +112,20 @@ export function Realtime() {
 
       <div className="grid cols-2">
         <div className="card">
-          <h2>Commandes en cours</h2>
-          {orders.length === 0 ? (
-            <div className="empty">Aucune commande active.</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+            <h2 style={{ margin: 0, flex: 1 }}>Commandes en cours</h2>
+            <input placeholder="N° commande…" value={fSearch} onChange={(e) => setFSearch(e.target.value)} style={fInp} />
+            <select value={fResto} onChange={(e) => setFResto(e.target.value)} style={fInp}>
+              <option value="">Tous restaurants</option>
+              {restaurantNames.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} style={fInp}>
+              <option value="">Tous statuts</option>
+              {['recue', 'confirmee', 'en_preparation', 'en_livraison'].map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+            </select>
+          </div>
+          {filtered.length === 0 ? (
+            <div className="empty">Aucune commande.</div>
           ) : (
             <table>
               <thead>
@@ -106,7 +134,7 @@ export function Realtime() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => (
+                {filtered.map((o) => (
                   <tr key={o.id}>
                     <td>{o.order_number}</td>
                     <td>{restoName(o.restaurants)}</td>

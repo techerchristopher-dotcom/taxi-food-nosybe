@@ -31,6 +31,8 @@ export default function ProductDetailScreen() {
   // Sélections : { [groupId]: optionId[] }.
   const [sel, setSel] = useState<Record<string, string[]>>({});
   const [conflict, setConflict] = useState(false);
+  // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
+  const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
 
   if (loading && !product) {
     return (
@@ -125,28 +127,33 @@ export default function ProductDetailScreen() {
                   </Text>
                 </View>
                 {!single ? <Text style={styles.groupHint}>Jusqu'à {g.maxSelect} au choix</Text> : null}
-                <View style={styles.groupBox}>
-                  {g.options.map((o, i) => {
+                <View style={styles.chipRow}>
+                  {g.options.map((o) => {
                     const selected = cur.includes(o.id);
+                    const hasThumb = !!o.photoUrl && !imgFailed[o.id];
                     return (
                       <Pressable
                         key={o.id}
                         onPress={() => toggle(g, o.id)}
-                        style={[styles.optRow, i > 0 && styles.optBorder]}
+                        style={[styles.chip, selected && styles.chipSelected]}
                       >
-                        <Text style={styles.optName}>{o.name}</Text>
-                        {o.priceDelta > 0 ? (
-                          <Text style={styles.optPrice}>+ {formatAr(o.priceDelta)}</Text>
+                        {hasThumb ? (
+                          <View style={styles.chipThumbWrap}>
+                            <Image
+                              source={{ uri: o.photoUrl! }}
+                              resizeMode="cover"
+                              style={styles.chipThumb}
+                              onError={() => setImgFailed((f) => ({ ...f, [o.id]: true }))}
+                            />
+                          </View>
                         ) : null}
-                        <Icon
-                          name={
-                            single
-                              ? selected ? 'radio_button_checked' : 'radio_button_unchecked'
-                              : selected ? 'check_box' : 'check_box_outline_blank'
-                          }
-                          size={22}
-                          color={selected ? colors.primary : colors.borderStrong}
-                        />
+                        {selected ? <Icon name="check" size={14} color={colors.white} /> : null}
+                        <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{o.name}</Text>
+                        {o.priceDelta > 0 ? (
+                          <Text style={[styles.chipPrice, selected && styles.chipPriceSelected]}>
+                            + {formatAr(o.priceDelta)}
+                          </Text>
+                        ) : null}
                       </Pressable>
                     );
                   })}
@@ -222,17 +229,35 @@ const styles = StyleSheet.create({
   badgeReq: { backgroundColor: colors.warnBg, color: colors.warnTextAlt },
   badgeOpt: { backgroundColor: colors.fieldBg, color: colors.textMuted },
   groupHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 4 },
-  groupBox: {
-    marginTop: 10,
-    borderRadius: radius.lg,
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  chip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: radius.tile,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipLabel: { fontFamily: fonts.medium, fontSize: 14, color: colors.ink },
+  chipLabelSelected: { color: colors.white },
+  chipPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary },
+  chipPriceSelected: { color: colors.white },
+  chipThumbWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
+    marginLeft: -4,
   },
-  optRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 13 },
-  optBorder: { borderTopWidth: 1, borderTopColor: colors.divider },
-  optName: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink },
-  optPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary },
+  chipThumb: { width: '100%', height: '100%' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.divider },
   stepperWrap: {
     borderWidth: 1.5,

@@ -56,6 +56,7 @@ export type ProductOption = {
   priceDelta: number; // 0 = gratuit, >0 = supplément payant (ariary)
   isAvailable: boolean;
   sortOrder: number;
+  photoUrl?: string | null; // vignette de l'option (ex. sauces), null si absente
 };
 
 /** Un groupe d'options d'un produit (ex. « Choix de la viande », obligatoire, 1 choix). */
@@ -171,6 +172,7 @@ export type OrderItemSnapshot = {
   name: string;
   quantity: number;
   unitPrice: number;
+  photoUrl?: string | null;
   options?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[];
 };
 
@@ -180,6 +182,7 @@ export type Order = {
   restaurantId: string;
   restaurantName: string;
   restaurantInitials: string;
+  restaurantLogoUrl?: string | null;
   items: OrderItemSnapshot[];
   subtotal: number;
   deliveryFee: number;

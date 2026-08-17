@@ -74,6 +74,7 @@ type OptionRow = {
   price_delta: number;
   is_available: boolean;
   sort_order: number;
+  photo_url: string | null;
 };
 
 type OptionGroupRow = {
@@ -131,6 +132,7 @@ function mapOption(o: OptionRow): ProductOption {
     priceDelta: o.price_delta,
     isAvailable: o.is_available,
     sortOrder: o.sort_order,
+    photoUrl: o.photo_url,
   };
 }
 
@@ -272,14 +274,19 @@ export async function getProductDetail(id: string): Promise<{
   const [groupsRes, restaurant] = await Promise.all([
     supabase
       .from('product_option_groups')
-      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order )')
+      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, photo_url )')
       .eq('product_id', id)
       .order('sort_order', { ascending: true }),
     getRestaurant((data as ProductRow).restaurant_id),
   ]);
   if (groupsRes.error) throw groupsRes.error;
 
-  const groups = (groupsRes.data as unknown as OptionGroupRow[]).map(mapOptionGroup);
+  const groups = (groupsRes.data as unknown as OptionGroupRow[])
+    .map(mapOptionGroup)
+    .sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.sortOrder - b.sortOrder;
+    });
   const product = mapProduct(data as ProductRow, groups.length > 0);
   return { product, restaurant, groups };
 }
@@ -350,7 +357,7 @@ type OrderJoinRow = {
   courier_id: string | null;
   picked_up_at: string | null;
   created_at: string;
-  restaurants: { name: string } | null;
+  restaurants: { name: string; logo_url: string | null } | null;
   addresses: {
     label: string | null;
     zone: string;
@@ -375,7 +382,7 @@ type OrderJoinRow = {
 
 const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
-  'restaurants ( name ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
+  'restaurants ( name, logo_url ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
@@ -391,6 +398,7 @@ function mapOrder(o: OrderJoinRow): Order {
     restaurantId: o.restaurant_id,
     restaurantName,
     restaurantInitials: initialsFromName(restaurantName),
+    restaurantLogoUrl: o.restaurants?.logo_url ?? null,
     items: (o.order_items ?? []).map((it) => ({
       productId: it.product_id ?? '',
       name: it.product_name_snapshot,
@@ -441,6 +449,24 @@ export async function getOrderById(id: string): Promise<Order | null> {
   if (error) throw error;
   if (!data) return null;
   const [enriched] = await attachCourierProfiles([mapOrder(data as unknown as OrderJoinRow)]);
+  if (!enriched) return null;
+  // Enrichit les photos produit (non stockées dans le snapshot).
+  const productIds = enriched.items.map((i) => i.productId).filter(Boolean);
+  if (productIds.length > 0) {
+    const { data: photos } = await supabase
+      .from('products')
+      .select('id, photo_url')
+      .in('id', productIds);
+    if (photos) {
+      const pm = new Map(
+        (photos as { id: string; photo_url: string | null }[]).map((p) => [p.id, p.photo_url]),
+      );
+      return {
+        ...enriched,
+        items: enriched.items.map((it) => ({ ...it, photoUrl: pm.get(it.productId) ?? null })),
+      };
+    }
+  }
   return enriched;
 }
 

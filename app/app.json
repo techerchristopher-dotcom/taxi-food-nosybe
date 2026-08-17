@@ -43,6 +43,13 @@
           "locationWhenInUsePermission": "Taxi Food utilise ta position pour enregistrer précisément ton adresse de livraison."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b6df484c-a629-42ec-8a47-8616b300cdf6"
+      }
+    },
+    "owner": "chris97416"
   }
 }

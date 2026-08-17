@@ -7,8 +7,11 @@ import { ProductThumb } from '../../components/ProductThumb';
 import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
-import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { lineUnitPrice, useCart } from '../../store/cart';
+import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
+import { lineUnitPrice, RestaurantContext, useCart } from '../../store/cart';
+import { useLoad } from '../../lib/useLoad';
+import { getCartSuggestions, Suggestion } from '../../data/suggestions';
+import { Product } from '../../data/types';
 
 /** Écran 05 — Panier (et 05b — état vide). */
 export default function CartScreen() {
@@ -21,9 +24,57 @@ export default function CartScreen() {
   const restaurantInitials = useCart((s) => s.restaurantInitials);
   const setQuantity = useCart((s) => s.setQuantity);
   const remove = useCart((s) => s.remove);
+  const add = useCart((s) => s.add);
+  const deliveryFeeValue = useCart((s) => s.deliveryFeeValue);
   const subtotal = useCart((s) => s.subtotal());
   const deliveryFee = useCart((s) => s.deliveryFee());
   const total = useCart((s) => s.total());
+
+  // Suggestions d'upsell (« faire gonfler le panier ») du restaurant courant.
+  // Les ids en panier servent d'exclusion ET de bascule boisson → dessert : ajouter
+  // une boisson change la clé de dépendance, donc la section se recharge et propose
+  // alors un dessert.
+  const cartProductIds = lines.map((l) => l.product.id);
+  const { data: suggestions } = useLoad(
+    () => getCartSuggestions(restaurantId ?? '', cartProductIds),
+    [restaurantId, cartProductIds.join(',')],
+  );
+
+  // Ajout rapide : on mirroir l'ajout sans option de l'écran restaurant. Un produit
+  // à options passe par sa fiche (comme le [+] du menu) ; boissons/desserts n'en ont
+  // normalement pas → ajout direct au panier du même restaurant (aucun conflit possible).
+  function addSuggestion(s: Suggestion) {
+    if (!restaurantId) return;
+    if (s.hasOptions) {
+      router.push(`/product/${s.id}`);
+      return;
+    }
+    const product: Product = {
+      id: s.id,
+      restaurantId,
+      categoryId: '',
+      name: s.name,
+      description: '',
+      price: s.price,
+      isAvailable: true,
+      photoUrl: s.photoUrl,
+      hasOptions: false,
+    };
+    const ctx: RestaurantContext = {
+      id: restaurantId,
+      name: restaurantName,
+      initials: restaurantInitials,
+      deliveryFee: deliveryFeeValue,
+    };
+    add(product, ctx);
+  }
+
+  const suggestHeading =
+    suggestions?.mode === 'drink'
+      ? 'Ajoute une boisson 🥤'
+      : suggestions?.mode === 'dessert'
+        ? 'Complète avec un dessert'
+        : 'Tu aimeras aussi';
 
   if (lines.length === 0) {
     return (
@@ -95,14 +146,32 @@ export default function CartScreen() {
           ))}
         </View>
 
-        {/* Ajouter d'autres plats */}
-        <Pressable
-          style={styles.addMore}
-          onPress={() => restaurantId && router.push(`/restaurant/${restaurantId}`)}
-        >
-          <Icon name="add" size={20} color={colors.primary} />
-          <Text style={styles.addMoreText}>Ajouter d'autres plats</Text>
-        </Pressable>
+        {/* Suggestions d'upsell — boissons, sinon dessert, sinon autres produits */}
+        {suggestions && suggestions.items.length > 0 ? (
+          <View style={styles.suggestWrap}>
+            <Text style={styles.suggestTitle}>{suggestHeading}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingRight: 4 }}
+            >
+              {suggestions.items.map((s) => (
+                <View key={s.id} style={styles.suggestCard}>
+                  <View>
+                    <ProductThumb uri={s.photoUrl} size={116} radius={radius.tile} />
+                    <Pressable onPress={() => addSuggestion(s)} style={styles.suggestAdd} hitSlop={6}>
+                      <Icon name="add" size={20} color={colors.white} />
+                    </Pressable>
+                  </View>
+                  <Text style={styles.suggestName} numberOfLines={2}>
+                    {s.name}
+                  </Text>
+                  <Text style={styles.suggestPrice}>{formatAr(s.price)}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
         {/* Récapitulatif */}
         <Card style={{ marginTop: 18 }}>
@@ -156,19 +225,36 @@ const styles = StyleSheet.create({
   lineComment: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
   lineFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   linePrice: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
-  addMore: {
-    marginTop: 14,
-    height: 46,
+  suggestWrap: { marginTop: 18 },
+  suggestTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginBottom: 12 },
+  suggestCard: {
+    width: 132,
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    padding: 8,
+    ...shadow.card,
+  },
+  suggestAdd: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 32,
+    height: 32,
     borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    borderStyle: 'dashed',
-    flexDirection: 'row',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    ...shadow.button,
   },
-  addMoreText: { fontFamily: fonts.bold, fontSize: 13, color: colors.textDark },
+  suggestName: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    lineHeight: 17,
+    color: colors.ink,
+    marginTop: 8,
+    minHeight: 34,
+  },
+  suggestPrice: { fontFamily: fonts.bold, fontSize: 14, color: colors.primary, marginTop: 2 },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between' },
   sumLabel: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDark },
   sumValue: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },

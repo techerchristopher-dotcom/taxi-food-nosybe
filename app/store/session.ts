@@ -35,6 +35,8 @@ type SessionState = {
   setMode: (mode: AppMode | null) => Promise<void>;
   /** Demande un rôle (request_role) puis rafraîchit la session. */
   requestRole: (role: AppRole) => Promise<Session | null>;
+  signInWithPhone: (phone: string) => Promise<void>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<Session | null>;
 };
 
 export const useSession = create<SessionState>((set) => ({
@@ -85,6 +87,14 @@ export const useSession = create<SessionState>((set) => ({
   },
   requestRole: async (role: AppRole) => {
     const session = await auth.requestRole(role);
+    if (session) set({ session });
+    return session;
+  },
+  signInWithPhone: async (phone: string) => {
+    await auth.signInWithPhone(phone);
+  },
+  verifyPhoneOtp: async (phone: string, token: string) => {
+    const session = await auth.verifyPhoneOtp(phone, token);
     if (session) set({ session });
     return session;
   },

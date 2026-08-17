@@ -9,6 +9,7 @@ import * as Linking from 'expo-linking';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
 import { googleConfigured } from '../lib/auth';
+import { Icon } from '../components/Icon';
 
 // Nécessaire pour finaliser le retour du navigateur d'authentification.
 WebBrowser.maybeCompleteAuthSession();
@@ -92,22 +93,48 @@ export default function LoginScreen() {
 
         <Pressable
           onPress={loading ? undefined : handleGoogle}
-          style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.9 }]}
         >
           {loading ? (
             <ActivityIndicator color={colors.ink} />
           ) : (
             <>
               <GoogleG />
-              <Text style={styles.googleText}>Continuer avec Google</Text>
+              <Text style={styles.socialText}>Continuer avec Google</Text>
             </>
           )}
         </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/login-phone')}
+          style={({ pressed }) => [styles.socialBtn, { marginTop: 10 }, pressed && { opacity: 0.9 }]}
+        >
+          <View style={styles.phoneIcon}>
+            <Icon name="smartphone" size={20} color={colors.white} />
+          </View>
+          <Text style={styles.socialText}>Continuer avec un numéro</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.socialBtn, styles.fbBtn, { marginTop: 10 }, pressed && { opacity: 0.9 }]}
+        >
+          <FacebookF />
+          <Text style={[styles.socialText, { color: colors.white }]}>Continuer avec Facebook</Text>
+        </Pressable>
+
         <Text style={styles.terms}>
           En continuant, vous acceptez les conditions d'utilisation de Taxi Food.
         </Text>
       </View>
     </View>
+  );
+}
+
+function FacebookF() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path fill="#FFFFFF" d="M13.5 3H10.5C8.015 3 6 5.015 6 7.5V10.5H3V14H6V21H9.5V14H12.5L13 10.5H9.5V7.5C9.5 6.948 9.948 6.5 10.5 6.5H13.5V3Z" />
+    </Svg>
   );
 }
 
@@ -166,7 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     maxWidth: 300,
   },
-  googleBtn: {
+  socialBtn: {
     width: '100%',
     height: 56,
     borderRadius: radius.pill,
@@ -179,7 +206,12 @@ const styles = StyleSheet.create({
     gap: 12,
     ...shadow.card,
   },
-  googleText: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  socialText: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  fbBtn: { backgroundColor: '#1877F2', borderColor: '#1877F2' },
+  phoneIcon: {
+    width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
   terms: {
     fontFamily: fonts.regular,
     fontSize: 11,

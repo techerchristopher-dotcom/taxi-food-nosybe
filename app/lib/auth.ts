@@ -196,6 +196,19 @@ export async function getSession(): Promise<Session | null> {
   return buildSession();
 }
 
+/** Envoie un OTP par SMS (nécessite le provider phone activé dans Supabase). */
+export async function signInWithPhone(phone: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithOtp({ phone });
+  if (error) throw error;
+}
+
+/** Vérifie l'OTP reçu par SMS et retourne la session. */
+export async function verifyPhoneOtp(phone: string, token: string): Promise<Session | null> {
+  const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+  if (error) throw error;
+  return buildSession();
+}
+
 /** Enregistre le numéro de téléphone (saisi une fois après la 1re connexion) dans profiles. */
 export async function setPhone(phone: string): Promise<Session | null> {
   const {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { Icon } from '../components/Icon';
+import { MapPreview } from '../components/MapPreview';
 import { SectionLabel } from '../components/primitives';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
@@ -173,6 +174,8 @@ export default function AddressScreen() {
                 <Text style={styles.gpsOkZone}>{autoZone} · {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}</Text>
               </View>
             </View>
+            <MapPreview latitude={coords.latitude} longitude={coords.longitude} label={autoZone} />
+            <Text style={styles.mapHint}>Appuie sur la carte pour vérifier que le repère est au bon endroit.</Text>
             <Pressable onPress={captureLocation} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
               <Text style={styles.gpsLink}>Actualiser ma position</Text>
             </Pressable>
@@ -312,6 +315,7 @@ const styles = StyleSheet.create({
   gpsErrorBox: { marginTop: 12 },
   gpsErrorText: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 19, color: colors.dangerText },
   gpsLink: { fontFamily: fonts.bold, fontSize: 13, color: colors.primary },
+  mapHint: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 16, color: colors.textMuted, marginTop: -2 },
   fields: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 14, marginTop: 16 },
   fieldLabel: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },
   input: {

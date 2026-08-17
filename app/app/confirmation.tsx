@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { ProductThumb } from '../components/ProductThumb';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
 import { paymentLabel, PaymentMethod } from '../data/types';
 import { getOrderById } from '../data/api';
@@ -36,7 +37,18 @@ export default function ConfirmationScreen() {
       end={{ x: 0.85, y: 1 }}
       style={styles.container}
     >
-      <View style={{ flex: 1, paddingTop: insets.top, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + 12,
+          paddingBottom: 24,
+          paddingHorizontal: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.checkOuter}>
           <View style={styles.checkInner}>
             <Icon name="check" size={44} color={colors.success} />
@@ -48,10 +60,41 @@ export default function ConfirmationScreen() {
         </Text>
 
         <View style={styles.card}>
-          <View style={styles.cardRow}>
-            <Text style={styles.cardLabel}>Commande</Text>
-            <Text style={styles.orderNumber}>#{displayNumber}</Text>
+          {/* Restaurant : le logo réapparaît à la confirmation. */}
+          <View style={styles.restoRow}>
+            <ProductThumb uri={order?.restaurantLogoUrl} size={46} radius={13} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.restoName} numberOfLines={1}>
+                {order?.restaurantName ?? 'Restaurant'}
+              </Text>
+              <Text style={styles.restoNumber}>#{displayNumber}</Text>
+            </View>
           </View>
+
+          {/* Détail des plats et boissons, avec leur visuel. */}
+          {order?.items && order.items.length > 0 ? (
+            <>
+              <View style={styles.cardDivider} />
+              <View style={{ gap: 12 }}>
+                {order.items.map((it, i) => (
+                  <View key={`${it.productId}-${i}`} style={styles.itemRow}>
+                    <ProductThumb uri={it.photoUrl} size={40} radius={10} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemName} numberOfLines={1}>{it.name}</Text>
+                      {it.options && it.options.length > 0 ? (
+                        <Text style={styles.itemOpts} numberOfLines={1}>
+                          {it.options.map((o) => o.name).join(' · ')}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {it.quantity > 1 ? <Text style={styles.itemQty}>×{it.quantity}</Text> : null}
+                    <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
           <View style={styles.cardDivider} />
           <Detail label="Montant" value={formatAr(displayTotal)} valueColor={colors.primary} />
           <Detail
@@ -60,7 +103,7 @@ export default function ConfirmationScreen() {
           />
           {order?.etaLabel ? <Detail label="Livraison estimée" value={order.etaLabel} /> : null}
         </View>
-      </View>
+      </ScrollView>
 
       <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 20) + 14 }]}>
         <ActionButton
@@ -169,6 +212,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   orderNumber: { fontFamily: fonts.monoBold, fontSize: 15, color: colors.ink },
+  restoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  restoName: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink },
+  restoNumber: { fontFamily: fonts.monoBold, fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  itemName: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
+  itemOpts: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  itemQty: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted, marginRight: 2 },
+  itemPrice: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   cardDivider: { height: 1, backgroundColor: colors.divider, marginVertical: 14 },
   detailLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
   detailValue: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },

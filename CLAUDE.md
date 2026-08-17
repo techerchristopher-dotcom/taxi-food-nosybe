@@ -1,6 +1,6 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. Reste à faire : test bout-en-bout sur appareil réel (build EAS, compte Apple Developer en cours), puis mise en service.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. **Build de production iOS opérationnel** : le build n°5 est soumis à TestFlight (voir « Build de production (EAS) » plus bas). Reste à faire : test bout-en-bout sur appareil réel via TestFlight, puis mise en service.
 
 ## Lancer l'app en local
 
@@ -70,26 +70,41 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 - **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
 - **Filtre accueil** = `restaurants.food_types` (Pizza, Tacos, Kebab, Burger, Américain, Panini, Crêpe, Milkshake, Tapas) ; un resto multi-types ressort dans chaque filtre. **Les tags sur la carte resto = les CATÉGORIES actives** (emoji + nom), différent des food types.
 - **Photos** : `products.photo_url` via `ProductThumb`, logos resto via `RestaurantLogo` (image + repli initiales) ; repli propre si `null`/échec, jamais le nom en texte.
-- **GPS OBLIGATOIRE** pour valider une commande (pas d'adressage postal à Nosy Be) : l'écran adresse bloque « Confirmer » tant qu'aucune position n'est captée (`expo-location`) ; refus → réessayer/Réglages, aucun contournement. Adresses enregistrées sans GPS = signalées et bloquées. Utilitaire `getMapsNavigationUrl(lat,lng)` prêt pour un futur back-office livreur.
+- **GPS OBLIGATOIRE** pour valider une commande (pas d'adressage postal à Nosy Be) : l'écran adresse bloque « Confirmer » tant qu'aucune position n'est captée (`expo-location`) ; refus → réessayer/Réglages, aucun contournement. Adresses enregistrées sans GPS = signalées et bloquées. Utilitaire `getMapsNavigationUrl(lat,lng)` prêt pour un futur back-office livreur. Depuis le 2026-08-17, un **aperçu carte cliquable** (`MapPreview`, voir plus bas) permet de vérifier visuellement la position captée.
 
-## Auth Google (⚠️ flux spécifique)
+## Fonctionnalités livrées le 2026-08-17/18 (build n°5, soumis à TestFlight)
 
-- Flux **`supabase.auth.signInWithOAuth`** (PKCE) + `expo-web-browser` + deep link, **PAS** `signInWithIdToken`. Raison : côté Google seul l'URI de callback Supabase est déclaré → c'est le flux médié par Supabase qui marche. Tout est dans `app/lib/auth.ts`.
+- **Options en grille de chips** (`app/app/product/[id].tsx`) : les groupes d'options s'affichent en chips repliables (flexWrap) façon Uber Eats/Deliveroo au lieu de lignes empilées. Sélectionné = fond `colors.primary` + coche blanche ; non sélectionné = bordure fine. Logique de sélection/prix **inchangée**.
+- **Photos de sauces dans les chips** : colonne `product_options.photo_url` (nullable). Vignette ~34px affichée à gauche du libellé quand renseignée (7 sauces à ce jour : Ketchup, Mayonnaise, Andalouse, Algérienne, Blanche, Harissa, Samouraï — bucket Storage `produits`, chemin `sauces/<nom>.png`). Repli silencieux (pas de vignette) si absente ou en échec de chargement.
+- **Groupes d'options obligatoires en premier** : tri appliqué dans `getProductDetail` (`app/data/api.ts`) — corrige l'ordre illogique observé sur les tacos (« sauce supplémentaire » payante affichée avant « sauce au choix » obligatoire), appliqué à tous les produits à options.
+- **Suggestions d'upsell au panier** (`app/data/suggestions.ts`, `app/app/(tabs)/cart.tsx`) : remplace le bouton générique « Ajouter d'autres plats » par de vraies suggestions **du restaurant courant** — une boisson si le panier n'en contient pas encore, sinon un dessert, avec ajout rapide en un tap. Classification par nom **et** emoji de catégorie (la table `categories` n'a pas de colonne « type » — les catégories boisson comme « Bières »/« Softs »/« Cocktails » ne contiennent jamais le mot « boisson »).
+- **Aperçu carte GPS cliquable** (`app/components/MapPreview.tsx`, utilisé dans `app/app/address.tsx`) : tuiles raster **OpenStreetMap** (`tile.openstreetmap.org`) affichées via `<Image>`, **zéro dépendance native, zéro clé API**. Choix fait après échec répété de `npx expo install react-native-maps` (timeouts réseau persistants) — plus léger et sans risque de build pour un simple aperçu. Appui → ouvre l'app de cartes native (Plans iOS / Google Maps). Attribution OSM affichée (obligatoire).
+- **Écran de confirmation illustré** (`app/app/confirmation.tsx`) : le logo du restaurant réapparaît, plus la photo de chaque plat/boisson commandé, dans une `ScrollView` (évite l'overflow avec plusieurs articles).
+- **Connexion par téléphone + bouton Facebook** : voir section Auth ci-dessous.
+
+## Auth (⚠️ flux Google spécifique)
+
+- **Google** — flux **`supabase.auth.signInWithOAuth`** (PKCE) + `expo-web-browser` + deep link, **PAS** `signInWithIdToken`. Raison : côté Google seul l'URI de callback Supabase est déclaré → c'est le flux médié par Supabase qui marche. Tout est dans `app/lib/auth.ts`.
 - Provider Google activé côté Supabase (Client ID + Secret). Redirect URLs Supabase autorisées : `taxifood://*`, `exp://*`, `http://localhost:8081`.
 - **Le login réel ne peut pas être testé par Claude** (saisie d'identifiants Google = action humaine). Vérifié : la chaîne serveur renvoie bien un 302 vers Google.
+- **Téléphone (SMS OTP)**, depuis le 2026-08-17 : écran `app/app/login-phone.tsx`, `signInWithOtp`/`verifyOtp` dans `app/lib/auth.ts`. Fonctionnel côté code ; comme Google, nécessite un humain pour saisir un vrai numéro/code.
+- **Bouton Facebook**, présent sur `app/app/login.tsx` : **volontairement sans câblage** (aucun `onPress`, affichage seul) — décision explicite du 2026-08-17, en attente d'une consigne produit avant de le brancher. Ne pas y toucher sans demande explicite.
 
-## Build de test (EAS) — état
+## Build de production (EAS) — état
 
-- `app/eas.json` : profils `development` (dev client), `preview` (autonome interne), `production`.
-- Bundle ids : iOS `com.chris97416.taxi-food-nosybe`, Android `com.chris97416.taxifoodnosybe` (Android interdit les tirets).
-- `expo-dev-client` installé. `extra.eas.projectId` sera écrit par `eas init` (nécessite `eas login`).
-- **iOS réel** : nécessite un compte **Apple Developer** (en cours de création par Christopher). Commande finale : `cd app && eas build --profile development --platform ios`.
-- **Android** : `eas build --profile development --platform android` marche tout de suite (APK, aucun compte payant).
+- **Compte Apple Developer actif** (Team « jean christopher techer », `CV2FA6NJ75`) ; certificat de distribution + provisioning profile iOS gérés par EAS (Expo server), valides jusqu'à 08/2027.
+- `app/eas.json` : profils `development` (dev client), `preview` (interne), `production` (`distribution: "store"`, `autoIncrement: true` → **chaque build de prod incrémente automatiquement `buildNumber`**, ne jamais le fixer à la main). `appVersionSource: "remote"`.
+- Bundle ids : iOS `com.chris97416.taxi-food-nosybe`, Android `com.chris97416.taxifoodnosybe` (Android interdit les tirets). Soumission App Store Connect : `submit.production.ios.ascAppId = "6802418114"`.
+- **Build n°5** (commit `551d56f`, 2026-08-18) : construit puis **soumis avec succès à TestFlight** (`eas submit`), contient les 6 fonctionnalités listées ci-dessus. En cours de traitement Apple après soumission (~5-10 min habituellement).
+  - ⚠️ Le **build n°4** (commit `3e49a1e`) existe aussi sur EAS mais correspond à un état du code **antérieur** à ces 6 fonctionnalités (lancé manuellement par erreur en parallèle) — ne pas le distribuer aux testeurs.
+- Commandes de référence : `cd app && eas build -p ios --profile production --non-interactive` puis `eas submit -p ios --profile production --id <buildId> --non-interactive`.
+- **Android** : jamais buildé en profil `production` à ce jour ; `eas build --profile development --platform android` marche tout de suite (APK, aucun compte payant requis).
 
 ## Ce qui est vérifié vs pas encore
 
 - ✅ Vérifié en web (lectures publiques, sans login) : accueil/filtres/logos/emojis, menu, configurateur d'options + prix temps réel, panier (clé par produit+options), blocage GPS obligatoire + capture (position simulée), `tsc --noEmit`, bundle web.
-- ⏳ **Non testé** (nécessite un login Google réel, donc un humain) : la connexion de bout en bout, l'écriture réelle en base (`addresses` GPS, `orders`/`order_items`). Tables encore vides. À dérouler sur la build EAS.
+- ✅ Vérifié côté build : `eas build`/`eas submit` production iOS opérationnels de bout en bout (credentials, upload, soumission App Store Connect).
+- ⏳ **Non testé** (nécessite un humain) : la connexion de bout en bout (Google, téléphone), l'écriture réelle en base (`addresses` GPS, `orders`/`order_items`), et le rendu visuel réel des 6 fonctionnalités du build n°5 (chips, vignettes de sauces, carte, écran de confirmation) sur un vrai appareil. Tables encore vides. **À dérouler via TestFlight** dès que le build n°5 est disponible côté Apple.
 
 ## Conventions
 

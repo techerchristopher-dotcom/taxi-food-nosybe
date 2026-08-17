@@ -82,12 +82,38 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 - **Écran de confirmation illustré** (`app/app/confirmation.tsx`) : le logo du restaurant réapparaît, plus la photo de chaque plat/boisson commandé, dans une `ScrollView` (évite l'overflow avec plusieurs articles).
 - **Connexion par téléphone + bouton Facebook** : voir section Auth ci-dessous.
 
+## Corrections du retour build 5 + multilingue (2026-08-18, build n°6)
+
+Retour de test TestFlight sur iPhone, 5 points corrigés + 2 chantiers :
+
+- **A1 — Logo du restaurant au panier** : la colonne est **`restaurants.logo_url`** (et non `photo_url`). Le panier mémorise `restaurantLogoUrl` (`app/store/cart.ts`) et l'affiche via `RestaurantLogo` ; repli initiales inchangé.
+- **A2 — Grille de chips pour TOUS les groupes d'options** : il n'y avait **aucune condition « single-select »** dans le code — le vrai coupable était la **largeur** des chips (contenu + « + 2 000 Ar » ⇒ une seule par ligne). Corrigé par `flexBasis: '47%'`, libellé et prix empilés, coche hors flux.
+- **A3 — Sélecteur d'indicatif pays** (`app/components/PhoneField.tsx`, `app/data/countries.ts`) : drapeau + indicatif, Madagascar par défaut, La Réunion et voisins présents ; placeholder **et** règle de validation dépendants du pays.
+- **A4 — Adresse de livraison précise et éditable** : champ « adresse précise » libre avec exemple concret, éditable **après** la géolocalisation. `formatAddressLine` déduplique zone/label — c'est ce qui affichait « Province d'Antsiranana — Province d'Antsiranana » sur les adresses déjà en base, sans migration de données.
+- **A5 — Carte native** : l'aperçu précédent n'était **ni un webview ni une lib JS**, mais des **tuiles OSM affichées en `<Image>`**. Remplacé par **`react-native-maps`** (`MapSurface.tsx` = natif, `MapSurface.web.tsx` = repli tuiles, résolution par extension de plateforme Metro : le natif ne part jamais dans le bundle web). ⚠️ **Android exigera une clé Google Maps** (`android.config.googleMaps.apiKey` dans `app.json`) ; iOS utilise MapKit, aucune clé.
+
+### Multilingue FR / EN / IT
+
+- `i18next` + `react-i18next` + `expo-localization`. Tout est dans **`app/lib/i18n.ts`** ; dictionnaires dans **`app/locales/{fr,en,it}.json`** (210 clés, parité vérifiée entre les trois).
+- **Français par défaut et langue de repli.** Au 1er lancement on suit la langue du téléphone si elle fait partie des trois. Choix manuel dans **Profil → Langue de l'app** (drapeau + nom), effet immédiat, persisté en AsyncStorage (`taxifood.language`) — donc valable sans compte et conservé après déconnexion. `hydrateLanguage()` est attendu **avant le premier rendu** (`app/app/_layout.tsx`), sinon l'app clignote en français.
+- **Périmètre assumé** : tout le **parcours client** + Profil + connexion/rôles + composants partagés sont traduits. Les espaces **restaurant / livreur / admin restent en français** (arbitrage : ce sont des outils internes, le personnel est francophone). Effet de bord accepté : `statusLabel`/`paymentLabel`/`paymentShort` lisent le singleton i18next, donc les badges de statut et libellés de paiement suivent la langue **même** sur les écrans resto/livreur.
+- ⚠️ **On ne traduit QUE les libellés d'interface.** Noms de restaurants, de produits, d'options, types de plats (filtre accueil) et motif de refus saisi par le restaurant viennent de la base et s'affichent tels quels.
+- Pièges : `closedLabel` était calculé au mapping (`data/api.ts`) donc figé en français — `RestaurantCard` le recalcule maintenant à partir de `opensAt`. Le filtre « Tout » de l'accueil est devenu une sentinelle opaque `'__all__'` (son identifiant ne peut plus servir de libellé).
+
+### Reconnexion des utilisateurs déjà inscrits
+
+- **Diagnostic** : la reconnexion marchait déjà côté Supabase (`verifyOtp` rend bien la session du compte existant). Le bug était en base : le trigger **`handle_new_user` ne recopiait jamais `auth.users.phone` dans `profiles.phone`**. Résultat, `app/index.tsx` voyait `session.phone = null` et renvoyait le client sur l'écran « ton numéro de téléphone » — pour lui redemander le numéro qu'il venait de valider par SMS.
+- **Migration `profile_phone_unique_and_otp_phone_sync`** : trigger corrigé (recopie du numéro vérifié), rattrapage des comptes déjà créés, et **index unique partiel `profiles_phone_unique`** sur les seuls chiffres du numéro (`regexp_replace(phone,'[^0-9]','','g')`) — deux profils ne peuvent plus porter le même numéro. Le trigger **ne recopie pas** un numéro déjà pris : la création de compte ne doit jamais échouer sur l'index.
+- **App** : `buildSession` retombe sur `user.phone` (numéro déjà vérifié côté Auth) si le profil est vide ; `login-phone.tsx` entre directement dans `/(tabs)` quand la session lue côté serveur porte déjà un numéro, sinon `/` aiguille vers la suite de l'inscription ; `setPhone` traduit la violation `23505` en `PhoneAlreadyUsedError`, affichée proprement sur `app/phone.tsx`.
+- **Déconnexion** : déjà présente, Profil → « Se déconnecter » (`app/app/(tabs)/profile.tsx`).
+- Contrôles passés en base (transaction annulée) : nouvel inscrit OTP → numéro présent dans `profiles` ✅ · second compte au même numéro → profil créé **sans** numéro, aucune erreur ✅ · écriture directe d'un doublon → refusée par l'index ✅.
+
 ## Auth (⚠️ flux Google spécifique)
 
 - **Google** — flux **`supabase.auth.signInWithOAuth`** (PKCE) + `expo-web-browser` + deep link, **PAS** `signInWithIdToken`. Raison : côté Google seul l'URI de callback Supabase est déclaré → c'est le flux médié par Supabase qui marche. Tout est dans `app/lib/auth.ts`.
 - Provider Google activé côté Supabase (Client ID + Secret). Redirect URLs Supabase autorisées : `taxifood://*`, `exp://*`, `http://localhost:8081`.
 - **Le login réel ne peut pas être testé par Claude** (saisie d'identifiants Google = action humaine). Vérifié : la chaîne serveur renvoie bien un 302 vers Google.
-- **Téléphone (SMS OTP)**, depuis le 2026-08-17 : écran `app/app/login-phone.tsx`, `signInWithOtp`/`verifyOtp` dans `app/lib/auth.ts`. Fonctionnel côté code ; comme Google, nécessite un humain pour saisir un vrai numéro/code.
+- **Téléphone (SMS OTP)**, depuis le 2026-08-17 : écran `app/app/login-phone.tsx`, `signInWithOtp`/`verifyOtp` dans `app/lib/auth.ts`. Fonctionnel côté code ; comme Google, nécessite un humain pour saisir un vrai numéro/code. Depuis le 2026-08-18, le numéro vérifié est recopié dans `profiles` par le trigger — voir « Reconnexion des utilisateurs déjà inscrits ».
 - **Bouton Facebook**, présent sur `app/app/login.tsx` : **volontairement sans câblage** (aucun `onPress`, affichage seul) — décision explicite du 2026-08-17, en attente d'une consigne produit avant de le brancher. Ne pas y toucher sans demande explicite.
 
 ## Build de production (EAS) — état

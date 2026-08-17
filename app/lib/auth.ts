@@ -151,6 +151,10 @@ async function buildSession(): Promise<Session | null> {
   ]);
 
   const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
+  // Repli sur le numéro d'authentification : un compte créé par OTP a déjà un numéro
+  // VÉRIFIÉ côté Auth. Sans ce repli, un profil au numéro vide renverrait un client
+  // déjà inscrit sur l'écran « ton numéro » pour lui redemander ce qu'il vient de valider.
+  const authPhone = (user.phone ?? '').trim() || null;
   const fullName = profile?.full_name ?? meta.full_name ?? meta.name ?? 'Client';
   const email = profile?.email ?? user.email ?? '';
 
@@ -170,7 +174,7 @@ async function buildSession(): Promise<Session | null> {
     fullName,
     email,
     initials: initialsFromName(fullName),
-    phone: profile?.phone ?? null,
+    phone: profile?.phone ?? authPhone,
     roles,
     restaurantId: link?.restaurant_id ?? null,
     restaurantName: linkRestaurant?.name ?? null,
@@ -209,13 +213,30 @@ export async function verifyPhoneOtp(phone: string, token: string): Promise<Sess
   return buildSession();
 }
 
-/** Enregistre le numéro de téléphone (saisi une fois après la 1re connexion) dans profiles. */
+/** Levée quand le numéro saisi appartient déjà à un autre compte (index d'unicité). */
+export class PhoneAlreadyUsedError extends Error {
+  constructor() {
+    super('PHONE_ALREADY_USED');
+    this.name = 'PhoneAlreadyUsedError';
+  }
+}
+
+/**
+ * Enregistre le numéro de téléphone (saisi une fois après la 1re connexion) dans profiles.
+ *
+ * Un index d'unicité (`profiles_phone_unique`) empêche deux profils de porter le même
+ * numéro : on traduit la violation 23505 en erreur métier pour que l'écran affiche un
+ * message utile plutôt qu'un message Postgres.
+ */
 export async function setPhone(phone: string): Promise<Session | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
   const { error } = await supabase.from('profiles').update({ phone }).eq('id', user.id);
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') throw new PhoneAlreadyUsedError();
+    throw error;
+  }
   return buildSession();
 }

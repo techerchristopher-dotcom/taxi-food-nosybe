@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,27 +11,32 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
+import { PhoneField } from '../components/PhoneField';
 import { colors, fonts, radius } from '../theme/tokens';
 import { useSession } from '../store/session';
+import { Country, DEFAULT_COUNTRY, isValidNumber, toE164 } from '../data/countries';
 
 /** Connexion par numéro de téléphone (OTP SMS). Nécessite le provider phone dans Supabase. */
 export default function LoginPhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const signInWithPhone = useSession((s) => s.signInWithPhone);
   const verifyPhoneOtp = useSession((s) => s.verifyPhoneOtp);
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const cleanPhone = phone.replace(/\D/g, '');
-  const fullPhone = '+261' + cleanPhone;
-  const phoneValid = cleanPhone.length >= 9;
+  // Format E.164 + validation dépendants du pays choisi (pas de règle malgache figée).
+  const fullPhone = toE164(country, phone);
+  const phoneValid = isValidNumber(country, phone);
   const otpValid = otp.replace(/\D/g, '').length === 6;
 
   async function handleSendOtp() {
@@ -43,7 +47,7 @@ export default function LoginPhoneScreen() {
       await signInWithPhone(fullPhone);
       setStep('otp');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Impossible d\'envoyer le code. Réessayez.');
+      setError(e instanceof Error ? e.message : t('phone.sendFailed'));
     } finally {
       setLoading(false);
     }
@@ -54,10 +58,14 @@ export default function LoginPhoneScreen() {
     setError(null);
     setLoading(true);
     try {
+      // La session renvoyée est LUE CÔTÉ SERVEUR (profiles + rôles) juste après la
+      // validation de l'OTP. Si le profil porte déjà un numéro, le compte existe :
+      // on entre directement dans l'app, sans repasser par la création de profil.
+      // Sinon `/` aiguille vers la suite de l'inscription.
       const session = await verifyPhoneOtp(fullPhone, otp.trim());
-      if (session) router.replace('/');
+      if (session) router.replace(session.phone ? '/(tabs)' : '/');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Code incorrect. Réessayez.');
+      setError(e instanceof Error ? e.message : t('phone.otpFailed'));
     } finally {
       setLoading(false);
     }
@@ -82,40 +90,28 @@ export default function LoginPhoneScreen() {
 
           {step === 'phone' ? (
             <>
-              <Text style={styles.title}>Votre numéro{'\n'}de téléphone</Text>
-              <Text style={styles.subtitle}>
-                Nous enverrons un code de confirmation par SMS.
-              </Text>
-              <View style={styles.fieldBlock}>
-                <Text style={styles.fieldLabel}>Numéro malgache</Text>
-                <View style={[styles.field, phoneValid && { borderColor: colors.primary }]}>
-                  <Text style={styles.prefix}>+261</Text>
-                  <TextInput
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    placeholder="32 45 678 90"
-                    placeholderTextColor={colors.textFaint}
-                    style={styles.input}
-                    autoFocus
-                    maxLength={14}
-                  />
-                  {phoneValid ? <Icon name="check_circle" size={20} color={colors.success} /> : null}
-                </View>
-                <Text style={styles.hint}>Format Telma, Orange ou Airtel.</Text>
-              </View>
+              <Text style={styles.title}>{t('phone.loginTitle')}</Text>
+              <Text style={styles.subtitle}>{t('phone.loginSubtitle')}</Text>
+              {/* Indicatif sélectionnable — Madagascar par défaut, ouvert aux clients
+                  étrangers (La Réunion en tête). */}
+              <PhoneField
+                label={t('phone.fieldLabel')}
+                country={country}
+                onCountryChange={setCountry}
+                value={phone}
+                onChangeText={setPhone}
+                autoFocus
+              />
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <View style={{ flex: 1 }} />
-              <Button label={loading ? 'Envoi en cours…' : 'Envoyer le code'} onPress={handleSendOtp} disabled={!phoneValid || loading} />
+              <Button label={loading ? t('phone.sending') : t('phone.sendCode')} onPress={handleSendOtp} disabled={!phoneValid || loading} />
             </>
           ) : (
             <>
-              <Text style={styles.title}>Code de{'\n'}confirmation</Text>
-              <Text style={styles.subtitle}>
-                Code envoyé par SMS au {fullPhone}. Entrez les 6 chiffres reçus.
-              </Text>
+              <Text style={styles.title}>{t('phone.otpTitle')}</Text>
+              <Text style={styles.subtitle}>{t('phone.otpSubtitle', { phone: fullPhone })}</Text>
               <View style={styles.fieldBlock}>
-                <Text style={styles.fieldLabel}>Code SMS</Text>
+                <Text style={styles.fieldLabel}>{t('phone.otpLabel')}</Text>
                 <View style={[styles.field, otpValid && { borderColor: colors.primary }]}>
                   <TextInput
                     value={otp}
@@ -130,11 +126,11 @@ export default function LoginPhoneScreen() {
                 </View>
               </View>
               <Pressable onPress={() => { setStep('phone'); setError(null); setOtp(''); }} hitSlop={8} style={{ marginTop: 12 }}>
-                <Text style={styles.link}>Changer de numéro</Text>
+                <Text style={styles.link}>{t('phone.changeNumber')}</Text>
               </Pressable>
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <View style={{ flex: 1 }} />
-              <Button label={loading ? 'Vérification…' : 'Confirmer'} onPress={handleVerify} disabled={!otpValid || loading} />
+              <Button label={loading ? t('phone.verifying') : t('phone.confirm')} onPress={handleVerify} disabled={!otpValid || loading} />
             </>
           )}
         </View>
@@ -163,9 +159,7 @@ const styles = StyleSheet.create({
     height: 56, borderRadius: radius.input, borderWidth: 1.5, borderColor: colors.borderStrong,
     backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
   },
-  prefix: { fontFamily: fonts.semibold, fontSize: 15, color: colors.textDark, paddingRight: 10, borderRightWidth: 1, borderRightColor: colors.borderStrong },
   input: { flex: 1, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: 0.6, color: colors.ink },
-  hint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   link: { fontFamily: fonts.bold, fontSize: 13, color: colors.primary },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
 });

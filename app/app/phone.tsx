@@ -7,31 +7,48 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { Button } from '../components/Button';
+import { PhoneField } from '../components/PhoneField';
 import { colors, fonts, radius } from '../theme/tokens';
 import { useSession } from '../store/session';
+import { PhoneAlreadyUsedError } from '../lib/auth';
+import { Country, DEFAULT_COUNTRY, isValidNumber, toE164 } from '../data/countries';
 
 /** Écran 01b — Saisie du numéro de téléphone (1re connexion, une seule fois). */
 export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const session = useSession((s) => s.session);
   const setPhone = useSession((s) => s.setPhone);
   const [digits, setDigits] = useState('');
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  // Numéro malgache : 9 chiffres après +261. On valide sur la longueur.
-  const clean = digits.replace(/\D/g, '');
-  const valid = clean.length >= 9;
+  // Longueur attendue selon le pays choisi (voir `data/countries.ts`).
+  const valid = isValidNumber(country, digits);
 
   async function handleContinue() {
-    if (!valid) return;
-    await setPhone('+261 ' + clean);
-    router.replace('/(tabs)');
+    if (!valid || busy) return;
+    setError(null);
+    setBusy(true);
+    try {
+      // Stocké en E.164 : même format que le numéro d'authentification, donc comparable.
+      await setPhone(toE164(country, digits));
+      router.replace('/(tabs)');
+    } catch (e: unknown) {
+      // Le numéro est unique en base : s'il est déjà pris, on le dit au lieu de laisser
+      // l'écran figé sur une erreur silencieuse.
+      setError(e instanceof PhoneAlreadyUsedError ? t('phone.alreadyUsed') : t('phone.saveFailed'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -53,42 +70,32 @@ export default function PhoneScreen() {
           <View style={styles.iconTile}>
             <Icon name="smartphone" size={28} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Votre numéro{'\n'}de téléphone</Text>
-          <Text style={styles.subtitle}>
-            Le livreur en a besoin pour vous joindre à l'arrivée. Demandé une seule fois.
-          </Text>
+          <Text style={styles.title}>{t('phone.askTitle')}</Text>
+          <Text style={styles.subtitle}>{t('phone.askSubtitle')}</Text>
 
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Téléphone</Text>
-            <View style={[styles.field, valid && { borderColor: colors.primary }]}>
-              <Text style={styles.prefix}>+261</Text>
-              <TextInput
-                value={digits}
-                onChangeText={setDigits}
-                keyboardType="phone-pad"
-                placeholder="32 45 678 90"
-                placeholderTextColor={colors.textFaint}
-                style={styles.input}
-                autoFocus
-                maxLength={14}
-              />
-              {valid ? <Icon name="check_circle" size={20} color={colors.success} /> : null}
-            </View>
-            <Text style={styles.hint}>Format Telma, Orange ou Airtel.</Text>
-          </View>
+          <PhoneField
+            label={t('phone.askLabel')}
+            country={country}
+            onCountryChange={setCountry}
+            value={digits}
+            onChangeText={setDigits}
+            autoFocus
+          />
 
           {session ? (
             <View style={styles.connectedBox}>
               <Icon name="info" size={20} color={colors.secondary} />
               <Text style={styles.connectedText}>
-                Connecté en tant que <Text style={styles.strong}>{session.fullName}</Text> ·{' '}
+                {t('phone.connectedAs')} <Text style={styles.strong}>{session.fullName}</Text> ·{' '}
                 {session.email}
               </Text>
             </View>
           ) : null}
 
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
           <View style={{ flex: 1 }} />
-          <Button label="Continuer" onPress={handleContinue} disabled={!valid} />
+          <Button label={t('phone.continue')} onPress={handleContinue} disabled={!valid || busy} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -119,35 +126,6 @@ const styles = StyleSheet.create({
   },
   title: { fontFamily: fonts.bold, fontSize: 26, lineHeight: 30, letterSpacing: -0.5, color: colors.ink, marginTop: 18 },
   subtitle: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 22, color: colors.textDark, marginTop: 10 },
-  fieldBlock: { marginTop: 26, gap: 6 },
-  fieldLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-  },
-  field: {
-    height: 56,
-    borderRadius: radius.input,
-    borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  prefix: {
-    fontFamily: fonts.semibold,
-    fontSize: 15,
-    color: colors.textDark,
-    paddingRight: 10,
-    borderRightWidth: 1,
-    borderRightColor: colors.borderStrong,
-  },
-  input: { flex: 1, fontFamily: fonts.semibold, fontSize: 17, letterSpacing: 0.6, color: colors.ink },
-  hint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   connectedBox: {
     marginTop: 20,
     flexDirection: 'row',
@@ -158,5 +136,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   connectedText: { flex: 1, fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.warnText },
+  error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
   strong: { fontFamily: fonts.bold },
 });

@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { colors, fonts } from '../../theme/tokens';
 import { useCart } from '../../store/cart';
@@ -10,6 +11,7 @@ import { useCart } from '../../store/cart';
  * Actif = rouge, inactif = gris. Badge de comptage sur Panier.
  */
 export default function TabsLayout() {
+  const { t } = useTranslation();
   const count = useCart((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
 
   return (
@@ -31,21 +33,21 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('tabs.home'),
           tabBarIcon: ({ color }) => <Icon name="storefront" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: 'Commandes',
+          title: t('tabs.orders'),
           tabBarIcon: ({ color }) => <Icon name="receipt_long" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Panier',
+          title: t('tabs.cart'),
           tabBarBadge: count > 0 ? count : undefined,
           tabBarIcon: ({ color }) => <Icon name="shopping_bag" size={24} color={color} />,
         }}
@@ -53,7 +55,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => <Icon name="person" size={24} color={color} />,
         }}
       />

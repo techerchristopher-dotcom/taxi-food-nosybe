@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
-import { Avatar, Card, Divider } from '../../components/primitives';
+import { Card, Divider } from '../../components/primitives';
 import { ProductThumb } from '../../components/ProductThumb';
 import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
@@ -17,11 +18,13 @@ import { Product } from '../../data/types';
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const lines = useCart((s) => s.lines);
   const restaurantId = useCart((s) => s.restaurantId);
   const restaurantName = useCart((s) => s.restaurantName);
   const restaurantInitials = useCart((s) => s.restaurantInitials);
+  const restaurantLogoUrl = useCart((s) => s.restaurantLogoUrl);
   const setQuantity = useCart((s) => s.setQuantity);
   const remove = useCart((s) => s.remove);
   const add = useCart((s) => s.add);
@@ -64,6 +67,7 @@ export default function CartScreen() {
       id: restaurantId,
       name: restaurantName,
       initials: restaurantInitials,
+      logoUrl: restaurantLogoUrl,
       deliveryFee: deliveryFeeValue,
     };
     add(product, ctx);
@@ -71,27 +75,25 @@ export default function CartScreen() {
 
   const suggestHeading =
     suggestions?.mode === 'drink'
-      ? 'Ajoute une boisson 🥤'
+      ? t('cart.suggestDrink')
       : suggestions?.mode === 'dessert'
-        ? 'Complète avec un dessert'
-        : 'Tu aimeras aussi';
+        ? t('cart.suggestDessert')
+        : t('cart.suggestOther');
 
   if (lines.length === 0) {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-          <Text style={styles.headerTitle}>Mon panier</Text>
+          <Text style={styles.headerTitle}>{t('cart.title')}</Text>
         </View>
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
             <Icon name="shopping_bag" size={44} color={colors.accent} />
           </View>
-          <Text style={styles.emptyTitle}>Votre panier est vide</Text>
-          <Text style={styles.emptyText}>
-            Parcourez les restaurants de Nosy Be et ajoutez vos plats préférés.
-          </Text>
+          <Text style={styles.emptyTitle}>{t('cart.emptyTitle')}</Text>
+          <Text style={styles.emptyText}>{t('cart.emptyText')}</Text>
           <Pressable style={styles.emptyBtn} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.emptyBtnText}>Voir les restaurants</Text>
+            <Text style={styles.emptyBtnText}>{t('cart.emptyAction')}</Text>
           </Pressable>
         </View>
       </View>
@@ -101,17 +103,18 @@ export default function CartScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-        <Text style={styles.headerTitle}>Mon panier</Text>
+        <Text style={styles.headerTitle}>{t('cart.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Bandeau restaurant */}
         {restaurantId ? (
           <View style={styles.restoBanner}>
-            <Avatar initials={restaurantInitials} size={36} r={10} />
+            {/* Vrai logo du resto ; repli sur les initiales si absent ou illisible. */}
+            <ProductThumb uri={restaurantLogoUrl} initials={restaurantInitials} size={36} radius={10} />
             <View style={{ flex: 1 }}>
               <Text style={styles.restoName}>{restaurantName}</Text>
-              <Text style={styles.restoHint}>Un panier = un seul restaurant</Text>
+              <Text style={styles.restoHint}>{t('cart.oneRestaurant')}</Text>
             </View>
             <Icon name="chevron_right" size={20} color={colors.textFaint} />
           </View>
@@ -176,23 +179,23 @@ export default function CartScreen() {
         {/* Récapitulatif */}
         <Card style={{ marginTop: 18 }}>
           <View style={styles.sumRow}>
-            <Text style={styles.sumLabel}>Sous-total</Text>
+            <Text style={styles.sumLabel}>{t('cart.subtotal')}</Text>
             <Text style={styles.sumValue}>{formatAr(subtotal)}</Text>
           </View>
           <View style={[styles.sumRow, { marginTop: 10 }]}>
-            <Text style={styles.sumLabel}>Frais de livraison</Text>
+            <Text style={styles.sumLabel}>{t('common.deliveryFee')}</Text>
             <Text style={styles.sumValue}>{formatAr(deliveryFee)}</Text>
           </View>
           <Divider style={{ marginVertical: 14 }} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>{t('common.total')}</Text>
             <Text style={styles.totalValue}>{formatAr(total)}</Text>
           </View>
         </Card>
       </ScrollView>
 
       <BottomBar>
-        <Button label="Commander" iconRight="arrow_forward" onPress={() => router.push('/address')} />
+        <Button label={t('cart.order')} iconRight="arrow_forward" onPress={() => router.push('/address')} />
       </BottomBar>
     </View>
   );

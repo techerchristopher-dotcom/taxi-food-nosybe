@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { ProductThumb } from '../components/ProductThumb';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
@@ -23,6 +24,7 @@ export default function ConfirmationScreen() {
   const passedTotal = params.total ? Number(params.total) : null;
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { data: order } = useLoad(() => getOrderById(orderId!), [orderId]);
 
   const displayTotal = order?.total ?? passedTotal ?? 0;
@@ -54,9 +56,9 @@ export default function ConfirmationScreen() {
             <Icon name="check" size={44} color={colors.success} />
           </View>
         </View>
-        <Text style={styles.title}>Commande{'\n'}envoyée !</Text>
+        <Text style={styles.title}>{t('confirmation.title')}</Text>
         <Text style={styles.subtitle}>
-          {order?.restaurantName ?? 'Le restaurant'} a reçu votre commande. Vous serez notifié à chaque étape.
+          {t('confirmation.subtitle', { restaurant: order?.restaurantName ?? t('confirmation.theRestaurant') })}
         </Text>
 
         <View style={styles.card}>
@@ -65,7 +67,7 @@ export default function ConfirmationScreen() {
             <ProductThumb uri={order?.restaurantLogoUrl} size={46} radius={13} />
             <View style={{ flex: 1 }}>
               <Text style={styles.restoName} numberOfLines={1}>
-                {order?.restaurantName ?? 'Restaurant'}
+                {order?.restaurantName ?? t('confirmation.theRestaurant')}
               </Text>
               <Text style={styles.restoNumber}>#{displayNumber}</Text>
             </View>
@@ -96,12 +98,12 @@ export default function ConfirmationScreen() {
           ) : null}
 
           <View style={styles.cardDivider} />
-          <Detail label="Montant" value={formatAr(displayTotal)} valueColor={colors.primary} />
+          <Detail label={t('confirmation.amount')} value={formatAr(displayTotal)} valueColor={colors.primary} />
           <Detail
-            label="Paiement"
-            value={`${paymentLabel(displayPayment)} — à la livraison`}
+            label={t('confirmation.payment')}
+            value={t('confirmation.paymentValue', { method: paymentLabel(displayPayment) })}
           />
-          {order?.etaLabel ? <Detail label="Livraison estimée" value={order.etaLabel} /> : null}
+          {order?.etaLabel ? <Detail label={t('confirmation.eta')} value={order.etaLabel} /> : null}
         </View>
       </ScrollView>
 
@@ -109,12 +111,12 @@ export default function ConfirmationScreen() {
         <ActionButton
           dark
           icon="local_shipping"
-          label="Suivre ma commande"
+          label={t('confirmation.track')}
           // On navigue avec l'orderId reçu en param (toujours défini), pas `order?.id`
           // qui est null tant que le refetch n'a pas répondu → évitait « introuvable ».
           onPress={() => orderId && router.replace(`/order/${orderId}`)}
         />
-        <ActionButton label="Retour à l'accueil" onPress={() => router.replace('/(tabs)')} />
+        <ActionButton label={t('confirmation.backHome')} onPress={() => router.replace('/(tabs)')} />
       </View>
     </LinearGradient>
   );

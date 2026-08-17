@@ -45,7 +45,8 @@
         {
           "locationWhenInUsePermission": "Taxi Food utilise ta position pour enregistrer précisément ton adresse de livraison."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "router": {},

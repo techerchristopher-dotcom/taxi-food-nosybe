@@ -2,20 +2,23 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
 import { listAddresses, listRestaurants } from '../../data/api';
-import { FOOD_TYPE_ORDER } from '../../data/types';
+import { FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
 
-const TOUT = 'Tout';
+/** Sentinelle du filtre « tout » — jamais affichée telle quelle (le libellé est traduit). */
+const TOUT = '__all__';
 
 /** Écran 02 — Accueil : restaurants de Nosy Be. */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<string>(TOUT);
 
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
@@ -54,13 +57,13 @@ export default function HomeScreen() {
       >
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.deliverTo}>Livrer à</Text>
+            <Text style={styles.deliverTo}>{t('home.deliverTo')}</Text>
             <View style={styles.addressRow}>
               <Icon name="location_on" size={20} color={colors.accent} />
               <Text style={styles.addressText} numberOfLines={1}>
                 {defaultAddress
-                  ? `${defaultAddress.zone} — ${defaultAddress.label.split('—').pop()?.trim()}`
-                  : 'Choisir une adresse'}
+                  ? formatAddressLine(defaultAddress.zone, defaultAddress.label)
+                  : t('home.chooseAddress')}
               </Text>
               <Icon name="expand_more" size={18} color={colors.white} />
             </View>
@@ -69,7 +72,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.search}>
           <Icon name="search" size={20} color={colors.textMuted} />
-          <Text style={styles.searchText}>Chercher un resto ou un plat…</Text>
+          <Text style={styles.searchText}>{t('home.search')}</Text>
         </View>
       </LinearGradient>
 
@@ -91,7 +94,9 @@ export default function HomeScreen() {
                 onPress={() => setFilter(f)}
                 style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
               >
-                <Text style={[styles.chipText, { color: active ? colors.white : colors.textDark }]}>{f}</Text>
+                <Text style={[styles.chipText, { color: active ? colors.white : colors.textDark }]}>
+                  {f === TOUT ? t('home.filterAll') : f}
+                </Text>
               </Pressable>
             );
           })}
@@ -103,9 +108,7 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-            <Text style={styles.count}>
-              {openCount} restaurant{openCount > 1 ? 's' : ''} ouvert{openCount > 1 ? 's' : ''}
-            </Text>
+            <Text style={styles.count}>{t('home.openCount', { count: openCount })}</Text>
 
             <View style={{ gap: 12 }}>
               {featured ? (
@@ -121,7 +124,7 @@ export default function HomeScreen() {
                   onPress={() => router.push(`/restaurant/${r.id}`)}
                 />
               ))}
-              {list.length === 0 ? <Text style={styles.emptyFilter}>Aucun restaurant pour ce filtre.</Text> : null}
+              {list.length === 0 ? <Text style={styles.emptyFilter}>{t('home.emptyFilter')}</Text> : null}
             </View>
           </>
         )}

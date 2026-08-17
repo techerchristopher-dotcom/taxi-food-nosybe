@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { ProductThumb } from './ProductThumb';
 import { QtyStepper } from './QtyStepper';
@@ -24,6 +25,7 @@ export function ProductRow({
   onInc: () => void;
   onDec: () => void;
 }) {
+  const { t } = useTranslation();
   const available = product.isAvailable;
   const inCart = qty > 0;
 
@@ -47,7 +49,7 @@ export function ProductRow({
           <View style={styles.unavailRow}>
             <Text style={styles.priceMuted}>{formatAr(product.price)}</Text>
             <View style={styles.unavailBadge}>
-              <Text style={styles.unavailText}>Indisponible</Text>
+              <Text style={styles.unavailText}>{t('restaurantCard.unavailable')}</Text>
             </View>
           </View>
         )}

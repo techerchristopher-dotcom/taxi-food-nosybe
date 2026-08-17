@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Card, Divider, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
@@ -15,11 +16,11 @@ import { useLoad } from '../../lib/useLoad';
  * périodiquement (le statut est avancé par le back-office / futur écran restaurant).
  */
 const STEPS = [
-  { icon: 'inbox', title: 'Commande reçue', sub: 'Transmise au restaurant', head: 'Le restaurant va confirmer dans un instant' },
-  { icon: 'restaurant', title: 'Confirmée par le restaurant', sub: 'Préparation dans ~20 min', head: 'Préparation dans environ 20 minutes' },
-  { icon: 'soup_kitchen', title: 'En préparation', sub: 'En cuisine', head: 'Votre commande est en préparation' },
-  { icon: 'two_wheeler', title: 'En livraison', sub: 'Le livreur arrive', head: 'Arrivée estimée bientôt' },
-  { icon: 'check_circle', title: 'Livrée', sub: 'Paiement au livreur', head: 'Bon appétit ! Merci pour votre commande' },
+  { icon: 'inbox', key: 'received' },
+  { icon: 'restaurant', key: 'confirmed' },
+  { icon: 'soup_kitchen', key: 'preparing' },
+  { icon: 'two_wheeler', key: 'delivering' },
+  { icon: 'check_circle', key: 'delivered' },
 ] as const;
 
 const POLL_MS = 15000;
@@ -28,6 +29,7 @@ export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const { data: order, loading, reload } = useLoad(() => getOrderById(id!), [id]);
 
@@ -62,7 +64,7 @@ export default function OrderTrackingScreen() {
   if (!order) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>Commande introuvable.</Text>
+        <Text style={styles.notFound}>{t('tracking.notFound')}</Text>
       </View>
     );
   }
@@ -75,21 +77,22 @@ export default function OrderTrackingScreen() {
   const enLivraison = order.status === 'en_livraison';
   const bannerIcon = cancelled ? 'cancel' : enLivraison && !order.pickedUp ? 'schedule' : head.icon;
   const bannerTitle = cancelled
-    ? 'Commande refusée'
+    ? t('tracking.refusedTitle')
     : enLivraison
       ? order.pickedUp
-        ? 'En route vers vous'
-        : 'Bientôt en route'
-      : head.title;
+        ? t('tracking.onTheWay')
+        : t('tracking.soonOnTheWay')
+      : t(`tracking.steps.${head.key}Title`);
+  // Le motif de refus est saisi par le restaurant : donnée métier, jamais traduite.
   const bannerSub = cancelled
-    ? (order.cancellationReason ?? "Le restaurant n'a pas pu honorer cette commande.")
+    ? (order.cancellationReason ?? t('tracking.refusedDefault'))
     : enLivraison
       ? order.pickedUp
         ? order.courierName
-          ? `${order.courierName} a récupéré votre commande et arrive.`
-          : 'Un livreur a récupéré votre commande et arrive.'
-        : 'Votre commande est prête — un livreur va la prendre en charge.'
-      : head.head;
+          ? t('tracking.courierNamedPicked', { name: order.courierName })
+          : t('tracking.courierPicked')
+        : t('tracking.waitingCourier')
+      : t(`tracking.steps.${head.key}Head`);
 
   return (
     <View style={styles.container}>
@@ -99,7 +102,7 @@ export default function OrderTrackingScreen() {
             <Icon name="arrow_back" size={22} color={colors.white} />
           </Pressable>
           <View>
-            <Text style={styles.headerTitle}>Commande #{order.orderNumber}</Text>
+            <Text style={styles.headerTitle}>{t('tracking.headerTitle', { number: order.orderNumber })}</Text>
             <Text style={styles.headerSub}>
               {order.restaurantName} · {order.createdLabel}
             </Text>
@@ -118,11 +121,11 @@ export default function OrderTrackingScreen() {
         {cancelled ? (
           <Card style={styles.cancelledCard}>
             <Icon name="cancel" size={22} color={colors.dangerText} />
-            <Text style={styles.cancelledTitle}>Commande refusée par le restaurant</Text>
+            <Text style={styles.cancelledTitle}>{t('tracking.refusedCardTitle')}</Text>
             {order.cancellationReason ? (
-              <Text style={styles.cancelledReason}>Motif : {order.cancellationReason}</Text>
+              <Text style={styles.cancelledReason}>{t('tracking.refusedReason', { reason: order.cancellationReason })}</Text>
             ) : null}
-            <Text style={styles.cancelledHint}>Aucun montant ne vous sera débité.</Text>
+            <Text style={styles.cancelledHint}>{t('tracking.refusedHint')}</Text>
           </Card>
         ) : (
         <Card style={{ paddingBottom: 6 }}>
@@ -132,12 +135,12 @@ export default function OrderTrackingScreen() {
             const isLast = i === STEPS.length - 1;
             const sub =
               i === 4
-                ? `Paiement en ${paymentShort(order.paymentMethod)} au livreur`
+                ? t('tracking.payToCourier', { method: paymentShort(order.paymentMethod) })
                 : i === 3 && enLivraison
                   ? order.pickedUp
-                    ? 'Le livreur a récupéré votre commande'
-                    : 'En attente de prise en charge par un livreur'
-                  : s.sub;
+                    ? t('tracking.step4Picked')
+                    : t('tracking.step4Waiting')
+                  : t(`tracking.steps.${s.key}Sub`);
             return (
               <View key={i} style={styles.stepRow}>
                 <View style={styles.stepMarker}>
@@ -155,7 +158,7 @@ export default function OrderTrackingScreen() {
                   ) : null}
                 </View>
                 <View style={styles.stepBody}>
-                  <Text style={styles.stepTitle}>{s.title}</Text>
+                  <Text style={styles.stepTitle}>{t(`tracking.steps.${s.key}Title`)}</Text>
                   <Text style={styles.stepSub}>{sub}</Text>
                 </View>
               </View>
@@ -165,7 +168,7 @@ export default function OrderTrackingScreen() {
         )}
 
         <Card style={{ marginTop: 14 }}>
-          <SectionLabel style={{ marginBottom: 12 }}>Récapitulatif</SectionLabel>
+          <SectionLabel style={{ marginBottom: 12 }}>{t('tracking.summary')}</SectionLabel>
           {order.items.map((it, i) => (
             <View key={i} style={styles.itemRow}>
               <View style={{ flex: 1 }}>
@@ -180,12 +183,12 @@ export default function OrderTrackingScreen() {
             </View>
           ))}
           <View style={styles.itemRow}>
-            <Text style={styles.itemName}>Frais de livraison</Text>
+            <Text style={styles.itemName}>{t('common.deliveryFee')}</Text>
             <Text style={styles.itemPrice}>{formatAr(order.deliveryFee)}</Text>
           </View>
           <Divider style={{ marginVertical: 12 }} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total · {paymentShort(order.paymentMethod)}</Text>
+            <Text style={styles.totalLabel}>{t('tracking.totalWith', { method: paymentShort(order.paymentMethod) })}</Text>
             <Text style={styles.totalValue}>{formatAr(order.total)}</Text>
           </View>
           <View style={styles.addrRow}>

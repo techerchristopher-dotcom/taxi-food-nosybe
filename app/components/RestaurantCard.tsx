@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { CategoryTag, Restaurant } from '../data/types';
+import { CategoryTag, Restaurant, formatTime } from '../data/types';
 import { formatAr } from '../theme/tokens';
 
 /** Ligne « meta » : délai estimé + frais de livraison. */
@@ -43,13 +44,14 @@ export function FeaturedRestaurantCard({
   r: Restaurant;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable onPress={onPress} style={styles.featured}>
       <View style={styles.banner}>
         <OpenBadge open={r.isOpen} />
         {r.popular ? (
           <View style={styles.popular}>
-            <Text style={styles.popularText}>Populaire</Text>
+            <Text style={styles.popularText}>{t('restaurantCard.popular')}</Text>
           </View>
         ) : null}
       </View>
@@ -76,6 +78,7 @@ export function RestaurantRow({
   r: Restaurant;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable onPress={onPress} style={[styles.row, !r.isOpen && { opacity: 0.55 }]}>
       <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={64} r={radius.tile} />
@@ -91,7 +94,11 @@ export function RestaurantRow({
         {r.isOpen ? (
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         ) : (
-          <Text style={styles.closedText}>{r.closedLabel ?? 'Fermé'}</Text>
+          <Text style={styles.closedText}>
+            {r.opensAt
+              ? t('restaurantCard.opensAt', { time: formatTime(r.opensAt) })
+              : t('restaurantCard.closed')}
+          </Text>
         )}
       </View>
     </Pressable>

@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import {
 import { colors } from '../theme/tokens';
 import { useSession } from '../store/session';
 import { useCart } from '../store/cart';
+import { hydrateLanguage } from '../lib/i18n';
 
 function Splash() {
   return (
@@ -48,12 +49,17 @@ export default function RootLayout() {
   const hydrateCart = useCart((s) => s.hydrate);
   const cartHydrated = useCart((s) => s.hydrated);
 
+  // La langue doit être posée AVANT le premier rendu des écrans : sinon l'app
+  // s'affiche une fraction de seconde en français avant de basculer.
+  const [langReady, setLangReady] = useState(false);
+
   useEffect(() => {
     hydrateSession();
     hydrateCart();
+    void hydrateLanguage().finally(() => setLangReady(true));
   }, [hydrateSession, hydrateCart]);
 
-  const ready = !sessionLoading && cartHydrated;
+  const ready = !sessionLoading && cartHydrated && langReady;
   if (!ready) return <Splash />;
 
   return (

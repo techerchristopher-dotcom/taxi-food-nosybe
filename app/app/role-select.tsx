@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { colors, fonts, radius, shadow, spacing } from '../theme/tokens';
 import { useSession } from '../store/session';
@@ -13,6 +14,7 @@ import { AppRole } from '../data/types';
  * en `pending` jusqu'à validation manuelle de l'admin.
  */
 export default function RoleSelectScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const session = useSession((s) => s.session);
@@ -33,7 +35,7 @@ export default function RoleSelectScreen() {
     try {
       await fn();
     } catch {
-      setError("Action impossible pour le moment. Réessaie.");
+      setError(t('roleSelect.error'));
     } finally {
       setBusy(null);
     }
@@ -64,8 +66,8 @@ export default function RoleSelectScreen() {
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.hi}>Bonjour {session.fullName.split(' ')[0]}</Text>
-          <Text style={styles.title}>Comment veux-tu utiliser Taxi Food ?</Text>
+          <Text style={styles.hi}>{t('roleSelect.greeting', { name: session.fullName.split(' ')[0] })}</Text>
+          <Text style={styles.title}>{t('roleSelect.title')}</Text>
         </View>
         <Pressable onPress={() => void signOut()} hitSlop={8} style={styles.logout}>
           <Icon name="logout" size={20} color={colors.textMuted} />
@@ -82,9 +84,9 @@ export default function RoleSelectScreen() {
         <RoleCard
           icon="shopping_bag"
           tint={colors.primary}
-          title="Je commande"
-          subtitle="Parcourir les restaurants et me faire livrer."
-          actionLabel="Continuer comme client"
+          title={t('roleSelect.clientTitle')}
+          subtitle={t('roleSelect.clientSubtitle')}
+          actionLabel={t('roleSelect.clientAction')}
           loading={busy === 'client'}
           onPress={chooseClient}
         />
@@ -93,20 +95,20 @@ export default function RoleSelectScreen() {
         <RoleCard
           icon="storefront"
           tint={colors.secondary}
-          title="Je suis un restaurant"
+          title={t('roleSelect.restaurantTitle')}
           subtitle={
             restaurantActive
-              ? `Traiter les commandes de ${session.restaurantName}.`
+              ? t('roleSelect.restaurantActive', { restaurant: session.restaurantName })
               : statusOf('restaurant') === 'pending'
-                ? 'Ta demande est en cours de validation par Taxi Food.'
-                : 'Recevoir et gérer les commandes de mon établissement.'
+                ? t('roleSelect.restaurantPending')
+                : t('roleSelect.restaurantSubtitle')
           }
           actionLabel={
             restaurantActive
-              ? `Entrer — ${session.restaurantName}`
+              ? t('roleSelect.restaurantEnterNamed', { restaurant: session.restaurantName })
               : statusOf('restaurant') === 'pending'
-                ? 'En attente de validation'
-                : "Demander l'accès restaurant"
+                ? t('roleSelect.restaurantWaiting')
+                : t('roleSelect.restaurantAsk')
           }
           disabled={statusOf('restaurant') === 'pending'}
           pending={statusOf('restaurant') === 'pending'}
@@ -118,20 +120,20 @@ export default function RoleSelectScreen() {
         <RoleCard
           icon="two_wheeler"
           tint={colors.ink}
-          title="Je suis livreur"
+          title={t('roleSelect.courierTitle')}
           subtitle={
             statusOf('livreur') === 'active'
-              ? 'Voir les commandes prêtes à livrer et les prendre en charge.'
+              ? t('roleSelect.courierActive')
               : statusOf('livreur') === 'pending'
-                ? 'Ta demande est en cours de validation par Taxi Food.'
-                : 'Prendre des livraisons dans tout Nosy Be.'
+                ? t('roleSelect.courierPending')
+                : t('roleSelect.courierSubtitle')
           }
           actionLabel={
             statusOf('livreur') === 'active'
-              ? 'Entrer — espace livreur'
+              ? t('roleSelect.courierEnter')
               : statusOf('livreur') === 'pending'
-                ? 'En attente de validation'
-                : "Demander l'accès livreur"
+                ? t('roleSelect.courierWaiting')
+                : t('roleSelect.courierAsk')
           }
           disabled={statusOf('livreur') === 'pending'}
           pending={statusOf('livreur') === 'pending'}

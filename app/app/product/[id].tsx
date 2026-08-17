@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { QtyStepper } from '../../components/QtyStepper';
 import { ConflictSheet } from '../../components/ConflictSheet';
@@ -16,6 +17,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const { data, loading } = useLoad(() => getProductDetail(id!), [id]);
   const product = data?.product ?? null;
@@ -44,13 +46,19 @@ export default function ProductDetailScreen() {
   if (!product) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>Produit introuvable.</Text>
+        <Text style={styles.notFound}>{t('product.notFound')}</Text>
       </View>
     );
   }
 
   const ctx: RestaurantContext | null = restaurant
-    ? { id: restaurant.id, name: restaurant.name, initials: restaurant.initials, deliveryFee: restaurant.deliveryFee }
+    ? {
+        id: restaurant.id,
+        name: restaurant.name,
+        initials: restaurant.initials,
+        logoUrl: restaurant.logoUrl,
+        deliveryFee: restaurant.deliveryFee,
+      }
     : null;
 
   function toggle(g: OptionGroup, optionId: string) {
@@ -103,7 +111,7 @@ export default function ProductDetailScreen() {
         <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
           <Icon name="close" size={22} color={colors.ink} />
         </Pressable>
-        {!product.photoUrl ? <Text style={styles.photoHint}>photo produit</Text> : null}
+        {!product.photoUrl ? <Text style={styles.photoHint}>{t('product.photoHint')}</Text> : null}
       </View>
 
       <View style={styles.sheet}>
@@ -123,10 +131,12 @@ export default function ProductDetailScreen() {
                 <View style={styles.groupHead}>
                   <Text style={styles.groupName}>{g.name}</Text>
                   <Text style={[styles.badge, g.required ? styles.badgeReq : styles.badgeOpt]}>
-                    {g.required ? 'Obligatoire' : 'Facultatif'}
+                    {g.required ? t('product.required') : t('product.optional')}
                   </Text>
                 </View>
-                {!single ? <Text style={styles.groupHint}>Jusqu'à {g.maxSelect} au choix</Text> : null}
+                {!single ? (
+                  <Text style={styles.groupHint}>{t('product.upTo', { count: g.maxSelect })}</Text>
+                ) : null}
                 <View style={styles.chipRow}>
                   {g.options.map((o) => {
                     const selected = cur.includes(o.id);
@@ -147,12 +157,26 @@ export default function ProductDetailScreen() {
                             />
                           </View>
                         ) : null}
-                        {selected ? <Icon name="check" size={14} color={colors.white} /> : null}
-                        <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{o.name}</Text>
-                        {o.priceDelta > 0 ? (
-                          <Text style={[styles.chipPrice, selected && styles.chipPriceSelected]}>
-                            + {formatAr(o.priceDelta)}
+                        {/* Nom + supplément empilés : le prix ne pousse plus la puce hors de sa
+                            colonne (c'était la cause du rendu « liste » sur les groupes payants). */}
+                        <View style={styles.chipText}>
+                          <Text
+                            style={[styles.chipLabel, selected && styles.chipLabelSelected]}
+                            numberOfLines={2}
+                          >
+                            {o.name}
                           </Text>
+                          {o.priceDelta > 0 ? (
+                            <Text style={[styles.chipPrice, selected && styles.chipPriceSelected]}>
+                              + {formatAr(o.priceDelta)}
+                            </Text>
+                          ) : null}
+                        </View>
+                        {/* Coche en pastille d'angle : hors flux, donc sans effet sur la largeur. */}
+                        {selected ? (
+                          <View style={styles.chipCheck}>
+                            <Icon name="check" size={12} color={colors.primary} />
+                          </View>
                         ) : null}
                       </Pressable>
                     );
@@ -173,7 +197,7 @@ export default function ProductDetailScreen() {
             style={({ pressed }) => [styles.addBtn, !valid && styles.addBtnDisabled, pressed && valid && { opacity: 0.9 }]}
           >
             <Text style={styles.addText}>
-              {valid ? `Ajouter · ${formatAr(lineTotal)}` : 'Choisissez les options'}
+              {valid ? t('product.addWithPrice', { price: formatAr(lineTotal) }) : t('product.chooseOptions')}
             </Text>
           </Pressable>
         </View>
@@ -230,23 +254,40 @@ const styles = StyleSheet.create({
   badgeOpt: { backgroundColor: colors.fieldBg, color: colors.textMuted },
   groupHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 4 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  // Grille à 2 colonnes, identique pour TOUS les groupes (obligatoire/facultatif,
+  // choix unique/multiple). La largeur est fixée par la colonne, pas par le contenu :
+  // une puce avec supplément reste dans sa colonne au lieu de prendre toute la ligne.
   chip: {
-    alignSelf: 'flex-start',
+    flexBasis: '47%',
+    flexGrow: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: radius.tile,
     borderWidth: 1.5,
     borderColor: colors.borderStrong,
     backgroundColor: colors.surface,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipLabel: { fontFamily: fonts.medium, fontSize: 14, color: colors.ink },
+  chipText: { flex: 1, minWidth: 0 },
+  chipLabel: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 18, color: colors.ink },
   chipLabelSelected: { color: colors.white },
-  chipPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.secondary },
+  chipPrice: { fontFamily: fonts.semibold, fontSize: 12, color: colors.secondary, marginTop: 2 },
   chipPriceSelected: { color: colors.white },
+  chipCheck: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chipThumbWrap: {
     width: 34,
     height: 34,
@@ -255,7 +296,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    marginLeft: -4,
   },
   chipThumb: { width: '100%', height: '100%' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.divider },

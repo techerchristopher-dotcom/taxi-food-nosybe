@@ -40,6 +40,8 @@ export type RestaurantContext = {
   id: string;
   name: string;
   initials: string;
+  /** Logo du restaurant (`restaurants.logo_url`), null si le resto n'en a pas. */
+  logoUrl?: string | null;
   deliveryFee: number;
 };
 
@@ -47,6 +49,8 @@ type Persisted = {
   restaurantId: string | null;
   restaurantName: string;
   restaurantInitials: string;
+  /** Logo mémorisé avec le panier : le bandeau l'affiche sans relire le restaurant. */
+  restaurantLogoUrl: string | null;
   deliveryFeeValue: number;
   lines: CartLine[];
 };
@@ -80,6 +84,7 @@ const EMPTY: Persisted = {
   restaurantId: null,
   restaurantName: '',
   restaurantInitials: '',
+  restaurantLogoUrl: null,
   deliveryFeeValue: 0,
   lines: [],
 };
@@ -98,7 +103,8 @@ export const useCart = create<CartState>((set, get) => ({
           options: l.options ?? [],
           key: l.key ?? lineKey(l.product.id, (l.options ?? []).map((o) => o.optionId)),
         }));
-        set({ ...parsed, lines, hydrated: true });
+        // `restaurantLogoUrl` est absent des paniers persistés avant son introduction.
+        set({ ...parsed, restaurantLogoUrl: parsed.restaurantLogoUrl ?? null, lines, hydrated: true });
         return;
       } catch {
         // ignore
@@ -123,6 +129,7 @@ export const useCart = create<CartState>((set, get) => ({
       restaurantId: ctx.id,
       restaurantName: ctx.name,
       restaurantInitials: ctx.initials,
+      restaurantLogoUrl: ctx.logoUrl ?? null,
       deliveryFeeValue: ctx.deliveryFee,
       lines: nextLines,
     };
@@ -135,6 +142,7 @@ export const useCart = create<CartState>((set, get) => ({
       restaurantId: ctx.id,
       restaurantName: ctx.name,
       restaurantInitials: ctx.initials,
+      restaurantLogoUrl: ctx.logoUrl ?? null,
       deliveryFeeValue: ctx.deliveryFee,
       lines: [{ key: lineKey(product.id, options.map((o) => o.optionId)), product, quantity, options }],
     };
@@ -181,6 +189,7 @@ function toPersisted(s: CartState): Persisted {
     restaurantId: s.restaurantId,
     restaurantName: s.restaurantName,
     restaurantInitials: s.restaurantInitials,
+    restaurantLogoUrl: s.restaurantLogoUrl,
     deliveryFeeValue: s.deliveryFeeValue,
     lines: s.lines,
   };

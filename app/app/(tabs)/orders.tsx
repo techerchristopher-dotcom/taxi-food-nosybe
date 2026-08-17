@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Avatar, Card, SectionLabel } from '../../components/primitives';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -14,6 +15,7 @@ import { useCart } from '../../store/cart';
 export default function OrdersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { data: orders, loading } = useLoad(() => listOrders(), []);
   const clear = useCart((s) => s.clear);
   const add = useCart((s) => s.add);
@@ -62,7 +64,7 @@ export default function OrdersScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-          <Text style={styles.headerTitle}>Mes commandes</Text>
+          <Text style={styles.headerTitle}>{t('orders.title')}</Text>
         </View>
         <View style={styles.loading}>
           <ActivityIndicator color={colors.primary} />
@@ -75,18 +77,16 @@ export default function OrdersScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-          <Text style={styles.headerTitle}>Mes commandes</Text>
+          <Text style={styles.headerTitle}>{t('orders.title')}</Text>
         </View>
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
             <Icon name="receipt_long" size={44} color={colors.secondary} />
           </View>
-          <Text style={styles.emptyTitle}>Aucune commande</Text>
-          <Text style={styles.emptyText}>
-            Vos commandes apparaîtront ici, avec la possibilité de les recommander en un geste.
-          </Text>
+          <Text style={styles.emptyTitle}>{t('orders.emptyTitle')}</Text>
+          <Text style={styles.emptyText}>{t('orders.emptyText')}</Text>
           <Pressable style={styles.emptyBtn} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.emptyBtnText}>Commander maintenant</Text>
+            <Text style={styles.emptyBtnText}>{t('orders.emptyAction')}</Text>
           </Pressable>
         </View>
       </View>
@@ -96,7 +96,7 @@ export default function OrdersScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-        <Text style={styles.headerTitle}>Mes commandes</Text>
+        <Text style={styles.headerTitle}>{t('orders.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
@@ -108,7 +108,7 @@ export default function OrdersScreen() {
               <Text style={styles.total}>{formatAr(o.total)}</Text>
               <Pressable style={styles.trackBtn} onPress={() => router.push(`/order/${o.id}`)}>
                 <Icon name="local_shipping" size={17} color={colors.accent} />
-                <Text style={styles.trackText}>Suivre</Text>
+                <Text style={styles.trackText}>{t('orders.track')}</Text>
               </Pressable>
             </View>
           </Card>
@@ -117,7 +117,7 @@ export default function OrdersScreen() {
         {past.length > 0 ? (
           <>
             <SectionLabel style={{ marginTop: active.length ? 20 : 0, marginBottom: 10 }}>
-              Précédemment
+              {t('orders.previously')}
             </SectionLabel>
             <View style={{ gap: 10 }}>
               {past.map((o) => (
@@ -128,7 +128,7 @@ export default function OrdersScreen() {
                     <Text style={styles.total}>{formatAr(o.total)}</Text>
                     <Pressable style={styles.reorderBtn} onPress={() => reorder(o)}>
                       <Icon name="replay" size={17} color={colors.white} />
-                      <Text style={styles.reorderText}>Recommander</Text>
+                      <Text style={styles.reorderText}>{t('orders.reorder')}</Text>
                     </Pressable>
                   </View>
                 </Card>

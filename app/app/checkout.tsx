@@ -1,27 +1,29 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { Avatar, Card, Divider, InfoBanner, SectionLabel } from '../components/primitives';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
 import { BottomBar } from '../components/BottomBar';
 import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
-import { PaymentMethod, paymentShort } from '../data/types';
+import { formatAddressLine, PaymentMethod, paymentShort } from '../data/types';
 import { createOrder, listAddresses } from '../data/api';
 import { useLoad } from '../lib/useLoad';
 import { lineUnitPrice, useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
 
-const METHODS: { key: PaymentMethod; icon: string; iconColor: string; title: string; sub: string }[] = [
-  { key: 'cb', icon: 'credit_card', iconColor: colors.textDark, title: 'Carte bancaire', sub: 'Terminal du livreur' },
-  { key: 'especes', icon: 'payments', iconColor: colors.textDark, title: 'Espèces', sub: "Prévoir l'appoint si possible" },
-  { key: 'orange_money', icon: 'smartphone', iconColor: colors.secondary, title: 'Orange Money', sub: 'Transfert au livreur' },
+const METHODS: { key: PaymentMethod; icon: string; iconColor: string; subKey: string }[] = [
+  { key: 'cb', icon: 'credit_card', iconColor: colors.textDark, subKey: 'checkout.cbSub' },
+  { key: 'especes', icon: 'payments', iconColor: colors.textDark, subKey: 'checkout.especesSub' },
+  { key: 'orange_money', icon: 'smartphone', iconColor: colors.secondary, subKey: 'checkout.orangeSub' },
 ];
 
 /** Écran 07 — Validation de la commande (récap + choix du paiement). */
 export default function CheckoutScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const lines = useCart((s) => s.lines);
   const restaurantId = useCart((s) => s.restaurantId);
@@ -42,7 +44,7 @@ export default function CheckoutScreen() {
 
   async function validate() {
     if (!restaurantId || !addressId) {
-      setError('Choisis une adresse de livraison avant de valider.');
+      setError(t('checkout.needAddress'));
       return;
     }
     setError(null);
@@ -74,9 +76,7 @@ export default function CheckoutScreen() {
     } catch (e) {
       const msg = (e as { message?: string })?.message ?? '';
       setError(
-        /position gps|localisation/i.test(msg)
-          ? "Position GPS manquante sur cette adresse. Reviens à l'étape adresse et capte ta position."
-          : "La commande n'a pas pu être créée. Réessaie.",
+        /position gps|localisation/i.test(msg) ? t('checkout.needGps') : t('checkout.failed'),
       );
       setSubmitting(false);
     }
@@ -84,7 +84,7 @@ export default function CheckoutScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Valider ma commande" />
+      <Header title={t('checkout.title')} />
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         <Card>
@@ -113,23 +113,21 @@ export default function CheckoutScreen() {
           <View style={{ flex: 1 }}>
             {address ? (
               <>
-                <Text style={styles.addrLabel}>
-                  {address.zone} — {address.label.split('—').pop()?.trim()}
-                </Text>
+                <Text style={styles.addrLabel}>{formatAddressLine(address.zone, address.label)}</Text>
                 <Text style={styles.addrDetail}>
                   {address.landmark} · {address.phone}
                 </Text>
               </>
             ) : (
-              <Text style={styles.addrLabel}>Aucune adresse sélectionnée</Text>
+              <Text style={styles.addrLabel}>{t('checkout.noAddress')}</Text>
             )}
           </View>
           <Pressable onPress={() => router.push('/address')}>
-            <Text style={styles.modify}>Modifier</Text>
+            <Text style={styles.modify}>{t('common.modify')}</Text>
           </Pressable>
         </Card>
 
-        <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>Mode de paiement</SectionLabel>
+        <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('checkout.paymentSection')}</SectionLabel>
         <View style={{ gap: 10 }}>
           {METHODS.map((m) => {
             const active = m.key === paymentMethod;
@@ -141,8 +139,8 @@ export default function CheckoutScreen() {
               >
                 <Icon name={m.icon} size={24} color={m.iconColor} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.payTitle}>{m.title}</Text>
-                  <Text style={styles.paySub}>{m.sub}</Text>
+                  <Text style={styles.payTitle}>{t(`payment.${m.key}`)}</Text>
+                  <Text style={styles.paySub}>{t(m.subKey)}</Text>
                 </View>
                 <Icon
                   name={active ? 'radio_button_checked' : 'radio_button_unchecked'}
@@ -155,7 +153,7 @@ export default function CheckoutScreen() {
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <InfoBanner>Paiement à la livraison — aucun débit maintenant.</InfoBanner>
+          <InfoBanner>{t('checkout.noCharge')}</InfoBanner>
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -163,10 +161,10 @@ export default function CheckoutScreen() {
 
       <BottomBar>
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total à payer ({paymentShort(paymentMethod)})</Text>
+          <Text style={styles.totalLabel}>{t('checkout.totalToPay', { method: paymentShort(paymentMethod) })}</Text>
           <Text style={styles.totalValue}>{formatAr(total)}</Text>
         </View>
-        <Button label="Valider la commande" icon="check_circle" onPress={validate} loading={submitting} />
+        <Button label={t('checkout.validate')} icon="check_circle" onPress={validate} loading={submitting} />
       </BottomBar>
     </View>
   );

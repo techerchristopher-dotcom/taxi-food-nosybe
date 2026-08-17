@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Image, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { thumbnailUrl } from '../data/types';
@@ -86,11 +87,12 @@ export function RestaurantLogo({
 
 /** Pastille « Ouvert » / « Fermé » à point coloré. */
 export function OpenBadge({ open }: { open: boolean }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.openBadge, { backgroundColor: open ? colors.successBg : colors.divider }]}>
       <View style={[styles.dot, { backgroundColor: open ? colors.success : colors.textFaint }]} />
       <Text style={[styles.openText, { color: open ? colors.successDark : colors.textMuted }]}>
-        {open ? 'Ouvert' : 'Fermé'}
+        {open ? t('restaurantCard.open') : t('restaurantCard.closed')}
       </Text>
     </View>
   );

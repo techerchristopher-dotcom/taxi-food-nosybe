@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
 import { googleConfigured } from '../lib/auth';
@@ -18,6 +19,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const signInWithGoogle = useSession((s) => s.signInWithGoogle);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function LoginScreen() {
         // L'aiguillage (index) décide : téléphone, sélection de rôle, ou app.
         if (session) router.replace('/');
       } catch {
-        setError('Connexion impossible pour le moment. Réessayez.');
+        setError(t('login.failed'));
       } finally {
         setLoading(false);
       }
@@ -47,10 +49,7 @@ export default function LoginScreen() {
 
   async function handleGoogle() {
     if (!googleConfigured()) {
-      setError(
-        "Connexion Google pas encore configurée (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID absent " +
-          'de app/.env, et provider Google à activer côté Supabase).',
-      );
+      setError(t('login.googleNotConfigured'));
       return;
     }
     setError(null);
@@ -65,7 +64,7 @@ export default function LoginScreen() {
         setLoading(false);
       }
     } catch {
-      setError('Connexion impossible pour le moment. Réessayez.');
+      setError(t('login.failed'));
       setLoading(false);
     }
   }
@@ -82,10 +81,8 @@ export default function LoginScreen() {
       <View style={styles.body}>
         <Image source={require('../assets/icon-tile.png')} style={styles.logo} />
         <Text style={styles.wordmark}>TAXI FOOD</Text>
-        <Text style={styles.tagline}>NOSY BE DELIVERY</Text>
-        <Text style={styles.pitch}>
-          Pizzas, tacos, burgers — livrés chaud à Hell-Ville et dans tout Nosy Be.
-        </Text>
+        <Text style={styles.tagline}>{t('login.tagline')}</Text>
+        <Text style={styles.pitch}>{t('login.pitch')}</Text>
 
         <View style={{ flex: 1 }} />
 
@@ -100,7 +97,7 @@ export default function LoginScreen() {
           ) : (
             <>
               <GoogleG />
-              <Text style={styles.socialText}>Continuer avec Google</Text>
+              <Text style={styles.socialText}>{t('login.google')}</Text>
             </>
           )}
         </Pressable>
@@ -112,19 +109,17 @@ export default function LoginScreen() {
           <View style={styles.phoneIcon}>
             <Icon name="smartphone" size={20} color={colors.white} />
           </View>
-          <Text style={styles.socialText}>Continuer avec un numéro</Text>
+          <Text style={styles.socialText}>{t('login.phone')}</Text>
         </Pressable>
 
         <Pressable
           style={({ pressed }) => [styles.socialBtn, styles.fbBtn, { marginTop: 10 }, pressed && { opacity: 0.9 }]}
         >
           <FacebookF />
-          <Text style={[styles.socialText, { color: colors.white }]}>Continuer avec Facebook</Text>
+          <Text style={[styles.socialText, { color: colors.white }]}>{t('login.facebook')}</Text>
         </Pressable>
 
-        <Text style={styles.terms}>
-          En continuant, vous acceptez les conditions d'utilisation de Taxi Food.
-        </Text>
+        <Text style={styles.terms}>{t('login.terms')}</Text>
       </View>
     </View>
   );

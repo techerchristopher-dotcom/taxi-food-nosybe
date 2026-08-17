@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
@@ -17,6 +18,7 @@ export default function RestaurantMenuScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const { data: restaurant, loading } = useLoad(() => getRestaurant(id!), [id]);
   const { data: menu } = useLoad(() => getMenu(id!), [id]);
@@ -46,7 +48,7 @@ export default function RestaurantMenuScreen() {
   if (!restaurant) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>Restaurant introuvable.</Text>
+        <Text style={styles.notFound}>{t('restaurant.notFound')}</Text>
       </View>
     );
   }
@@ -55,6 +57,7 @@ export default function RestaurantMenuScreen() {
     id: restaurant.id,
     name: restaurant.name,
     initials: restaurant.initials,
+    logoUrl: restaurant.logoUrl,
     deliveryFee: restaurant.deliveryFee,
   };
 
@@ -89,7 +92,7 @@ export default function RestaurantMenuScreen() {
             <Icon name="favorite" size={22} color={colors.ink} />
           </Pressable>
         </View>
-        {!restaurant.coverUrl ? <Text style={styles.bannerHint}>photo bannière resto</Text> : null}
+        {!restaurant.coverUrl ? <Text style={styles.bannerHint}>{t('restaurant.coverHint')}</Text> : null}
       </View>
 
       <ScrollView
@@ -123,7 +126,7 @@ export default function RestaurantMenuScreen() {
         <View style={{ paddingHorizontal: spacing.screen, paddingTop: 16 }}>
           <Text style={styles.catTitle}>
             {activeCategory?.icon ? `${activeCategory.icon} ` : ''}{activeCategory?.name}{' '}
-            <Text style={styles.catCount}>· {visibleProducts.length} produits</Text>
+            <Text style={styles.catCount}>{t('restaurant.productCount', { count: visibleProducts.length })}</Text>
           </Text>
           <View style={{ gap: 10 }}>
             {visibleProducts.map((p) => (
@@ -147,7 +150,7 @@ export default function RestaurantMenuScreen() {
         >
           <View style={styles.floatingLeft}>
             <Icon name="shopping_bag" size={22} color={colors.accent} />
-            <Text style={styles.floatingText}>Voir le panier · {count} art.</Text>
+            <Text style={styles.floatingText}>{t('restaurant.viewCart', { count })}</Text>
           </View>
           <View style={styles.floatingTotal}>
             <Text style={styles.floatingTotalText}>{formatAr(total)}</Text>
@@ -170,6 +173,7 @@ export default function RestaurantMenuScreen() {
 }
 
 function RestaurantHeader({ r }: { r: Restaurant }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.rHeader}>
       <View style={styles.rHeadTop}>
@@ -193,7 +197,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
         </View>
         <View style={styles.rMetaItem}>
           <Icon name="shopping_basket" size={16} color={colors.secondary} />
-          <Text style={styles.rMetaText}>Min. {formatAr(r.minOrder)}</Text>
+          <Text style={styles.rMetaText}>{t('restaurant.minOrder', { amount: formatAr(r.minOrder) })}</Text>
         </View>
       </View>
     </View>

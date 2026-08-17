@@ -17,6 +17,7 @@ import {
   formatTime,
   getMapsNavigationUrl,
   hoursLabel,
+  formatAddressLine,
   initialsFromName,
   OptionGroup,
   Order,
@@ -149,10 +150,6 @@ function mapOptionGroup(g: OptionGroupRow): OptionGroup {
       .map(mapOption)
       .sort((a, b) => a.sortOrder - b.sortOrder),
   };
-}
-
-function lastSegment(label: string): string {
-  return label.split('—').pop()?.trim() ?? label;
 }
 
 function mapAddress(a: AddressRow): Address {
@@ -389,9 +386,7 @@ const ORDER_SELECT =
 function mapOrder(o: OrderJoinRow): Order {
   const restaurantName = o.restaurants?.name ?? 'Restaurant';
   const addr = o.addresses;
-  const addressLabel = addr
-    ? `${addr.zone}${addr.label ? ' — ' + lastSegment(addr.label) : ''}`
-    : '';
+  const addressLabel = addr ? formatAddressLine(addr.zone, addr.label) : '';
   return {
     id: o.id,
     orderNumber: o.order_number,

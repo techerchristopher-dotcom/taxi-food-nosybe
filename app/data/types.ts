@@ -9,6 +9,8 @@
  * vides, sans jamais bloquer l'UI.
  */
 
+import i18n from '../lib/i18n';
+
 export type PaymentMethod = 'cb' | 'especes' | 'orange_money';
 
 /** Rôles applicatifs (multi-rôle : un compte peut être client ET restaurant, etc.). */
@@ -231,25 +233,39 @@ export const DEFAULT_ETA = '25–40 min';
 // Helpers d'affichage
 // ---------------------------------------------------------------------------
 
-export const paymentLabel = (m: PaymentMethod): string =>
-  m === 'cb' ? 'Carte bancaire' : m === 'orange_money' ? 'Orange Money' : 'Espèces';
+/*
+ * Ces trois helpers lisent la traduction courante via le singleton i18next plutôt que de
+ * prendre `t` en paramètre : ils sont appelés depuis une quinzaine d'endroits, dont des
+ * fonctions non-composants. Les écrans qui les affichent s'abonnent à `useTranslation()`,
+ * donc un changement de langue les re-rend et les libellés suivent.
+ */
 
-export const paymentShort = (m: PaymentMethod): string =>
-  m === 'cb' ? 'carte bancaire' : m === 'orange_money' ? 'Orange Money' : 'espèces';
+export const paymentLabel = (m: PaymentMethod): string => i18n.t(`payment.${m}`);
 
-export const statusLabel = (s: OrderStatus): string =>
-  ({
-    recue: 'Reçue',
-    confirmee: 'Confirmée',
-    en_preparation: 'En préparation',
-    en_livraison: 'En livraison',
-    livree: 'Livrée',
-    annulee: 'Annulée',
-  })[s];
+export const paymentShort = (m: PaymentMethod): string => i18n.t(`payment.${m}Short`);
+
+export const statusLabel = (s: OrderStatus): string => i18n.t(`status.${s}`);
 
 /** Index 0..4 de l'étape de suivi pour un statut donné. */
 export const statusStep = (s: OrderStatus): number =>
   ({ recue: 0, confirmee: 1, en_preparation: 2, en_livraison: 3, livree: 4, annulee: 0 })[s];
+
+/**
+ * Ligne d'adresse affichable : « quartier — adresse précise ».
+ *
+ * Les deux champs ont longtemps reçu la même valeur (la zone administrative déduite du
+ * GPS), ce qui affichait « Province d'Antsiranana — Province d'Antsiranana » à la
+ * validation de commande. On déduplique ici pour que les adresses déjà enregistrées
+ * s'affichent proprement, sans migration de données.
+ */
+export function formatAddressLine(zone: string, label?: string | null): string {
+  const precise = (label ?? '').split('—').pop()?.trim() ?? '';
+  const z = zone.trim();
+  if (!precise) return z;
+  if (!z) return precise;
+  if (precise.toLowerCase() === z.toLowerCase()) return z;
+  return `${z} — ${precise}`;
+}
 
 /** Initiales à partir d'un nom : première lettre du 1er et du dernier mot. « Tacos du Boulevard » → « TB ». */
 export function initialsFromName(name: string): string {

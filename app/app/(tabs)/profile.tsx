@@ -3,23 +3,26 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Card, SectionLabel } from '../../components/primitives';
 import { colors, fonts, radius, shadow, spacing } from '../../theme/tokens';
 import { listAddresses } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { LANGUAGES, LanguageCode, setLanguage } from '../../lib/i18n';
 
 /** Écran 11 — Profil. */
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   const session = useSession((s) => s.session);
   const signOut = useSession((s) => s.signOut);
   const [notif, setNotif] = useState(true);
   const { data: addresses } = useLoad(() => listAddresses(), []);
 
-  const name = session?.fullName ?? 'Client';
+  const name = session?.fullName ?? t('profile.defaultName');
   const email = session?.email ?? '';
   const phone = session?.phone ?? '—';
   const initials = session?.initials ?? '··';
@@ -53,23 +56,23 @@ export default function ProfileScreen() {
           <View style={[styles.line, styles.lineBorder]}>
             <Icon name="smartphone" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineLabel}>Téléphone</Text>
+              <Text style={styles.lineLabel}>{t('profile.phone')}</Text>
               <Text style={styles.lineValue}>{phone}</Text>
             </View>
-            <Text style={styles.action}>Modifier</Text>
+            <Text style={styles.action}>{t('common.modify')}</Text>
           </View>
           <View style={styles.line}>
             <Icon name="mail" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.lineLabel}>Compte Google</Text>
+              <Text style={styles.lineLabel}>{t('profile.googleAccount')}</Text>
               <Text style={styles.lineValue}>{email}</Text>
             </View>
           </View>
         </Card>
 
         <View style={styles.sectionHead}>
-          <SectionLabel>Adresses enregistrées</SectionLabel>
-          <Text style={styles.action}>Ajouter</Text>
+          <SectionLabel>{t('profile.addresses')}</SectionLabel>
+          <Text style={styles.action}>{t('profile.addAddress')}</Text>
         </View>
         <View style={{ gap: 10 }}>
           {(addresses ?? []).map((a) => (
@@ -85,14 +88,14 @@ export default function ProfileScreen() {
             </Card>
           ))}
           {(addresses ?? []).length === 0 ? (
-            <Text style={styles.noAddr}>Aucune adresse enregistrée pour l'instant.</Text>
+            <Text style={styles.noAddr}>{t('profile.noAddress')}</Text>
           ) : null}
         </View>
 
         <Card style={{ padding: 0, overflow: 'hidden', marginTop: 20 }}>
           <View style={[styles.line, styles.lineBorder]}>
             <Icon name="notifications" size={22} color={colors.textDark} />
-            <Text style={styles.settingLabel}>Notifications de commande</Text>
+            <Text style={styles.settingLabel}>{t('profile.notifications')}</Text>
             <Switch
               value={notif}
               onValueChange={setNotif}
@@ -102,23 +105,42 @@ export default function ProfileScreen() {
           </View>
           <Pressable style={styles.line}>
             <Icon name="help" size={22} color={colors.textDark} />
-            <Text style={styles.settingLabel}>Aide & contact</Text>
+            <Text style={styles.settingLabel}>{t('profile.help')}</Text>
             <Icon name="chevron_right" size={20} color={colors.textFaint} />
           </Pressable>
         </Card>
 
+        <View style={styles.sectionHead}>
+          <SectionLabel>{t('profile.language')}</SectionLabel>
+        </View>
+        <View style={styles.langRow}>
+          {LANGUAGES.map((l) => {
+            const active = i18n.language === l.code;
+            return (
+              <Pressable
+                key={l.code}
+                style={[styles.langChip, active && styles.langChipActive]}
+                onPress={() => void setLanguage(l.code as LanguageCode)}
+              >
+                <Text style={styles.langFlag}>{l.flag}</Text>
+                <Text style={[styles.langLabel, active && styles.langLabelActive]}>{l.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <Pressable style={styles.partner} onPress={() => router.push('/role-select')}>
           <Icon name="storefront" size={22} color={colors.secondary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.partnerLabel}>Espace partenaire</Text>
-            <Text style={styles.partnerSub}>Restaurant ou livreur ? Gérer / demander l'accès.</Text>
+            <Text style={styles.partnerLabel}>{t('profile.partnerLabel')}</Text>
+            <Text style={styles.partnerSub}>{t('profile.partnerSub')}</Text>
           </View>
           <Icon name="chevron_right" size={20} color={colors.textFaint} />
         </Pressable>
 
         <Pressable style={styles.logout} onPress={handleSignOut}>
           <Icon name="logout" size={20} color={colors.primary} />
-          <Text style={styles.logoutText}>Se déconnecter</Text>
+          <Text style={styles.logoutText}>{t('profile.signOut')}</Text>
         </Pressable>
         <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
       </ScrollView>
@@ -187,6 +209,21 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 20,
   },
+  langRow: { flexDirection: 'row', gap: 8 },
+  langChip: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 12,
+    borderRadius: radius.tile,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  langChipActive: { borderColor: colors.primary, backgroundColor: colors.dangerBg },
+  langFlag: { fontSize: 22 },
+  langLabel: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
+  langLabelActive: { fontFamily: fonts.bold, color: colors.primary },
   partnerLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   partnerSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   version: {

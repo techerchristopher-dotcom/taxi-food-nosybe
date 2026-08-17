@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { Button } from './Button';
 import { colors, fonts, radius } from '../theme/tokens';
@@ -21,6 +22,7 @@ export function ConflictSheet({
   onClear: () => void;
   onKeep: () => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
@@ -30,14 +32,17 @@ export function ConflictSheet({
           <View style={styles.iconTile}>
             <Icon name="swap_horiz" size={28} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Changer de restaurant ?</Text>
+          <Text style={styles.title}>{t('conflict.title')}</Text>
           <Text style={styles.body}>
-            Votre panier contient des plats de <Text style={styles.strong}>{currentName}</Text>. Ajouter
-            un produit de <Text style={styles.strong}>{newName}</Text> videra le panier en cours.
+            {t('conflict.bodyStart')}
+            <Text style={styles.strong}>{currentName}</Text>
+            {t('conflict.bodyMiddle')}
+            <Text style={styles.strong}>{newName}</Text>
+            {t('conflict.bodyEnd')}
           </Text>
           <View style={{ gap: 10, marginTop: 22 }}>
-            <Button label="Vider et continuer" onPress={onClear} />
-            <Button label="Garder mon panier" variant="outline" onPress={onKeep} />
+            <Button label={t('conflict.clear')} onPress={onClear} />
+            <Button label={t('conflict.keep')} variant="outline" onPress={onKeep} />
           </View>
         </View>
       </View>

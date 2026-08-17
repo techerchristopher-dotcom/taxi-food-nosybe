@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { MapPreview } from '../components/MapPreview';
 import { SectionLabel } from '../components/primitives';
@@ -10,6 +11,7 @@ import { Button } from '../components/Button';
 import { BottomBar } from '../components/BottomBar';
 import { colors, fonts, radius, spacing } from '../theme/tokens';
 import { createAddress, listAddresses } from '../data/api';
+import { formatAddressLine } from '../data/types';
 import { useLoad } from '../lib/useLoad';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
@@ -20,8 +22,24 @@ import { useSession } from '../store/session';
  * automatiquement de la position (repli « Nosy Be » si indisponible). Un seul champ libre
  * facultatif pour les précisions au livreur.
  */
+/**
+ * Ligne d'adresse la plus PRÉCISE que sait donner le géocodage inverse : numéro + rue,
+ * sinon le nom du lieu/POI, complété du quartier s'il n'y figure pas déjà.
+ * On n'utilise jamais `region` (« Province d'Antsiranana ») : trop large pour livrer.
+ */
+function preciseLine(g?: Location.LocationGeocodedAddress): string {
+  if (!g) return '';
+  const streetPart = [g.streetNumber, g.street].filter(Boolean).join(' ').trim();
+  const head = streetPart || g.name?.trim() || '';
+  const area = (g.district || g.subregion || g.city || '').trim();
+  if (!head) return area;
+  if (area && !head.toLowerCase().includes(area.toLowerCase())) return `${head}, ${area}`;
+  return head;
+}
+
 export default function AddressScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const selectedId = useCheckout((s) => s.addressId);
   const setAddress = useCheckout((s) => s.setAddress);
   const profilePhone = useSession((s) => s.session?.phone ?? '');
@@ -30,7 +48,11 @@ export default function AddressScreen() {
 
   const [phone, setPhone] = useState(() => profilePhone || '+261 ');
   const [note, setNote] = useState(''); // champ libre facultatif (précisions livreur)
-  const [autoZone, setAutoZone] = useState('Nosy Be'); // déduit du GPS
+  const [autoZone, setAutoZone] = useState('Nosy Be'); // quartier, déduit du GPS
+  // Adresse précise (rue / repère). Pré-remplie par le géocodage inverse mais TOUJOURS
+  // éditable : le géocodage est souvent approximatif à Nosy Be, le client corrige.
+  const [street, setStreet] = useState('');
+  const [streetTouched, setStreetTouched] = useState(false);
   const [save, setSave] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,14 +96,21 @@ export default function AddressScreen() {
       const longitude = pos.coords.longitude;
       setCoords({ latitude, longitude, capturedAt: new Date(pos.timestamp).toISOString() });
       setGpsStatus('ok');
-      // Quartier déduit automatiquement (reverse geocoding — natif uniquement).
+      // Quartier + rue déduits automatiquement (reverse geocoding — natif uniquement).
       if (Platform.OS !== 'web') {
         try {
           const [g] = await Location.reverseGeocodeAsync({ latitude, longitude });
-          const z = g?.district || g?.subregion || g?.city || g?.region;
+          // `region` est volontairement exclu : à Nosy Be il vaut « Province d'Antsiranana »,
+          // une zone administrative inutilisable pour un livreur — c'était le bug signalé.
+          const z = g?.district || g?.subregion || g?.city;
           if (z) setAutoZone(z);
+          // Ne jamais écraser ce que le client a déjà tapé.
+          if (!streetTouched) {
+            const s = preciseLine(g);
+            if (s) setStreet(s);
+          }
         } catch {
-          /* repli : on garde « Nosy Be » */
+          /* repli : on garde « Nosy Be » et le champ rue vide, à saisir à la main */
         }
       }
     } catch {
@@ -100,7 +129,9 @@ export default function AddressScreen() {
 
   const selectedSaved = newMode ? null : saved?.find((a) => a.id === selectedId) ?? null;
   const savedHasGps = selectedSaved ? selectedSaved.latitude != null && selectedSaved.longitude != null : false;
-  const newFormReady = !!coords && phone.trim().length >= 6;
+  // L'adresse précise est exigée : c'est elle que lit le livreur, la position GPS seule
+  // ne suffisait pas à écrire une ligne d'adresse lisible.
+  const newFormReady = !!coords && phone.trim().length >= 6 && street.trim().length >= 3;
   const canContinue = selectedSaved ? savedHasGps : newFormReady;
 
   async function confirm() {
@@ -114,7 +145,10 @@ export default function AddressScreen() {
     setSaving(true);
     try {
       const addr = await createAddress({
-        label: autoZone,
+        // `label` = l'adresse précise, `zone` = le quartier. Les deux valaient auparavant
+        // la même zone administrative, d'où le « Province d'Antsiranana — Province
+        // d'Antsiranana » affiché à la validation de commande.
+        label: street.trim() || autoZone,
         zone: autoZone,
         landmark: note.trim(), // précisions → visibles par le livreur
         phone: phone.trim(),
@@ -127,7 +161,7 @@ export default function AddressScreen() {
       setAddress(addr.id);
       router.push('/checkout');
     } catch {
-      setError("Impossible d'enregistrer l'adresse. Réessaie.");
+      setError(t('address.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -135,7 +169,7 @@ export default function AddressScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Adresse de livraison" />
+      <Header title={t('address.title')} />
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* ===== POSITION GPS — action principale ===== */}
@@ -156,11 +190,8 @@ export default function AddressScreen() {
               ) : (
                 <>
                   <Icon name="my_location" size={30} color={colors.white} />
-                  <Text style={styles.gpsHeroTitle}>Partager ma position</Text>
-                  <Text style={styles.gpsHeroSub}>
-                    Obligatoire pour être livré — le livreur vous trouve grâce à votre position
-                    (pas d'adressage postal à Nosy Be).
-                  </Text>
+                  <Text style={styles.gpsHeroTitle}>{t('address.shareTitle')}</Text>
+                  <Text style={styles.gpsHeroSub}>{t('address.shareSub')}</Text>
                 </>
               )}
             </Pressable>
@@ -170,27 +201,25 @@ export default function AddressScreen() {
             <View style={styles.gpsOkTop}>
               <Icon name="check_circle" size={26} color={colors.success} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.gpsOkTitle}>Position enregistrée</Text>
+                <Text style={styles.gpsOkTitle}>{t('address.captured')}</Text>
                 <Text style={styles.gpsOkZone}>{autoZone} · {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}</Text>
               </View>
             </View>
             <MapPreview latitude={coords.latitude} longitude={coords.longitude} label={autoZone} />
-            <Text style={styles.mapHint}>Appuie sur la carte pour vérifier que le repère est au bon endroit.</Text>
+            <Text style={styles.mapHint}>{t('address.mapHint')}</Text>
             <Pressable onPress={captureLocation} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
-              <Text style={styles.gpsLink}>Actualiser ma position</Text>
+              <Text style={styles.gpsLink}>{t('address.refresh')}</Text>
             </Pressable>
           </View>
         )}
 
         {gpsStatus === 'error' ? (
           <View style={styles.gpsErrorBox}>
-            <Text style={styles.gpsErrorText}>
-              Localisation refusée ou indisponible. Active-la pour continuer.
-            </Text>
+            <Text style={styles.gpsErrorText}>{t('address.gpsError')}</Text>
             <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
-              <Pressable onPress={captureLocation} hitSlop={6}><Text style={styles.gpsLink}>Réessayer</Text></Pressable>
+              <Pressable onPress={captureLocation} hitSlop={6}><Text style={styles.gpsLink}>{t('common.retry')}</Text></Pressable>
               <Pressable onPress={() => { try { void Linking.openSettings(); } catch { /* web */ } }} hitSlop={6}>
-                <Text style={styles.gpsLink}>Ouvrir les réglages</Text>
+                <Text style={styles.gpsLink}>{t('common.openSettings')}</Text>
               </Pressable>
             </View>
           </View>
@@ -198,7 +227,20 @@ export default function AddressScreen() {
 
         {/* ===== Champs secondaires ===== */}
         <View style={styles.fields}>
-          <Field label="Téléphone de contact">
+          {/* Adresse précise — pré-remplie par le GPS, mais toujours modifiable :
+              le géocodage inverse est approximatif à Nosy Be. */}
+          <Field label={t('address.streetLabel')}>
+            <TextInput
+              value={street}
+              onChangeText={(t) => { setStreet(t); setStreetTouched(true); setNewMode(true); }}
+              placeholder={t('address.streetPlaceholder')}
+              placeholderTextColor={colors.textFaint}
+              style={styles.input}
+            />
+            <Text style={styles.fieldHint}>{t('address.streetHint')}</Text>
+          </Field>
+
+          <Field label={t('address.phoneLabel')}>
             <TextInput
               value={phone}
               onChangeText={(t) => { setPhone(t); setNewMode(true); }}
@@ -207,11 +249,11 @@ export default function AddressScreen() {
             />
           </Field>
 
-          <Field label="Précisions pour le livreur (facultatif)">
+          <Field label={t('address.noteLabel')}>
             <TextInput
               value={note}
               onChangeText={(t) => { setNote(t); setNewMode(true); }}
-              placeholder="Ex. prendre les escaliers · appart 5, code portail 12345 · maison bleue"
+              placeholder={t('address.notePlaceholder')}
               placeholderTextColor={colors.textFaint}
               multiline
               style={[styles.input, styles.textarea]}
@@ -222,7 +264,7 @@ export default function AddressScreen() {
             <View style={[styles.toggle, { backgroundColor: save ? colors.primary : colors.borderStrong, alignItems: save ? 'flex-end' : 'flex-start' }]}>
               <View style={styles.knob} />
             </View>
-            <Text style={styles.saveText}>Enregistrer cette adresse</Text>
+            <Text style={styles.saveText}>{t('address.saveAddress')}</Text>
           </Pressable>
         </View>
 
@@ -231,7 +273,7 @@ export default function AddressScreen() {
           <>
             <View style={styles.dividerRow}>
               <View style={styles.hr} />
-              <SectionLabel>Ou réutiliser une adresse</SectionLabel>
+              <SectionLabel>{t('address.reuse')}</SectionLabel>
               <View style={styles.hr} />
             </View>
             <View style={{ gap: 10 }}>
@@ -246,9 +288,9 @@ export default function AddressScreen() {
                   >
                     <Icon name={a.icon} size={22} color={active ? colors.primary : colors.textMuted} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.addrLabel}>{a.zone}{a.landmark ? ` — ${a.landmark}` : ''}</Text>
+                      <Text style={styles.addrLabel}>{formatAddressLine(a.zone, a.label)}</Text>
                       <Text style={styles.addrDetail}>{a.phone}</Text>
-                      {noGps ? <Text style={styles.addrNoGps}>⚠ Sans position GPS — non utilisable</Text> : null}
+                      {noGps ? <Text style={styles.addrNoGps}>{t('address.noGps')}</Text> : null}
                     </View>
                     <Icon
                       name={active ? 'radio_button_checked' : 'radio_button_unchecked'}
@@ -269,11 +311,15 @@ export default function AddressScreen() {
         {!canContinue ? (
           <Text style={styles.blockMsg}>
             {selectedSaved
-              ? "Cette adresse n'a pas de position GPS — partage ta position ci-dessus."
-              : 'Partage ta position GPS ci-dessus pour continuer.'}
+              ? t('address.blockSavedNoGps')
+              : !coords
+                ? t('address.blockNoGps')
+                : street.trim().length < 3
+                  ? t('address.blockNoStreet')
+                  : t('address.blockNoPhone')}
           </Text>
         ) : null}
-        <Button label="Confirmer l'adresse" onPress={confirm} loading={saving} disabled={!canContinue} />
+        <Button label={t('address.confirm')} onPress={confirm} loading={saving} disabled={!canContinue} />
       </BottomBar>
     </View>
   );
@@ -318,6 +364,7 @@ const styles = StyleSheet.create({
   mapHint: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 16, color: colors.textMuted, marginTop: -2 },
   fields: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 14, marginTop: 16 },
   fieldLabel: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },
+  fieldHint: { fontFamily: fonts.regular, fontSize: 11.5, lineHeight: 16, color: colors.textMuted },
   input: {
     minHeight: 50,
     borderRadius: radius.input,

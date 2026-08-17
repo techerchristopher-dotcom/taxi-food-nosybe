@@ -39,7 +39,7 @@ export type Session = {
 };
 
 /** Deep link de retour de l'OAuth (scheme `taxifood` en natif, origine en web). */
-export const redirectTo = makeRedirectUri({ scheme: 'taxifood' });
+export const redirectTo = makeRedirectUri({ scheme: 'taxifood', path: 'auth/callback' });
 
 /**
  * Présence du Client ID Google en env = drapeau « configuration Google faite ».

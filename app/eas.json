@@ -22,6 +22,7 @@
       }
     },
     "production": {
+      "distribution": "store",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bmdveawomizjpiebgtkj.supabase.co",
@@ -31,6 +32,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6802418114"
+      }
+    }
   }
 }

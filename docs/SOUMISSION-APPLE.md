@@ -42,7 +42,28 @@ Travail : `expo-apple-authentication` + activation du provider Apple côté Supa
 bouton sur l'écran de connexion. Nécessite un compte développeur payant, ce qui est déjà
 le cas.
 
-### A2. Suppression de compte absente — règle 5.1.1(v)
+### A2. Suppression de compte — ✅ FAIT (2026-08-18)
+
+Entrée « Supprimer mon compte » en bas du Profil, avec double confirmation. RPC
+`delete_my_account()`, qui n'agit que sur `auth.uid()` — aucun paramètre, donc aucun moyen
+de viser le compte d'un autre.
+
+**Les commandes sont anonymisées, pas supprimées.** `orders.user_id` et
+`orders.address_id` passent à NULL. Sans ça, supprimer un compte effaçait son historique en
+cascade et faussait rétroactivement le rapport de clôture et les reversements aux
+restaurants. Deux migrations ont été nécessaires : rendre ces colonnes nullables et passer
+leurs clés étrangères en `ON DELETE SET NULL`.
+
+Refusé tant qu'une livraison est en cours, sinon la commande resterait bloquée sans livreur.
+
+Vérifié sur la vraie base avec deux comptes jetables (transactions annulées, rien conservé) :
+compte, profil, adresse, jeton push et rôles supprimés ; commande conservée avec son montant,
+`user_id` et `address_id` à NULL ; et refus effectif quand une livraison est en cours.
+
+<details>
+<summary>Le texte d'origine de ce point</summary>
+
+### A2 (avant correction) — règle 5.1.1(v)
 
 **Vérifié** : l'écran Profil propose téléphone, e-mail, adresses, notifications, aide,
 langue, espace partenaire et déconnexion. **Aucune suppression de compte.**
@@ -55,6 +76,8 @@ Travail : une entrée « Supprimer mon compte » dans le Profil, avec confirmati
 serveur une fonction qui supprime le compte Auth. Attention aux commandes déjà passées :
 elles portent `orders.user_id` — il faudra décider entre anonymisation et suppression en
 cascade, sachant que le rapport de clôture admin s'appuie dessus.
+
+</details>
 
 ### A3. Connexion par téléphone visible mais inopérante — règle 2.1
 

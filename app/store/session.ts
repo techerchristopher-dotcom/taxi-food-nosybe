@@ -31,6 +31,8 @@ type SessionState = {
   /** Finalise une session à partir d'un deep link de retour OAuth (cold start). */
   completeFromUrl: (url: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
+  /** Supprime définitivement le compte (règle Apple 5.1.1(v)) puis vide la session. */
+  deleteAccount: () => Promise<void>;
   setPhone: (phone: string) => Promise<void>;
   /** Enregistre le nom du profil (comptes créés par SMS, sans nom). */
   setFullName: (fullName: string) => Promise<void>;
@@ -87,6 +89,15 @@ export const useSession = create<SessionState>((set) => ({
     // l'appareil resterait abonné aux notifications du compte qu'on vient de quitter.
     await unregisterFromPush();
     await auth.signOut();
+    await AsyncStorage.removeItem(MODE_KEY);
+    set({ session: null, mode: null });
+  },
+  deleteAccount: async () => {
+    // Même ordre que signOut : le désenregistrement du jeton push a besoin du jeton
+    // d'accès encore valide. La suppression en base l'effacerait de toute façon, mais on
+    // ne veut pas dépendre de la cascade si la RPC échoue en cours de route.
+    await unregisterFromPush();
+    await auth.deleteAccount();
     await AsyncStorage.removeItem(MODE_KEY);
     set({ session: null, mode: null });
   },

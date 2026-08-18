@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -19,7 +19,9 @@ export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const session = useSession((s) => s.session);
   const signOut = useSession((s) => s.signOut);
+  const deleteAccount = useSession((s) => s.deleteAccount);
   const [notif, setNotif] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const { data: addresses } = useLoad(() => listAddresses(), []);
 
   const name = session?.fullName ?? t('profile.defaultName');
@@ -30,6 +32,35 @@ export default function ProfileScreen() {
   async function handleSignOut() {
     await signOut();
     router.replace('/login');
+  }
+
+  // Double confirmation : c'est irréversible et Apple exige que ce soit clair. Le second
+  // écran nomme ce qui disparaît, pour que personne ne le déclenche en croyant se
+  // déconnecter.
+  function handleDelete() {
+    Alert.alert(t('profile.deleteTitle'), t('profile.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.deleteConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount();
+              router.replace('/login');
+            } catch (e: unknown) {
+              Alert.alert(
+                t('profile.deleteFailedTitle'),
+                e instanceof Error ? e.message : t('profile.deleteFailed'),
+              );
+            } finally {
+              setDeleting(false);
+            }
+          })();
+        },
+      },
+    ]);
   }
 
   return (
@@ -144,6 +175,17 @@ export default function ProfileScreen() {
           <Icon name="logout" size={20} color={colors.primary} />
           <Text style={styles.logoutText}>{t('profile.signOut')}</Text>
         </Pressable>
+
+        {/* Suppression de compte — exigée par Apple (règle 5.1.1(v)) : elle doit être
+            accessible DEPUIS l'app, pas par un formulaire ou un e-mail. Volontairement
+            discrète et en dernier, sous la déconnexion, pour ne pas se toucher par
+            mégarde ; la confirmation fait le reste. */}
+        <Pressable style={styles.deleteAccount} onPress={handleDelete} disabled={deleting}>
+          <Text style={styles.deleteAccountText}>
+            {deleting ? t('profile.deleting') : t('profile.deleteAccount')}
+          </Text>
+        </Pressable>
+
         <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
       </ScrollView>
     </View>
@@ -200,6 +242,13 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   logoutText: { fontFamily: fonts.bold, fontSize: 15, color: colors.primary },
+  deleteAccount: { alignItems: 'center', paddingVertical: 16, marginTop: 4 },
+  deleteAccountText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+  },
   partner: {
     flexDirection: 'row',
     alignItems: 'center',

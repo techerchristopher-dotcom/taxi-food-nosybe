@@ -254,7 +254,14 @@
     "partnerLabel": "Espace partenaire",
     "partnerSub": "Restaurant ou livreur ? Gérer / demander l'accès.",
     "signOut": "Se déconnecter",
-    "emailAccount": "Adresse e-mail"
+    "emailAccount": "Adresse e-mail",
+    "deleteAccount": "Supprimer mon compte",
+    "deleting": "Suppression…",
+    "deleteTitle": "Supprimer ton compte ?",
+    "deleteBody": "Ton profil, tes adresses et tes appareils seront définitivement effacés. C'est irréversible. Tes commandes passées sont conservées de façon anonyme, pour la comptabilité des restaurants.",
+    "deleteConfirm": "Supprimer",
+    "deleteFailedTitle": "Suppression impossible",
+    "deleteFailed": "Impossible de supprimer le compte pour le moment."
   },
   "authEmail": {
     "signInTitle": "Connexion\npar e-mail",

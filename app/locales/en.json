@@ -254,7 +254,14 @@
     "partnerLabel": "Partner area",
     "partnerSub": "Restaurant or courier? Manage / request access.",
     "signOut": "Sign out",
-    "emailAccount": "Email address"
+    "emailAccount": "Email address",
+    "deleteAccount": "Delete my account",
+    "deleting": "Deleting…",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your profile, addresses and devices will be permanently erased. This cannot be undone. Your past orders are kept anonymously, for the restaurants’ accounting.",
+    "deleteConfirm": "Delete",
+    "deleteFailedTitle": "Cannot delete",
+    "deleteFailed": "Could not delete the account right now."
   },
   "authEmail": {
     "signInTitle": "Sign in\nwith email",

@@ -231,6 +231,25 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/**
+ * Supprime définitivement le compte de l'utilisateur connecté (règle Apple 5.1.1(v)).
+ *
+ * La RPC ne prend aucun paramètre : elle agit sur `auth.uid()`, donc on ne peut pas viser
+ * le compte de quelqu'un d'autre. Disparaissent : profil, adresses, rôles, rattachement
+ * restaurant, fiche livreur et jetons push. Les **commandes sont conservées mais
+ * anonymisées** (`user_id` et `address_id` à NULL) — sinon supprimer un compte fausserait
+ * rétroactivement le rapport de clôture et les reversements aux restaurants.
+ *
+ * Refusé tant qu'une livraison est en cours : la commande resterait bloquée côté client et
+ * restaurant, sans personne pour la livrer. Le message de la base remonte tel quel.
+ */
+export async function deleteAccount(): Promise<void> {
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw new Error(error.message);
+  // La session locale ne vaut plus rien : le compte n'existe plus côté serveur.
+  await supabase.auth.signOut();
+}
+
 export async function getSession(): Promise<Session | null> {
   return buildSession();
 }

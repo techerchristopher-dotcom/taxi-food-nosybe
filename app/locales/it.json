@@ -254,7 +254,14 @@
     "partnerLabel": "Area partner",
     "partnerSub": "Ristorante o rider? Gestisci / richiedi l'accesso.",
     "signOut": "Esci",
-    "emailAccount": "Indirizzo e-mail"
+    "emailAccount": "Indirizzo e-mail",
+    "deleteAccount": "Elimina il mio account",
+    "deleting": "Eliminazione…",
+    "deleteTitle": "Eliminare il tuo account?",
+    "deleteBody": "Il tuo profilo, i tuoi indirizzi e i tuoi dispositivi saranno cancellati definitivamente. È irreversibile. I tuoi ordini passati restano in forma anonima, per la contabilità dei ristoranti.",
+    "deleteConfirm": "Elimina",
+    "deleteFailedTitle": "Eliminazione impossibile",
+    "deleteFailed": "Impossibile eliminare l’account in questo momento."
   },
   "authEmail": {
     "signInTitle": "Accedi\ncon e-mail",

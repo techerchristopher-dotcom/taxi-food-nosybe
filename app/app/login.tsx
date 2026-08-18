@@ -137,6 +137,12 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        {/* Chaque bouton ci-dessous connecte OU inscrit selon que le compte existe déjà —
+            même geste, aucun écran séparé. Sans cette ligne, le lien « Créer un compte » en
+            bas de l'écran (qui ne couvre que l'e-mail) laissait croire à tort que les
+            boutons sociaux ne servaient qu'à des comptes déjà existants. */}
+        <Text style={styles.actionHint}>{t('login.actionHint')}</Text>
+
         {/* Sign in with Apple — exigé par la règle 4.8 dès lors qu'on propose Google ou
             Facebook. Placé en premier, comme le demandent les recommandations d'Apple.
             Bouton NATIF : son libellé, sa langue et son apparence sont imposés par Apple,
@@ -276,6 +282,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 14,
     maxWidth: 300,
+  },
+  actionHint: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   // Hauteur alignée sur les autres boutons ; l'apparence interne appartient à Apple.
   appleBtn: { width: '100%', height: 56 },

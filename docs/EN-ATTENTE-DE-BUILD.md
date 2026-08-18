@@ -27,7 +27,9 @@ réelle — voir l'historique du dépôt si besoin de le rejouer).
 
 ## Dans le prochain build
 
-*(vide — rien en attente)*
+| Commit | Chantier | Vérifié |
+|---|---|---|
+| *(à committer)* | Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout autant que l'e-mail (« Connecte-toi ou crée ton compte en un tap » ajouté, lien du bas renommé « Créer un compte par e-mail ») | tsc + export web + chargement réel du bundle |
 
 ## Encore à construire avant de lancer un futur build
 

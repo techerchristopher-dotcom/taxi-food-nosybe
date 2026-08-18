@@ -42,8 +42,9 @@
     "phoneShort": "Numéro",
     "emailShort": "E-mail",
     "noAccount": "Pas encore de compte ?",
-    "createAccount": "Créer un compte",
-    "facebookNotConfigured": "Connexion Facebook pas encore configurée (EXPO_PUBLIC_FACEBOOK_APP_ID absent de app/.env, et provider Facebook à activer côté Supabase)."
+    "createAccount": "Créer un compte par e-mail",
+    "facebookNotConfigured": "Connexion Facebook pas encore configurée (EXPO_PUBLIC_FACEBOOK_APP_ID absent de app/.env, et provider Facebook à activer côté Supabase).",
+    "actionHint": "Connecte-toi ou crée ton compte en un tap"
   },
   "phone": {
     "countryLabel": "Indicatif du pays",

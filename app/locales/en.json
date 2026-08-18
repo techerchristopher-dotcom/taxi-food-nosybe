@@ -42,8 +42,9 @@
     "phoneShort": "Phone",
     "emailShort": "Email",
     "noAccount": "Don't have an account?",
-    "createAccount": "Create one",
-    "facebookNotConfigured": "Facebook sign-in isn't configured yet (EXPO_PUBLIC_FACEBOOK_APP_ID missing from app/.env, and the Facebook provider must be enabled in Supabase)."
+    "createAccount": "Create an account by email",
+    "facebookNotConfigured": "Facebook sign-in isn't configured yet (EXPO_PUBLIC_FACEBOOK_APP_ID missing from app/.env, and the Facebook provider must be enabled in Supabase).",
+    "actionHint": "Sign in or create your account in one tap"
   },
   "phone": {
     "countryLabel": "Country code",

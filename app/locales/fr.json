@@ -38,7 +38,12 @@
     "facebook": "Continuer avec Facebook",
     "terms": "En continuant, vous acceptez les conditions d'utilisation de Taxi Food.",
     "failed": "Connexion impossible pour le moment. Réessayez.",
-    "googleNotConfigured": "Connexion Google pas encore configurée (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID absent de app/.env, et provider Google à activer côté Supabase)."
+    "googleNotConfigured": "Connexion Google pas encore configurée (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID absent de app/.env, et provider Google à activer côté Supabase).",
+    "phoneShort": "Numéro",
+    "emailShort": "E-mail",
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte",
+    "facebookNotConfigured": "Connexion Facebook pas encore configurée (EXPO_PUBLIC_FACEBOOK_APP_ID absent de app/.env, et provider Facebook à activer côté Supabase)."
   },
   "phone": {
     "countryLabel": "Indicatif du pays",
@@ -240,7 +245,6 @@
   "profile": {
     "defaultName": "Client",
     "phone": "Téléphone",
-    "googleAccount": "Compte Google",
     "addresses": "Adresses enregistrées",
     "addAddress": "Ajouter",
     "noAddress": "Aucune adresse enregistrée pour l'instant.",
@@ -249,6 +253,41 @@
     "language": "Langue de l'application",
     "partnerLabel": "Espace partenaire",
     "partnerSub": "Restaurant ou livreur ? Gérer / demander l'accès.",
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "emailAccount": "Adresse e-mail"
+  },
+  "authEmail": {
+    "signInTitle": "Connexion\npar e-mail",
+    "signInSubtitle": "Entrez l'e-mail et le mot de passe de votre compte Taxi Food.",
+    "signUpTitle": "Créer\nun compte",
+    "signUpSubtitle": "Quelques secondes, et vous pouvez commander.",
+    "nameLabel": "Nom complet",
+    "namePlaceholder": "Ex. Jean Rakoto",
+    "emailLabel": "Adresse e-mail",
+    "passwordLabel": "Mot de passe",
+    "passwordRule": "Au moins {{min}} caractères.",
+    "signIn": "Se connecter",
+    "signUp": "Créer mon compte",
+    "forgot": "Mot de passe oublié ?",
+    "resetNeedsEmail": "Entrez d'abord votre adresse e-mail.",
+    "resetSent": "Lien de réinitialisation envoyé. Vérifiez votre boîte mail.",
+    "noAccount": "Pas encore de compte ?",
+    "createOne": "Créer un compte",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "checkInboxTitle": "Vérifiez vos e-mails",
+    "checkInboxBody": "Nous avons envoyé un lien de confirmation à {{email}}. Cliquez dessus pour activer votre compte.",
+    "backToSignIn": "Revenir à la connexion",
+    "askNameTitle": "Comment vous\nappelez-vous ?",
+    "askNameSubtitle": "Le restaurant et le livreur voient ce nom sur votre commande. Demandé une seule fois.",
+    "nameSaveFailed": "Impossible d'enregistrer le nom. Réessayez."
+  },
+  "authError": {
+    "invalidCredentials": "E-mail ou mot de passe incorrect.",
+    "emailTaken": "Un compte existe déjà avec cet e-mail. Connectez-vous.",
+    "weakPassword": "Mot de passe trop simple ou trop court.",
+    "invalidEmail": "Adresse e-mail invalide.",
+    "rateLimit": "Trop de tentatives. Réessayez dans quelques minutes.",
+    "notConfigured": "Ce mode de connexion n'est pas encore activé.",
+    "unknown": "Connexion impossible pour le moment. Réessayez."
   }
 }

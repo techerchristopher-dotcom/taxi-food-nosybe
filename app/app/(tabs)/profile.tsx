@@ -46,14 +46,14 @@ export default function ProfileScreen() {
           </View>
           <View>
             <Text style={styles.name}>{name}</Text>
-            <Text style={styles.email}>{email}</Text>
+            <Text style={styles.email}>{email || phone}</Text>
           </View>
         </View>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <View style={[styles.line, styles.lineBorder]}>
+          <View style={[styles.line, email ? styles.lineBorder : null]}>
             <Icon name="smartphone" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.lineLabel}>{t('profile.phone')}</Text>
@@ -61,13 +61,15 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.action}>{t('common.modify')}</Text>
           </View>
-          <View style={styles.line}>
-            <Icon name="mail" size={22} color={colors.primary} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.lineLabel}>{t('profile.googleAccount')}</Text>
-              <Text style={styles.lineValue}>{email}</Text>
+          {email ? (
+            <View style={styles.line}>
+              <Icon name="mail" size={22} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lineLabel}>{t('profile.emailAccount')}</Text>
+                <Text style={styles.lineValue}>{email}</Text>
+              </View>
             </View>
-          </View>
+          ) : null}
         </Card>
 
         <View style={styles.sectionHead}>

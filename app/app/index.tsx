@@ -4,6 +4,7 @@ import { useSession } from '../store/session';
 /**
  * Aiguillage au démarrage.
  * - Pas de session → connexion.
+ * - Compte sans nom (créé par SMS) → saisie du nom, avant tout le reste.
  * - Client « simple » (aucun rôle pro) → parcours inchangé : téléphone puis app cliente.
  * - Compte multi-rôle (restaurant/livreur) → mode choisi respecté, sinon écran de sélection.
  */
@@ -12,6 +13,11 @@ export default function Index() {
   const mode = useSession((s) => s.mode);
 
   if (!session) return <Redirect href="/login" />;
+
+  // Le nom manque uniquement aux comptes créés par SMS (Google et l'inscription e-mail
+  // le fournissent). On le demande avant tout : le restaurant et le livreur voient ce
+  // nom sur la commande, « Client » ne leur sert à rien.
+  if (!session.hasName) return <Redirect href="/name" />;
 
   const hasStaffRole = session.roles.some((r) => r.role === 'restaurant' || r.role === 'livreur');
   const activeRestaurant =

@@ -25,18 +25,28 @@ type SessionState = {
   hydrate: () => Promise<void>;
   /** Recharge la session (rôles inclus) depuis le backend. */
   refresh: () => Promise<Session | null>;
-  /** Lance le flux Google (signInWithOAuth) et met à jour la session. */
-  signInWithGoogle: () => Promise<Session | null>;
+  /** Lance un flux OAuth (Google ou Facebook) et met à jour la session. */
+  signInWithOAuth: (provider: auth.OAuthProvider) => Promise<Session | null>;
   /** Finalise une session à partir d'un deep link de retour OAuth (cold start). */
   completeFromUrl: (url: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
   setPhone: (phone: string) => Promise<void>;
+  /** Enregistre le nom du profil (comptes créés par SMS, sans nom). */
+  setFullName: (fullName: string) => Promise<void>;
   /** Choisit le mode d'usage courant (persisté). */
   setMode: (mode: AppMode | null) => Promise<void>;
   /** Demande un rôle (request_role) puis rafraîchit la session. */
   requestRole: (role: AppRole) => Promise<Session | null>;
   signInWithPhone: (phone: string) => Promise<void>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<Session | null>;
+  /** Connexion e-mail + mot de passe (compte déjà créé). */
+  signInWithEmail: (email: string, password: string) => Promise<Session | null>;
+  /** Création de compte e-mail + mot de passe. `needsConfirmation` = e-mail à valider. */
+  signUpWithEmail: (
+    fullName: string,
+    email: string,
+    password: string,
+  ) => Promise<{ session: Session | null; needsConfirmation: boolean }>;
 };
 
 export const useSession = create<SessionState>((set) => ({
@@ -61,8 +71,8 @@ export const useSession = create<SessionState>((set) => ({
     set({ session });
     return session;
   },
-  signInWithGoogle: async () => {
-    const session = await auth.signInWithGoogle();
+  signInWithOAuth: async (provider: auth.OAuthProvider) => {
+    const session = await auth.signInWithOAuth(provider);
     if (session) set({ session });
     return session;
   },
@@ -78,6 +88,10 @@ export const useSession = create<SessionState>((set) => ({
   },
   setPhone: async (phone: string) => {
     const updated = await auth.setPhone(phone);
+    set({ session: updated });
+  },
+  setFullName: async (fullName: string) => {
+    const updated = await auth.setFullName(fullName);
     set({ session: updated });
   },
   setMode: async (mode: AppMode | null) => {
@@ -97,5 +111,15 @@ export const useSession = create<SessionState>((set) => ({
     const session = await auth.verifyPhoneOtp(phone, token);
     if (session) set({ session });
     return session;
+  },
+  signInWithEmail: async (email: string, password: string) => {
+    const session = await auth.signInWithEmail(email, password);
+    if (session) set({ session });
+    return session;
+  },
+  signUpWithEmail: async (fullName: string, email: string, password: string) => {
+    const result = await auth.signUpWithEmail(fullName, email, password);
+    if (result.session) set({ session: result.session });
+    return result;
   },
 }));

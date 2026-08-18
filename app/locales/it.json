@@ -38,7 +38,12 @@
     "facebook": "Continua con Facebook",
     "terms": "Continuando accetti le condizioni d'uso di Taxi Food.",
     "failed": "Accesso non disponibile al momento. Riprova.",
-    "googleNotConfigured": "Accesso Google non ancora configurato (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID assente da app/.env e provider Google da attivare su Supabase)."
+    "googleNotConfigured": "Accesso Google non ancora configurato (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID assente da app/.env e provider Google da attivare su Supabase).",
+    "phoneShort": "Telefono",
+    "emailShort": "E-mail",
+    "noAccount": "Non hai ancora un account?",
+    "createAccount": "Creane uno",
+    "facebookNotConfigured": "Accesso con Facebook non ancora configurato (EXPO_PUBLIC_FACEBOOK_APP_ID assente da app/.env, e provider Facebook da attivare su Supabase)."
   },
   "phone": {
     "countryLabel": "Prefisso del paese",
@@ -240,7 +245,6 @@
   "profile": {
     "defaultName": "Cliente",
     "phone": "Telefono",
-    "googleAccount": "Account Google",
     "addresses": "Indirizzi salvati",
     "addAddress": "Aggiungi",
     "noAddress": "Nessun indirizzo salvato per ora.",
@@ -249,6 +253,41 @@
     "language": "Lingua dell'app",
     "partnerLabel": "Area partner",
     "partnerSub": "Ristorante o rider? Gestisci / richiedi l'accesso.",
-    "signOut": "Esci"
+    "signOut": "Esci",
+    "emailAccount": "Indirizzo e-mail"
+  },
+  "authEmail": {
+    "signInTitle": "Accedi\ncon e-mail",
+    "signInSubtitle": "Inserisci l'e-mail e la password del tuo account Taxi Food.",
+    "signUpTitle": "Crea\nun account",
+    "signUpSubtitle": "Pochi secondi, e puoi ordinare.",
+    "nameLabel": "Nome completo",
+    "namePlaceholder": "Es. Jean Rakoto",
+    "emailLabel": "Indirizzo e-mail",
+    "passwordLabel": "Password",
+    "passwordRule": "Almeno {{min}} caratteri.",
+    "signIn": "Accedi",
+    "signUp": "Crea il mio account",
+    "forgot": "Password dimenticata?",
+    "resetNeedsEmail": "Inserisci prima il tuo indirizzo e-mail.",
+    "resetSent": "Link di reimpostazione inviato. Controlla la tua casella.",
+    "noAccount": "Non hai ancora un account?",
+    "createOne": "Creane uno",
+    "haveAccount": "Hai già un account?",
+    "checkInboxTitle": "Controlla le tue e-mail",
+    "checkInboxBody": "Abbiamo inviato un link di conferma a {{email}}. Cliccalo per attivare il tuo account.",
+    "backToSignIn": "Torna all'accesso",
+    "askNameTitle": "Come\nti chiami?",
+    "askNameSubtitle": "Il ristorante e il corriere vedono questo nome sul tuo ordine. Richiesto una sola volta.",
+    "nameSaveFailed": "Impossibile salvare il nome. Riprova."
+  },
+  "authError": {
+    "invalidCredentials": "E-mail o password errati.",
+    "emailTaken": "Esiste già un account con questa e-mail. Accedi.",
+    "weakPassword": "Password troppo debole o troppo corta.",
+    "invalidEmail": "Indirizzo e-mail non valido.",
+    "rateLimit": "Troppi tentativi. Riprova tra qualche minuto.",
+    "notConfigured": "Questo metodo di accesso non è ancora attivo.",
+    "unknown": "Accesso non possibile al momento. Riprova."
   }
 }

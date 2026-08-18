@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
-import { googleConfigured } from '../lib/auth';
+import { facebookConfigured, googleConfigured, OAuthProvider } from '../lib/auth';
 import { Icon } from '../components/Icon';
 
 // Nécessaire pour finaliser le retour du navigateur d'authentification.
@@ -20,9 +20,10 @@ export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const signInWithGoogle = useSession((s) => s.signInWithGoogle);
+  const signInWithOAuth = useSession((s) => s.signInWithOAuth);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
-  const [loading, setLoading] = useState(false);
+  // Quel bouton social est en cours (pour n'afficher le spinner que sur celui-là).
+  const [pending, setPending] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Filet de sécurité : si l'app est rouverte via le deep link OAuth (cold start),
@@ -41,31 +42,34 @@ export default function LoginScreen() {
       } catch {
         setError(t('login.failed'));
       } finally {
-        setLoading(false);
+        setPending(null);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingUrl]);
 
-  async function handleGoogle() {
-    if (!googleConfigured()) {
-      setError(t('login.googleNotConfigured'));
+  async function handleOAuth(provider: OAuthProvider) {
+    // Garde de configuration : sans identifiants côté Supabase, le flux s'ouvre sur une
+    // page d'erreur du fournisseur. Mieux vaut le dire tout de suite.
+    const configured = provider === 'google' ? googleConfigured() : facebookConfigured();
+    if (!configured) {
+      setError(t(provider === 'google' ? 'login.googleNotConfigured' : 'login.facebookNotConfigured'));
       return;
     }
     setError(null);
-    setLoading(true);
+    setPending(provider);
     try {
-      const session = await signInWithGoogle();
+      const session = await signInWithOAuth(provider);
       if (session) {
-        // L'aiguillage (index) décide : téléphone, sélection de rôle, ou app.
+        // L'aiguillage (index) décide : nom, téléphone, sélection de rôle, ou app.
         router.replace('/');
       } else {
         // Annulé par l'utilisateur (fenêtre fermée).
-        setLoading(false);
+        setPending(null);
       }
     } catch {
       setError(t('login.failed'));
-      setLoading(false);
+      setPending(null);
     }
   }
 
@@ -89,10 +93,10 @@ export default function LoginScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Pressable
-          onPress={loading ? undefined : handleGoogle}
+          onPress={pending ? undefined : () => handleOAuth('google')}
           style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.9 }]}
         >
-          {loading ? (
+          {pending === 'google' ? (
             <ActivityIndicator color={colors.ink} />
           ) : (
             <>
@@ -103,20 +107,44 @@ export default function LoginScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => router.push('/login-phone')}
-          style={({ pressed }) => [styles.socialBtn, { marginTop: 10 }, pressed && { opacity: 0.9 }]}
-        >
-          <View style={styles.phoneIcon}>
-            <Icon name="smartphone" size={20} color={colors.white} />
-          </View>
-          <Text style={styles.socialText}>{t('login.phone')}</Text>
-        </Pressable>
-
-        <Pressable
+          onPress={pending ? undefined : () => handleOAuth('facebook')}
           style={({ pressed }) => [styles.socialBtn, styles.fbBtn, { marginTop: 10 }, pressed && { opacity: 0.9 }]}
         >
-          <FacebookF />
-          <Text style={[styles.socialText, { color: colors.white }]}>{t('login.facebook')}</Text>
+          {pending === 'facebook' ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <>
+              <FacebookF />
+              <Text style={[styles.socialText, { color: colors.white }]}>{t('login.facebook')}</Text>
+            </>
+          )}
+        </Pressable>
+
+        <View style={styles.row}>
+          <Pressable
+            onPress={() => router.push('/login-phone')}
+            style={({ pressed }) => [styles.socialBtn, styles.half, pressed && { opacity: 0.9 }]}
+          >
+            <View style={styles.phoneIcon}>
+              <Icon name="smartphone" size={18} color={colors.white} />
+            </View>
+            <Text style={styles.socialTextSmall}>{t('login.phoneShort')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/login-email')}
+            style={({ pressed }) => [styles.socialBtn, styles.half, pressed && { opacity: 0.9 }]}
+          >
+            <View style={[styles.phoneIcon, { backgroundColor: colors.ink }]}>
+              <Icon name="mail" size={18} color={colors.white} />
+            </View>
+            <Text style={styles.socialTextSmall}>{t('login.emailShort')}</Text>
+          </Pressable>
+        </View>
+
+        <Pressable onPress={() => router.push('/signup')} hitSlop={8} style={{ marginTop: 18 }}>
+          <Text style={styles.signupLine}>
+            {t('login.noAccount')} <Text style={styles.signupStrong}>{t('login.createAccount')}</Text>
+          </Text>
         </Pressable>
 
         <Text style={styles.terms}>{t('login.terms')}</Text>
@@ -202,9 +230,14 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   socialText: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  socialTextSmall: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  row: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 10 },
+  half: { flex: 1, gap: 8, paddingHorizontal: 4 },
+  signupLine: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
+  signupStrong: { fontFamily: fonts.bold, color: colors.primary },
   fbBtn: { backgroundColor: '#1877F2', borderColor: '#1877F2' },
   phoneIcon: {
-    width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary,
+    width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
   terms: {

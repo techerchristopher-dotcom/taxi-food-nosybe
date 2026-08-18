@@ -114,7 +114,10 @@ Retour de test TestFlight sur iPhone, 5 points corrigés + 2 chantiers :
 - Provider Google activé côté Supabase (Client ID + Secret). Redirect URLs Supabase autorisées : `taxifood://*`, `exp://*`, `http://localhost:8081`.
 - **Le login réel ne peut pas être testé par Claude** (saisie d'identifiants Google = action humaine). Vérifié : la chaîne serveur renvoie bien un 302 vers Google.
 - **Téléphone (SMS OTP)**, depuis le 2026-08-17 : écran `app/app/login-phone.tsx`, `signInWithOtp`/`verifyOtp` dans `app/lib/auth.ts`. Fonctionnel côté code ; comme Google, nécessite un humain pour saisir un vrai numéro/code. Depuis le 2026-08-18, le numéro vérifié est recopié dans `profiles` par le trigger — voir « Reconnexion des utilisateurs déjà inscrits ».
-- **Bouton Facebook**, présent sur `app/app/login.tsx` : **volontairement sans câblage** (aucun `onPress`, affichage seul) — décision explicite du 2026-08-17, en attente d'une consigne produit avant de le brancher. Ne pas y toucher sans demande explicite.
+- **Facebook**, depuis le 2026-08-18 : **câblé** (`signInWithOAuth('facebook')`). La décision du 2026-08-17 de le laisser sans `onPress` est annulée. ⚠️ Le provider Facebook n'est **pas encore configuré côté Supabase** : tant que `EXPO_PUBLIC_FACEBOOK_APP_ID` est absent de `app/.env`, le bouton affiche `login.facebookNotConfigured` au lieu d'ouvrir une page d'erreur Meta.
+- **E-mail + mot de passe**, depuis le 2026-08-18 : `app/app/login-email.tsx` (connexion + mot de passe oublié) et `app/app/signup.tsx` (création de compte avec nom). Erreurs Supabase traduites en codes métier (`AuthError`), jamais le message anglais brut.
+- **Nom du profil** : `app/app/name.tsx`, demandé une seule fois aux comptes **créés par SMS** (l'OTP ne fournit aucun nom). L'aiguillage `app/app/index.tsx` s'appuie sur `session.hasName`, pas sur `fullName` — qui retombe sur « Client » et masquerait le manque.
+- ⚠️ **Aucun fournisseur SMS n'est configuré** : `/otp` répond `400: Unsupported phone provider` (logs d'auth du 2026-08-18). Le bouton « Continuer avec un numéro » est donc **inopérant en production** tant que ce point n'est pas tranché.
 
 ## Build de production (EAS) — état
 

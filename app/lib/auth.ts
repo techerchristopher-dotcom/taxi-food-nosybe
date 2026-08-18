@@ -24,6 +24,9 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
 import { AppRole, initialsFromName, RoleEntry } from '../data/types';
 
+/** Fournisseurs OAuth branchés dans l'app. */
+export type OAuthProvider = 'google' | 'facebook';
+
 export type Session = {
   userId: string;
   fullName: string;
@@ -31,6 +34,12 @@ export type Session = {
   initials: string;
   /** Téléphone : null tant que l'utilisateur ne l'a pas renseigné (1re connexion). */
   phone: string | null;
+  /**
+   * true si le profil porte un vrai nom saisi/fourni. `fullName` retombe sur « Client »
+   * quand il manque : sans ce drapeau, l'aiguillage ne saurait pas distinguer un compte
+   * Google (nom fourni) d'un compte SMS (aucun nom).
+   */
+  hasName: boolean;
   /** Rôles du compte (multi-rôle). Vide pour un client « simple » jamais passé par request_role. */
   roles: RoleEntry[];
   /** Restaurant lié si le compte est staff restaurant ACTIF (V1 : un compte = un resto). */
@@ -48,6 +57,17 @@ export const redirectTo = makeRedirectUri({ scheme: 'taxifood', path: 'auth/call
  */
 export function googleConfigured(): boolean {
   return Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID);
+}
+
+/**
+ * Présence de l'App ID Facebook en env = drapeau « configuration Facebook faite ».
+ *
+ * Même logique que pour Google : le flux passe par le provider configuré CÔTÉ Supabase
+ * (App ID + App Secret dans Authentication → Providers → Facebook). Cette variable ne sert
+ * qu'à éviter d'ouvrir un navigateur sur une erreur Supabase incompréhensible.
+ */
+export function facebookConfigured(): boolean {
+  return Boolean(process.env.EXPO_PUBLIC_FACEBOOK_APP_ID);
 }
 
 /** Extrait les paramètres d'un deep link (query et fragment). */
@@ -88,16 +108,20 @@ export async function createSessionFromUrl(url: string): Promise<Session | null>
 }
 
 /**
- * Lance le flux Google et renvoie la session (ou null si l'utilisateur annule).
- * L'obtention et l'échange du code se font ici ; l'écran n'a qu'à appeler cette fonction.
+ * Lance un flux OAuth (Google ou Facebook) et renvoie la session, ou null si
+ * l'utilisateur annule. L'obtention et l'échange du code se font ici ; l'écran n'a
+ * qu'à appeler cette fonction.
+ *
+ * Le parcours est identique pour les deux fournisseurs — seul le nom du provider change,
+ * puisque c'est Supabase qui détient les identifiants et pilote la redirection.
  */
-export async function signInWithGoogle(): Promise<Session | null> {
+export async function signInWithOAuth(provider: OAuthProvider): Promise<Session | null> {
   // WEB / PWA : redirection pleine page vers Google (pas de fenêtre d'auth séparée, qui
   // sort de la PWA sur iOS et ne revient jamais). Au retour sur l'origine, supabase-js
   // échange le `code` (detectSessionInUrl) et onAuthChange met la session à jour.
   if (Platform.OS === 'web') {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: { redirectTo: window.location.origin },
     });
     if (error) throw error;
@@ -107,11 +131,11 @@ export async function signInWithGoogle(): Promise<Session | null> {
   // NATIF : on ouvre un onglet d'auth et on capte le deep link de retour.
   console.log('[auth] redirectTo =', redirectTo);
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+    provider,
     options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
-  if (!data?.url) throw new Error("URL d'autorisation Google indisponible.");
+  if (!data?.url) throw new Error(`URL d'autorisation ${provider} indisponible.`);
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type === 'success' && result.url) {
@@ -119,6 +143,15 @@ export async function signInWithGoogle(): Promise<Session | null> {
   }
   // 'cancel' / 'dismiss' : l'utilisateur a fermé la fenêtre.
   return null;
+}
+
+/** Raccourci historique — conservé pour ne rien casser côté écrans. */
+export async function signInWithGoogle(): Promise<Session | null> {
+  return signInWithOAuth('google');
+}
+
+export async function signInWithFacebook(): Promise<Session | null> {
+  return signInWithOAuth('facebook');
 }
 
 /**
@@ -155,7 +188,8 @@ async function buildSession(): Promise<Session | null> {
   // VÉRIFIÉ côté Auth. Sans ce repli, un profil au numéro vide renverrait un client
   // déjà inscrit sur l'écran « ton numéro » pour lui redemander ce qu'il vient de valider.
   const authPhone = (user.phone ?? '').trim() || null;
-  const fullName = profile?.full_name ?? meta.full_name ?? meta.name ?? 'Client';
+  const rawName = (profile?.full_name ?? meta.full_name ?? meta.name ?? '').trim();
+  const fullName = rawName || 'Client';
   const email = profile?.email ?? user.email ?? '';
 
   const roles = (roleRows ?? []) as RoleEntry[];
@@ -175,6 +209,7 @@ async function buildSession(): Promise<Session | null> {
     email,
     initials: initialsFromName(fullName),
     phone: profile?.phone ?? authPhone,
+    hasName: rawName.length > 0,
     roles,
     restaurantId: link?.restaurant_id ?? null,
     restaurantName: linkRestaurant?.name ?? null,
@@ -210,6 +245,120 @@ export async function signInWithPhone(phone: string): Promise<void> {
 export async function verifyPhoneOtp(phone: string, token: string): Promise<Session | null> {
   const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
   if (error) throw error;
+  return buildSession();
+}
+
+/**
+ * Codes d'erreur d'authentification traduits par les écrans.
+ *
+ * On NE propage PAS le message brut de Supabase (anglais, technique) : chaque écran mappe
+ * ce code sur une clé i18n. `unknown` est le repli pour tout ce qui n'est pas identifié.
+ */
+export type AuthErrorCode =
+  | 'invalidCredentials'
+  | 'emailTaken'
+  | 'weakPassword'
+  | 'invalidEmail'
+  | 'rateLimit'
+  | 'notConfigured'
+  | 'unknown';
+
+export class AuthError extends Error {
+  code: AuthErrorCode;
+  constructor(code: AuthErrorCode) {
+    super(code);
+    this.name = 'AuthError';
+    this.code = code;
+  }
+}
+
+/** Traduit une erreur Supabase Auth en code métier. */
+function authErrorCode(e: unknown): AuthErrorCode {
+  const err = e as { code?: string; status?: number; message?: string };
+  const code = err?.code ?? '';
+  const msg = (err?.message ?? '').toLowerCase();
+  if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) {
+    return 'invalidCredentials';
+  }
+  if (code === 'user_already_exists' || code === 'email_exists' || msg.includes('already registered')) {
+    return 'emailTaken';
+  }
+  if (code === 'weak_password' || msg.includes('password should be')) return 'weakPassword';
+  if (code === 'validation_failed' || msg.includes('invalid email')) return 'invalidEmail';
+  if (err?.status === 429 || code.includes('rate_limit')) return 'rateLimit';
+  if (msg.includes('not enabled') || msg.includes('unsupported')) return 'notConfigured';
+  return 'unknown';
+}
+
+/** Format e-mail minimal — on laisse Supabase faire la validation qui fait foi. */
+export function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+}
+
+/** Longueur minimale imposée par Supabase Auth par défaut. */
+export const MIN_PASSWORD_LENGTH = 8;
+
+/** Connexion avec un e-mail et un mot de passe déjà créés. */
+export async function signInWithEmail(email: string, password: string): Promise<Session | null> {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+  if (error) throw new AuthError(authErrorCode(error));
+  return buildSession();
+}
+
+/**
+ * Crée un compte e-mail + mot de passe.
+ *
+ * Le nom est passé dans `options.data.full_name` : c'est exactement ce que lit le trigger
+ * `handle_new_user` pour remplir `profiles.full_name`. Sans ça, un compte e-mail serait
+ * créé sans nom, comme les comptes SMS.
+ *
+ * Renvoie `{ session: null, needsConfirmation: true }` quand la confirmation d'e-mail est
+ * active côté Supabase : le compte existe mais la session n'arrive qu'après le clic sur
+ * le lien reçu par e-mail.
+ */
+export async function signUpWithEmail(
+  fullName: string,
+  email: string,
+  password: string,
+): Promise<{ session: Session | null; needsConfirmation: boolean }> {
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: { data: { full_name: fullName.trim() }, emailRedirectTo: redirectTo },
+  });
+  if (error) throw new AuthError(authErrorCode(error));
+  if (!data.session) return { session: null, needsConfirmation: true };
+  return { session: await buildSession(), needsConfirmation: false };
+}
+
+/** Envoie l'e-mail de réinitialisation de mot de passe. */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo,
+  });
+  if (error) throw new AuthError(authErrorCode(error));
+}
+
+/**
+ * Enregistre le nom du profil.
+ *
+ * Nécessaire pour les comptes créés par SMS : l'OTP ne fournit aucun nom, et le livreur
+ * comme le restaurant ont besoin de savoir qui ils servent.
+ */
+export async function setFullName(fullName: string): Promise<Session | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const name = fullName.trim();
+  const { error } = await supabase.from('profiles').update({ full_name: name }).eq('id', user.id);
+  if (error) throw error;
+  // Recopié aussi dans les métadonnées Auth : `buildSession` s'en sert de repli si la
+  // lecture du profil échoue (RLS, réseau), et ça garde les deux sources cohérentes.
+  await supabase.auth.updateUser({ data: { full_name: name } });
   return buildSession();
 }
 

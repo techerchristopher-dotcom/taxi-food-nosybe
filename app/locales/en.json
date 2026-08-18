@@ -38,7 +38,12 @@
     "facebook": "Continue with Facebook",
     "terms": "By continuing, you accept the Taxi Food terms of use.",
     "failed": "Sign-in unavailable right now. Please try again.",
-    "googleNotConfigured": "Google sign-in is not configured yet (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID missing from app/.env, and the Google provider must be enabled in Supabase)."
+    "googleNotConfigured": "Google sign-in is not configured yet (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID missing from app/.env, and the Google provider must be enabled in Supabase).",
+    "phoneShort": "Phone",
+    "emailShort": "Email",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create one",
+    "facebookNotConfigured": "Facebook sign-in isn't configured yet (EXPO_PUBLIC_FACEBOOK_APP_ID missing from app/.env, and the Facebook provider must be enabled in Supabase)."
   },
   "phone": {
     "countryLabel": "Country code",
@@ -240,7 +245,6 @@
   "profile": {
     "defaultName": "Customer",
     "phone": "Phone",
-    "googleAccount": "Google account",
     "addresses": "Saved addresses",
     "addAddress": "Add",
     "noAddress": "No address saved yet.",
@@ -249,6 +253,41 @@
     "language": "App language",
     "partnerLabel": "Partner area",
     "partnerSub": "Restaurant or courier? Manage / request access.",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "emailAccount": "Email address"
+  },
+  "authEmail": {
+    "signInTitle": "Sign in\nwith email",
+    "signInSubtitle": "Enter the email and password of your Taxi Food account.",
+    "signUpTitle": "Create\nan account",
+    "signUpSubtitle": "A few seconds, and you can order.",
+    "nameLabel": "Full name",
+    "namePlaceholder": "e.g. Jean Rakoto",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "passwordRule": "At least {{min}} characters.",
+    "signIn": "Sign in",
+    "signUp": "Create my account",
+    "forgot": "Forgot your password?",
+    "resetNeedsEmail": "Enter your email address first.",
+    "resetSent": "Reset link sent. Check your inbox.",
+    "noAccount": "Don't have an account?",
+    "createOne": "Create one",
+    "haveAccount": "Already have an account?",
+    "checkInboxTitle": "Check your email",
+    "checkInboxBody": "We sent a confirmation link to {{email}}. Click it to activate your account.",
+    "backToSignIn": "Back to sign in",
+    "askNameTitle": "What's\nyour name?",
+    "askNameSubtitle": "The restaurant and the courier see this name on your order. Asked only once.",
+    "nameSaveFailed": "Couldn't save your name. Please try again."
+  },
+  "authError": {
+    "invalidCredentials": "Wrong email or password.",
+    "emailTaken": "An account already exists with this email. Sign in instead.",
+    "weakPassword": "Password too weak or too short.",
+    "invalidEmail": "Invalid email address.",
+    "rateLimit": "Too many attempts. Try again in a few minutes.",
+    "notConfigured": "This sign-in method isn't enabled yet.",
+    "unknown": "Can't sign in right now. Please try again."
   }
 }

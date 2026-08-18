@@ -151,11 +151,19 @@ export function facebookNativeAvailable(): boolean {
  * dans la documentation Supabase — c'est elle qui interroge l'API Graph de Facebook côté
  * serveur avec l'App Secret pour le valider, à la différence d'Apple/Google où le jeton est
  * vérifié par sa signature).
+ *
+ * ⚠️ `loginTrackingIOS: 'enabled'` est **obligatoire**, pas cosmétique. Sans lui, la librairie
+ * a basculé sur le mode iOS « Limited Login » (URL `limited.facebook.com` à l'écran) : il
+ * renvoie un JWT de nature différente, qu'`AccessToken.getCurrentAccessToken()` ne récupère
+ * jamais et que l'API Graph — donc Supabase — ne sait pas valider. Résultat observé : le
+ * SDK réussissait tout son échange avec Facebook, mais **aucune identité n'était jamais
+ * créée côté Supabase**, sans qu'aucune erreur ne le dise clairement. Piège rencontré et
+ * corrigé le 2026-08-18.
  */
 export async function signInWithFacebookNative(): Promise<Session | null> {
   const { LoginManager, AccessToken } = await import('react-native-fbsdk-next');
 
-  const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+  const result = await LoginManager.logInWithPermissions(['public_profile', 'email'], 'enabled');
   if (result.isCancelled) return null;
 
   const token = await AccessToken.getCurrentAccessToken();

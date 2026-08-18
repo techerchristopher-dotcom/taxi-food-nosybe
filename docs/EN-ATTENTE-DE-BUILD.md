@@ -30,14 +30,7 @@ réelle — voir l'historique du dépôt si besoin de le rejouer).
 | Commit | Chantier | Vérifié |
 |---|---|---|
 | *(à committer)* | Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout autant que l'e-mail (« Connecte-toi ou crée ton compte en un tap » ajouté, lien du bas renommé « Créer un compte par e-mail ») | tsc + export web + chargement réel du bundle |
-
-## Encore à construire avant de lancer un futur build
-
-- [ ] Politique de confidentialité et URL de support — ne demandent **aucun build**, déjà en
-      ligne, mais notées ici pour mémoire de ce qui reste à faire avant la soumission finale.
-- [ ] Connexion Facebook/Google native — jamais testée sur un vrai appareil (l'écran web ne
-      peut pas le faire). À vérifier au prochain test TestFlight : bascule vers l'app
-      installée, retrouve la session sans ressaisie.
+| *(à committer)* | **Facebook natif corrigé : `loginTrackingIOS: 'enabled'` forcé.** Sans ce paramètre, le SDK basculait silencieusement en mode iOS « Limited Login » (repéré à l'écran via l'URL `limited.facebook.com`) — un jeton d'une autre nature que Supabase ne pouvait pas valider. Aucune erreur claire ne le signalait : le SDK réussissait tout son échange avec Facebook, mais aucune identité n'était jamais créée côté Supabase. Trouvé en confirmant via `auth.identities` qu'aucune ligne `provider = 'facebook'` n'a jamais existé, malgré un flux qui semblait aboutir à l'écran | tsc + export web. **Pas encore testé sur un vrai appareil** — le test précédent est celui qui a justement révélé le bug |
 
 ## Ce qui n'a PAS besoin d'un build
 
@@ -47,8 +40,8 @@ réelle — voir l'historique du dépôt si besoin de le rejouer).
 |---|---|---|
 | **Connexion par WhatsApp** | les 5 secrets Meta dans le Vault | le code est parti dans le build 9. Dès que les secrets sont posés, le bouton « Continuer avec un numéro » fonctionne sur les apps déjà installées |
 | **Sign in with Apple côté serveur** | ✅ fait le 2026-08-18 | bundle ID renseigné dans *Authentication → Providers → Apple → Client IDs* |
-| **Connexion Google native côté serveur** | ✅ fait le 2026-08-18 | Client ID iOS ajouté dans *Authentication → Providers → Google → Client IDs* |
-| **Connexion Facebook native côté serveur** | ✅ fait le 2026-08-18 | App Secret posé dans *Authentication → Providers → Facebook* |
+| **Connexion Google native côté serveur** | ✅ fait le 2026-08-18 | Client ID iOS ajouté dans *Authentication → Providers → Google → Client IDs*, **et** « Skip nonce check » activé (les SDK natifs mobiles ne savent pas satisfaire le nonce que Supabase attend par défaut — recommandation officielle de leur doc) |
+| **Connexion Facebook native côté serveur** | ✅ fait le 2026-08-18 | App Secret posé, permission `email` ajoutée côté Meta (Use Cases → Authentication and Account Creation — absente du prompt Cowork d'origine), « Allow users without an email » activé en filet de sécurité |
 | **Prix réels** | le vrai catalogue | ils viennent de la base, pas du bundle |
 | **Fiche App Store** | captures, description | métadonnées App Store Connect |
 | **Politique de confidentialité et page d'aide** | ✅ en ligne le 2026-08-18 | pages statiques dans `app/public/`, servies par la PWA |

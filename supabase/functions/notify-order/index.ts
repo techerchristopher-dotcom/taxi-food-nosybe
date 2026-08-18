@@ -1,7 +1,13 @@
 /**
- * notify-order — envoie la notification push au client quand sa commande change d'état.
+ * notify-order — envoie les notifications push liées au cycle de vie d'une commande.
  *
- * Appelée par le trigger Postgres `orders_notify_status` (pg_net), jamais par l'app.
+ * Trois publics, un seul point d'entrée :
+ *   - le **client**      : chaque changement d'état de sa commande ;
+ *   - le **restaurant**  : une commande vient d'arriver ;
+ *   - les **livreurs**   : une course vient d'être libérée par le restaurant.
+ *
+ * Appelée par les triggers Postgres `orders_notify_new` (INSERT) et
+ * `orders_notify_status` (UPDATE) via pg_net, jamais par l'app.
  *
  * Authentification : `verify_jwt` est désactivé (l'appelant est la base, pas un
  * utilisateur), et la fonction vérifie elle-même un secret partagé passé en en-tête
@@ -18,24 +24,39 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 type Lang = 'fr' | 'en' | 'it';
+type Audience = 'client' | 'restaurant' | 'livreur';
 
 type Payload = {
   order_id: string;
   status: string;
   /** true quand c'est la prise en charge par le livreur, pas un changement de statut. */
   picked_up?: boolean;
+  /** 'nouvelle' pour un INSERT, 'statut' (défaut) pour un UPDATE. */
+  event?: 'nouvelle' | 'statut';
 };
 
 type Order = {
   id: string;
   order_number: string | null;
   user_id: string;
+  restaurant_id: string;
+  courier_id: string | null;
   status: string;
   cancellation_reason: string | null;
   restaurants: { name: string } | null;
 };
 
 type TokenRow = { token: string; language: Lang; platform: string };
+
+type Message = {
+  to: string;
+  title: string;
+  body: string;
+  sound: string;
+  priority: string;
+  channelId: string;
+  data: Record<string, unknown>;
+};
 
 /**
  * Textes des notifications.
@@ -45,9 +66,13 @@ type TokenRow = { token: string; language: Lang; platform: string };
  * toute reformulation côté app (`status.*`) devrait se répercuter ici.
  *
  * `{resto}` est remplacé par le nom du restaurant, tel qu'il est en base : on ne
- * traduit jamais un nom d'établissement.
+ * traduit jamais un nom d'établissement. `{numero}` par `order_number` (TF-…).
+ *
+ * Les messages destinés au restaurant et aux livreurs n'existent qu'en français :
+ * leurs écrans le sont aussi (décision produit). Le repli `?? set.fr` s'en charge si
+ * leur jeton porte une autre langue.
  */
-const MESSAGES: Record<string, Record<Lang, { title: string; body: string }>> = {
+const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: string }>>> = {
   confirmee: {
     fr: { title: 'Commande confirmée ✅', body: '{resto} a accepté ta commande et va la préparer.' },
     en: { title: 'Order confirmed ✅', body: '{resto} accepted your order and will start preparing it.' },
@@ -80,14 +105,32 @@ const MESSAGES: Record<string, Record<Lang, { title: string; body: string }>> = 
     en: { title: 'Your courier is on the way 🛵', body: 'Your order has just been picked up at {resto}.' },
     it: { title: 'Il corriere sta arrivando 🛵', body: 'Il tuo ordine è stato appena ritirato da {resto}.' },
   },
+
+  // --- Restaurant ---
+  nouvelle_commande: {
+    fr: { title: 'Nouvelle commande 🛎️', body: 'Commande {numero} à confirmer.' },
+  },
+
+  // --- Livreurs ---
+  course_disponible: {
+    fr: { title: 'Course disponible 🛵', body: '{resto} — commande {numero} prête à enlever.' },
+  },
 };
 
-function buildMessage(order: Order, key: string, lang: Lang) {
+/** Écran à ouvrir au tap, selon le public visé. */
+const ROUTES: Record<Audience, (order: Order) => string> = {
+  client: (order) => `/order/${order.id}`,
+  restaurant: () => '/(restaurant)',
+  livreur: () => '/(livreur)',
+};
+
+function buildText(order: Order, key: string, lang: Lang) {
   const set = MESSAGES[key];
   if (!set) return null;
   const text = set[lang] ?? set.fr;
+  if (!text) return null;
   const resto = order.restaurants?.name ?? 'Le restaurant';
-  let body = text.body.replaceAll('{resto}', resto);
+  let body = text.body.replaceAll('{resto}', resto).replaceAll('{numero}', order.order_number ?? '');
   // Le motif de refus est saisi par le restaurant : on le montre tel quel, jamais traduit.
   if (key === 'annulee' && order.cancellation_reason) {
     body = `${body} Motif : ${order.cancellation_reason}`;
@@ -119,15 +162,9 @@ Deno.serve(async (req: Request) => {
   }
   if (!payload?.order_id) return new Response('bad request', { status: 400 });
 
-  const key = payload.picked_up ? 'picked_up' : payload.status;
-  if (!MESSAGES[key]) {
-    // `recue` par exemple : le client vient de la passer, il est devant son écran.
-    return Response.json({ skipped: `aucun message pour "${key}"` });
-  }
-
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, order_number, user_id, status, cancellation_reason, restaurants(name)')
+    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, restaurants(name)')
     .eq('id', payload.order_id)
     .single<Order>();
   if (orderError || !order) {
@@ -135,30 +172,80 @@ Deno.serve(async (req: Request) => {
     return new Response('order not found', { status: 404 });
   }
 
-  const { data: tokens } = await supabase
-    .from('push_tokens')
-    .select('token, language, platform')
-    .eq('user_id', order.user_id)
-    .returns<TokenRow[]>();
+  // --- Qui prévenir, et avec quel message ---
+  const envois: { audience: Audience; key: string }[] = [];
+  if (payload.event === 'nouvelle') {
+    // Le client vient de la passer, il est devant son écran : lui seul n'a rien à recevoir.
+    envois.push({ audience: 'restaurant', key: 'nouvelle_commande' });
+  } else {
+    const key = payload.picked_up ? 'picked_up' : payload.status;
+    if (MESSAGES[key]) envois.push({ audience: 'client', key });
+    // Course libérée par le restaurant et pas encore prise : les livreurs disponibles
+    // sont prévenus. Si `courier_id` est déjà rempli, la course est attribuée — inutile
+    // de réveiller tout le monde pour rien.
+    if (!payload.picked_up && payload.status === 'en_livraison' && !order.courier_id) {
+      envois.push({ audience: 'livreur', key: 'course_disponible' });
+    }
+  }
+  if (!envois.length) {
+    return Response.json({ skipped: `aucun message pour "${payload.status}"` });
+  }
 
-  if (!tokens?.length) return Response.json({ sent: 0, reason: 'aucun appareil enregistré' });
+  // --- Destinataires ---
+  async function tokensFor(audience: Audience): Promise<TokenRow[]> {
+    let userIds: string[];
+    if (audience === 'client') {
+      userIds = [order.user_id];
+    } else if (audience === 'restaurant') {
+      const { data } = await supabase
+        .from('restaurant_staff')
+        .select('user_id')
+        .eq('restaurant_id', order.restaurant_id)
+        .returns<{ user_id: string }[]>();
+      userIds = (data ?? []).map((r) => r.user_id);
+    } else {
+      // Seulement les livreurs qui se sont déclarés disponibles : un livreur hors
+      // service ne doit pas être réveillé à 23 h par une course qu'il ne prendra pas.
+      const { data } = await supabase
+        .from('couriers')
+        .select('user_id')
+        .eq('is_available', true)
+        .returns<{ user_id: string }[]>();
+      userIds = (data ?? []).map((r) => r.user_id);
+    }
+    if (!userIds.length) return [];
+    const { data: tokens } = await supabase
+      .from('push_tokens')
+      .select('token, language, platform')
+      .in('user_id', userIds)
+      .returns<TokenRow[]>();
+    return tokens ?? [];
+  }
 
-  const messages = tokens
-    .map((row) => {
-      const text = buildMessage(order, key, row.language);
-      if (!text) return null;
-      return {
+  const messages: Message[] = [];
+  for (const envoi of envois) {
+    for (const row of await tokensFor(envoi.audience)) {
+      const text = buildText(order, envoi.key, row.language);
+      if (!text) continue;
+      messages.push({
         to: row.token,
         title: text.title,
         body: text.body,
         sound: 'default',
         priority: 'high',
         channelId: 'commandes',
-        // Repris par l'app au tap pour ouvrir directement le suivi de cette commande.
-        data: { orderId: order.id, orderNumber: order.order_number, status: order.status },
-      };
-    })
-    .filter(Boolean);
+        // Repris par l'app au tap pour ouvrir directement le bon écran.
+        data: {
+          orderId: order.id,
+          orderNumber: order.order_number,
+          status: order.status,
+          route: ROUTES[envoi.audience](order),
+        },
+      });
+    }
+  }
+
+  if (!messages.length) return Response.json({ sent: 0, reason: 'aucun appareil enregistré' });
 
   const response = await fetch(EXPO_PUSH_URL, {
     method: 'POST',

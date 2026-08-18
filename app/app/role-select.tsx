@@ -1,13 +1,38 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { colors, fonts, radius, shadow, spacing, withAlpha } from '../theme/tokens';
 import { useSession } from '../store/session';
-import { AppRole } from '../data/types';
+import { AppRole, imageUrl } from '../data/types';
+
+/**
+ * Visuels des rôles (Supabase Storage, bucket `produits`).
+ *
+ * Le restaurant n'en a pas : il garde sa pastille d'icône, au même gabarit que la photo
+ * du livreur pour que les deux cartes en retrait restent alignées.
+ */
+const ROLE_PHOTOS = {
+  client:
+    'https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/produits/role-screen/client-couple.png',
+  livreur:
+    'https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/produits/role-screen/livreur-scooter.png',
+} as const;
+
+/**
+ * Gabarits des visuels. Les photos sont en portrait 4:5 : le panneau garde ce rapport et
+ * occupe toute la hauteur de la carte, plutôt qu'un bandeau large qui couperait les
+ * personnages. Hauteurs choisies pour que les trois cartes tiennent sans défilement sur
+ * un iPhone SE (~600 pt utiles) : 188 + 119 + 119 + écarts + en-tête.
+ */
+const MEDIA = {
+  featured: { width: 128, height: 160 },
+  compact: { width: 76, height: 95 },
+} as const;
 
 /**
  * Écran de sélection de rôle (multi-rôle). Affiché après connexion pour un compte qui a
@@ -81,8 +106,10 @@ export default function RoleSelectScreen() {
       >
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        {/* CLIENT — toujours disponible */}
+        {/* CLIENT — toujours disponible, et mis en avant : c'est l'usage principal */}
         <RoleCard
+          featured
+          photo={ROLE_PHOTOS.client}
           icon="shopping_bag"
           tint={colors.primary}
           title={t('roleSelect.clientTitle')}
@@ -97,9 +124,11 @@ export default function RoleSelectScreen() {
           icon="storefront"
           tint={colors.secondary}
           title={t('roleSelect.restaurantTitle')}
+          // Restaurant rattaché : pas de sous-titre. Son nom est déjà dans l'action
+          // (« Entrer — Angelo ») ; le répéter en description n'apprenait rien.
           subtitle={
             restaurantActive
-              ? t('roleSelect.restaurantActive', { restaurant: session.restaurantName })
+              ? undefined
               : statusOf('restaurant') === 'pending'
                 ? t('roleSelect.restaurantPending')
                 : t('roleSelect.restaurantSubtitle')
@@ -119,6 +148,7 @@ export default function RoleSelectScreen() {
 
         {/* LIVREUR — Phase 3, on peut demander l'accès mais l'espace n'existe pas encore */}
         <RoleCard
+          photo={ROLE_PHOTOS.livreur}
           icon="two_wheeler"
           tint={colors.ink}
           title={t('roleSelect.courierTitle')}
@@ -148,6 +178,8 @@ export default function RoleSelectScreen() {
 
 function RoleCard({
   icon,
+  photo,
+  featured,
   tint,
   title,
   subtitle,
@@ -158,15 +190,21 @@ function RoleCard({
   pending,
 }: {
   icon: string;
+  /** Photo du rôle. Absente → la pastille d'icône, au même gabarit. */
+  photo?: string;
+  /** Carte principale : visuel et texte plus grands. Une seule à la fois. */
+  featured?: boolean;
   tint: string;
   title: string;
-  subtitle: string;
+  /** Optionnel : une carte peut se passer de description (cf. restaurant rattaché). */
+  subtitle?: string;
   actionLabel: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
   pending?: boolean;
 }) {
+  const media = featured ? MEDIA.featured : MEDIA.compact;
   // Une carte en attente de validation ne doit pas crier sa couleur : elle se met en
   // retrait pour que le regard aille sur les rôles réellement accessibles.
   const muted = !!disabled;
@@ -184,48 +222,63 @@ function RoleCard({
         colors={[withAlpha(tint, muted ? 0.05 : 0.16), withAlpha(tint, muted ? 0.01 : 0.03)]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.card}
+        style={[styles.card, { padding: featured ? 14 : 12 }]}
       >
-        <View style={styles.cardTop}>
-          {/* Halo : un second disque plus large et très transparent derrière la pastille,
-              pour lui donner de l'air sans agrandir la carte. */}
-          <View style={[styles.iconHalo, { backgroundColor: withAlpha(tint, muted ? 0.08 : 0.18) }]}>
+        {/* Le panneau visuel garde le rapport 4:5 de la photo et occupe toute la hauteur
+            de la carte : le couple et le scooter ne sont donc pas rognés. */}
+        <View
+          style={[
+            styles.media,
+            media,
+            { backgroundColor: withAlpha(tint, muted ? 0.08 : 0.18) },
+          ]}
+        >
+          {photo ? (
+            <Image
+              source={{ uri: imageUrl(photo, media.width, media.height) }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={220}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : (
+            // Pas de photo (restaurant) : la pastille d'icône, centrée dans le même
+            // gabarit — les deux cartes en retrait restent ainsi alignées.
             <View style={[styles.cardIcon, { backgroundColor: muted ? colors.textFaint : tint }]}>
               <LinearGradient
                 colors={[withAlpha(colors.white, 0.28), withAlpha(colors.white, 0)]}
                 style={StyleSheet.absoluteFill}
               />
-              <Icon name={icon} size={28} color={colors.white} />
+              <Icon name={icon} size={26} color={colors.white} />
             </View>
-          </View>
-
-          <View style={styles.cardTexts}>
-            <Text style={styles.cardTitle}>{title}</Text>
-            <Text style={styles.cardSub}>{subtitle}</Text>
-          </View>
+          )}
         </View>
 
-        {/* Action en pastille pleine largeur : lit comme un bouton, alors que le lien
-            texte précédent se confondait avec la description. */}
-        <View
-          style={[
-            styles.cardAction,
-            { backgroundColor: pending ? colors.warnBg : withAlpha(tint, 0.12) },
-          ]}
-        >
-          {pending ? <Icon name="schedule" size={16} color={colors.warnTextAlt} /> : null}
-          <Text
-            style={[
-              styles.cardActionText,
-              { color: pending ? colors.warnTextAlt : tint },
-            ]}
-            numberOfLines={1}
-          >
-            {loading ? '…' : actionLabel}
-          </Text>
-          {!pending && !disabled ? (
-            <Icon name="arrow_forward" size={16} color={tint} />
+        <View style={styles.cardTexts}>
+          <Text style={[styles.cardTitle, featured && styles.cardTitleFeatured]}>{title}</Text>
+          {subtitle ? (
+            <Text style={styles.cardSub} numberOfLines={featured ? 3 : 2}>
+              {subtitle}
+            </Text>
           ) : null}
+
+          {/* Action en pastille : lit comme un bouton, alors que le lien texte
+              précédent se confondait avec la description. */}
+          <View
+            style={[
+              styles.cardAction,
+              { backgroundColor: pending ? colors.warnBg : withAlpha(tint, 0.12) },
+            ]}
+          >
+            {pending ? <Icon name="schedule" size={15} color={colors.warnTextAlt} /> : null}
+            <Text
+              style={[styles.cardActionText, { color: pending ? colors.warnTextAlt : tint }]}
+              numberOfLines={1}
+            >
+              {loading ? '…' : actionLabel}
+            </Text>
+            {!pending && !disabled ? <Icon name="arrow_forward" size={15} color={tint} /> : null}
+          </View>
         </View>
       </LinearGradient>
     </Pressable>
@@ -247,36 +300,36 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadow.card,
   },
-  // Dimensions calées pour que les 3 cartes + l'en-tête tiennent sans défilement sur
-  // iPhone SE (~600 pt utiles) : 3 × 164 + 2 × 14 d'écart + en-tête.
-  card: { padding: 16, gap: 14 },
-  cardTop: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  iconHalo: {
-    width: 78,
-    height: 78,
-    borderRadius: 24,
+  card: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  media: {
+    borderRadius: 18,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 19,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  cardTexts: { flex: 1 },
-  cardTitle: { fontFamily: fonts.extrabold, fontSize: 18, letterSpacing: -0.3, color: colors.ink },
+  // `justifyContent: center` : sans sous-titre (restaurant rattaché), titre et action
+  // restent centrés en face du visuel au lieu de coller en haut.
+  cardTexts: { flex: 1, justifyContent: 'center' },
+  cardTitle: { fontFamily: fonts.extrabold, fontSize: 17, letterSpacing: -0.3, color: colors.ink },
+  cardTitleFeatured: { fontSize: 21, letterSpacing: -0.5 },
   cardSub: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted, marginTop: 4 },
   cardAction: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 40,
+    height: 38,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    marginTop: 10,
   },
   cardActionText: { fontFamily: fonts.bold, fontSize: 13, flexShrink: 1 },
 });

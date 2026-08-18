@@ -17,6 +17,7 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 | `f231e8d` | iOS ne se déclare plus compatible iPad (`supportsTablet: false`) | config relue |
 | `c0d31f6` | Suppression de compte depuis le Profil + anonymisation des commandes | testé sur la vraie base, 2 comptes jetables |
 | `370262a` | Sign in with Apple, natif | tsc + export web |
+| *(à committer)* | Connexion Google native (JS prêt, config native en attente — voir ci-dessous) | tsc + export web + chargement réel du bundle dans un navigateur |
 
 `498a0a2` ne contient que de la documentation, rien à compiler.
 
@@ -24,6 +25,21 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 - [ ] **Connexion Facebook native** — bloqué : il manque l'App ID et le Client Token Meta.
       Ajoute un module natif, donc **exige un build**.
+- [ ] **Connexion Google native — finir le câblage.** La couche JS est écrite et gardée
+      (`googleNativeAvailable()`, import dynamique jamais évalué sur web — vérifié en
+      chargeant le bundle exporté dans un vrai navigateur, zéro erreur console). Il manque :
+      1. un **Client ID OAuth de type iOS** (Google Cloud Console → Credentials → Create
+         credentials → OAuth client ID → iOS → bundle `com.chris97416.taxi-food-nosybe`),
+         à poser dans `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (profil `production` de `eas.json`) ;
+      2. remettre le plugin natif dans `app.json`, **avec ses options cette fois** :
+         `["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.<ID_INVERSÉ>" }]`
+         — ⚠️ **jamais l'entrée nue** `"@react-native-google-signin/google-signin"` : sans
+         options elle route vers la branche Firebase du plugin, qui exige un
+         `GoogleService-Info.plist` qu'on n'a pas et ferait échouer la compilation native.
+         Retirée le 2026-08-18 après l'avoir vue ajoutée automatiquement par
+         `expo install`, avant qu'elle ne casse le build ;
+      3. ajouter ce même Client ID iOS dans Supabase → *Authentication → Providers →
+         Google → Client IDs* (sinon `signInWithIdToken` rejette l'audience du jeton).
 - [ ] Politique de confidentialité et URL de support — ne demandent **aucun build**, mais
       sont obligatoires pour la soumission.
 

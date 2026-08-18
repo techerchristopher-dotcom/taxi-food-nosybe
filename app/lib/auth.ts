@@ -61,6 +61,63 @@ export function googleConfigured(): boolean {
 }
 
 /**
+ * Présence du Client ID Google **iOS** en env = drapeau « connexion Google native prête ».
+ *
+ * Distinct de `googleConfigured()` : celui-ci porte sur le Client ID **web**, utilisé par le
+ * flux navigateur ci-dessous. Le natif exige un Client ID d'un AUTRE type OAuth (« iOS »,
+ * créé dans Google Cloud avec le bundle `com.chris97416.taxi-food-nosybe`), en plus du
+ * plugin de config natif dans `app.json`. Tant qu'il manque, l'écran garde le bouton Google
+ * actuel (navigateur) — comportement identique à aujourd'hui, aucune régression.
+ */
+export function googleNativeAvailable(): boolean {
+  return Platform.OS === 'ios' && Boolean(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
+}
+
+/**
+ * Connexion Google en **natif** : le sélecteur de compte système, pas un onglet de
+ * navigateur — même principe que `signInWithApple` juste au-dessus.
+ *
+ * ⚠️ Import **dynamique**, jamais statique en haut de fichier : `@react-native-google-
+ * signin/google-signin` est un module natif sans version web. Un import statique serait
+ * bundlé côté web par Metro (le bundle compile sans erreur), mais planterait potentiellement
+ * à l'exécution dans le navigateur puisque le module cherche un pont natif absent. L'import
+ * dynamique, lui, n'est évalué que si cette fonction est appelée — et `googleNativeAvailable`
+ * garantit qu'elle ne l'est jamais sur web.
+ *
+ * ⚠️ Le Client ID **web** (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`) doit être passé en
+ * `webClientId` à `GoogleSignin.configure` : c'est lui qui doit apparaître dans l'audience du
+ * jeton pour que Supabase l'accepte, pas le Client ID iOS (qui ne sert qu'au SDK natif pour
+ * savoir quelle app demande la connexion).
+ */
+export async function signInWithGoogleNative(): Promise<Session | null> {
+  const { GoogleSignin, isSuccessResponse, isErrorWithCode, statusCodes } = await import(
+    '@react-native-google-signin/google-signin'
+  );
+
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  });
+
+  let response: Awaited<ReturnType<typeof GoogleSignin.signIn>>;
+  try {
+    await GoogleSignin.hasPlayServices();
+    response = await GoogleSignin.signIn();
+  } catch (e: unknown) {
+    if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) return null;
+    throw e;
+  }
+  if (!isSuccessResponse(response)) return null; // sélecteur fermé sans choix.
+
+  const idToken = response.data.idToken;
+  if (!idToken) throw new Error('Google n’a pas renvoyé de jeton.');
+
+  const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+  if (error) throw error;
+  return buildSession();
+}
+
+/**
  * Présence de l'App ID Facebook en env = drapeau « configuration Facebook faite ».
  *
  * Même logique que pour Google : le flux passe par le provider configuré CÔTÉ Supabase

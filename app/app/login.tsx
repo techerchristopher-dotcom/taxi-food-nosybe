@@ -10,7 +10,13 @@ import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
-import { appleSignInAvailable, facebookConfigured, googleConfigured, OAuthProvider } from '../lib/auth';
+import {
+  appleSignInAvailable,
+  facebookConfigured,
+  googleConfigured,
+  googleNativeAvailable,
+  OAuthProvider,
+} from '../lib/auth';
 import { Icon } from '../components/Icon';
 
 // Nécessaire pour finaliser le retour du navigateur d'authentification.
@@ -23,6 +29,7 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const signInWithOAuth = useSession((s) => s.signInWithOAuth);
   const signInWithApple = useSession((s) => s.signInWithApple);
+  const signInWithGoogleNative = useSession((s) => s.signInWithGoogleNative);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
   // Quel bouton social est en cours (pour n'afficher le spinner que sur celui-là).
   const [pending, setPending] = useState<OAuthProvider | 'apple' | null>(null);
@@ -68,7 +75,14 @@ export default function LoginScreen() {
     setError(null);
     setPending(provider);
     try {
-      const session = await signInWithOAuth(provider);
+      // Google natif dès qu'il est prêt (Client ID iOS + plugin) : sélecteur de compte
+      // système, plus jamais l'écran de redirection via le domaine Supabase. En attendant,
+      // ou sur les plateformes où il n'existe pas, on garde le flux navigateur actuel — même
+      // fonction, même écran, aucune différence pour l'utilisateur.
+      const session =
+        provider === 'google' && googleNativeAvailable()
+          ? await signInWithGoogleNative()
+          : await signInWithOAuth(provider);
       if (session) {
         // L'aiguillage (index) décide : nom, téléphone, sélection de rôle, ou app.
         router.replace('/');

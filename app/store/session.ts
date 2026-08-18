@@ -30,6 +30,8 @@ type SessionState = {
   signInWithOAuth: (provider: auth.OAuthProvider) => Promise<Session | null>;
   /** Connexion native Apple (iOS). null si l'utilisateur annule la feuille système. */
   signInWithApple: () => Promise<Session | null>;
+  /** Connexion Google native (sélecteur de compte système). null si annulée. */
+  signInWithGoogleNative: () => Promise<Session | null>;
   /** Finalise une session à partir d'un deep link de retour OAuth (cold start). */
   completeFromUrl: (url: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
@@ -83,6 +85,11 @@ export const useSession = create<SessionState>((set) => ({
   },
   signInWithApple: async () => {
     const session = await auth.signInWithApple();
+    if (session) set({ session });
+    return session;
+  },
+  signInWithGoogleNative: async () => {
+    const session = await auth.signInWithGoogleNative();
     if (session) set({ session });
     return session;
   },

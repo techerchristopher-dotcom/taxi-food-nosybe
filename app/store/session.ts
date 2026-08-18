@@ -28,6 +28,8 @@ type SessionState = {
   refresh: () => Promise<Session | null>;
   /** Lance un flux OAuth (Google ou Facebook) et met à jour la session. */
   signInWithOAuth: (provider: auth.OAuthProvider) => Promise<Session | null>;
+  /** Connexion native Apple (iOS). null si l'utilisateur annule la feuille système. */
+  signInWithApple: () => Promise<Session | null>;
   /** Finalise une session à partir d'un deep link de retour OAuth (cold start). */
   completeFromUrl: (url: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
@@ -76,6 +78,11 @@ export const useSession = create<SessionState>((set) => ({
   },
   signInWithOAuth: async (provider: auth.OAuthProvider) => {
     const session = await auth.signInWithOAuth(provider);
+    if (session) set({ session });
+    return session;
+  },
+  signInWithApple: async () => {
+    const session = await auth.signInWithApple();
     if (session) set({ session });
     return session;
   },

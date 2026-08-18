@@ -19,6 +19,7 @@
  * `exp://...` si test en Expo Go). Il est loggé au lancement du flux pour être recopié.
  */
 import { Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
@@ -224,6 +225,76 @@ async function buildSession(): Promise<Session | null> {
 export async function requestRole(role: AppRole): Promise<Session | null> {
   const { error } = await supabase.rpc('request_role', { p_role: role });
   if (error) throw error;
+  return buildSession();
+}
+
+/**
+ * Sign in with Apple — disponible seulement sur iOS 13+.
+ *
+ * Apple ne fournit son bouton que là ; sur Android et sur le web l'écran de connexion ne
+ * doit pas l'afficher (règle Apple, et de toute façon le module n'y répond pas).
+ */
+export async function appleSignInAvailable(): Promise<boolean> {
+  if (Platform.OS !== 'ios') return false;
+  try {
+    return await AppleAuthentication.isAvailableAsync();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Connexion par Apple, en **natif** : pas de navigateur, c'est le système qui présente la
+ * feuille Face ID / mot de passe. Apple renvoie un `identityToken` (JWT OIDC) qu'on échange
+ * directement contre une session Supabase — d'où `signInWithIdToken` et non le flux OAuth
+ * web utilisé pour Google.
+ *
+ * ⚠️ Apple ne transmet le NOM qu'à la **toute première** connexion, jamais ensuite. Si on
+ * ne le capte pas maintenant, il est perdu définitivement pour ce compte : le jeton, lui,
+ * ne porte que l'e-mail. On le recopie donc dans le profil dans la foulée.
+ *
+ * ⚠️ L'e-mail peut être une adresse relais `@privaterelay.appleid.com` si la personne a
+ * choisi de masquer le sien. C'est normal et il faut l'accepter tel quel.
+ *
+ * Renvoie null si l'utilisateur annule la feuille système.
+ */
+export async function signInWithApple(): Promise<Session | null> {
+  let credential: AppleAuthentication.AppleAuthenticationCredential;
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+  } catch (e: unknown) {
+    // L'annulation remonte comme une erreur `ERR_REQUEST_CANCELED` : ce n'est pas un échec,
+    // l'écran ne doit afficher aucun message.
+    if (typeof e === 'object' && e && 'code' in e && e.code === 'ERR_REQUEST_CANCELED') {
+      return null;
+    }
+    throw e;
+  }
+
+  if (!credential.identityToken) throw new Error('Apple n’a pas renvoyé de jeton.');
+
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: 'apple',
+    token: credential.identityToken,
+  });
+  if (error) throw error;
+
+  const nom = [credential.fullName?.givenName, credential.fullName?.familyName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  if (nom) {
+    // Ne jamais écraser un nom déjà en place : à la première connexion il n'y en a pas,
+    // et aux suivantes Apple ne renvoie rien de toute façon.
+    const session = await buildSession();
+    if (session && !session.hasName) await setFullName(nom);
+  }
+
   return buildSession();
 }
 

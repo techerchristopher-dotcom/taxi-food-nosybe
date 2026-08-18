@@ -4,12 +4,13 @@ import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View }
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
-import { facebookConfigured, googleConfigured, OAuthProvider } from '../lib/auth';
+import { appleSignInAvailable, facebookConfigured, googleConfigured, OAuthProvider } from '../lib/auth';
 import { Icon } from '../components/Icon';
 
 // Nécessaire pour finaliser le retour du navigateur d'authentification.
@@ -21,10 +22,18 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const signInWithOAuth = useSession((s) => s.signInWithOAuth);
+  const signInWithApple = useSession((s) => s.signInWithApple);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
   // Quel bouton social est en cours (pour n'afficher le spinner que sur celui-là).
-  const [pending, setPending] = useState<OAuthProvider | null>(null);
+  const [pending, setPending] = useState<OAuthProvider | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Sign in with Apple n'existe que sur iOS 13+. Le test est asynchrone, donc le bouton
+  // n'apparaît qu'une fois la réponse connue — jamais en clignotant.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleAvailable);
+  }, []);
 
   // Filet de sécurité : si l'app est rouverte via le deep link OAuth (cold start),
   // on finalise la session à partir de l'URL entrante.
@@ -73,6 +82,24 @@ export default function LoginScreen() {
     }
   }
 
+  async function handleApple() {
+    setError(null);
+    setPending('apple');
+    try {
+      const session = await signInWithApple();
+      if (session) {
+        // L'aiguillage (index) décide : nom, téléphone, sélection de rôle, ou app.
+        router.replace('/');
+      } else {
+        // Annulé par l'utilisateur (fenêtre fermée).
+        setPending(null);
+      }
+    } catch {
+      setError(t('login.failed'));
+      setPending(null);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -92,9 +119,25 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        {/* Sign in with Apple — exigé par la règle 4.8 dès lors qu'on propose Google ou
+            Facebook. Placé en premier, comme le demandent les recommandations d'Apple.
+            Bouton NATIF : son libellé, sa langue et son apparence sont imposés par Apple,
+            on ne les redessine pas. Absent hors iOS, où le service n'existe pas. */}
+        {appleAvailable ? (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={radius.pill}
+            style={styles.appleBtn}
+            onPress={() => {
+              if (!pending) void handleApple();
+            }}
+          />
+        ) : null}
+
         <Pressable
           onPress={pending ? undefined : () => handleOAuth('google')}
-          style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [styles.socialBtn, appleAvailable && { marginTop: 10 }, pressed && { opacity: 0.9 }]}
         >
           {pending === 'google' ? (
             <ActivityIndicator color={colors.ink} />
@@ -216,6 +259,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     maxWidth: 300,
   },
+  // Hauteur alignée sur les autres boutons ; l'apparence interne appartient à Apple.
+  appleBtn: { width: '100%', height: 56 },
   socialBtn: {
     width: '100%',
     height: 56,

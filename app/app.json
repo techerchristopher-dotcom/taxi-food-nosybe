@@ -15,7 +15,8 @@
       "bundleIdentifier": "com.chris97416.taxi-food-nosybe",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.chris97416.taxifoodnosybe",

@@ -46,7 +46,15 @@
           "locationWhenInUsePermission": "Taxi Food utilise ta position pour enregistrer précisément ton adresse de livraison."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#E8342A",
+          "defaultChannel": "commandes"
+        }
+      ]
     ],
     "extra": {
       "router": {},

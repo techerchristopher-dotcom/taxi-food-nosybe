@@ -9,6 +9,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as auth from '../lib/auth';
+import { unregisterFromPush } from '../lib/push';
 import type { Session } from '../lib/auth';
 import type { AppMode, AppRole } from '../data/types';
 
@@ -82,6 +83,9 @@ export const useSession = create<SessionState>((set) => ({
     return session;
   },
   signOut: async () => {
+    // AVANT auth.signOut : la RPC a besoin du jeton d'accès encore valide. Sans ça,
+    // l'appareil resterait abonné aux notifications du compte qu'on vient de quitter.
+    await unregisterFromPush();
     await auth.signOut();
     await AsyncStorage.removeItem(MODE_KEY);
     set({ session: null, mode: null });

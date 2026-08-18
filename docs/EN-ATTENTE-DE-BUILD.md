@@ -8,52 +8,34 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 ## Dernier build sorti
 
-**n°10** — `1.0.0 (10)`, construit sur le commit `4b6c19b`.
+**n°13** — `1.0.0 (13)`, soumis à TestFlight le 2026-08-18. Construit à la main par
+Christopher (`eas build -p ios --profile production`, interactif — nécessaire pour que EAS
+ajoute la capability « Sign In with Apple » côté portail Apple). Un build n°12 a réussi juste
+avant, sans conséquence.
+
+Contient tout ce qui était en attente depuis le build 10 :
+- iOS ne se déclare plus compatible iPad
+- Suppression de compte depuis le Profil + anonymisation des commandes
+- Sign in with Apple, natif
+- Connexion Google native (compte Google déjà utilisé sur le téléphone → sélecteur système)
+- Connexion Facebook native (bascule vers l'app Facebook si installée)
+- Écran de choix de rôle avec vraies photos + optimisation du chargement des images
+  (ces deux derniers étaient déjà dans le build 10)
+
+Le n°11 a échoué (profil sans la capability Apple Sign In, lancé sans authentification Apple
+réelle — voir l'historique du dépôt si besoin de le rejouer).
 
 ## Dans le prochain build
 
-| Commit | Chantier | Vérifié |
-|---|---|---|
-| `f231e8d` | iOS ne se déclare plus compatible iPad (`supportsTablet: false`) | config relue |
-| `c0d31f6` | Suppression de compte depuis le Profil + anonymisation des commandes | testé sur la vraie base, 2 comptes jetables |
-| `370262a` | Sign in with Apple, natif | tsc + export web |
-| *(à committer)* | **Connexion Google native — entièrement câblée**, Client ID iOS `227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8` | tsc + export web + chargement réel du bundle (les 3 plugins natifs ensemble) |
-| *(à committer)* | **Connexion Facebook native — entièrement câblée**, App ID `1040980255315507` | tsc + export web + chargement réel du bundle + clic réel sur le bouton (redirection déclenchée, zéro erreur console) |
+*(vide — rien en attente)*
 
-`498a0a2` ne contient que de la documentation, rien à compiler.
+## Encore à construire avant de lancer un futur build
 
-## Encore à construire avant de lancer
-
-- [x] ~~Connexion Facebook native~~ — **fait le 2026-08-18.** App ID `1040980255315507`,
-      Client Token et plugin `react-native-fbsdk-next` posés dans `app.json` avec toutes ses
-      options requises (`appID`, `clientToken`, `displayName`, `scheme` — le plugin **jette
-      une exception au build** si l'une manque, vérifié dans son code source). Comme pour
-      Google : import dynamique, jamais évalué hors iOS. **Reste à faire, côté toi :** coller
-      l'**App Secret** Facebook (jamais transmis ici) dans Supabase → *Authentication →
-      Providers → Facebook → App Secret* — sans lui, ni le flux web existant ni le natif ne
-      valident quoi que ce soit.
-- [x] ~~Connexion Google native~~ — **fait le 2026-08-18.** Client ID OAuth de type iOS créé
-      dans Google Cloud (`227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8.apps.googleusercontent.com`),
-      posé dans `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (3 profils `eas.json`) et dans le plugin
-      `@react-native-google-signin/google-signin` d'`app.json` en `iosUrlScheme` inversé
-      (`com.googleusercontent.apps.227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8`) — jamais
-      l'entrée nue, elle route vers la branche Firebase du plugin et ferait échouer la
-      compilation native. **Reste à faire, côté toi :** ajouter ce même Client ID dans
-      Supabase → *Authentication → Providers → Google → Client IDs* (liste séparée par
-      virgules, à côté du Client ID web déjà présent — ne pas l'effacer). Sans ça,
-      `signInWithIdToken` rejette l'audience du jeton natif.
-- [ ] Politique de confidentialité et URL de support — ne demandent **aucun build**, mais
-      sont obligatoires pour la soumission.
-
-## ⚠️ Ce build devra être INTERACTIF
-
-```bash
-cd app && eas build -p ios --profile production
-```
-
-**Sans `--non-interactive`.** L'entitlement « Sign In with Apple » doit être ajouté à l'App
-ID côté portail Apple, et EAS ne sait le faire qu'authentifié — exactement le blocage
-rencontré avec la capability Push, qui avait fait échouer les builds 7 et 8.
+- [ ] Politique de confidentialité et URL de support — ne demandent **aucun build**, déjà en
+      ligne, mais notées ici pour mémoire de ce qui reste à faire avant la soumission finale.
+- [ ] Connexion Facebook/Google native — jamais testée sur un vrai appareil (l'écran web ne
+      peut pas le faire). À vérifier au prochain test TestFlight : bascule vers l'app
+      installée, retrouve la session sans ressaisie.
 
 ## Ce qui n'a PAS besoin d'un build
 
@@ -63,6 +45,8 @@ rencontré avec la capability Push, qui avait fait échouer les builds 7 et 8.
 |---|---|---|
 | **Connexion par WhatsApp** | les 5 secrets Meta dans le Vault | le code est parti dans le build 9. Dès que les secrets sont posés, le bouton « Continuer avec un numéro » fonctionne sur les apps déjà installées |
 | **Sign in with Apple côté serveur** | ✅ fait le 2026-08-18 | bundle ID renseigné dans *Authentication → Providers → Apple → Client IDs* |
+| **Connexion Google native côté serveur** | ✅ fait le 2026-08-18 | Client ID iOS ajouté dans *Authentication → Providers → Google → Client IDs* |
+| **Connexion Facebook native côté serveur** | ✅ fait le 2026-08-18 | App Secret posé dans *Authentication → Providers → Facebook* |
 | **Prix réels** | le vrai catalogue | ils viennent de la base, pas du bundle |
 | **Fiche App Store** | captures, description | métadonnées App Store Connect |
 | **Politique de confidentialité et page d'aide** | ✅ en ligne le 2026-08-18 | pages statiques dans `app/public/`, servies par la PWA |
@@ -84,3 +68,17 @@ cd app && npx expo export -p web && npx netlify deploy --prod --dir dist --site 
 Les URL publiques :
 - https://taxi-food-nosybe.netlify.app/confidentialite.html
 - https://taxi-food-nosybe.netlify.app/support.html
+
+## ⚠️ Rappel pour le prochain build qui touche aux capabilities Apple
+
+S'il faut un jour ajouter une nouvelle capability côté portail Apple (Push, Sign In with
+Apple, etc.), le build **doit être lancé par Christopher lui-même dans son propre terminal**,
+en interactif (`eas build -p ios --profile production`, sans `--non-interactive`). Un agent
+ne peut pas taper un identifiant Apple — lancé depuis un outil sans terminal réel, EAS
+détecte l'absence de TTY et bascule silencieusement en mode non-interactif, réutilisant
+l'ancien profil sans jamais contacter Apple. C'est exactement ce qui a fait échouer les
+builds 7, 8 et 11.
+
+Google et Facebook natifs n'ont besoin d'aucune capability côté portail Apple — seuls des
+schémas d'URL dans Info.plist, gérés par leurs plugins de config sans jamais toucher aux
+serveurs Apple. Un build non-interactif suffit pour ces deux-là.

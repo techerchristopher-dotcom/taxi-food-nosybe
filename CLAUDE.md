@@ -1,6 +1,6 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. **Build de production iOS opérationnel** : le build n°10 est le dernier sorti. Reste à faire : lever les derniers bloquants Apple, puis mise en service.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. **Build de production iOS opérationnel** : le build n°13 est le dernier sorti, avec Apple/Google/Facebook en connexion native et la suppression de compte. Reste à faire : politique de confidentialité et fiche App Store, puis mise en service.
 
 ⚠️ **Deux listes à tenir à jour, à lire avant de commencer quoi que ce soit :**
 

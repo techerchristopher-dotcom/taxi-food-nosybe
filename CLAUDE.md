@@ -1,6 +1,11 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. **Build de production iOS opérationnel** : le build n°5 est soumis à TestFlight (voir « Build de production (EAS) » plus bas). Reste à faire : test bout-en-bout sur appareil réel via TestFlight, puis mise en service.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec deux **vrais restaurants**. Branche de travail : `main`. **Build de production iOS opérationnel** : le build n°10 est le dernier sorti. Reste à faire : lever les derniers bloquants Apple, puis mise en service.
+
+⚠️ **Deux listes à tenir à jour, à lire avant de commencer quoi que ce soit :**
+
+- **[docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md)** — ce qui est écrit mais pas encore compilé. Décision du 2026-08-18 : on empile les chantiers et on ne fait **qu'un seul gros build**, la liaison de Nosy Be rendant chaque envoi coûteux. À vider après chaque build.
+- **[docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md)** — audit de conformité avant soumission, bloquant par bloquant.
 
 ## Lancer l'app en local
 

@@ -46,4 +46,23 @@ rencontré avec la capability Push, qui avait fait échouer les builds 7 et 8.
 | **Connexion par WhatsApp** | les 5 secrets Meta dans le Vault | le code est parti dans le build 9. Dès que les secrets sont posés, le bouton « Continuer avec un numéro » fonctionne sur les apps déjà installées |
 | **Sign in with Apple côté serveur** | ✅ fait le 2026-08-18 | bundle ID renseigné dans *Authentication → Providers → Apple → Client IDs* |
 | **Prix réels** | le vrai catalogue | ils viennent de la base, pas du bundle |
-| **Fiche App Store** | captures, description, politique de confidentialité | métadonnées App Store Connect |
+| **Fiche App Store** | captures, description | métadonnées App Store Connect |
+| **Politique de confidentialité et page d'aide** | ✅ en ligne le 2026-08-18 | pages statiques dans `app/public/`, servies par la PWA |
+
+### ⚠️ Le site Netlify n'est PAS relié au dépôt
+
+Constaté le 2026-08-18 : le déploiement de production porte `deploy_source: cli`, sans
+commit ni branche. **Pousser sur `main` ne déploie rien.** Le site public était resté deux
+jours en retard sans que personne ne le voie.
+
+Tant que le dépôt n'est pas relié dans l'interface Netlify (*Site configuration → Build &
+deploy → Link repository*, base directory `app`), toute modification du web doit être
+publiée à la main :
+
+```bash
+cd app && npx expo export -p web && npx netlify deploy --prod --dir dist --site 7a0f7a83-425b-4b90-a11f-9a16d291121b
+```
+
+Les URL publiques :
+- https://taxi-food-nosybe.netlify.app/confidentialite.html
+- https://taxi-food-nosybe.netlify.app/support.html

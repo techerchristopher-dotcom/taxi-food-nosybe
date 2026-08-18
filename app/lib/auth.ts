@@ -128,6 +128,47 @@ export function facebookConfigured(): boolean {
   return Boolean(process.env.EXPO_PUBLIC_FACEBOOK_APP_ID);
 }
 
+/**
+ * Connexion Facebook native prête dès que la plateforme le permet — App ID et Client Token
+ * sont désormais fixés dans `app.json` (plugin natif), plus aucune valeur ne manque côté
+ * app. iOS uniquement : aucun build Android n'existe pour ce projet.
+ */
+export function facebookNativeAvailable(): boolean {
+  return Platform.OS === 'ios' && facebookConfigured();
+}
+
+/**
+ * Connexion Facebook en **natif** : si l'app Facebook est installée, le SDK bascule dessus
+ * directement (retrouve la session déjà ouverte, aucune ressaisie) ; sinon, il ouvre une
+ * feuille système (Safari intégré), jamais un onglet séparé qui affiche le domaine Supabase.
+ *
+ * ⚠️ Import **dynamique**, même raison que pour Google : `react-native-fbsdk-next` est un
+ * module natif sans version web, jamais évalué hors iOS/Android grâce à
+ * `facebookNativeAvailable`.
+ *
+ * ⚠️ Contrairement à Apple/Google, Facebook ne fournit **pas** de jeton OIDC signé au flux
+ * classique : `signInWithIdToken` attend ici le **jeton d'accès** du SDK tel quel (confirmé
+ * dans la documentation Supabase — c'est elle qui interroge l'API Graph de Facebook côté
+ * serveur avec l'App Secret pour le valider, à la différence d'Apple/Google où le jeton est
+ * vérifié par sa signature).
+ */
+export async function signInWithFacebookNative(): Promise<Session | null> {
+  const { LoginManager, AccessToken } = await import('react-native-fbsdk-next');
+
+  const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
+  if (result.isCancelled) return null;
+
+  const token = await AccessToken.getCurrentAccessToken();
+  if (!token) throw new Error('Facebook n’a pas renvoyé de jeton.');
+
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: 'facebook',
+    token: token.accessToken,
+  });
+  if (error) throw error;
+  return buildSession();
+}
+
 /** Extrait les paramètres d'un deep link (query et fragment). */
 function parseParams(url: string): Record<string, string> {
   const out: Record<string, string> = {};

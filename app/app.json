@@ -56,7 +56,19 @@
           "defaultChannel": "commandes"
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1040980255315507",
+          "clientToken": "d0fe3606e80fa2a5093989e963d2532a",
+          "displayName": "Taxi Food",
+          "scheme": "fb1040980255315507",
+          "isAutoInitEnabled": true,
+          "autoLogAppEventsEnabled": false,
+          "advertiserIDCollectionEnabled": false
+        }
+      ]
     ],
     "extra": {
       "router": {},

@@ -13,6 +13,7 @@ import { useSession } from '../store/session';
 import {
   appleSignInAvailable,
   facebookConfigured,
+  facebookNativeAvailable,
   googleConfigured,
   googleNativeAvailable,
   OAuthProvider,
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const signInWithOAuth = useSession((s) => s.signInWithOAuth);
   const signInWithApple = useSession((s) => s.signInWithApple);
   const signInWithGoogleNative = useSession((s) => s.signInWithGoogleNative);
+  const signInWithFacebookNative = useSession((s) => s.signInWithFacebookNative);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
   // Quel bouton social est en cours (pour n'afficher le spinner que sur celui-là).
   const [pending, setPending] = useState<OAuthProvider | 'apple' | null>(null);
@@ -75,14 +77,16 @@ export default function LoginScreen() {
     setError(null);
     setPending(provider);
     try {
-      // Google natif dès qu'il est prêt (Client ID iOS + plugin) : sélecteur de compte
-      // système, plus jamais l'écran de redirection via le domaine Supabase. En attendant,
-      // ou sur les plateformes où il n'existe pas, on garde le flux navigateur actuel — même
-      // fonction, même écran, aucune différence pour l'utilisateur.
+      // Natif dès qu'il est prêt : sélecteur système (Google) ou bascule directe vers l'app
+      // Facebook si elle est installée — plus jamais l'écran de redirection via le domaine
+      // Supabase. En attendant, ou sur les plateformes où il n'existe pas, on garde le flux
+      // navigateur actuel — même fonction, même écran, aucune différence pour l'utilisateur.
       const session =
         provider === 'google' && googleNativeAvailable()
           ? await signInWithGoogleNative()
-          : await signInWithOAuth(provider);
+          : provider === 'facebook' && facebookNativeAvailable()
+            ? await signInWithFacebookNative()
+            : await signInWithOAuth(provider);
       if (session) {
         // L'aiguillage (index) décide : nom, téléphone, sélection de rôle, ou app.
         router.replace('/');

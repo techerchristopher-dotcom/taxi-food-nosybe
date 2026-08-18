@@ -18,13 +18,20 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 | `c0d31f6` | Suppression de compte depuis le Profil + anonymisation des commandes | testé sur la vraie base, 2 comptes jetables |
 | `370262a` | Sign in with Apple, natif | tsc + export web |
 | *(à committer)* | Connexion Google native (JS prêt, config native en attente — voir ci-dessous) | tsc + export web + chargement réel du bundle dans un navigateur |
+| *(à committer)* | **Connexion Facebook native — entièrement câblée**, App ID `1040980255315507` | tsc + export web + chargement réel du bundle + clic réel sur le bouton (redirection déclenchée, zéro erreur console) |
 
 `498a0a2` ne contient que de la documentation, rien à compiler.
 
 ## Encore à construire avant de lancer
 
-- [ ] **Connexion Facebook native** — bloqué : il manque l'App ID et le Client Token Meta.
-      Ajoute un module natif, donc **exige un build**.
+- [x] ~~Connexion Facebook native~~ — **fait le 2026-08-18.** App ID `1040980255315507`,
+      Client Token et plugin `react-native-fbsdk-next` posés dans `app.json` avec toutes ses
+      options requises (`appID`, `clientToken`, `displayName`, `scheme` — le plugin **jette
+      une exception au build** si l'une manque, vérifié dans son code source). Comme pour
+      Google : import dynamique, jamais évalué hors iOS. **Reste à faire, côté toi :** coller
+      l'**App Secret** Facebook (jamais transmis ici) dans Supabase → *Authentication →
+      Providers → Facebook → App Secret* — sans lui, ni le flux web existant ni le natif ne
+      valident quoi que ce soit.
 - [ ] **Connexion Google native — finir le câblage.** La couche JS est écrite et gardée
       (`googleNativeAvailable()`, import dynamique jamais évalué sur web — vérifié en
       chargeant le bundle exporté dans un vrai navigateur, zéro erreur console). Il manque :

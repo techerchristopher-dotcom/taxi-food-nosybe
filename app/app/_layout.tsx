@@ -53,14 +53,19 @@ export default function RootLayout() {
   const hydrateSession = useSession((s) => s.hydrate);
   const sessionLoading = useSession((s) => s.loading);
   const userId = useSession((s) => s.session?.userId ?? null);
+  // Sélectionnés séparément (et jamais reconstruits) : un sélecteur qui renverrait un
+  // nouvel objet à chaque rendu ferait boucler zustand.
+  const roles = useSession((s) => s.session?.roles);
+  const restaurantId = useSession((s) => s.session?.restaurantId ?? null);
+  const setMode = useSession((s) => s.setMode);
   const hydrateCart = useCart((s) => s.hydrate);
   const cartHydrated = useCart((s) => s.hydrated);
 
   // La langue doit être posée AVANT le premier rendu des écrans : sinon l'app
   // s'affiche une fraction de seconde en français avant de basculer.
   const [langReady, setLangReady] = useState(false);
-  /** Commande à ouvrir suite au tap sur une notification, en attente que le router soit prêt. */
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  /** Écran à ouvrir suite au tap sur une notification, en attente que le router soit prêt. */
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
   useEffect(() => {
     hydrateSession();
@@ -78,12 +83,21 @@ export default function RootLayout() {
     void registerForPush();
   }, [userId, langReady, language]);
 
-  // Tap sur une notification : ouvrir directement le suivi de la commande concernée.
-  // Sans ça, le client atterrit sur l'accueil et doit retrouver sa commande à la main.
+  // Tap sur une notification : ouvrir directement l'écran concerné. Sans ça, on atterrit
+  // sur l'accueil et il faut retrouver la commande à la main.
+  //
+  // `route` est choisi par le serveur selon le destinataire — suivi de commande pour le
+  // client, espace restaurant ou livreur pour les pros. Repli sur `orderId` seul pour les
+  // notifications émises avant l'ajout de ce champ (elles peuvent encore être en attente
+  // dans le centre de notifications du téléphone).
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { orderId?: string };
-      if (data?.orderId) setPendingOrderId(data.orderId);
+      const data = response.notification.request.content.data as {
+        orderId?: string;
+        route?: string;
+      };
+      const route = data?.route ?? (data?.orderId ? `/order/${data.orderId}` : null);
+      if (route) setPendingRoute(route);
     });
     return () => sub.remove();
   }, []);
@@ -94,10 +108,26 @@ export default function RootLayout() {
   // notification, l'écouteur se déclenche pendant le splash, où `router.push` n'a
   // encore aucun navigateur sur lequel agir.
   useEffect(() => {
-    if (!ready || !pendingOrderId) return;
-    setPendingOrderId(null);
-    router.push(`/order/${pendingOrderId}`);
-  }, [ready, pendingOrderId, router]);
+    if (!ready || !pendingRoute) return;
+    setPendingRoute(null);
+
+    // Un espace pro ne s'ouvre que si le compte porte bien le rôle ACTIF correspondant.
+    // Le jeton push suit le compte, pas le rôle : un livreur dont le rôle a été retiré
+    // entre-temps peut encore recevoir une course, il ne doit pas entrer pour autant.
+    // Et on bascule le `mode` au passage, sinon le prochain lancement ramènerait sur
+    // l'espace précédent alors que la personne travaille manifestement dans celui-ci.
+    if (pendingRoute === '/(restaurant)') {
+      const ok = !!roles?.some((r) => r.role === 'restaurant' && r.status === 'active') && !!restaurantId;
+      if (!ok) return;
+      void setMode('restaurant');
+    } else if (pendingRoute === '/(livreur)') {
+      const ok = !!roles?.some((r) => r.role === 'livreur' && r.status === 'active');
+      if (!ok) return;
+      void setMode('livreur');
+    }
+
+    router.push(pendingRoute);
+  }, [ready, pendingRoute, router, roles, restaurantId, setMode]);
 
   if (!ready) return <Splash />;
 

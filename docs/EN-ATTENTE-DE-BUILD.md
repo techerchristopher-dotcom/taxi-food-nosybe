@@ -8,29 +8,29 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 ## Dernier build sorti
 
-**n°13** — `1.0.0 (13)`, soumis à TestFlight le 2026-08-18. Construit à la main par
-Christopher (`eas build -p ios --profile production`, interactif — nécessaire pour que EAS
-ajoute la capability « Sign In with Apple » côté portail Apple). Un build n°12 a réussi juste
-avant, sans conséquence.
+**n°14** — `1.0.0 (14)`, soumis à TestFlight le 2026-08-18. Construit et soumis en
+`--non-interactive` : aucune nouvelle capability Apple n'était nécessaire (Google/Facebook
+natifs n'en réclament aucune, et Sign In with Apple était déjà acquis depuis le build 13).
 
-Contient tout ce qui était en attente depuis le build 10 :
-- iOS ne se déclare plus compatible iPad
-- Suppression de compte depuis le Profil + anonymisation des commandes
-- Sign in with Apple, natif
-- Connexion Google native (compte Google déjà utilisé sur le téléphone → sélecteur système)
-- Connexion Facebook native (bascule vers l'app Facebook si installée)
-- Écran de choix de rôle avec vraies photos + optimisation du chargement des images
-  (ces deux derniers étaient déjà dans le build 10)
+Contient, en plus de tout ce qui était dans le n°13 :
+- Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout
+  autant que l'e-mail
+- **Correctif Facebook natif** : `loginTrackingIOS: 'enabled'` forcé sur
+  `logInWithPermissions`. Sans lui, le SDK basculait silencieusement en mode iOS
+  « Limited Login » (repérable à l'écran via l'URL `limited.facebook.com`) — un jeton d'une
+  autre nature que Supabase ne sait pas valider. Le SDK réussissait tout son échange avec
+  Facebook, mais aucune identité n'était jamais créée côté Supabase, sans erreur claire.
+  Trouvé en confirmant via `auth.identities` qu'aucune ligne `provider='facebook'` n'avait
+  jamais existé. **Encore à confirmer sur un vrai appareil** une fois le build 14 disponible
+  — le test précédent (build 13) est celui qui avait révélé le bug.
 
-Le n°11 a échoué (profil sans la capability Apple Sign In, lancé sans authentification Apple
-réelle — voir l'historique du dépôt si besoin de le rejouer).
+Historique : n°13 construit à la main par Christopher en interactif (capability Sign In with
+Apple) ; n°12 a réussi juste avant sans conséquence ; n°11 a échoué (profil sans cette
+capability, lancé sans authentification Apple réelle).
 
 ## Dans le prochain build
 
-| Commit | Chantier | Vérifié |
-|---|---|---|
-| *(à committer)* | Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout autant que l'e-mail (« Connecte-toi ou crée ton compte en un tap » ajouté, lien du bas renommé « Créer un compte par e-mail ») | tsc + export web + chargement réel du bundle |
-| *(à committer)* | **Facebook natif corrigé : `loginTrackingIOS: 'enabled'` forcé.** Sans ce paramètre, le SDK basculait silencieusement en mode iOS « Limited Login » (repéré à l'écran via l'URL `limited.facebook.com`) — un jeton d'une autre nature que Supabase ne pouvait pas valider. Aucune erreur claire ne le signalait : le SDK réussissait tout son échange avec Facebook, mais aucune identité n'était jamais créée côté Supabase. Trouvé en confirmant via `auth.identities` qu'aucune ligne `provider = 'facebook'` n'a jamais existé, malgré un flux qui semblait aboutir à l'écran | tsc + export web. **Pas encore testé sur un vrai appareil** — le test précédent est celui qui a justement révélé le bug |
+*(vide — rien en attente)*
 
 ## Ce qui n'a PAS besoin d'un build
 

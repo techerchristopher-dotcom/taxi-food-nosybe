@@ -87,19 +87,41 @@ export function optionsTotal(options: SelectedOption[]): number {
 }
 
 /**
- * Vignette redimensionnée à partir d'une URL Supabase Storage publique
- * (endpoint /render/image). Évite de charger des images 1 Mo+ pour des miniatures
- * de 76 px. Renvoie l'URL d'origine si ce n'est pas une URL Storage publique.
+ * Image redimensionnée à partir d'une URL Supabase Storage publique
+ * (endpoint /render/image), aux dimensions réellement affichées.
+ *
+ * Les visuels du bucket `produits` pèsent 1 à 2 Mo (PNG générés en pleine résolution).
+ * Les servir tels quels pour une pastille de 34 px était la cause principale de la
+ * lenteur ressentie. Mesuré sur `sauces/harissa.png` (1 336 ko) :
+ *   68 px  →  7 ko en PNG, **868 octets en WebP**
+ *   800 px →  751 ko en PNG, **40 ko en WebP**
+ * Le WebP n'est servi que si le client l'annonce dans `Accept` : c'est le cas d'
+ * `expo-image` (SDWebImage / Glide), pas du composant `Image` de React Native — d'où
+ * la bascule vers `expo-image` partout où une image distante est affichée.
+ *
+ * Renvoie l'URL d'origine si ce n'est pas une URL Storage publique.
  */
-export function thumbnailUrl(url: string | null | undefined, size: number): string | undefined {
+export function imageUrl(
+  url: string | null | undefined,
+  width: number,
+  height: number,
+): string | undefined {
   if (!url) return undefined;
   const marker = '/storage/v1/object/public/';
   const i = url.indexOf(marker);
   if (i < 0) return url;
   const base = url.slice(0, i);
   const path = url.slice(i + marker.length);
-  const px = Math.round(size * 2); // densité écran (retina)
-  return `${base}/storage/v1/render/image/public/${path}?width=${px}&height=${px}&resize=cover&quality=75`;
+  // ×2 pour la densité écran (retina). Au-delà de 2 l'œil ne fait plus la différence
+  // et le poids repart à la hausse.
+  const w = Math.round(width * 2);
+  const h = Math.round(height * 2);
+  return `${base}/storage/v1/render/image/public/${path}?width=${w}&height=${h}&resize=cover&quality=75`;
+}
+
+/** Raccourci carré, cas de loin le plus fréquent (vignettes, logos, pastilles). */
+export function thumbnailUrl(url: string | null | undefined, size: number): string | undefined {
+  return imageUrl(url, size, size);
 }
 
 export type Category = {

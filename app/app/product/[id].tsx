@@ -1,13 +1,26 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { QtyStepper } from '../../components/QtyStepper';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { OptionGroup, SelectedOption } from '../../data/types';
+import { imageUrl, OptionGroup, SelectedOption, thumbnailUrl } from '../../data/types';
+
+/** Doivent rester alignés sur `styles.photo.height` et `styles.chipThumbWrap`. */
+const PHOTO_HEIGHT = 150;
+const CHIP_THUMB = 34;
 import { getProductDetail } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { RestaurantContext, useCart } from '../../store/cart';
@@ -17,6 +30,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { t } = useTranslation();
 
   const { data, loading } = useLoad(() => getProductDetail(id!), [id]);
@@ -102,10 +116,14 @@ export default function ProductDetailScreen() {
       <View style={[styles.photo, { paddingTop: insets.top + 12 }]}>
         {product.photoUrl ? (
           <Image
-            source={{ uri: product.photoUrl }}
-            resizeMode="cover"
-            style={StyleSheet.absoluteFill}
-            onError={(e) => console.warn('[product] échec photo', product.photoUrl, e?.nativeEvent?.error)}
+            // Bandeau plein écran de 150 pt de haut : on demande cette taille-là, pas le
+            // PNG d'origine (1 à 2 Mo pour ~40 ko une fois redimensionné en WebP).
+            source={{ uri: imageUrl(product.photoUrl, width, PHOTO_HEIGHT) }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={220}
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.photoWarmB }]}
+            onError={({ error }) => console.warn('[product] échec photo', product.photoUrl, error)}
           />
         ) : null}
         <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
@@ -150,8 +168,12 @@ export default function ProductDetailScreen() {
                         {hasThumb ? (
                           <View style={styles.chipThumbWrap}>
                             <Image
-                              source={{ uri: o.photoUrl! }}
-                              resizeMode="cover"
+                              // 34 pt à l'écran. C'est ici que le gain est le plus fort :
+                              // un groupe de sauces affichait jusqu'à 8 PNG de ~1 Mo.
+                              source={{ uri: thumbnailUrl(o.photoUrl, CHIP_THUMB) }}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
+                              transition={220}
                               style={styles.chipThumb}
                               onError={() => setImgFailed((f) => ({ ...f, [o.id]: true }))}
                             />

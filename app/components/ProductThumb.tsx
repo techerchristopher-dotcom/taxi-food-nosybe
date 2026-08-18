@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Image, ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { ImageStyle, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
 import { thumbnailUrl } from '../data/types';
@@ -39,12 +40,22 @@ export function ProductThumb({
     return (
       <Image
         source={{ uri: src }}
-        resizeMode="cover"
-        onError={(e) => {
-          console.warn('[ProductThumb] échec chargement image', uri, e?.nativeEvent?.error);
+        contentFit="cover"
+        // Cache disque + mémoire : la même vignette réapparaît dans la liste, la fiche
+        // produit et le panier — elle ne doit être téléchargée qu'une fois.
+        cachePolicy="memory-disk"
+        // Fond chaud pendant le chargement + fondu court : l'image se pose au lieu de
+        // surgir sur du vide. Le fond est celui du repli, la transition est invisible.
+        transition={220}
+        onError={({ error }) => {
+          console.warn('[ProductThumb] échec chargement image', uri, error);
           setFailed(true); // bascule sur le repli propre
         }}
-        style={[dims, style] as StyleProp<ImageStyle>}
+        style={[
+          dims,
+          { backgroundColor: muted ? colors.photoGrayB : colors.photoWarmB },
+          style,
+        ] as StyleProp<ImageStyle>}
       />
     );
   }

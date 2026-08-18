@@ -54,7 +54,8 @@
           "color": "#E8342A",
           "defaultChannel": "commandes"
         }
-      ]
+      ],
+      "expo-image"
     ],
     "extra": {
       "router": {},

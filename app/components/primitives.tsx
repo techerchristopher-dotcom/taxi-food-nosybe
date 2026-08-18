@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Image, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
@@ -76,7 +77,9 @@ export function RestaurantLogo({
     return (
       <Image
         source={{ uri: thumbnailUrl(uri, size) }}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={220}
         onError={() => setFailed(true)}
         style={{ width: size, height: size, borderRadius: r, backgroundColor: colors.fieldBg }}
       />

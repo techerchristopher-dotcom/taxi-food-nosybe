@@ -101,6 +101,18 @@ export const shadow = {
   },
 } as const;
 
+/**
+ * Applique une opacité à une couleur hex du design system : `withAlpha(colors.primary, 0.1)`.
+ * Sert aux fonds teintés dérivés d'une couleur de marque — on ne fige pas une nouvelle
+ * couleur dans la palette pour un simple voile.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  const a = Math.round(Math.min(Math.max(alpha, 0), 1) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return `${hex}${a}`;
+}
+
 /** Formate un montant en ariary avec séparateur d'espace : 78000 -> "78 000 Ar". */
 export function formatAr(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Ar';

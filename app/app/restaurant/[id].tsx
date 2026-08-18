@@ -1,6 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
@@ -8,7 +17,10 @@ import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { Product, Restaurant } from '../../data/types';
+import { imageUrl, Product, Restaurant } from '../../data/types';
+
+/** Doit rester aligné sur `styles.banner.height`. */
+const BANNER_HEIGHT = 200;
 import { getMenu, getRestaurant } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
@@ -18,6 +30,7 @@ export default function RestaurantMenuScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { t } = useTranslation();
 
   const { data: restaurant, loading } = useLoad(() => getRestaurant(id!), [id]);
@@ -78,10 +91,13 @@ export default function RestaurantMenuScreen() {
       <View style={[styles.banner, { paddingTop: insets.top + 12 }]}>
         {restaurant.coverUrl ? (
           <Image
-            source={{ uri: restaurant.coverUrl }}
-            resizeMode="cover"
+            // Bannière de 200 pt : on demande cette taille-là, pas le fichier d'origine.
+            source={{ uri: imageUrl(restaurant.coverUrl, width, BANNER_HEIGHT) }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={220}
             style={StyleSheet.absoluteFill}
-            onError={(e) => console.warn('[resto] échec bannière', restaurant.coverUrl, e?.nativeEvent?.error)}
+            onError={({ error }) => console.warn('[resto] échec bannière', restaurant.coverUrl, error)}
           />
         ) : null}
         <View style={styles.bannerActions}>

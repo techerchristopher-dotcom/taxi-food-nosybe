@@ -235,14 +235,21 @@ export async function getSession(): Promise<Session | null> {
   return buildSession();
 }
 
-/** Envoie un OTP par SMS (nécessite le provider phone activé dans Supabase). */
+/**
+ * Envoie le code de vérification au numéro (nécessite le provider phone activé dans Supabase).
+ *
+ * ⚠️ Le code part par **WhatsApp**, pas par SMS : le « Send SMS Hook » de Supabase
+ * détourne l'envoi vers l'Edge Function `send-otp-whatsapp`. Rien à changer ici — côté
+ * API le canal reste nommé « sms », c'est seulement le transport qui diffère.
+ */
 export async function signInWithPhone(phone: string): Promise<void> {
   const { error } = await supabase.auth.signInWithOtp({ phone });
   if (error) throw error;
 }
 
-/** Vérifie l'OTP reçu par SMS et retourne la session. */
+/** Vérifie le code reçu (par WhatsApp) et retourne la session. */
 export async function verifyPhoneOtp(phone: string, token: string): Promise<Session | null> {
+  // `type: 'sms'` est le nom du canal côté Supabase, indépendamment du transport réel.
   const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
   if (error) throw error;
   return buildSession();

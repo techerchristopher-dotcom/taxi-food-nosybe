@@ -19,7 +19,13 @@ import { colors, fonts, radius } from '../theme/tokens';
 import { useSession } from '../store/session';
 import { Country, DEFAULT_COUNTRY, isValidNumber, toE164 } from '../data/countries';
 
-/** Connexion par numéro de téléphone (OTP SMS). Nécessite le provider phone dans Supabase. */
+/**
+ * Connexion par numéro de téléphone. Nécessite le provider phone dans Supabase.
+ *
+ * Le code de vérification arrive par **WhatsApp** (Send SMS Hook → Edge Function
+ * `send-otp-whatsapp`) : le numéro saisi doit donc avoir WhatsApp, ce que le sous-titre
+ * de l'écran annonce.
+ */
 export default function LoginPhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();

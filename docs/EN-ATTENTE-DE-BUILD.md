@@ -17,7 +17,7 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 | `f231e8d` | iOS ne se déclare plus compatible iPad (`supportsTablet: false`) | config relue |
 | `c0d31f6` | Suppression de compte depuis le Profil + anonymisation des commandes | testé sur la vraie base, 2 comptes jetables |
 | `370262a` | Sign in with Apple, natif | tsc + export web |
-| *(à committer)* | Connexion Google native (JS prêt, config native en attente — voir ci-dessous) | tsc + export web + chargement réel du bundle dans un navigateur |
+| *(à committer)* | **Connexion Google native — entièrement câblée**, Client ID iOS `227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8` | tsc + export web + chargement réel du bundle (les 3 plugins natifs ensemble) |
 | *(à committer)* | **Connexion Facebook native — entièrement câblée**, App ID `1040980255315507` | tsc + export web + chargement réel du bundle + clic réel sur le bouton (redirection déclenchée, zéro erreur console) |
 
 `498a0a2` ne contient que de la documentation, rien à compiler.
@@ -32,21 +32,16 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
       l'**App Secret** Facebook (jamais transmis ici) dans Supabase → *Authentication →
       Providers → Facebook → App Secret* — sans lui, ni le flux web existant ni le natif ne
       valident quoi que ce soit.
-- [ ] **Connexion Google native — finir le câblage.** La couche JS est écrite et gardée
-      (`googleNativeAvailable()`, import dynamique jamais évalué sur web — vérifié en
-      chargeant le bundle exporté dans un vrai navigateur, zéro erreur console). Il manque :
-      1. un **Client ID OAuth de type iOS** (Google Cloud Console → Credentials → Create
-         credentials → OAuth client ID → iOS → bundle `com.chris97416.taxi-food-nosybe`),
-         à poser dans `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (profil `production` de `eas.json`) ;
-      2. remettre le plugin natif dans `app.json`, **avec ses options cette fois** :
-         `["@react-native-google-signin/google-signin", { "iosUrlScheme": "com.googleusercontent.apps.<ID_INVERSÉ>" }]`
-         — ⚠️ **jamais l'entrée nue** `"@react-native-google-signin/google-signin"` : sans
-         options elle route vers la branche Firebase du plugin, qui exige un
-         `GoogleService-Info.plist` qu'on n'a pas et ferait échouer la compilation native.
-         Retirée le 2026-08-18 après l'avoir vue ajoutée automatiquement par
-         `expo install`, avant qu'elle ne casse le build ;
-      3. ajouter ce même Client ID iOS dans Supabase → *Authentication → Providers →
-         Google → Client IDs* (sinon `signInWithIdToken` rejette l'audience du jeton).
+- [x] ~~Connexion Google native~~ — **fait le 2026-08-18.** Client ID OAuth de type iOS créé
+      dans Google Cloud (`227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8.apps.googleusercontent.com`),
+      posé dans `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (3 profils `eas.json`) et dans le plugin
+      `@react-native-google-signin/google-signin` d'`app.json` en `iosUrlScheme` inversé
+      (`com.googleusercontent.apps.227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8`) — jamais
+      l'entrée nue, elle route vers la branche Firebase du plugin et ferait échouer la
+      compilation native. **Reste à faire, côté toi :** ajouter ce même Client ID dans
+      Supabase → *Authentication → Providers → Google → Client IDs* (liste séparée par
+      virgules, à côté du Client ID web déjà présent — ne pas l'effacer). Sans ça,
+      `signInWithIdToken` rejette l'audience du jeton natif.
 - [ ] Politique de confidentialité et URL de support — ne demandent **aucun build**, mais
       sont obligatoires pour la soumission.
 

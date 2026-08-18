@@ -58,6 +58,12 @@
       ],
       "expo-image",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8"
+        }
+      ],
+      [
         "react-native-fbsdk-next",
         {
           "appID": "1040980255315507",

@@ -35,6 +35,19 @@
         "EXPO_PUBLIC_FACEBOOK_APP_ID": "1040980255315507",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8.apps.googleusercontent.com"
       }
+    },
+    "simulator": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bmdveawomizjpiebgtkj.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_PIgdG97zTlRIAYX_3MBm3A_Le6YUMjv",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "227662072769-hjj9fcplq80l8eiqqc3luo9h49h91fpt.apps.googleusercontent.com",
+        "EXPO_PUBLIC_FACEBOOK_APP_ID": "1040980255315507",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {

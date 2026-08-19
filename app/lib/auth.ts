@@ -152,13 +152,19 @@ export function facebookNativeAvailable(): boolean {
  * serveur avec l'App Secret pour le valider, à la différence d'Apple/Google où le jeton est
  * vérifié par sa signature).
  *
- * ⚠️ `loginTrackingIOS: 'enabled'` est **obligatoire**, pas cosmétique. Sans lui, la librairie
- * a basculé sur le mode iOS « Limited Login » (URL `limited.facebook.com` à l'écran) : il
- * renvoie un JWT de nature différente, qu'`AccessToken.getCurrentAccessToken()` ne récupère
- * jamais et que l'API Graph — donc Supabase — ne sait pas valider. Résultat observé : le
- * SDK réussissait tout son échange avec Facebook, mais **aucune identité n'était jamais
- * créée côté Supabase**, sans qu'aucune erreur ne le dise clairement. Piège rencontré et
- * corrigé le 2026-08-18.
+ * ⚠️ **`react-native-fbsdk-next` doit rester figé à `12.2.0`, jamais `13.x`.** À partir de la
+ * 13.0.0, la librairie adopte le SDK iOS natif de Meta v17 et **impose** le mode iOS
+ * « Limited Login » (URL `limited.facebook.com` à l'écran), sans exception possible — même
+ * avec `loginTrackingIOS: 'enabled'` explicitement passé ci-dessous, qui n'a alors plus aucun
+ * effet. Limited Login renvoie un JWT (`AuthenticationToken`) que `AccessToken.
+ * getCurrentAccessToken()` ne récupère jamais, et que l'API Graph — donc Supabase, dont le
+ * guide Facebook ne documente que le jeton d'accès classique — ne sait pas valider. Résultat
+ * observé sur la 13.4.3 : le SDK réussissait tout son échange avec Facebook, mais **aucune
+ * identité n'était jamais créée côté Supabase**, sans qu'aucune erreur ne le dise clairement.
+ * La 12.2.0 est le dernier choix sûr : dernière version avant ce changement, et première à
+ * supporter la New Architecture de React Native (donc pas de recul de compatibilité avec ce
+ * projet). Piège rencontré et corrigé le 2026-08-18 — `npx expo install`/`npm update`
+ * réinstalleraient la dernière version et referaient regresser ce bug silencieusement.
  */
 export async function signInWithFacebookNative(): Promise<Session | null> {
   const { LoginManager, AccessToken } = await import('react-native-fbsdk-next');

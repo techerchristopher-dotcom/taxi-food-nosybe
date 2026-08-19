@@ -15,14 +15,14 @@ natifs n'en réclament aucune, et Sign In with Apple était déjà acquis depuis
 Contient, en plus de tout ce qui était dans le n°13 :
 - Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout
   autant que l'e-mail
-- **Correctif Facebook natif** : `loginTrackingIOS: 'enabled'` forcé sur
-  `logInWithPermissions`. Sans lui, le SDK basculait silencieusement en mode iOS
-  « Limited Login » (repérable à l'écran via l'URL `limited.facebook.com`) — un jeton d'une
-  autre nature que Supabase ne sait pas valider. Le SDK réussissait tout son échange avec
-  Facebook, mais aucune identité n'était jamais créée côté Supabase, sans erreur claire.
-  Trouvé en confirmant via `auth.identities` qu'aucune ligne `provider='facebook'` n'avait
-  jamais existé. **Encore à confirmer sur un vrai appareil** une fois le build 14 disponible
-  — le test précédent (build 13) est celui qui avait révélé le bug.
+- Tentative de correctif Facebook natif (`loginTrackingIOS: 'enabled'`) — **insuffisante**,
+  voir ci-dessous.
+
+⚠️ **Retesté sur appareil réel : Facebook échoue toujours sur le n°14.** `loginTrackingIOS:
+'enabled'` n'a aucun effet sur `react-native-fbsdk-next` 13.4.3 : à partir de la 13.0.0, la
+librairie adopte le SDK iOS natif de Meta v17 et **impose** le mode « Limited Login » sans
+exception. Cause identifiée dans le changelog GitHub de la librairie elle-même. Vrai correctif
+dans le prochain build : version figée à `12.2.0` — voir ci-dessous.
 
 Historique : n°13 construit à la main par Christopher en interactif (capability Sign In with
 Apple) ; n°12 a réussi juste avant sans conséquence ; n°11 a échoué (profil sans cette
@@ -30,7 +30,9 @@ capability, lancé sans authentification Apple réelle).
 
 ## Dans le prochain build
 
-*(vide — rien en attente)*
+| Commit | Chantier | Vérifié |
+|---|---|---|
+| *(à committer)* | **`react-native-fbsdk-next` figé à `12.2.0`** (`--save-exact`), dernière version avant que la 13.0.0 n'impose le Limited Login iOS — et première à supporter la New Architecture RN, donc aucun recul de compatibilité. Le correctif du build 14 (`loginTrackingIOS: 'enabled'`) redevient effectif sur cette version | tsc + export web + chargement réel du bundle. **Pas encore testé sur appareil réel** |
 
 ## Ce qui n'a PAS besoin d'un build
 

@@ -184,14 +184,12 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 
 **Plus aucun bloquant de code.** Il reste trois choses, toutes hors développement :
 
-1. ⚠️ **Trancher le classement d'âge.** Le catalogue contient **25 produits alcoolisés**
-   (bières chez les trois restaurants, cocktails chez Taxi Be — vérifié en base). Une app qui
-   *vend* de l'alcool est en général classée **17+** par Apple. Soit on l'assume, soit on
-   retire ces produits du catalogue. Décision commerciale autant que réglementaire, détaillée
-   dans [FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 3.
-2. **Créer le compte de démonstration** (e-mail + mot de passe, avec une adresse GPS déjà
-   enregistrée) et coller les notes de revue — § 4 de la même fiche.
-3. **Produire les 6 captures d'écran** au format iPhone 6,9" — § 5.
+1. ✅ **Classement d'âge tranché** (2026-08-19) : les 6 cocktails sont retirés du catalogue,
+   les 19 bières restent. ⚠️ Le classement reste donc **17+** — la bière est de l'alcool, et
+   l'app continue d'en vendre. Détail dans [FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 3.
+2. ✅ **Compte de démonstration créé et vérifié** (connexion testée par l'API, lecture du
+   catalogue sous RLS) — identifiants et notes de revue en § 4 de la même fiche.
+3. **Produire les 6 captures d'écran** au format iPhone 6,9" — § 5. **Seul point restant.**
 
 Un dernier build sera nécessaire pour embarquer le masquage du bouton téléphone et le retrait
 du diagnostic.

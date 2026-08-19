@@ -104,31 +104,30 @@ de crash reporting), Contenu audio/vidéo.
 
 ---
 
-## 3. Classement d'âge — ⚠️ point à trancher
+## 3. Classement d'âge
 
-**Vérifié en base le 2026-08-19 : le catalogue contient 25 produits alcoolisés.**
+### Décision prise le 2026-08-19 : cocktails retirés, bières gardées
 
-| Restaurant | Alcool |
-|---|---|
-| Taxi Be | 9 bières + 6 cocktails (Mojito, Ti-Punch, Piña Colada, Tequila Sunrise…) |
-| La Cabane | 5 bières |
-| Angelo | 5 bières |
+Les **6 cocktails** de Taxi Be (Mojito, Ti-Punch, Piña Colada, Tequila Sunrise, Planteur,
+granité vodka) sont retirés du catalogue : `categories.is_active = false` et les 6 produits
+`is_available = false`. **Rien n'est supprimé**, la remise en service est une requête.
+Motif retenu : ces boissons se livrent mal en scooter. Vérifié qu'aucune commande en cours
+n'en contenait avant de basculer.
 
-Conséquence : au questionnaire de classement d'âge, la rubrique **« Alcool, tabac ou
-drogues »** ne peut pas être laissée à « Aucun ». Une app qui **vend** de l'alcool — et non
-qui y fait seulement allusion — est en général classée **17+** par Apple, et doit respecter la
-réglementation locale sur la vente d'alcool.
+État du catalogue après retrait : **106 produits disponibles, dont 19 bières.**
 
-Deux options, et c'est une décision qui t'appartient :
+### ⚠️ Ce que ça ne change PAS
 
-- **Assumer le 17+.** Rien à changer dans l'app. Inconvénient : l'app devient invisible pour
-  les comptes d'adolescents et perd un peu de visibilité générale.
-- **Retirer les bières et cocktails du catalogue** (`is_available = false`) pour viser un
-  classement bas. L'app resterait « tout public », mais tu perds une part du chiffre des
-  restaurants — Taxi Be est un bar, l'alcool est une partie de son activité.
+**Le classement reste très probablement 17+.** La bière est de l'alcool : avec 19 bières
+réparties sur les trois restaurants, l'app continue de **vendre** de l'alcool, et la rubrique
+« Alcool, tabac ou drogues » du questionnaire ne peut pas être laissée à « Aucun ».
 
-Je ne peux pas trancher à ta place : c'est un choix commercial autant que réglementaire. Dis-moi
-lequel tu retiens, et si tu prends le second je fais la modification.
+Retirer les cocktails était donc un bon choix opérationnel, mais ce n'est pas un levier sur le
+classement d'âge. Pour viser un classement « tout public », il faudrait retirer **aussi les 19
+bières** — ce qui ampute une part réelle de l'activité, Taxi Be étant un bar.
+
+Rien à faire de plus si le 17+ est assumé : c'est cohérent avec un service qui livre de
+l'alcool, et beaucoup d'apps de livraison sont dans ce cas.
 
 Toutes les autres rubriques du questionnaire (violence, contenu sexuel, jeux d'argent,
 horreur, langage grossier, contenu web non filtré) → **Aucun**.
@@ -137,15 +136,31 @@ horreur, langage grossier, contenu web non filtré) → **Aucun**.
 
 ## 4. Compte de démonstration et notes pour le relecteur
 
-### Le compte à créer (par toi, avant de soumettre)
+### ✅ Le compte est créé (2026-08-19)
 
-**Surtout pas un compte Google, Facebook ou Apple** : le relecteur n'y a pas accès. Il faut un
-compte **e-mail + mot de passe**, créé depuis l'app (« Créer un compte par e-mail »).
+```
+E-mail        : demo.apple@taxifood.mg
+Mot de passe  : TaxiFoodDemo2026
+```
 
-Suggestion : une adresse dédiée du genre `demo.apple@…`, un mot de passe simple mais valide
-(8 caractères minimum), et **passe l'onboarding jusqu'au bout toi-même** : nom, téléphone, et
-surtout **une adresse enregistrée avec sa position GPS**. Sans adresse, le relecteur ne peut
-pas valider de commande et conclura que l'app est cassée.
+Prêt à l'emploi, avec nom, téléphone **et une adresse de livraison déjà géolocalisée**
+(Hell-Ville, en face du marché couvert) — sans adresse, le relecteur ne pourrait pas valider
+de commande et conclurait que l'app est cassée.
+
+**Vérifié pour de vrai**, pas supposé : connexion testée via l'API d'authentification (jeton
+obtenu), puis lecture du catalogue et de l'adresse **sous les droits du compte** (RLS active)
+— il voit bien son adresse, les trois restaurants, et la catégorie Cocktails désactivée.
+
+⚠️ **Piège rencontré à la création.** Un compte inséré directement en SQL laisse quatre
+colonnes de `auth.users` à `NULL` (`confirmation_token`, `recovery_token`,
+`email_change_token_new`, `email_change`) là où GoTrue attend des chaînes vides. Résultat : la
+connexion échoue avec **« Database error querying schema »**, message qui ne dit rien du vrai
+problème et ne mentionne jamais le mot de passe. Corrigé en alignant ces colonnes sur celles
+d'un compte créé normalement. À refaire si un autre compte est créé par SQL.
+
+L'e-mail est marqué confirmé d'office : aucun courriel n'a besoin d'arriver sur
+`@taxifood.mg`. En revanche « mot de passe oublié » ne fonctionnerait pas sur ce compte — le
+relecteur n'en a pas besoin.
 
 ### Notes à coller dans « App Review Information »
 
@@ -153,8 +168,8 @@ pas valider de commande et conclura que l'app est cassée.
 L'application est une plateforme de livraison de repas opérant à Nosy Be (Madagascar).
 
 COMPTE DE DÉMONSTRATION
-E-mail : [à compléter]
-Mot de passe : [à compléter]
+E-mail : demo.apple@taxifood.mg
+Mot de passe : TaxiFoodDemo2026
 
 Ce compte est un compte client, avec une adresse de livraison déjà enregistrée.
 

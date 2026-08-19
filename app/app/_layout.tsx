@@ -1,7 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -33,10 +33,18 @@ function Splash() {
 }
 
 export default function RootLayout() {
-  // On charge les polices, mais on NE bloque PAS le rendu dessus : sur réseau lent
-  // (Nosy Be), attendre les 8 fichiers fige l'app sur le splash. Elles s'appliquent
-  // dès qu'elles arrivent (repli système en attendant).
-  useFonts({
+  // ⚠️ En NATIF, on attend les polices avant le premier rendu ; sur WEB, non.
+  //
+  // Le non-blocage systématique causait un vrai défaut visuel : le texte du tout premier
+  // écran était mesuré avec la police système, puis redessiné en Archivo, plus large — la
+  // dernière lettre débordait de la boîte mesurée et se faisait couper. D'où le « TAXI FOO »
+  // et le « Continuer avec Googl » de l'écran de connexion, visibles jusque dans le build
+  // TestFlight n°17. Les écrans suivants n'avaient rien, les polices étant déjà chargées.
+  //
+  // La raison d'origine du non-blocage (réseau lent à Nosy Be) ne vaut que pour le web :
+  // en natif les 8 fichiers sont **embarqués dans l'app**, donc lus localement en quelques
+  // millisecondes, sans réseau. On bloque donc là où c'est gratuit, et pas ailleurs.
+  const [fontsLoaded] = useFonts({
     Archivo_400Regular,
     Archivo_500Medium,
     Archivo_600SemiBold,
@@ -102,7 +110,8 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  const ready = !sessionLoading && cartHydrated && langReady;
+  const ready =
+    !sessionLoading && cartHydrated && langReady && (Platform.OS === 'web' || fontsLoaded);
 
   // La navigation attend que le Stack existe : au démarrage à froid depuis une
   // notification, l'écouteur se déclenche pendant le splash, où `router.push` n'a

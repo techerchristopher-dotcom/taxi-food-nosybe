@@ -305,8 +305,16 @@ export function formatTime(t: string | null | undefined): string {
   return m && m !== '00' ? `${Number(h)}h${m}` : `${Number(h)}h`;
 }
 
-/** Plage horaire lisible : « 11h – 22h30 ». */
+/**
+ * Plage horaire lisible : « 11h – 22h30 ».
+ *
+ * Renvoie une chaîne **vide** si l'une des deux bornes manque : les trois restaurants n'ont
+ * pas encore d'horaires en base, et le gabarit produisait alors un tiret solitaire à côté
+ * d'une icône d'horloge — lisible comme un défaut d'affichage, pas comme une absence
+ * d'information. L'appelant doit masquer l'élément quand la chaîne est vide.
+ */
 export function hoursLabel(opensAt: string, closesAt: string): string {
+  if (!opensAt || !closesAt) return '';
   return `${formatTime(opensAt)} – ${formatTime(closesAt)}`;
 }
 

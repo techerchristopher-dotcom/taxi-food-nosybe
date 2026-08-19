@@ -203,10 +203,13 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
         <OpenBadge open={r.isOpen} />
       </View>
       <View style={styles.rMeta}>
-        <View style={styles.rMetaItem}>
-          <Icon name="schedule" size={16} color={colors.secondary} />
-          <Text style={styles.rMetaText}>{r.hoursLabel}</Text>
-        </View>
+        {/* Masqué tant que les horaires ne sont pas renseignés : voir `hoursLabel`. */}
+        {r.hoursLabel ? (
+          <View style={styles.rMetaItem}>
+            <Icon name="schedule" size={16} color={colors.secondary} />
+            <Text style={styles.rMetaText}>{r.hoursLabel}</Text>
+          </View>
+        ) : null}
         <View style={styles.rMetaItem}>
           <Icon name="two_wheeler" size={16} color={colors.secondary} />
           <Text style={styles.rMetaText}>{formatAr(r.deliveryFee)}</Text>

@@ -90,7 +90,13 @@ export default function ProfileScreen() {
               <Text style={styles.lineLabel}>{t('profile.phone')}</Text>
               <Text style={styles.lineValue}>{phone}</Text>
             </View>
-            <Text style={styles.action}>{t('common.modify')}</Text>
+            {/* `/phone` est l'écran de saisie de la première connexion, mais il fonctionne
+                tel quel en modification : il a son propre bouton retour et renvoie sur les
+                onglets une fois enregistré. Sans ce `Pressable`, « Modifier » n'était qu'un
+                texte rouge qui ne faisait rien. */}
+            <Pressable onPress={() => router.push('/phone')} hitSlop={8}>
+              <Text style={styles.action}>{t('common.modify')}</Text>
+            </Pressable>
           </View>
           {email ? (
             <View style={styles.line}>
@@ -103,9 +109,14 @@ export default function ProfileScreen() {
           ) : null}
         </Card>
 
+        {/* Pas d'action « Ajouter » ni de menu « … » ici : les deux existaient sous forme de
+            simple texte, sans `Pressable` ni gestionnaire — des commandes mortes. Une adresse
+            s'ajoute dans le tunnel de commande (écran `/address`), qui est le seul endroit où
+            elle a un sens : la capture GPS y est exigée et la validation enchaîne sur le
+            paiement. Un relecteur Apple appuie sur tout ce qui ressemble à un bouton
+            (règle 2.1), et un client aussi. */}
         <View style={styles.sectionHead}>
           <SectionLabel>{t('profile.addresses')}</SectionLabel>
-          <Text style={styles.action}>{t('profile.addAddress')}</Text>
         </View>
         <View style={{ gap: 10 }}>
           {(addresses ?? []).map((a) => (
@@ -117,7 +128,6 @@ export default function ProfileScreen() {
                   {a.zone}, {a.landmark}
                 </Text>
               </View>
-              <Icon name="more_horiz" size={20} color={colors.textFaint} />
             </Card>
           ))}
           {(addresses ?? []).length === 0 ? (

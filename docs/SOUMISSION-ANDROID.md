@@ -32,26 +32,30 @@ restreinte au package `com.chris97416.taxifoodnosybe` + à l'empreinte SHA-1 du 
 signature. Gratuit avec quota généreux, mais Google peut demander une carte bancaire pour
 activer la facturation du projet (au cas où le quota gratuit serait dépassé).
 
-### A2. Connexion Google native désactivée par un verrou en dur — CORRIGEABLE UNE FOIS LA CLÉ ANDROID CRÉÉE
+### A2. Connexion Google native sur Android — ✅ FAIT (2026-08-19)
 
-`googleNativeAvailable()` dans `lib/auth.ts` :
-```ts
-return Platform.OS === 'ios' && Boolean(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
-```
-Le code de connexion (`signInWithGoogleNative`) est déjà générique — aucune dépendance iOS à
-l'intérieur, il utilise `webClientId` (déjà en place) et `iosClientId` (optionnel selon la
-plateforme). Une fois un **Client ID OAuth Android** créé dans Google Cloud Console (type
-« Android », avec le package et le SHA-1 du keystore EAS), il suffira de :
-1. l'ajouter en `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` dans `app/.env` et les profils
-   `eas.json` concernés (actuellement vide dans `.env`, colonne déjà prévue) ;
-2. passer `androidClientId` à `GoogleSignin.configure` (actuellement absent, à ajouter à côté
-   de `webClientId`/`iosClientId`) ;
-3. élargir `googleNativeAvailable()` aux deux plateformes.
+Fait en trois étapes, ensemble, dans l'ordre :
 
-**Bloqué sur** : récupérer l'empreinte SHA-1 du keystore que EAS gère (`eas credentials
---platform android`, interactif — à lancer par Christopher dans son propre terminal, même
-règle que pour iOS), puis créer le Client ID Android dans Google Cloud Console avec cette
-empreinte.
+1. **Keystore Android généré par EAS** (`eas credentials --platform android`, lancé par
+   Christopher dans son propre terminal, profil `production`) → empreinte SHA-1 :
+   `6D:15:C4:4F:F6:B1:9E:A5:6E:BA:17:11:1E:1F:C4:1A:CC:87:E8:F5`. ⚠️ Deux jeux de
+   « Build Credentials » ont été créés par erreur (double passage sur « Set up a new
+   keystore ») ; seul le second (marqué **Default**) sera utilisé pour signer l'app, le
+   premier reste inutilisé mais inoffensif.
+2. **Client ID OAuth Android créé dans Google Cloud Console** (même projet que iOS/web,
+   `227662072769`), type « Android », avec le package `com.chris97416.taxifoodnosybe` et
+   l'empreinte ci-dessus → `227662072769-l51ks9oq7g6q02f4ah12ptbqfhrv12a2.apps.googleusercontent.com`,
+   posé dans `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` (`app/.env` + les 4 profils `eas.json`).
+3. **Code** : `googleNativeAvailable()` dans `lib/auth.ts` élargi aux deux plateformes.
+   `signInWithGoogleNative()` lui-même n'a **pas changé** : vérifié que
+   `GoogleSignin.configure` n'a pas de paramètre `androidClientId` — sur Android, c'est
+   l'empreinte SHA-1 enregistrée côté Google (étape 2), pas une valeur dans le code, qui fait
+   reconnaître l'app. La variable d'env ne sert que de drapeau « configuration faite »,
+   comme son équivalent iOS.
+
+⚠️ **À vérifier au premier build Android** : que le sélecteur de compte système s'ouvre bien
+et que la connexion aboutit (le keystore de signature doit être celui utilisé pour le build,
+sinon l'empreinte ne correspond plus à ce que Google Cloud attend).
 
 ### A3. Connexion Facebook native — ✅ RÉSOLU, AUCUN CODE À CHANGER (2026-08-19)
 

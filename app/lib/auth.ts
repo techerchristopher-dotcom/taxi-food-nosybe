@@ -61,16 +61,28 @@ export function googleConfigured(): boolean {
 }
 
 /**
- * Présence du Client ID Google **iOS** en env = drapeau « connexion Google native prête ».
+ * Présence du Client ID Google **de la plateforme courante** en env = drapeau « connexion
+ * Google native prête » pour cette plateforme.
  *
  * Distinct de `googleConfigured()` : celui-ci porte sur le Client ID **web**, utilisé par le
- * flux navigateur ci-dessous. Le natif exige un Client ID d'un AUTRE type OAuth (« iOS »,
- * créé dans Google Cloud avec le bundle `com.chris97416.taxi-food-nosybe`), en plus du
- * plugin de config natif dans `app.json`. Tant qu'il manque, l'écran garde le bouton Google
+ * flux navigateur ci-dessous. Le natif exige en plus un Client ID OAuth créé pour chaque
+ * plateforme dans Google Cloud :
+ * - **iOS** : type « iOS », lié au bundle `com.chris97416.taxi-food-nosybe`.
+ * - **Android** : type « Android », lié au package `com.chris97416.taxifoodnosybe` **et** à
+ *   l'empreinte SHA-1 du keystore de signature (celui qu'EAS gère) — c'est cette empreinte,
+ *   pas une valeur dans le code, qui permet à Google Play Services de reconnaître l'app au
+ *   moment de la connexion. `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` n'est donc jamais lu par
+ *   le SDK (voir `signInWithGoogleNative` : `GoogleSignin.configure` n'a pas de paramètre
+ *   `androidClientId`) — il ne sert ici que de **drapeau** attestant que ce Client ID a été
+ *   créé, comme son équivalent iOS.
+ *
+ * Tant que la variable de la plateforme courante manque, l'écran garde le bouton Google
  * actuel (navigateur) — comportement identique à aujourd'hui, aucune régression.
  */
 export function googleNativeAvailable(): boolean {
-  return Platform.OS === 'ios' && Boolean(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
+  if (Platform.OS === 'ios') return Boolean(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
+  if (Platform.OS === 'android') return Boolean(process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID);
+  return false;
 }
 
 /**

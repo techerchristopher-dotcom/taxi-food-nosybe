@@ -146,52 +146,49 @@ export function facebookNativeAvailable(): boolean {
  * module natif sans version web, jamais évalué hors iOS/Android grâce à
  * `facebookNativeAvailable`.
  *
- * ⚠️ Contrairement à Apple/Google, Facebook ne fournit **pas** de jeton OIDC signé au flux
- * classique : `signInWithIdToken` attend ici le **jeton d'accès** du SDK tel quel (confirmé
- * dans la documentation Supabase — c'est elle qui interroge l'API Graph de Facebook côté
- * serveur avec l'App Secret pour le valider, à la différence d'Apple/Google où le jeton est
- * vérifié par sa signature).
+ * ⚠️ **C'est le mode « Limited Login » qu'il faut, pas le flux classique** — l'inverse de ce
+ * qu'on avait supposé d'abord. `signInWithIdToken` attend un **jeton OIDC signé** (le type
+ * `SignInWithIdTokenCredentials` de supabase-js le dit : « OIDC ID token issued by the
+ * specified provider »), que Supabase valide par sa signature. Le jeton d'accès classique de
+ * l'API Graph n'est pas un JWT : Supabase le rejette avec **« Bad ID token »** — erreur
+ * constatée à l'écran le 2026-08-19 après avoir fait remonter le message brut, les journaux
+ * Supabase étant en panne. Limited Login, lui, renvoie précisément cet OIDC ID token via
+ * `AuthenticationToken.getAuthenticationTokenIOS()`.
  *
- * ⚠️ **`react-native-fbsdk-next` doit rester figé à `12.2.0`, jamais `13.x`.** À partir de la
- * 13.0.0, la librairie adopte le SDK iOS natif de Meta v17 et **impose** le mode iOS
- * « Limited Login » (URL `limited.facebook.com` à l'écran), sans exception possible — même
- * avec `loginTrackingIOS: 'enabled'` explicitement passé ci-dessous, qui n'a alors plus aucun
- * effet. Limited Login renvoie un JWT (`AuthenticationToken`) que `AccessToken.
- * getCurrentAccessToken()` ne récupère jamais, et que l'API Graph — donc Supabase, dont le
- * guide Facebook ne documente que le jeton d'accès classique — ne sait pas valider. Résultat
- * observé sur la 13.4.3 : le SDK réussissait tout son échange avec Facebook, mais **aucune
- * identité n'était jamais créée côté Supabase**, sans qu'aucune erreur ne le dise clairement.
- * La 12.2.0 est le dernier choix sûr : dernière version avant ce changement, et première à
- * supporter la New Architecture de React Native (donc pas de recul de compatibilité avec ce
- * projet). Piège rencontré et corrigé le 2026-08-18 — `npx expo install`/`npm update`
- * réinstalleraient la dernière version et referaient regresser ce bug silencieusement.
+ * ⚠️ Le **nonce** est obligatoire ici : le jeton du Limited Login porte toujours un claim
+ * `nonce`, et supabase-js impose de fournir la valeur d'origine dès que c'est le cas. On
+ * génère donc le nôtre et on le passe des deux côtés — au SDK puis à Supabase. Sans lui, le
+ * jeton serait refusé même bien formé.
+ *
+ * ⚠️ Ne PAS rétrograder `react-native-fbsdk-next` sous la `13.x` : la 13.0.0 adopte
+ * facebook-ios-sdk 17, qui apporte les **privacy manifests** exigés par Apple pour ce SDK
+ * depuis mai 2024 — une 12.x risquerait un rejet App Store. La 12.2.0 avait été tentée le
+ * 2026-08-18 pour forcer le flux classique, sur un diagnostic erroné : c'était à la fois
+ * inutile (le Limited Login est le bon mode) et risqué pour la soumission.
  */
 export async function signInWithFacebookNative(): Promise<Session | null> {
-  const { LoginManager, AccessToken } = await import('react-native-fbsdk-next');
+  const { LoginManager, AuthenticationToken } = await import('react-native-fbsdk-next');
+  const { randomUUID } = await import('expo-crypto');
 
-  const result = await LoginManager.logInWithPermissions(['public_profile', 'email'], 'enabled');
+  // Nonce à usage unique, transmis au SDK puis vérifié par Supabase contre le claim du jeton.
+  const nonce = randomUUID();
+
+  const result = await LoginManager.logInWithPermissions(
+    ['public_profile', 'email'],
+    'limited',
+    nonce,
+  );
   if (result.isCancelled) return null;
 
-  const token = await AccessToken.getCurrentAccessToken();
-  if (!token) {
-    // ⚠️ TEMPORAIRE (diagnostic 2026-08-18) : distingue « pas de jeton du tout » de
-    // « jeton rejeté par Supabase ». Sans ça les deux cas donnent le même message.
-    throw new Error(
-      `Facebook n’a pas renvoyé de jeton. accordées=${JSON.stringify(result.grantedPermissions)} refusées=${JSON.stringify(result.declinedPermissions)}`,
-    );
-  }
+  const token = await AuthenticationToken.getAuthenticationTokenIOS();
+  if (!token) throw new Error('Facebook n’a pas renvoyé de jeton d’authentification.');
 
   const { error } = await supabase.auth.signInWithIdToken({
     provider: 'facebook',
-    token: token.accessToken,
+    token: token.authenticationToken,
+    nonce,
   });
-  if (error) {
-    // ⚠️ TEMPORAIRE (diagnostic 2026-08-18) : on veut savoir si l'e-mail a réellement été
-    // accordé au moment du rejet — une permission listée à l'écran peut avoir été refusée.
-    throw new Error(
-      `Supabase a refusé le jeton : ${error.message} | accordées=${JSON.stringify(token.permissions)} refusées=${JSON.stringify(token.declinedPermissions)}`,
-    );
-  }
+  if (error) throw error;
   return buildSession();
 }
 

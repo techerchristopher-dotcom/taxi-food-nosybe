@@ -8,27 +8,23 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 ## Dernier build sorti
 
-**n°15** — `1.0.0 (15)`, soumis à TestFlight le 2026-08-18. Construit et soumis en
-`--non-interactive` (aucune capability Apple nouvelle).
+**n°16** — `1.0.0 (16)`, soumis à TestFlight le 2026-08-19. Contient un **diagnostic
+temporaire** : le message d'erreur brut de la connexion sociale est affiché à l'écran sous le
+message traduit (ligne `[diag]`), les journaux Supabase étant en panne prolongée côté serveur.
 
-Contient le vrai correctif Facebook : **`react-native-fbsdk-next` figé à `12.2.0`**
-(`--save-exact`), dernière version avant que la 13.0.0 n'impose le mode iOS « Limited Login »
-sans exception — et première à supporter la New Architecture RN, donc aucun recul de
-compatibilité. Le paramètre `loginTrackingIOS: 'enabled'` (déjà posé dans le build 14, sans
-effet sur la 13.4.3) redevient effectif sur cette version.
+C'est ce build qui a livré l'information décisive sur Facebook : **« Bad ID token »**.
 
-⚠️ **Encore à confirmer sur appareil réel** — le build 14 avait semblé corriger le problème
-sur le papier, mais un retest avait révélé que le vrai correctif était ailleurs (la version de
-la librairie, pas le paramètre). Ne pas déclarer Facebook résolu avant un retest explicite.
-
-Historique : n°14 contenait une tentative insuffisante (le paramètre seul, sans le bon
-correctif) ; n°13 construit à la main par Christopher en interactif (capability Sign In with
-Apple) ; n°12 a réussi juste avant sans conséquence ; n°11 a échoué (profil sans cette
-capability, lancé sans authentification Apple réelle).
+Historique des tentatives Facebook, toutes fondées sur un diagnostic erroné : n°15 figeait la
+librairie en 12.2.0 pour forcer le flux classique ; n°14 posait `loginTrackingIOS: 'enabled'`
+(sans effet sur la 13.x). Avant : n°13 construit à la main en interactif (capability Sign In
+with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cette capability).
 
 ## Dans le prochain build
 
-*(vide — rien en attente)*
+| Commit | Chantier | Vérifié |
+|---|---|---|
+| *(à committer)* | **Facebook basculé en mode « Limited Login »** — l'inverse de ce qu'on croyait. `signInWithIdToken` attend un jeton **OIDC signé**, pas le jeton d'accès Graph : d'où le « Bad ID token ». On lit donc `AuthenticationToken.getAuthenticationTokenIOS()` et on transmet un **nonce** (obligatoire, le jeton en porte toujours un). Librairie **remise en 13.4.3** au passage : la 12.x n'embarque pas les privacy manifests qu'Apple exige pour ce SDK depuis mai 2024, donc le pin de la veille était aussi un risque de rejet App Store | tsc + export web. **Pas encore testé sur appareil réel** |
+| *(déjà dans le n°16, à retirer une fois Facebook validé)* | Diagnostic `[diag]` à l'écran | — |
 
 ## Ce qui n'a PAS besoin d'un build
 

@@ -208,14 +208,19 @@ confirme, il verra un parcours bloqué et pourra juger l'app non fonctionnelle.
 
 ---
 
-## 5. Plan des captures d'écran
+## 5. Plan des captures d'écran — ✅ FAIT (2026-08-19)
+
+**Les six fichiers sont dans [captures-app-store/](captures-app-store/)**, aux bons noms et au
+bon format, avec leur ordre de téléversement et leurs légendes. Il n'y a plus qu'à les
+déposer dans App Store Connect. Le reste de cette section documente comment elles ont été
+prises, pour pouvoir en refaire une.
 
 **Format requis : iPhone 6,9 pouces** (1320 × 2868 px). C'est le seul format obligatoire
 aujourd'hui : App Store Connect décline automatiquement vers les tailles inférieures.
 
-Si ton iPhone n'est pas un 6,9" (16/17 Pro Max), prends-les dans le **simulateur iOS** sur ton
-Mac avec un iPhone 17 Pro Max — c'est le seul moyen d'avoir la résolution exacte. `⌘S` dans le
-simulateur enregistre la capture au bon format.
+Prises dans le **simulateur iOS** (iPhone 17 Pro Max) : un iPhone 14 Pro rend en 1179 × 2556,
+que l'App Store n'accepte pas. `⌘S` dans le simulateur, ou `xcrun simctl io <udid> screenshot`
+en ligne de commande.
 
 Ordre proposé, du plus vendeur au plus explicatif — les deux premières sont celles que 90 %
 des visiteurs verront :

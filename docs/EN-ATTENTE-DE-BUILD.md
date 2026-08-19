@@ -26,6 +26,8 @@ with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cett
 | **Facebook en Limited Login** — corrigé et **confirmé sur appareil réel** (identité `provider='facebook'` créée en base). Librairie remise en 13.4.3 | testé sur appareil |
 | **Diagnostic `[diag]` retiré** de l'écran de connexion — « Bad ID token » ne veut rien dire pour un client ; le message brut reste en console | relu, aucune trace résiduelle |
 | **Bouton « Continuer avec un numéro » masqué** — les secrets WhatsApp ne sont pas posés, le bouton échouait (rejet Apple règle 2.1). Piloté par `EXPO_PUBLIC_PHONE_LOGIN_ENABLED`, absent = masqué | tsc + export web + **rendu vérifié dans un navigateur** : « E-mail » prend toute la largeur, aucun trou |
+| **Commandes mortes du Profil** — « Ajouter » (adresses) et « … » retirés ; « Modifier » (téléphone) branché sur `/phone`. C'étaient des `<Text>` sans gestionnaire (règle 2.1) | tsc + **build simulateur installé et parcouru** : les deux affordances mortes ont disparu, « Modifier » ouvre bien l'écran téléphone avec son bouton retour |
+| **Tiret solitaire à la place des horaires** sur la fiche restaurant — `hoursLabel()` renvoie une chaîne vide quand `opens_at`/`closes_at` manquent, et l'élément est masqué | tsc + **vérifié à l'écran** sur La Cabane, avant/après |
 
 ⚠️ Ce build est celui qui part à la soumission App Store. Voir
 [SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) et [FICHE-APP-STORE.md](FICHE-APP-STORE.md).

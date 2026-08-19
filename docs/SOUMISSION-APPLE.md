@@ -181,15 +181,49 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 | D — Prix réels | ✅ le catalogue est réel, rien à faire |
 | Politique de confidentialité + page d'aide | ✅ en ligne |
 | C — Fiche App Store | ✅ rédigée : [FICHE-APP-STORE.md](FICHE-APP-STORE.md) |
+| C — Captures d'écran | ✅ les 6, en 1320 × 2868 : [captures-app-store/](captures-app-store/) |
+| A5 — Commandes mortes du Profil | ✅ corrigées (voir ci-dessous) |
 
-**Plus aucun bloquant de code.** Il reste trois choses, toutes hors développement :
+**Plus aucun bloquant de code.** Tout ce qui relevait du dépôt est fait :
 
 1. ✅ **Classement d'âge tranché** (2026-08-19) : les 6 cocktails sont retirés du catalogue,
    les 19 bières restent. ⚠️ Le classement reste donc **17+** — la bière est de l'alcool, et
    l'app continue d'en vendre. Détail dans [FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 3.
 2. ✅ **Compte de démonstration créé et vérifié** (connexion testée par l'API, lecture du
    catalogue sous RLS) — identifiants et notes de revue en § 4 de la même fiche.
-3. **Produire les 6 captures d'écran** au format iPhone 6,9" — § 5. **Seul point restant.**
+3. ✅ **Les 6 captures d'écran** produites au simulateur iPhone 17 Pro Max —
+   [captures-app-store/](captures-app-store/), avec l'ordre de téléversement et les légendes.
 
-Un dernier build sera nécessaire pour embarquer le masquage du bouton téléphone et le retrait
-du diagnostic.
+Il reste, côté App Store Connect uniquement : remplir la fiche (textes déjà rédigés), le
+questionnaire App Privacy et le classement d'âge.
+
+Un dernier build reste nécessaire pour embarquer le masquage du bouton téléphone, le retrait
+du diagnostic et les correctifs A5 ci-dessous — voir
+[EN-ATTENTE-DE-BUILD.md](EN-ATTENTE-DE-BUILD.md).
+
+### A5. Trois défauts trouvés en prenant les captures — ✅ FAIT (2026-08-19)
+
+Aucun n'était visible sans parcourir l'app écran par écran. Les deux premiers relèvent
+directement de la règle 2.1 : un relecteur appuie sur tout ce qui ressemble à un bouton.
+
+1. **« Ajouter » (adresses) et « … » dans le Profil ne faisaient rien** — de simples `<Text>`,
+   sans `Pressable` ni gestionnaire. **Retirés.** Une adresse s'ajoute dans le tunnel de
+   commande (`/address`), seul endroit où c'est cohérent : la capture GPS y est exigée et la
+   validation enchaîne sur le paiement. Y renvoyer depuis le Profil aurait déposé le client
+   au milieu d'un tunnel de commande.
+2. **« Modifier » (téléphone) ne faisait rien non plus** — même cause. **Branché** sur
+   `/phone`, qui fonctionne tel quel en modification : bouton retour propre, retour aux
+   onglets une fois enregistré. Vérifié dans le simulateur.
+3. **Un tiret solitaire à la place des horaires** sur la fiche restaurant. `opens_at` et
+   `closes_at` sont NULL pour les trois établissements ; le gabarit affichait donc « – » à
+   côté d'une icône d'horloge — lu comme un bug d'affichage, pas comme une donnée manquante.
+   `hoursLabel()` renvoie désormais une chaîne vide quand une borne manque, et l'élément est
+   masqué. Les horaires réels restent à collecter.
+
+### Deux points cosmétiques laissés en l'état, assumés
+
+- **Aucune photo de bannière de restaurant** (`cover_url` NULL partout) : les bandeaux des
+  captures 1 et 2 sont des aplats vides. Une photo par établissement suffirait ; on n'en
+  invente pas.
+- Le sous-titre de `/phone` dit « Demandé une seule fois », formulation de première connexion,
+  un peu étrange quand on y arrive par « Modifier ». Sans conséquence.

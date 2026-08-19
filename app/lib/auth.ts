@@ -146,9 +146,22 @@ export function phoneLoginAvailable(): boolean {
 }
 
 /**
- * Connexion Facebook native prête dès que la plateforme le permet — App ID et Client Token
- * sont désormais fixés dans `app.json` (plugin natif), plus aucune valeur ne manque côté
- * app. iOS uniquement : aucun build Android n'existe pour ce projet.
+ * Connexion Facebook native : **iOS uniquement, en permanence** — pas une limite
+ * temporaire à lever plus tard.
+ *
+ * Le mode Limited Login (celui qui renvoie le jeton OIDC dont `signInWithIdToken` a besoin,
+ * voir `signInWithFacebookNative` ci-dessous) est une fonctionnalité liée à l'App Tracking
+ * Transparency d'Apple : elle **n'existe pas côté SDK Facebook Android**, quelle que soit la
+ * version de `react-native-fbsdk-next`. Le SDK Android ne renvoie qu'un jeton d'accès Graph
+ * API classique (une chaîne opaque, pas un JWT), que `signInWithIdToken` ne sait pas
+ * vérifier — confirmé par la doc Meta et par des rapports de bug Supabase reproduisant
+ * exactement le « Bad ID token » rencontré ici sur iOS avant la bascule en Limited Login.
+ *
+ * Sur Android, `handleOAuth` (dans `app/login.tsx`) bascule donc automatiquement sur
+ * `signInWithOAuth('facebook')` plus bas dans ce fichier — le flux web classique, déjà
+ * générique et déjà utilisé sur web. Rien à coder de plus : Facebook reste une option de
+ * connexion sur Android, juste avec une expérience un cran en dessous du natif (navigateur
+ * au lieu du sélecteur système), choix assumé plutôt que de retirer le bouton.
  */
 export function facebookNativeAvailable(): boolean {
   return Platform.OS === 'ios' && facebookConfigured();

@@ -8,18 +8,11 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 ## Dernier build sorti
 
-**n°16** — `1.0.0 (16)`, soumis à TestFlight le 2026-08-19. Contient un **diagnostic
-temporaire** : le message d'erreur brut de la connexion sociale est affiché à l'écran sous le
-message traduit (ligne `[diag]`), les journaux Supabase étant en panne prolongée côté serveur.
+**n°17** — `1.0.0 (17)`, soumis à TestFlight le 2026-08-19, traitement Apple **terminé** le
+jour même (build lancé en interactif par Christopher après passage au plan payant EAS, le
+quota gratuit ayant été épuisé). **C'est le build de soumission App Store.**
 
-C'est ce build qui a livré l'information décisive sur Facebook : **« Bad ID token »**.
-
-Historique des tentatives Facebook, toutes fondées sur un diagnostic erroné : n°15 figeait la
-librairie en 12.2.0 pour forcer le flux classique ; n°14 posait `loginTrackingIOS: 'enabled'`
-(sans effet sur la 13.x). Avant : n°13 construit à la main en interactif (capability Sign In
-with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cette capability).
-
-## Dans le prochain build
+Contient tout ce qui suit, chacun vérifié avant l'envoi :
 
 | Chantier | Vérifié |
 |---|---|
@@ -28,9 +21,22 @@ with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cett
 | **Bouton « Continuer avec un numéro » masqué** — les secrets WhatsApp ne sont pas posés, le bouton échouait (rejet Apple règle 2.1). Piloté par `EXPO_PUBLIC_PHONE_LOGIN_ENABLED`, absent = masqué | tsc + export web + **rendu vérifié dans un navigateur** : « E-mail » prend toute la largeur, aucun trou |
 | **Commandes mortes du Profil** — « Ajouter » (adresses) et « … » retirés ; « Modifier » (téléphone) branché sur `/phone`. C'étaient des `<Text>` sans gestionnaire (règle 2.1) | tsc + **build simulateur installé et parcouru** : les deux affordances mortes ont disparu, « Modifier » ouvre bien l'écran téléphone avec son bouton retour |
 | **Tiret solitaire à la place des horaires** sur la fiche restaurant — `hoursLabel()` renvoie une chaîne vide quand `opens_at`/`closes_at` manquent, et l'élément est masqué | tsc + **vérifié à l'écran** sur La Cabane, avant/après |
+| **Correctif polices** (n°16 déjà) — attente des polices sur natif avant le 1er rendu, évite « TAXI FOO » tronqué | vérifié à l'écran |
 
-⚠️ Ce build est celui qui part à la soumission App Store. Voir
-[SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) et [FICHE-APP-STORE.md](FICHE-APP-STORE.md).
+Historique des tentatives Facebook, toutes fondées sur un diagnostic erroné avant le n°16 :
+n°15 figeait la librairie en 12.2.0 pour forcer le flux classique ; n°14 posait
+`loginTrackingIOS: 'enabled'` (sans effet sur la 13.x). Avant : n°13 construit à la main en
+interactif (capability Sign In with Apple) ; n°12 réussi sans conséquence ; n°11 échoué
+(profil sans cette capability).
+
+## Dans le prochain build
+
+Rien en attente. Le n°17 est le build de soumission ; le prochain chantier de code
+redémarrera cette section.
+
+⚠️ Voir [SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) et [FICHE-APP-STORE.md](FICHE-APP-STORE.md)
+pour la suite : choisir ce build dans App Store Connect, remplir la fiche, App Privacy et le
+classement d'âge, puis Submit for Review.
 
 ## Ce qui n'a PAS besoin d'un build
 

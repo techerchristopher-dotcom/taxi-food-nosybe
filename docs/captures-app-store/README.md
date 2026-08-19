@@ -2,12 +2,28 @@
 
 Les six captures à téléverser dans App Store Connect, prises le 2026-08-19.
 
-**Format : 1320 × 2868 px** — iPhone 6,9 pouces, le seul format obligatoire aujourd'hui.
-App Store Connect décline automatiquement vers les tailles inférieures, il n'y a donc rien
-d'autre à produire (iPad exclu : `supportsTablet: false`).
+**Deux formats, un dossier chacun :**
+
+| Dossier | Format | Zone de dépôt App Store Connect |
+|---|---|---|
+| `./` (racine) | 1320 × 2868 px | « iPhone — 6,9 pouces » |
+| `6.5-pouces/` | 1284 × 2778 px | « iPhone — 6,5 pouces » |
+
+⚠️ **Constaté le 2026-08-19 en déposant réellement dans App Store Connect** : l'interface a
+demandé la zone « Écran de 6,5 pouces » (tailles acceptées 1242×2688 ou 1284×2778), **pas**
+1320×2868 comme documenté ici initialement. La doc d'origine («&nbsp;6,9 pouces, le seul
+format obligatoire, App Store Connect décline automatiquement&nbsp;») était fausse — ou du
+moins ne correspond plus à ce que montre l'interface pour cette app. D'où les deux dossiers :
+inutile de deviner quelle zone apparaîtra, les deux tailles sont prêtes. Si une zone « 6,9
+pouces » apparaît aussi (clic sur « Afficher toutes les tailles dans le gestionnaire des
+visuels »), les fichiers de la racine lui correspondent déjà.
+
+Le dossier `6.5-pouces/` est un simple redimensionnement des captures d'origine (`sips -z 2778
+1284`), pas une reprise de zéro : l'écart de proportion entre les deux formats est inférieur à
+0,5 %, imperceptible à l'œil (vérifié sur la capture 1).
 
 Prises dans le **simulateur iOS** (iPhone 17 Pro Max, `xcrun simctl io … screenshot`) : un
-iPhone 14 Pro rend en 1179 × 2556, une taille qu'Apple n'accepte pas.
+iPhone 14 Pro rend en 1179 × 2556, une taille qu'Apple n'accepte dans aucune des deux zones.
 
 À téléverser **dans cet ordre** — les deux premières sont celles que la plupart des visiteurs
 verront :
@@ -80,3 +96,11 @@ xcrun simctl location <udid-du-simulateur> set -13.4056,48.2622
 ⚠️ La saisie de texte du simulateur est mappée en AZERTY : `text` tape `qzerty` pour
 `azerty`. Passer par le presse-papiers (`xcrun simctl pbcopy`), appui long, « Tout
 sélectionner », « Coller ».
+
+Pour régénérer `6.5-pouces/` après une nouvelle prise à la racine :
+
+```bash
+for f in 01-accueil 02-menu 03-options 04-panier 05-adresse-gps 06-suivi; do
+  sips -z 2778 1284 "$f.png" --out "6.5-pouces/$f.png"
+done
+```

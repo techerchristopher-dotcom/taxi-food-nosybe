@@ -194,12 +194,31 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 3. ✅ **Les 6 captures d'écran** produites au simulateur iPhone 17 Pro Max —
    [captures-app-store/](captures-app-store/), avec l'ordre de téléversement et les légendes.
 
-Il reste, côté App Store Connect uniquement : remplir la fiche (textes déjà rédigés), le
-questionnaire App Privacy et le classement d'âge.
+## ✅ Soumise à Apple le 2026-08-19
 
-Un dernier build reste nécessaire pour embarquer le masquage du bouton téléphone, le retrait
-du diagnostic et les correctifs A5 ci-dessous — voir
-[EN-ATTENTE-DE-BUILD.md](EN-ATTENTE-DE-BUILD.md).
+Le build 1.0.0 (17) — celui qui embarque tous les correctifs listés ci-dessus, dont A5 — a été
+envoyé en vérification (« 1 élément envoyé », délai annoncé jusqu'à 48 h). Ce qui a été réglé
+dans App Store Connect pour y arriver, en plus de la fiche déjà rédigée :
+
+- **Catégorie principale** : Nourriture et boissons
+- **Droits relatifs au contenu** : pas de contenu tiers sous licence
+- **Classement d'âge** : questionnaire répondu en tenant compte des 19 bières au catalogue
+  (« Consommation ou références à l'alcool » → Fréquent) → **18+** (équivalent de l'ancien
+  17+ dans le système de classification renouvelé d'Apple)
+- **App Privacy** : les 8 catégories de la fiche déclarées (Nom, e-mail, téléphone, adresse
+  physique, position précise, achats, identifiant utilisateur, identifiant d'appareil), toutes
+  en finalité « Fonctionnement de l'app », aucune à des fins de suivi publicitaire
+- **URL de politique de confidentialité** posée sur la page Confidentialité de l'app
+- **Tarification** : Gratuit, Madagascar en pays de base
+- **Disponibilité Mac (puce Apple) et Apple Vision Pro** : décochées volontairement — la
+  capture GPS précise est le cœur du parcours de livraison, et ni l'un ni l'autre n'offre de
+  vrai GPS ni n'a été testé pour cet usage. Même logique que la décision iPad (point B)
+- **Publication** : réglée sur manuelle plutôt qu'automatique, pour garder la main sur le
+  moment exact de mise en ligne publique une fois l'app approuvée
+
+Prochaine étape : attendre la réponse d'Apple (e-mail de notification). Si approuvée, il
+faudra publier manuellement depuis App Store Connect quand le terrain sera prêt (voir
+`docs/PHASE-0-TERRAIN.md` et `docs/A-COLLECTER.md`, toujours en attente).
 
 ### A5. Trois défauts trouvés en prenant les captures — ✅ FAIT (2026-08-19)
 

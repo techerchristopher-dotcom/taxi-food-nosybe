@@ -5,6 +5,21 @@ Démarré le 2026-08-19, une fois la soumission iOS envoyée à Apple. Même log
 est bloqué par du code, et ce qui est bloqué par un compte externe que seul le porteur du
 projet peut créer (paiement, identité).
 
+## ✅ Premier vrai test réussi (2026-08-19)
+
+Build `development` compilé par EAS, installé et testé — d'abord sur l'émulateur (Pixel 8,
+Android 34) : app fonctionnelle, écran de connexion correct pour Android (Google, Facebook,
+Email — pas Apple, pas téléphone), Facebook bascule bien sur le flux web
+(`redirectTo` déclenché dans les logs), Google natif se déclenche réellement (bloqué
+uniquement par l'absence de compte Google sur l'émulateur, cause identifiée, pas un bug).
+⚠️ Émulateur instable sur cette machine (8 Go de RAM au total, en dessous des 5 Go que
+demande l'émulateur à lui seul) — plusieurs ANR pendant le test, sans rapport avec l'app.
+
+**Confirmé ensuite par Christopher directement, en conditions réelles (parcours client
+complet)** : connexion Google native ✅, connexion Facebook ✅, position GPS ✅. Les trois
+briques posées aujourd'hui (keystore EAS, Client ID OAuth Android, clé Google Maps)
+fonctionnent bout en bout.
+
 ## Déjà en place
 
 - `app.json` : package `com.chris97416.taxifoodnosybe` (Android interdit les tirets, d'où la

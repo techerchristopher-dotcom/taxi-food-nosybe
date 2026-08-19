@@ -173,13 +173,25 @@ export async function signInWithFacebookNative(): Promise<Session | null> {
   if (result.isCancelled) return null;
 
   const token = await AccessToken.getCurrentAccessToken();
-  if (!token) throw new Error('Facebook n’a pas renvoyé de jeton.');
+  if (!token) {
+    // ⚠️ TEMPORAIRE (diagnostic 2026-08-18) : distingue « pas de jeton du tout » de
+    // « jeton rejeté par Supabase ». Sans ça les deux cas donnent le même message.
+    throw new Error(
+      `Facebook n’a pas renvoyé de jeton. accordées=${JSON.stringify(result.grantedPermissions)} refusées=${JSON.stringify(result.declinedPermissions)}`,
+    );
+  }
 
   const { error } = await supabase.auth.signInWithIdToken({
     provider: 'facebook',
     token: token.accessToken,
   });
-  if (error) throw error;
+  if (error) {
+    // ⚠️ TEMPORAIRE (diagnostic 2026-08-18) : on veut savoir si l'e-mail a réellement été
+    // accordé au moment du rejet — une permission listée à l'écran peut avoir été refusée.
+    throw new Error(
+      `Supabase a refusé le jeton : ${error.message} | accordées=${JSON.stringify(token.permissions)} refusées=${JSON.stringify(token.declinedPermissions)}`,
+    );
+  }
   return buildSession();
 }
 

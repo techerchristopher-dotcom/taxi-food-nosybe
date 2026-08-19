@@ -40,13 +40,13 @@ Les menus, compositions et photos viennent de photos de carte déposées dans le
 |---|---|---|
 | `MENU` | photos des cartes papier, source des menus | — |
 | `logo` | logos des restaurants | — |
-| `produits` | visuels produits et sauces (`sauces/<nom>.png`) | ⚠️ **ouverte à `public`** |
-| `boissons` | visuels boissons | ⚠️ **ouverte à `public`** |
+| `produits` | visuels produits et sauces (`sauces/<nom>.png`) | `public.is_admin()` |
+| `boissons` | visuels boissons | `public.is_admin()` |
 | `marketing` | visuels de communication, hors app. `app-store/` = les 6 captures de la fiche App Store | `public.is_admin()` |
 
 Tous sont **publics en lecture**.
 
-⚠️ **`produits` et `boissons` acceptent les écritures de n'importe qui** : leurs politiques `INSERT` et `UPDATE` portent sur le rôle `public`, sans autre prédicat que le `bucket_id`. La clé anon étant lisible dans le bundle de l'app, cela suffit à déposer ou **écraser** une photo de produit. Reliquat des fonctions Edge d'import (`import-visuels`, `montage-visuels`, neutralisées depuis). **À reprendre** : les restreindre à `public.is_admin()`, comme le bucket `marketing` (migration `bucket_marketing`, qui sert de modèle).
+⚠️ **Historique corrigé le 2026-08-19** (migration `buckets_produits_boissons_ecriture_admin`) : `produits` et `boissons` avaient des politiques `INSERT`/`UPDATE` ouvertes au rôle `public`, sans autre prédicat que le `bucket_id`. La clé anon étant lisible dans le bundle de l'app, cela suffisait à déposer ou **écraser** n'importe quelle photo de produit. Reliquat des fonctions Edge d'import (`import-visuels`, `montage-visuels`, neutralisées depuis). Alignés sur `marketing` : écriture réservée aux administrateurs, lecture publique inchangée. Vérifié : la clé anon se fait refuser en écriture (403 RLS), la lecture publique répond toujours 200.
 
 Le dépôt initial dans `marketing` a demandé une **fenêtre temporaire** (migrations `bucket_marketing_depot_initial` puis `bucket_marketing_fermeture`) : l'écriture y est réservée aux administrateurs, et le seul compte admin est celui du porteur du projet — dont le mot de passe n'a pas à transiter. La fenêtre était restreinte au préfixe `app-store/` et a été refermée aussitôt. Même procédé pour un futur dépôt, ou passer par le tableau de bord Supabase (qui utilise `service_role` et contourne la RLS).
 

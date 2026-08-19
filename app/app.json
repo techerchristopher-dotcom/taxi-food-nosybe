@@ -20,6 +20,7 @@
     },
     "android": {
       "package": "com.chris97416.taxifoodnosybe",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E8342A",
         "foregroundImage": "./assets/android-icon-foreground.png",

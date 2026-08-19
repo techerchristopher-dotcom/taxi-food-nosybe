@@ -112,9 +112,28 @@ Google personnel.
 | **Client ID OAuth Android** (Google Cloud Console) | Gratuit | Connexion Google native (A2) | ✅ créé (2026-08-19) |
 | **Projet Firebase** (ou clé serveur FCM) | Gratuit | Notifications push sur Android | ❌ pas encore créé |
 
-Le compte Play Console est **le seul point restant strictement bloquant pour soumettre** ; le
-projet Firebase bloque une fonctionnalité (notifications) mais pas un premier build de test
-(`eas build --profile development --platform android`, qui marche déjà).
+Le compte Play Console est **le seul point restant strictement bloquant pour soumettre**.
+
+### Notifications push (FCM) — ✅ FAIT (2026-08-19)
+
+Projet Firebase ajouté au même projet Google Cloud (`taxifoodnosybe`), plan **Blaze**
+(paiement à l'usage, déjà actif — pas de coût pour ce volume). App Android enregistrée dans
+Firebase (package `com.chris97416.taxifoodnosybe`).
+
+Deux fichiers distincts, traités différemment :
+
+- **`google-services.json`** — pas un secret (équivalent public de la config Firebase web,
+  protégé par les restrictions déjà posées sur les clés, pas par sa confidentialité). Copié
+  dans `app/google-services.json`, référencé via `android.googleServicesFile` dans
+  `app.json`, **commité normalement**.
+- **Clé de compte de service Firebase Admin SDK** (`taxifoodnosybe-firebase-adminsdk-*.json`)
+  — un vrai secret, accès complet au projet Firebase. **Jamais copiée dans le dépôt** :
+  téléversée directement dans le coffre-fort d'identifiants EAS
+  (`eas credentials --platform android` → Google Service Account → Upload → assignée au
+  rôle **Push Notifications (FCM V1)**), reste uniquement sur la machine de Christopher.
+
+Confirmé dans le résumé EAS : *"Google Service Account Key assigned to
+com.chris97416.taxifoodnosybe for FCM V1"*.
 
 ## C. À faire une fois les comptes créés
 

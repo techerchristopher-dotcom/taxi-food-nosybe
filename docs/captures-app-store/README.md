@@ -24,6 +24,34 @@ verront :
 Tout est réel : compte de démonstration `demo.apple@taxifood.mg`, catalogue et prix des vrais
 restaurants, position GPS posée sur Hell-Ville (−13,40560 / 48,26220).
 
+## Aussi en ligne, pour le marketing
+
+Les mêmes fichiers sont déposés dans le **bucket Storage `marketing`**, sous `app-store/`,
+en lecture publique — utilisables tels quels dans un site, un dossier de presse ou un post,
+sans jeton :
+
+```
+https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/marketing/app-store/01-accueil.png
+```
+
+… et de même pour `02-menu.png`, `03-options.png`, `04-panier.png`, `05-adresse-gps.png`,
+`06-suivi.png`.
+
+Le bucket est **séparé des buckets métier** (`produits`, `logo`, `MENU`, `boissons`) exprès :
+ceux-là alimentent l'app, celui-ci ne sert qu'à la communication. Il accueillera le reste des
+visuels marketing (presse, réseaux sociaux, site) dans d'autres préfixes.
+
+Redimensionnement à la volée par Supabase, pratique pour le web — une vignette de 400 px de
+large en WebP :
+
+```
+…/render/image/public/marketing/app-store/01-accueil.png?width=400&quality=80
+```
+
+⚠️ **L'écriture est réservée aux administrateurs** (`public.is_admin()`). Pour déposer un
+nouveau visuel : le tableau de bord Supabase (*Storage → marketing*), qui passe par la clé
+`service_role`. Voir `CLAUDE.md` § Buckets Storage.
+
 ## Ce qui reste perfectible
 
 Rien ne bloque la soumission, mais deux points se voient :

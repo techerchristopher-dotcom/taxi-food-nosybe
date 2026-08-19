@@ -30,7 +30,12 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA8ZnyLO0mOb2lLfJu5_4sdXpjVB4HyEvg"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png",

@@ -19,18 +19,22 @@ projet peut créer (paiement, identité).
 
 ## A. Blocages réels dans le code
 
-### A1. Clé Google Maps manquante — À FAIRE
+### A1. Clé Google Maps — ✅ FAIT (2026-08-19)
 
-`react-native-maps` est déjà utilisé pour l'écran d'adresse (`components/MapSurface.tsx`),
-mais `android.config.googleMaps.apiKey` est absent d'`app.json`. Sans elle, la carte ne
-s'affichera pas sur Android — écran d'adresse dégradé au moment précis où Nosy Be en a le
-plus besoin (pas d'adressage postal fiable). iOS n'a pas ce problème : MapKit d'Apple est
-gratuit et ne demande aucune clé.
+`react-native-maps` est déjà utilisé pour l'écran d'adresse (`components/MapSurface.tsx`).
+Clé créée dans le même projet Google Cloud (`227662072769` / `taxifoodnosybe`), API « Maps
+SDK for Android » activée (acceptation des conditions EEE au passage, formalité standard
+sans rapport avec la zone réelle de l'app), et posée dans
+`android.config.googleMaps.apiKey` (`app.json`).
 
-**Bloqué sur** : création d'une clé API dans Google Cloud Console (Maps SDK for Android),
-restreinte au package `com.chris97416.taxifoodnosybe` + à l'empreinte SHA-1 du certificat de
-signature. Gratuit avec quota généreux, mais Google peut demander une carte bancaire pour
-activer la facturation du projet (au cas où le quota gratuit serait dépassé).
+**Restreinte des deux côtés**, vérifié à l'écran :
+- Application restrictions → Android apps → `com.chris97416.taxifoodnosybe` +
+  `6D:15:C4:4F:F6:B1:9E:A5:6E:BA:17:11:1E:1F:C4:1A:CC:87:E8:F5`
+- API restrictions → Maps SDK for Android uniquement (sur 35 API activées dans le projet)
+
+⚠️ Plan Google Cloud resté sur **Pay as you go** (gratuit avec quota généreux) — les offres
+d'abonnement proposées (Starter 100 $/mois, Essentials 275 $/mois, Pro 1200 $/mois) ne sont
+pas nécessaires pour ce volume d'usage, volontairement ignorées.
 
 ### A2. Connexion Google native sur Android — ✅ FAIT (2026-08-19)
 
@@ -89,13 +93,13 @@ Google personnel.
 | Compte | Coût | Pour quoi | État |
 |---|---|---|---|
 | **Compte développeur Google Play** | 25 $ US, paiement unique, vérification d'identité | Soumission en production sur le Play Store | ❌ pas encore créé (confirmé 2026-08-19) |
-| **Clé API Google Maps** (Google Cloud Console) | Gratuit avec quota, carte bancaire parfois demandée | Carte de l'écran d'adresse (A1) | ❌ pas encore créée |
-| **Client ID OAuth Android** (Google Cloud Console) | Gratuit | Connexion Google native (A2) | ❌ pas encore créé |
+| **Clé API Google Maps** (Google Cloud Console) | Gratuit (Pay as you go) | Carte de l'écran d'adresse (A1) | ✅ créée et restreinte (2026-08-19) |
+| **Client ID OAuth Android** (Google Cloud Console) | Gratuit | Connexion Google native (A2) | ✅ créé (2026-08-19) |
 | **Projet Firebase** (ou clé serveur FCM) | Gratuit | Notifications push sur Android | ❌ pas encore créé |
 
-Le compte Play Console est **le seul strictement bloquant pour soumettre** ; les trois autres
-bloquent des fonctionnalités (carte, Google natif, notifications) mais pas un premier build
-de test (`eas build --profile development --platform android`, qui marche déjà).
+Le compte Play Console est **le seul point restant strictement bloquant pour soumettre** ; le
+projet Firebase bloque une fonctionnalité (notifications) mais pas un premier build de test
+(`eas build --profile development --platform android`, qui marche déjà).
 
 ## C. À faire une fois les comptes créés
 

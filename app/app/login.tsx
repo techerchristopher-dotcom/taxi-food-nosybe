@@ -95,12 +95,12 @@ export default function LoginScreen() {
         setPending(null);
       }
     } catch (e: unknown) {
-      // ⚠️ TEMPORAIRE (diagnostic Facebook, 2026-08-18) : le message brut est affiché en
-      // plus du message traduit, le temps de voir ce que Facebook/Supabase renvoient
-      // vraiment — les journaux Supabase sont en panne côté serveur. À retirer une fois
-      // Facebook confirmé fonctionnel : un client ne doit jamais voir un message technique.
-      const detail = e instanceof Error ? e.message : JSON.stringify(e);
-      setError(`${t('login.failed')}\n[diag] ${detail}`);
+      // Le message brut du fournisseur reste en console (utile en développement) mais n'est
+      // jamais montré : « Bad ID token » ne veut rien dire pour un client. Un diagnostic
+      // temporaire l'avait affiché à l'écran les 18-19/08 pour trouver le bug Facebook, les
+      // journaux Supabase étant en panne — retiré dès la connexion confirmée.
+      console.warn('[login]', provider, e);
+      setError(t('login.failed'));
       setPending(null);
     }
   }

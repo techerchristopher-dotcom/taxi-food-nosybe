@@ -1,6 +1,7 @@
 # Soumission à Apple — ce qu'il reste à faire
 
-Audit du dépôt au 2026-08-18 (build 10) contre les règles d'Apple. Les points marqués
+Audit du dépôt contre les règles d’Apple. Créé le 2026-08-18 (build 10), **mis à jour le
+2026-08-19 (build 17)** : voir le tableau d’état en fin de document pour ce qui reste. Les points marqués
 « vérifié » ont été constatés dans le code ou la configuration ; les autres relèvent des
 règles publiques d'Apple et devront être confirmés au moment de la soumission.
 
@@ -26,21 +27,19 @@ générale**. Les bloquants ci-dessous feront rejeter les deux. Autant les trait
 
 Ces quatre points provoquent un rejet quasi certain. Aucun n'est un détail de forme.
 
-### A1. Sign in with Apple absent — règle 4.8
+### A1. Sign in with Apple — ✅ FAIT (2026-08-18, build 13)
 
-**Vérifié** : aucune trace d'Apple dans le code d'authentification, alors que l'app propose
-**Google et Facebook**. La règle 4.8 impose, dès qu'un service de connexion tiers est
-proposé, d'offrir en parallèle une option équivalente respectant la vie privée — en
-pratique, Sign in with Apple.
+La règle 4.8 impose, dès qu'un service de connexion tiers est proposé, d'offrir en parallèle
+une option équivalente respectant la vie privée. Avec un bouton Google **et** un bouton
+Facebook, c'était le motif de rejet le plus probable.
 
-Une connexion e-mail + mot de passe qu'on opère soi-même peut théoriquement passer pour
-l'équivalent exigé (données limitées au nom et à l'e-mail, pas de suivi publicitaire), mais
-c'est une appréciation du relecteur, pas une garantie. Sur une app qui affiche un bouton
-Google **et** un bouton Facebook, c'est le motif de rejet le plus fréquent.
+Implémenté en **natif** (`expo-apple-authentication` → `signInWithIdToken`), bouton officiel
+d'Apple placé en premier sur l'écran de connexion, provider activé côté Supabase (bundle ID
+dans *Client IDs*). Le nom, qu'Apple ne transmet qu'à la toute première connexion, est
+recopié immédiatement dans `profiles` — sinon il serait perdu définitivement.
 
-Travail : `expo-apple-authentication` + activation du provider Apple côté Supabase +
-bouton sur l'écran de connexion. Nécessite un compte développeur payant, ce qui est déjà
-le cas.
+⚠️ L'entitlement `usesAppleSignIn` exige un build **interactif** pour que EAS le déclare côté
+portail Apple. Testé sur appareil réel : identité `provider='apple'` créée en base.
 
 ### A2. Suppression de compte — ✅ FAIT (2026-08-18)
 
@@ -90,17 +89,25 @@ Un bouton bien en vue qui échoue est une fonctionnalité cassée. Le relecteur 
 Deux issues : finir la configuration WhatsApp (voir [OTP-WHATSAPP.md](OTP-WHATSAPP.md)),
 ou masquer le bouton jusque-là. La seconde est gratuite et immédiate.
 
-### A4. Bouton Facebook cassé dans les builds de production — règle 2.1
+### A4. Bouton Facebook — ✅ FAIT (2026-08-19, build 17)
 
-**Vérifié** : `facebookConfigured()` teste `EXPO_PUBLIC_FACEBOOK_APP_ID`, et cette variable
-**n'est pas** dans le profil `production` de `eas.json` (qui ne porte que l'URL Supabase,
-la clé publique et l'identifiant Google). Dans le build livré, le bouton Facebook affiche
-donc un message d'erreur.
+Le diagnostic d'origine (variable `EXPO_PUBLIC_FACEBOOK_APP_ID` absente du profil
+`production`) n'était que la première couche. Trois causes empilées, toutes levées :
 
-Même problème que A3, même choix : poser la variable, ou retirer le bouton.
+1. la variable d'environnement manquante, posée dans les trois profils de `eas.json` ;
+2. la permission `email` absente côté Meta (*Use Cases → Authentication and Account
+   Creation*, écran distinct de la configuration du produit Facebook Login) — et une app déjà
+   autorisée par un compte ne redemande pas les nouvelles permissions, il a fallu la révoquer
+   dans *Facebook → Applications et sites web* ;
+3. le mode de connexion : `signInWithIdToken` attend un **jeton OIDC signé**, pas le jeton
+   d'accès de l'API Graph. C'est donc le mode **« Limited Login »** qu'il faut, avec un
+   **nonce** — l'inverse de ce que le guide Facebook de Supabase laisse croire. Symptôme
+   trompeur : le SDK réussissait tout son échange, et Supabase rejetait silencieusement avec
+   « Bad ID token », visible seulement après avoir fait remonter le message brut à l'écran,
+   les journaux Supabase étant en panne prolongée.
 
-À noter : régler A4 en posant la variable **aggrave** A1, puisque cela confirme deux
-connexions tierces sans Sign in with Apple.
+**Confirmé sur appareil réel** : une identité `provider='facebook'` existe désormais en base.
+Détail technique complet dans la section Auth de `CLAUDE.md`.
 
 ## B. Décision à prendre : iPad
 
@@ -123,9 +130,9 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 
 | Élément | État | Note |
 |---|---|---|
-| **Compte de démonstration** | à créer | e-mail + mot de passe, jamais Google : le relecteur ne peut pas utiliser ton compte Google. Le build 10 permet enfin d'en créer un. À donner dans le formulaire, avec le mode d'emploi (« choisir Je commande, commander chez Angelo ») |
-| **Politique de confidentialité** | à écrire | URL publique obligatoire. L'app collecte nom, e-mail, téléphone, **position précise** et historique de commandes |
-| **URL de support** | à créer | une page ou un lien de contact suffit |
+| **Compte de démonstration** | à créer | e-mail + mot de passe, jamais Google : le relecteur ne peut pas utiliser ton compte Google. À donner dans le formulaire, avec le mode d'emploi (« choisir Je commande, commander chez Angelo ») |
+| **Politique de confidentialité** | ✅ en ligne | https://taxi-food-nosybe.netlify.app/confidentialite.html |
+| **URL de support** | ✅ en ligne | https://taxi-food-nosybe.netlify.app/support.html |
 | **Questionnaire App Privacy** | à remplir | déclarer : identité, coordonnées, **localisation précise**, historique d'achat. Une déclaration incomplète est un motif de rejet à part entière |
 | **Classement d'âge** | à remplir | questionnaire dans App Store Connect |
 | **Captures d'écran** | à produire | format iPhone 6,9" obligatoire ; iPad seulement si tu gardes `supportsTablet` |
@@ -134,9 +141,11 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 
 ## D. Points de vigilance métier
 
-- **Les prix en base sont inventés** (jeu de test). Une app de livraison affichant des prix
-  fantaisistes tombe sous la règle 2.3 (métadonnées trompeuses). À remplacer par les vrais
-  avant soumission — c'est de toute façon indispensable pour ouvrir le service.
+- ~~Les prix en base sont inventés~~ — **faux, corrigé le 2026-08-19.** Le catalogue est
+  **réel** : les menus, compositions et prix des trois restaurants viennent de vraies cartes
+  photographiées (bucket Storage `MENU`), confirmé par le porteur du projet. L'audit initial
+  transposait par erreur une convention du projet voisin `addition-appli`, qui lui a bien un
+  jeu de test. Rien à faire ici, et aucun risque au titre de la règle 2.3.
 - **Le relecteur passera une vraie commande.** Elle arrivera sur l'écran restaurant d'Angelo
   et déclenchera de vraies notifications. Il faut que quelqu'un puisse la traiter pendant la
   revue, sinon le parcours reste bloqué et l'app est jugée non fonctionnelle.
@@ -153,15 +162,28 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 - **Notifications** : l'app reste utilisable si l'utilisateur les refuse — Apple l'exige.
   **Vérifié** : `registerForPush()` ne lève jamais et n'empêche aucun parcours.
 
-## Ordre conseillé
+## État au 2026-08-19 (build 17)
 
-1. A3 et A4 — masquer les deux boutons cassés. Une heure, débloque la revue bêta.
-2. B — passer `supportsTablet` à `false`. Deux minutes.
-3. A2 — suppression de compte. C'est le plus long des quatre, à cause de la décision sur
-   les commandes existantes.
-4. A1 — Sign in with Apple.
-5. C — les éléments hors code, en parallèle du développement.
-6. D — les vrais prix, juste avant de soumettre.
+| Point | État |
+|---|---|
+| A1 — Sign in with Apple | ✅ fait, testé sur appareil |
+| A2 — Suppression de compte | ✅ fait, vérifié en base |
+| A3 — Connexion téléphone cassée | ❌ **seul bloquant de code restant** — voir ci-dessous |
+| A4 — Bouton Facebook cassé | ✅ fait, testé sur appareil (identité créée en base) |
+| B — iPad | ✅ `supportsTablet: false` |
+| D — Prix réels | ✅ le catalogue est réel, rien à faire |
+| Politique de confidentialité + page d'aide | ✅ en ligne |
+| C — Fiche App Store | ⏳ à produire (textes, captures, questionnaires) |
 
-Les points 1 et 2 suffisent probablement à passer la **revue bêta** et donc à ouvrir le test
-externe. Les points 3 et 4 sont indispensables pour la **mise en vente**.
+**Le seul bloquant de code restant est A3.** Les secrets WhatsApp ne sont **pas** posés dans
+le Vault (vérifié : 0 secret le 2026-08-19), donc le bouton « Continuer avec un numéro »
+échoue toujours. Deux issues, au choix :
+
+- **masquer le bouton** tant que WhatsApp n'est pas configuré — gratuit, immédiat, débloque
+  la soumission. Les quatre autres modes de connexion (Apple, Google, Facebook, e-mail)
+  couvrent tous les cas ;
+- **finir la configuration WhatsApp** (procédure dans [OTP-WHATSAPP.md](OTP-WHATSAPP.md)) —
+  demande les identifiants Meta et l'approbation d'un modèle de message.
+
+Une fois A3 tranché, il ne reste que la **fiche App Store** (partie C), qui ne demande aucun
+build.

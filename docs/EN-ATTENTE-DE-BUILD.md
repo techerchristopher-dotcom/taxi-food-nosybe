@@ -8,31 +8,27 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 ## Dernier build sorti
 
-**n°14** — `1.0.0 (14)`, soumis à TestFlight le 2026-08-18. Construit et soumis en
-`--non-interactive` : aucune nouvelle capability Apple n'était nécessaire (Google/Facebook
-natifs n'en réclament aucune, et Sign In with Apple était déjà acquis depuis le build 13).
+**n°15** — `1.0.0 (15)`, soumis à TestFlight le 2026-08-18. Construit et soumis en
+`--non-interactive` (aucune capability Apple nouvelle).
 
-Contient, en plus de tout ce qui était dans le n°13 :
-- Écran de connexion : clarifie que Google/Facebook/Apple/téléphone créent le compte tout
-  autant que l'e-mail
-- Tentative de correctif Facebook natif (`loginTrackingIOS: 'enabled'`) — **insuffisante**,
-  voir ci-dessous.
+Contient le vrai correctif Facebook : **`react-native-fbsdk-next` figé à `12.2.0`**
+(`--save-exact`), dernière version avant que la 13.0.0 n'impose le mode iOS « Limited Login »
+sans exception — et première à supporter la New Architecture RN, donc aucun recul de
+compatibilité. Le paramètre `loginTrackingIOS: 'enabled'` (déjà posé dans le build 14, sans
+effet sur la 13.4.3) redevient effectif sur cette version.
 
-⚠️ **Retesté sur appareil réel : Facebook échoue toujours sur le n°14.** `loginTrackingIOS:
-'enabled'` n'a aucun effet sur `react-native-fbsdk-next` 13.4.3 : à partir de la 13.0.0, la
-librairie adopte le SDK iOS natif de Meta v17 et **impose** le mode « Limited Login » sans
-exception. Cause identifiée dans le changelog GitHub de la librairie elle-même. Vrai correctif
-dans le prochain build : version figée à `12.2.0` — voir ci-dessous.
+⚠️ **Encore à confirmer sur appareil réel** — le build 14 avait semblé corriger le problème
+sur le papier, mais un retest avait révélé que le vrai correctif était ailleurs (la version de
+la librairie, pas le paramètre). Ne pas déclarer Facebook résolu avant un retest explicite.
 
-Historique : n°13 construit à la main par Christopher en interactif (capability Sign In with
+Historique : n°14 contenait une tentative insuffisante (le paramètre seul, sans le bon
+correctif) ; n°13 construit à la main par Christopher en interactif (capability Sign In with
 Apple) ; n°12 a réussi juste avant sans conséquence ; n°11 a échoué (profil sans cette
 capability, lancé sans authentification Apple réelle).
 
 ## Dans le prochain build
 
-| Commit | Chantier | Vérifié |
-|---|---|---|
-| *(à committer)* | **`react-native-fbsdk-next` figé à `12.2.0`** (`--save-exact`), dernière version avant que la 13.0.0 n'impose le Limited Login iOS — et première à supporter la New Architecture RN, donc aucun recul de compatibilité. Le correctif du build 14 (`loginTrackingIOS: 'enabled'`) redevient effectif sur cette version | tsc + export web + chargement réel du bundle. **Pas encore testé sur appareil réel** |
+*(vide — rien en attente)*
 
 ## Ce qui n'a PAS besoin d'un build
 

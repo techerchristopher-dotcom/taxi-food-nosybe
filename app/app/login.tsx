@@ -94,8 +94,13 @@ export default function LoginScreen() {
         // Annulé par l'utilisateur (fenêtre fermée).
         setPending(null);
       }
-    } catch {
-      setError(t('login.failed'));
+    } catch (e: unknown) {
+      // ⚠️ TEMPORAIRE (diagnostic Facebook, 2026-08-18) : le message brut est affiché en
+      // plus du message traduit, le temps de voir ce que Facebook/Supabase renvoient
+      // vraiment — les journaux Supabase sont en panne côté serveur. À retirer une fois
+      // Facebook confirmé fonctionnel : un client ne doit jamais voir un message technique.
+      const detail = e instanceof Error ? e.message : JSON.stringify(e);
+      setError(`${t('login.failed')}\n[diag] ${detail}`);
       setPending(null);
     }
   }

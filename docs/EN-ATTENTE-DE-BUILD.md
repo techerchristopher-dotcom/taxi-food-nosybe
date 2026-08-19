@@ -21,10 +21,14 @@ with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cett
 
 ## Dans le prochain build
 
-| Commit | Chantier | Vérifié |
-|---|---|---|
-| *(à committer)* | **Facebook basculé en mode « Limited Login »** — l'inverse de ce qu'on croyait. `signInWithIdToken` attend un jeton **OIDC signé**, pas le jeton d'accès Graph : d'où le « Bad ID token ». On lit donc `AuthenticationToken.getAuthenticationTokenIOS()` et on transmet un **nonce** (obligatoire, le jeton en porte toujours un). Librairie **remise en 13.4.3** au passage : la 12.x n'embarque pas les privacy manifests qu'Apple exige pour ce SDK depuis mai 2024, donc le pin de la veille était aussi un risque de rejet App Store | tsc + export web. **Pas encore testé sur appareil réel** |
-| *(déjà dans le n°16, à retirer une fois Facebook validé)* | Diagnostic `[diag]` à l'écran | — |
+| Chantier | Vérifié |
+|---|---|
+| **Facebook en Limited Login** — corrigé et **confirmé sur appareil réel** (identité `provider='facebook'` créée en base). Librairie remise en 13.4.3 | testé sur appareil |
+| **Diagnostic `[diag]` retiré** de l'écran de connexion — « Bad ID token » ne veut rien dire pour un client ; le message brut reste en console | relu, aucune trace résiduelle |
+| **Bouton « Continuer avec un numéro » masqué** — les secrets WhatsApp ne sont pas posés, le bouton échouait (rejet Apple règle 2.1). Piloté par `EXPO_PUBLIC_PHONE_LOGIN_ENABLED`, absent = masqué | tsc + export web + **rendu vérifié dans un navigateur** : « E-mail » prend toute la largeur, aucun trou |
+
+⚠️ Ce build est celui qui part à la soumission App Store. Voir
+[SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) et [FICHE-APP-STORE.md](FICHE-APP-STORE.md).
 
 ## Ce qui n'a PAS besoin d'un build
 
@@ -32,12 +36,12 @@ with Apple) ; n°12 réussi sans conséquence ; n°11 échoué (profil sans cett
 
 | Sujet | Ce qui manque | Pourquoi aucun build n'est nécessaire |
 |---|---|---|
-| **Connexion par WhatsApp** | les 5 secrets Meta dans le Vault | le code est parti dans le build 9. Dès que les secrets sont posés, le bouton « Continuer avec un numéro » fonctionne sur les apps déjà installées |
+| **Connexion par WhatsApp** | les 5 secrets Meta dans le Vault | ⚠️ nuance depuis le 2026-08-19 : le **bouton est désormais masqué** (`EXPO_PUBLIC_PHONE_LOGIN_ENABLED`), donc poser les secrets ne suffit plus à le faire réapparaître — il faudra aussi un build. La chaîne serveur, elle, reste prête |
 | **Sign in with Apple côté serveur** | ✅ fait le 2026-08-18 | bundle ID renseigné dans *Authentication → Providers → Apple → Client IDs* |
 | **Connexion Google native côté serveur** | ✅ fait le 2026-08-18 | Client ID iOS ajouté dans *Authentication → Providers → Google → Client IDs*, **et** « Skip nonce check » activé (les SDK natifs mobiles ne savent pas satisfaire le nonce que Supabase attend par défaut — recommandation officielle de leur doc) |
 | **Connexion Facebook native côté serveur** | ✅ fait le 2026-08-18 | App Secret posé, permission `email` ajoutée côté Meta (Use Cases → Authentication and Account Creation — absente du prompt Cowork d'origine), « Allow users without an email » activé en filet de sécurité |
 | **Prix réels** | le vrai catalogue | ils viennent de la base, pas du bundle |
-| **Fiche App Store** | captures, description | métadonnées App Store Connect |
+| **Fiche App Store** | ✅ textes rédigés le 2026-08-19 ([FICHE-APP-STORE.md](FICHE-APP-STORE.md)) ; restent les captures et le classement d'âge à trancher | métadonnées App Store Connect |
 | **Politique de confidentialité et page d'aide** | ✅ en ligne le 2026-08-18 | pages statiques dans `app/public/`, servies par la PWA |
 
 ### ⚠️ Le site Netlify n'est PAS relié au dépôt

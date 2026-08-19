@@ -129,6 +129,23 @@ export function facebookConfigured(): boolean {
 }
 
 /**
+ * Connexion par numéro visible ou non.
+ *
+ * ⚠️ **Masquée par défaut**, volontairement. Le code de vérification part par WhatsApp
+ * (Send SMS Hook → Edge Function `send-otp-whatsapp`), mais les identifiants Meta ne sont
+ * pas posés dans le Vault : la fonction répond `500 whatsapp not configured` et le bouton
+ * échoue. Un bouton bien en vue qui ne marche pas est un motif de rejet Apple (règle 2.1),
+ * donc on ne le montre pas tant que ce n'est pas configuré.
+ *
+ * Pour le réafficher : poser les 5 secrets (voir `docs/OTP-WHATSAPP.md`) **et**
+ * `EXPO_PUBLIC_PHONE_LOGIN_ENABLED=true` dans le profil `eas.json` concerné. L'écran
+ * `/login-phone` et toute la chaîne restent en place, rien n'a été supprimé.
+ */
+export function phoneLoginAvailable(): boolean {
+  return process.env.EXPO_PUBLIC_PHONE_LOGIN_ENABLED === 'true';
+}
+
+/**
  * Connexion Facebook native prête dès que la plateforme le permet — App ID et Client Token
  * sont désormais fixés dans `app.json` (plugin natif), plus aucune valeur ne manque côté
  * app. iOS uniquement : aucun build Android n'existe pour ce projet.

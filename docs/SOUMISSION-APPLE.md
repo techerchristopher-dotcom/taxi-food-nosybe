@@ -78,16 +78,23 @@ cascade, sachant que le rapport de clôture admin s'appuie dessus.
 
 </details>
 
-### A3. Connexion par téléphone visible mais inopérante — règle 2.1
+### A3. Connexion par téléphone — ✅ FAIT (2026-08-19) : bouton masqué
 
-**Vérifié** : l'écran de connexion propose « Continuer avec un numéro », qui appelle un
-service WhatsApp dont les identifiants Meta ne sont pas posés. La fonction répond
-`500 whatsapp not configured`.
+Le bouton « Continuer avec un numéro » appelait le service WhatsApp, dont les identifiants
+Meta ne sont pas posés dans le Vault (vérifié : 0 secret). La fonction répondait
+`500 whatsapp not configured` — un bouton bien en vue qui échoue est une fonctionnalité
+cassée, et le relecteur l'aurait testée.
 
-Un bouton bien en vue qui échoue est une fonctionnalité cassée. Le relecteur la testera.
+Choix retenu : **masquer le bouton**, piloté par `phoneLoginAvailable()` qui lit
+`EXPO_PUBLIC_PHONE_LOGIN_ENABLED` (absent = masqué). Quand il est masqué, « E-mail » prend
+toute la largeur — vérifié à l'écran, aucun trou dans la mise en page.
 
-Deux issues : finir la configuration WhatsApp (voir [OTP-WHATSAPP.md](OTP-WHATSAPP.md)),
-ou masquer le bouton jusque-là. La seconde est gratuite et immédiate.
+Rien n'a été supprimé : l'écran `/login-phone`, l'Edge Function et toute la chaîne WhatsApp
+restent en place. Pour réactiver : poser les 5 secrets (voir [OTP-WHATSAPP.md](OTP-WHATSAPP.md))
+**et** `EXPO_PUBLIC_PHONE_LOGIN_ENABLED=true` dans `eas.json`. ⚠️ Cela demande un build : la
+variable est lue à la compilation.
+
+Les quatre autres modes de connexion (Apple, Google, Facebook, e-mail) couvrent tous les cas.
 
 ### A4. Bouton Facebook — ✅ FAIT (2026-08-19, build 17)
 
@@ -168,22 +175,23 @@ Rien de tout ça n'est du développement, mais rien ne part sans.
 |---|---|
 | A1 — Sign in with Apple | ✅ fait, testé sur appareil |
 | A2 — Suppression de compte | ✅ fait, vérifié en base |
-| A3 — Connexion téléphone cassée | ❌ **seul bloquant de code restant** — voir ci-dessous |
+| A3 — Connexion téléphone cassée | ✅ bouton masqué |
 | A4 — Bouton Facebook cassé | ✅ fait, testé sur appareil (identité créée en base) |
 | B — iPad | ✅ `supportsTablet: false` |
 | D — Prix réels | ✅ le catalogue est réel, rien à faire |
 | Politique de confidentialité + page d'aide | ✅ en ligne |
-| C — Fiche App Store | ⏳ à produire (textes, captures, questionnaires) |
+| C — Fiche App Store | ✅ rédigée : [FICHE-APP-STORE.md](FICHE-APP-STORE.md) |
 
-**Le seul bloquant de code restant est A3.** Les secrets WhatsApp ne sont **pas** posés dans
-le Vault (vérifié : 0 secret le 2026-08-19), donc le bouton « Continuer avec un numéro »
-échoue toujours. Deux issues, au choix :
+**Plus aucun bloquant de code.** Il reste trois choses, toutes hors développement :
 
-- **masquer le bouton** tant que WhatsApp n'est pas configuré — gratuit, immédiat, débloque
-  la soumission. Les quatre autres modes de connexion (Apple, Google, Facebook, e-mail)
-  couvrent tous les cas ;
-- **finir la configuration WhatsApp** (procédure dans [OTP-WHATSAPP.md](OTP-WHATSAPP.md)) —
-  demande les identifiants Meta et l'approbation d'un modèle de message.
+1. ⚠️ **Trancher le classement d'âge.** Le catalogue contient **25 produits alcoolisés**
+   (bières chez les trois restaurants, cocktails chez Taxi Be — vérifié en base). Une app qui
+   *vend* de l'alcool est en général classée **17+** par Apple. Soit on l'assume, soit on
+   retire ces produits du catalogue. Décision commerciale autant que réglementaire, détaillée
+   dans [FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 3.
+2. **Créer le compte de démonstration** (e-mail + mot de passe, avec une adresse GPS déjà
+   enregistrée) et coller les notes de revue — § 4 de la même fiche.
+3. **Produire les 6 captures d'écran** au format iPhone 6,9" — § 5.
 
-Une fois A3 tranché, il ne reste que la **fiche App Store** (partie C), qui ne demande aucun
-build.
+Un dernier build sera nécessaire pour embarquer le masquage du bouton téléphone et le retrait
+du diagnostic.

@@ -17,6 +17,7 @@ import {
   googleConfigured,
   googleNativeAvailable,
   OAuthProvider,
+  phoneLoginAvailable,
 } from '../lib/auth';
 import { Icon } from '../components/Icon';
 
@@ -192,16 +193,21 @@ export default function LoginScreen() {
           )}
         </Pressable>
 
+        {/* Le bouton « Numéro » n'apparaît que si la connexion par WhatsApp est réellement
+            configurée — sinon il échouerait, ce qui est un motif de rejet Apple (règle 2.1).
+            Quand il est masqué, « E-mail » prend toute la largeur au lieu de laisser un trou. */}
         <View style={styles.row}>
-          <Pressable
-            onPress={() => router.push('/login-phone')}
-            style={({ pressed }) => [styles.socialBtn, styles.half, pressed && { opacity: 0.9 }]}
-          >
-            <View style={styles.phoneIcon}>
-              <Icon name="smartphone" size={18} color={colors.white} />
-            </View>
-            <Text style={styles.socialTextSmall}>{t('login.phoneShort')}</Text>
-          </Pressable>
+          {phoneLoginAvailable() ? (
+            <Pressable
+              onPress={() => router.push('/login-phone')}
+              style={({ pressed }) => [styles.socialBtn, styles.half, pressed && { opacity: 0.9 }]}
+            >
+              <View style={styles.phoneIcon}>
+                <Icon name="smartphone" size={18} color={colors.white} />
+              </View>
+              <Text style={styles.socialTextSmall}>{t('login.phoneShort')}</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => router.push('/login-email')}
             style={({ pressed }) => [styles.socialBtn, styles.half, pressed && { opacity: 0.9 }]}

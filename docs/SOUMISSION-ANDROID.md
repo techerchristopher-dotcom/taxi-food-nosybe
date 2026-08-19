@@ -107,12 +107,30 @@ Google personnel.
 
 | Compte | Coût | Pour quoi | État |
 |---|---|---|---|
-| **Compte développeur Google Play** | 25 $ US, paiement unique, vérification d'identité | Soumission en production sur le Play Store | ❌ pas encore créé (confirmé 2026-08-19) |
+| **Compte développeur Google Play** | 25 $ US, payés le 2026-08-19 | Soumission en production sur le Play Store | 🕓 créé, **en attente de vérification d'identité par Google** (délai annoncé : plusieurs jours) |
 | **Clé API Google Maps** (Google Cloud Console) | Gratuit (Pay as you go) | Carte de l'écran d'adresse (A1) | ✅ créée et restreinte (2026-08-19) |
 | **Client ID OAuth Android** (Google Cloud Console) | Gratuit | Connexion Google native (A2) | ✅ créé (2026-08-19) |
-| **Projet Firebase** (ou clé serveur FCM) | Gratuit | Notifications push sur Android | ❌ pas encore créé |
+| **Projet Firebase** | Gratuit (plan Blaze déjà actif) | Notifications push sur Android | ✅ configuré (2026-08-19), voir plus bas |
 
-Le compte Play Console est **le seul point restant strictement bloquant pour soumettre**.
+### Compte Play Console — état détaillé (2026-08-19)
+
+Compte individuel créé (« Personal account », `techerchristopher@gmail.com`). Trois vérifications
+demandées par Google avant de pouvoir publier :
+
+1. **Vérification d'identité** — documents envoyés, **en cours de traitement par Google**
+   (« may take a few days »). Rien à faire de plus, juste attendre l'e-mail de confirmation.
+2. **Vérification du numéro de téléphone** — ⏳ **bloquée derrière la vérification d'identité**,
+   ne pas essayer avant que le point 1 soit validé.
+3. **Vérification d'accès à un appareil Android réel** — installer l'app « Google Play
+   Console » depuis le Play Store sur un vrai téléphone et s'y connecter. ⚠️ Nécessite un
+   appareil Android physique ; Google bloque généralement cette vérification depuis un
+   émulateur (détection anti-fraude). Pas encore fait — à faire dès qu'un appareil est
+   disponible (emprunté ou personnel).
+
+**Plus rien à faire côté code ou configuration pour Android tant que ces trois points ne
+sont pas validés par Google.** Le compte étant en cours de vérification, aucun build
+`production` Android ne devrait être soumis avant que ça débloque — l'app resterait bloquée
+en attente de toute façon.
 
 ### Notifications push (FCM) — ✅ FAIT (2026-08-19)
 

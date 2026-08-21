@@ -1,0 +1,91 @@
+# Taxi Food Nosy Be — configuration Netlify
+#
+# Ce fichier suppose que la "base directory" du site Netlify est reglee sur
+# "landing". Le dossier publie est alors ce dossier-ci.
+#   Netlify > Site configuration > Build & deploy > Base directory : landing
+#
+# Si vous preferez laisser la base a la racine du depot, deplacez ce fichier
+# a la racine et remplacez publish = "." par publish = "landing".
+#
+# Dans les deux cas, les fichiers _headers et _redirects places a cote de
+# index.html sont lus par Netlify quoi qu'il arrive : ils font foi.
+
+[build]
+  publish = "."
+  command = ""
+
+# --- En-tetes ---------------------------------------------------------------
+# Cache long sur les images, la video et les polices : leur nom encode la
+# largeur, donc un remplacement passe par un nouveau nom de fichier.
+# HTML toujours revalide, pour qu'une correction de texte soit visible tout de suite.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=(), interest-cohort=()"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/og/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# --- Redirections -----------------------------------------------------------
+# ORDRE OBLIGATOIRE : creer l'enregistrement DNS taxifood.rentanoo.com et le
+# definir comme "primary domain" AVANT le premier deploiement public.
+# Toutes les URL absolues du site (canonical, og:image, sitemap, JSON-LD)
+# pointent sur ce nom. Publier avant qu'il n'existe, c'est declarer un
+# canonical vers un hote injoignable — Google desindexe, et les scrapers
+# WhatsApp/Facebook ne peuvent pas recuperer l'image d'apercu.
+#
+# Le "primary domain" est aussi la seule protection contre le contenu
+# duplique : Netlify redirige alors en 301 <site>.netlify.app vers le domaine
+# canonique. Contrairement a une idee repandue, Netlify ne pose PAS de
+# X-Robots-Tag: noindex sur le sous-domaine netlify.app de production ; il ne
+# le fait que sur les deploy previews et les branch deploys.
+# Filet de secours si un deploiement netlify.app est inevitable avant le
+# branchement : voir la ligne commentee en bas de _redirects.
+
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+  force = true
+
+# Anciennes ancres de la maquette a onglet unique -> nouvelle URL dediee.
+[[redirects]]
+  from = "/restaurateurs"
+  to = "/restaurants-partenaires/"
+  status = 301
+
+[[redirects]]
+  from = "/partenaire"
+  to = "/restaurants-partenaires/"
+  status = 301

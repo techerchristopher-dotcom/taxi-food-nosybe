@@ -39,3 +39,4 @@ motion design/
 motion design */
 image/
 *.zip
+.netlify/

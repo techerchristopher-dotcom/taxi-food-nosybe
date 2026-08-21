@@ -1,0 +1,16 @@
+/index.html      /                              301!
+/restaurateurs   /restaurants-partenaires/      301
+/partenaire      /restaurants-partenaires/      301
+
+# --- Filet de securite domaine canonique ------------------------------------
+# Toutes les URL absolues du site (canonical, og:image, sitemap, JSON-LD)
+# pointent sur https://taxifood.rentanoo.com/. Tant que ce nom n'existe pas en
+# DNS, une mise en ligne sur <site>.netlify.app publie deux pages dont le
+# canonical designe un hote injoignable : Google les sort de l'index et aucun
+# apercu ne s'affiche sur WhatsApp ou Facebook.
+#
+# Le "primary domain" de Netlify suffit normalement. Si vous devez malgre tout
+# publier sur netlify.app avant le branchement du domaine, decommentez la ligne
+# ci-dessous en remplacant NOM-DU-SITE, pour rediriger le sous-domaine :
+#
+# https://NOM-DU-SITE.netlify.app/*  https://taxifood.rentanoo.com/:splat  301!

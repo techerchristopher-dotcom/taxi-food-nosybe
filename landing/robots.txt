@@ -1,0 +1,38 @@
+# https://taxifood.rentanoo.com/robots.txt
+# Taxi Food Nosy Be — site de pre-lancement
+
+User-agent: *
+Allow: /
+
+# Aucune zone privee sur ce site : rien a bloquer.
+# /confidentialite/ n'est pas dans le sitemap et porte un meta robots
+# "noindex, follow" : ne PAS l'interdire ici, sinon le robot ne lit jamais
+# le noindex et l'URL peut rester indexee sans contenu.
+#
+# ATTENTION, contenu duplique. Netlify pose un X-Robots-Tag: noindex
+# automatique sur les deploy previews et les branch deploys UNIQUEMENT.
+# Le sous-domaine de production <site>.netlify.app, lui, reste pleinement
+# indexable. La seule protection reelle est de definir taxifood.rentanoo.com
+# comme "primary domain" dans Domain management : Netlify redirige alors en
+# 301 le sous-domaine netlify.app vers le domaine canonique. Voir LISEZ-MOI
+# section 6, etape 1 : c'est a faire AVANT le premier deploiement public.
+
+# Robots IA explicitement autorises. Sur un marche aussi petit, etre cite
+# par ChatGPT, Perplexity ou les AI Overviews quand un touriste demande
+# "food delivery Nosy Be" vaut plus que le trafic SEO classique.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://taxifood.rentanoo.com/sitemap.xml

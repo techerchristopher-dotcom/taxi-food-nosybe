@@ -19,3 +19,23 @@ build/
 
 # Divers
 .cache/
+
+# ⚠️ SECRETS — ne JAMAIS committer
+# La clé de compte de service Firebase Admin SDK donne un accès complet au projet
+# Firebase (et donc à l'envoi de notifications au nom de Taxi Food). Elle a été
+# trouvée le 2026-08-21 posée dans « taxi food/ », à l'intérieur du dépôt, non
+# suivie mais non ignorée : un seul `git add .` l'aurait publiée sur GitHub.
+# Elle vit dans le coffre-fort d'identifiants EAS, pas dans le dépôt.
+*firebase-adminsdk*.json
+taxifoodnosybe-*.json
+*service_role*
+*-service-account*.json
+
+# Dossiers de travail personnels déposés dans le dépôt (devis, factures, exports,
+# zips de maquettes). Rien à versionner ici, et ça évite d'y committer un secret
+# par ricochet.
+taxi food/
+motion design/
+motion design */
+image/
+*.zip

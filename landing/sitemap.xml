@@ -1,15 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<!--
+  Chaque page declare l'ENSEMBLE de son groupe linguistique, elle-meme
+  comprise : Google exige que les liens hreflang soient reciproques et
+  auto-referents, faute de quoi il ignore le groupe entier.
+  Deux groupes ici : les trois pages client, et les trois pages restaurateur.
+  /confidentialite/ est un document unique TRILINGUE (FR + EN + IT dans la meme
+  URL, chaque moitie dans un <section lang="...">) : il n'a pas d'alternative a
+  declarer, et il ne faut surtout pas creer /en/privacy/ ni /it/privacy/ sans
+  refaire en meme temps le groupe hreflang ici.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
   <url>
     <loc>https://taxifood.rentanoo.com/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/"/>
   </url>
+
+  <url>
+    <loc>https://taxifood.rentanoo.com/en/</loc>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/"/>
+  </url>
+
+  <url>
+    <loc>https://taxifood.rentanoo.com/it/</loc>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/"/>
+  </url>
+
   <url>
     <loc>https://taxifood.rentanoo.com/restaurants-partenaires/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/restaurant-partners/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/ristoranti-partner/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
   </url>
+
+  <url>
+    <loc>https://taxifood.rentanoo.com/en/restaurant-partners/</loc>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/restaurant-partners/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/ristoranti-partner/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+  </url>
+
+  <url>
+    <loc>https://taxifood.rentanoo.com/it/ristoranti-partner/</loc>
+    <lastmod>2026-08-22</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/restaurant-partners/"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/ristoranti-partner/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+  </url>
+
   <url>
     <loc>https://taxifood.rentanoo.com/confidentialite/</loc>
-    <lastmod>2026-08-21</lastmod>
+    <lastmod>2026-08-22</lastmod>
   </url>
+
 </urlset>

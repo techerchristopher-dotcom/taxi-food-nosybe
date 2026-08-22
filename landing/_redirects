@@ -1,6 +1,17 @@
+# --- Normalisation d'URL ----------------------------------------------------
+# Une regle par racine de langue : sans elles, /en/index.html et /it/index.html
+# restent servis comme doublons de /en/ et /it/, et seul le canonical protege.
 /index.html      /                              301!
+/en/index.html   /en/                           301!
+/it/index.html   /it/                           301!
+
+# --- Raccourcis diffuses a la main (WhatsApp, cartes de visite) --------------
+# Un raccourci mene a la page de SA langue : envoyer /partner a un restaurateur
+# italien pour le faire atterrir sur une page francaise gache le lien.
 /restaurateurs   /restaurants-partenaires/      301
 /partenaire      /restaurants-partenaires/      301
+/en/partner      /en/restaurant-partners/       301
+/it/partner      /it/ristoranti-partner/        301
 
 # --- Filet de securite domaine canonique ------------------------------------
 # Toutes les URL absolues du site (canonical, og:image, sitemap, JSON-LD)

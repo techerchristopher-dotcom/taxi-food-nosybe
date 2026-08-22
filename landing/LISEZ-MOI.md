@@ -1,7 +1,7 @@
 # Taxi Food Nosy Be — landing de pré-lancement
 
-Site statique, deux pages, aucune dépendance à un framework. Tout est dans ce dossier :
-on peut le déposer tel quel sur Netlify.
+Site statique, **six pages** (deux vues × trois langues) plus une page légale, aucune
+dépendance à un framework. Tout est dans ce dossier : on peut le déposer tel quel sur Netlify.
 
 ---
 
@@ -9,8 +9,13 @@ on peut le déposer tel quel sur Netlify.
 
 | URL | Fichier | Rôle |
 |---|---|---|
-| `/` | `index.html` | Page **client**. Objectif : inscription à la liste d'attente. |
-| `/restaurants-partenaires/` | `restaurants-partenaires/index.html` | Page **restaurateur**. Objectif : être contacté (appel, WhatsApp, RDV, rappel). |
+| `/` · `/en/` · `/it/` | `index.html`, `en/index.html`, `it/index.html` | Page **client**. Objectif : inscription à la liste d'attente. |
+| `/restaurants-partenaires/` · `/en/restaurant-partners/` · `/it/ristoranti-partner/` | `restaurants-partenaires/index.html` et ses deux traductions | Page **restaurateur**. Objectif : être contacté (appel, WhatsApp, RDV, rappel). |
+| `/confidentialite/` | `confidentialite/index.html` | Politique de confidentialité, **trilingue dans une seule URL**. Indexable, présente dans le sitemap. |
+
+⚠️ **Sept URL en tout, pas deux.** Toute vérification post-déploiement (curl, Search
+Console, débogueur Facebook) doit les couvrir toutes : c'est justement sur les quatre
+pages EN/IT que le risque de 404 est réel, puisqu'elles sont générées.
 
 La maquette d'origine (`Landing Pre-lancement.dc.html`) contenait les deux vues dans **un seul
 document**, l'une cachée en `display:none`. Elles ont été séparées en deux URL réelles : deux
@@ -31,6 +36,65 @@ Sur une 3G lente à Nosy Be (~50 ko/s) : de près de 6 minutes à **environ 5 se
 ---
 
 ## 2. Comment modifier la page
+
+### ⚠️ Le site est en trois langues — ne jamais éditer `/en/` ni `/it/` à la main
+
+Six pages, deux groupes :
+
+| | Client | Restaurateur |
+|---|---|---|
+| Français | `/` | `/restaurants-partenaires/` |
+| Anglais | `/en/` | `/en/restaurant-partners/` |
+| Italien | `/it/` | `/it/ristoranti-partner/` |
+
+L'italien n'est pas une langue « au cas où » : Nosy Be reçoit des vols charter directs
+depuis l'Italie, la clientèle italophone est structurelle sur l'île.
+
+**Les deux pages françaises sont la source ; les quatre autres sont générées.** Le texte
+traduit est écrit **en dur** dans chaque fichier — rien n'est injecté par JavaScript, donc
+la page reste lisible par les moteurs et par un visiteur sans JS.
+
+Après toute modification d'une page française :
+
+```bash
+python3 tools/build-i18n.py        # depuis le dossier landing/
+```
+
+Le script relit les deux pages françaises, remplace chaque segment connu de `i18n/fr.json`
+par sa traduction dans `i18n/en.json` et `i18n/it.json`, et réécrit **six fichiers** : les
+quatre pages traduites **et les deux manifestes PWA** `en/site.webmanifest` et
+`it/site.webmanifest`. Éditer `/en/` ou `/it/` directement ne sert à rien : la génération
+suivante écrase.
+
+Le manifeste français `site.webmanifest` est la **source** des deux autres, exactement comme
+les pages françaises : le script n'y remplace que `description`, `lang` et `start_url`, et
+s'arrête si ces trois champs ne correspondent plus à `i18n/fr.json`. Sans manifeste par
+langue, un visiteur anglophone qui ajoute le site à son écran d'accueil obtenait une
+description française et un `start_url` qui le ramenait sur la page française.
+
+⚠️ **`/confidentialite/` n'est pas générée par ce script** et n'a aucune clé dans les
+`i18n/*.json` : c'est un document trilingue écrit à la main, en un seul fichier. Ses trois
+sections doivent être modifiées ensemble, dates de mise à jour comprises.
+
+**Un texte nouveau exige une clé nouvelle dans les trois `i18n/*.json`.** Sans elle, il
+resterait en français sur les pages traduites — et le script s'en aperçoit et refuse
+d'écrire, plutôt que de publier une page à moitié traduite.
+
+Deux garde-fous, tous deux bloquants :
+
+1. le gabarit est d'abord rendu **en français** et comparé octet à octet au fichier
+   source ; s'ils diffèrent, la tokenisation a abîmé quelque chose et rien n'est écrit ;
+2. chaque page produite est relue : si un segment français qui possède une traduction y
+   subsiste, le script échoue en nommant la clé fautive.
+
+Le sélecteur FR / EN / IT de l'en-tête est fait de **vrais liens `<a href>`** (pour que
+Google les suive et que « ouvrir dans un nouvel onglet » fonctionne), et chaque page
+déclare ses deux sœurs en `hreflang`, dans le `<head>` **et** dans `sitemap.xml`.
+Changer une URL de page oblige donc à toucher trois endroits : `tools/build-i18n.py`
+(dictionnaire `PATHS`), les `<link rel="alternate">`, et le sitemap.
+
+**Il n'y a pas de redirection automatique selon la langue du navigateur**, et c'est
+délibéré — voir la section 8.
 
 ### Modifier un texte, une couleur, une taille
 
@@ -96,29 +160,83 @@ Le texte éditorial (titres, paragraphes, cartes) n'est **jamais** produit par J
 
 ## 4. Où atterrissent les inscriptions
 
-Les deux formulaires écrivent directement dans **Supabase** (projet `bmdveawomizjpiebgtkj`),
-par `POST` sur l'API REST, sans bibliothèque.
+Les deux formulaires appellent une **fonction RPC** de **Supabase** (projet
+`bmdveawomizjpiebgtkj`), par `POST` sur l'API REST, sans bibliothèque.
 
-| Formulaire | Table | Colonnes envoyées |
+| Formulaire | RPC appelée | Paramètres envoyés |
 |---|---|---|
-| Liste d'attente (page client) | `waitlist_signups` | `full_name`, `phone`, `email` (ou `null`), `role: "client"`, `source: "landing_pre_lancement"` |
-| Être rappelé (page restaurateur) | `restaurant_leads` | `first_name`, `last_name`, `restaurant_name`, `phone`, `source: "landing_prelancement"` |
+| Liste d'attente (page client) | `submit_waitlist` | `p_full_name`, `p_phone`, `p_email` (ou `null`), `p_role: "client"`, `p_honeypot`, `p_suspect` |
+| Être rappelé (page restaurateur) | `submit_restaurant_lead` | `p_first_name`, `p_last_name`, `p_restaurant_name`, `p_phone`, `p_honeypot`, `p_suspect` |
 
-⚠️ Les deux valeurs de `source` **diffèrent d'un underscore** (`pre_lancement` / `prelancement`).
-C'est ainsi dans la maquette d'origine ; c'est conservé tel quel pour ne pas casser un suivi
-existant. À harmoniser un jour, en connaissance de cause.
+⚠️ **Les pages n'écrivent plus directement dans les tables** `waitlist_signups` et
+`restaurant_leads`, **et surtout plus personne ne le peut**. Les deux RPC sont
+`SECURITY DEFINER` : elles valident la saisie, limitent la cadence par adresse, et décident
+seules de ce qui est écrit — `source` compris, que la page n'envoie donc plus.
+
+⚠️ **Piège de raisonnement, à ne pas refaire.** Le passage aux RPC, le 22 août 2026, avait
+déplacé le chemin d'écriture *de la page* sans fermer l'ancien : les policies RLS
+`anon can insert waitlist signups` et `anon insert leads` étaient toujours en place, et le
+rôle `anon` gardait tous ses droits de table. La clé étant publique, n'importe qui pouvait
+donc continuer à déposer un nombre illimité de lignes en ignorant complètement la page —
+sans honeypot, sans validation, sans limitation de cadence, et en choisissant lui-même la
+colonne `source`. **Changer le code de la page ne ferme jamais un trou côté base.**
+
+Corrigé le 22 août 2026 (migration `landing_ferme_ecriture_directe_et_fiabilise_ip`) :
+
+```sql
+drop policy "anon can insert waitlist signups" on public.waitlist_signups;
+drop policy "anon insert leads" on public.restaurant_leads;
+revoke all on public.waitlist_signups, public.restaurant_leads,
+              public.landing_submissions_log from anon, authenticated;
+```
+
+**État à vérifier après toute migration** : il ne doit exister **aucune** policy pour `anon`
+sur ces trois tables, et `anon` ne doit avoir **aucun** droit de table. Les RPC continuent
+d'écrire parce qu'elles appartiennent à `postgres`, lui-même propriétaire des trois tables
+(`relforcerowsecurity = false`).
+
+```bash
+# Doit repondre 401. Un 201 signifie que le trou est rouvert.
+curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
+  "https://bmdveawomizjpiebgtkj.supabase.co/rest/v1/waitlist_signups" \
+  -H "Content-Type: application/json" -H "apikey: $CLE" -H "Authorization: Bearer $CLE" \
+  -d '{"full_name":"ZZZ","phone":"+261 34 00 00 000","role":"client","source":"ZZZ"}'
+```
+
+⚠️ **Une RPC qui réussit répond `204 No Content`**, pas `200`. Le code traite explicitement
+`204` comme un succès. Le confondre avec un échec afficherait un message d'erreur sur une
+inscription pourtant enregistrée.
+
+Trois réponses possibles, trois messages distincts et traduits — un message unique
+n'apprendrait rien à quelqu'un qui vient de taper son numéro :
+
+| Réponse | `code` du corps JSON | Ce que la page affiche |
+|---|---|---|
+| `400` | `22023` | saisie invalide : nom, téléphone ou e-mail à corriger |
+| `500` | `53400` | trop de tentatives depuis cette connexion, réessayer plus tard |
+| tout le reste (réseau, panne) | — | message générique « réessaie dans un instant » |
 
 **Pour lire les inscriptions** : tableau de bord Supabase → Table Editor. Elles ne sont pas
-lisibles depuis le site : les tables ont une policy RLS `INSERT` pour le rôle `anon` et
-**aucune policy `SELECT`**. C'est voulu.
+lisibles depuis le site — une lecture avec la clé publique répond `401`, comme l'écriture.
 
-**La clé `anon` est en clair dans le HTML, et c'est normal** : elle est publique par conception
-chez Supabase, la protection vient des policies RLS. Il ne faut jamais y mettre la clé
-`service_role`.
+**La clé publique est en clair dans le HTML, et c'est normal** : elle est publique par
+conception chez Supabase. Mais la protection ne vient **pas** du secret de la clé : elle
+vient du fait que `anon` n'a aucun droit sur les tables et ne peut appeler que les deux RPC.
+Il ne faut jamais mettre la clé `service_role` dans une page.
 
-**En-tête `Prefer: return=minimal`** : indispensable, pas cosmétique. Sans lui, PostgREST tente
-de relire la ligne insérée, se heurte à l'absence de policy `SELECT`, renvoie une erreur — et
-l'inscription serait comptée comme un échec alors qu'elle a bien été enregistrée.
+⚠️ **Une seule clé pour tout le projet**, `sb_publishable_PIgdG97zTlRIAYX_3MBm3A_Le6YUMjv` —
+la même que l'application mobile (`app/.env`). Les six pages portaient jusqu'au 22 août 2026
+une clé au **format JWT hérité** (`eyJhbGciOi…`), que Supabase retire progressivement : le
+jour où elle aurait été désactivée sur le projet, les six pages auraient cessé d'enregistrer
+la moindre inscription — en affichant le message générique — pendant que l'application, sur
+l'autre format, aurait continué de fonctionner. Une panne invisible, et du mauvais côté.
+La clé n'apparaît que dans les deux pages **françaises** : les quatre autres la reçoivent
+par `python3 tools/build-i18n.py`.
+
+**L'en-tête `Prefer: return=minimal` a été retiré** le 22 août 2026, en même temps que le
+passage aux RPC. Il n'avait de sens que sur une écriture directe en table : il empêchait
+PostgREST de relire la ligne insérée alors qu'aucune policy `SELECT` ne l'y autorisait. Sur
+un appel RPC, il ne veut rien dire. Ne pas le remettre.
 
 ### Anti-spam
 
@@ -126,21 +244,51 @@ Chaque formulaire a deux gardes, **découplées depuis le 21 août 2026** :
 
 1. **Champ piège invisible (`site_web`).** S'il est rempli, c'est un robot : l'écran de
    confirmation s'affiche et rien n'est envoyé. Comportement volontaire, on ne dit pas au robot
-   qu'il a été repéré.
+   qu'il a été repéré. Sa valeur est **en plus transmise à la RPC** (`p_honeypot`) : la garde
+   de la page ne protège que les robots qui passent par la page, et c'est la base qui tranche
+   pour tous les autres.
 2. **Délai depuis la première interaction avec le formulaire.** Moins de 0,8 seconde entre le
    premier `focus`/`keydown`/`pointerdown` dans le formulaire et l'envoi = vitesse machine.
+   ⚠️ **C'est un soupçon, jamais un verdict : l'envoi part quand même.** La page se contente
+   de poser `p_suspect: true`, et la RPC écrit alors la ligne avec la source
+   `landing_pre_lancement_rapide` (ou `landing_prelancement_rapide` pour un restaurateur).
+   Le tri se fait à la lecture, dans le Table Editor.
 
-⚠️ **Le chronomètre part de la première interaction, plus du chargement de la page — et le
-seuil est passé de 1,5 s à 0,8 s.** L'ancienne version jetait *silencieusement* toute soumission
-arrivée moins d'1,5 s après le chargement, tout en affichant « C'est noté, merci ! » : un visiteur
-qui remplissait par autocomplétion du navigateur et validait au clavier passait sous le seuil, et
-son inscription disparaissait sans que personne ne le sache, ni lui ni nous.
+⚠️ **Ne jamais remettre un `return` dans cette branche.** Jusqu'au 22 août 2026 elle
+affichait l'écran de succès **sans rien envoyer** : un visiteur qui remplissait par
+autocomplétion du navigateur et validait au clavier voyait « c'est enregistré » alors que
+rien n'était parti — inscription perdue en silence, côté page comme côté base. Un faux
+positif de robot coûte une inscription réelle ; un faux négatif ne coûte qu'une ligne à
+trier. Le même raisonnement vaut pour le chronomètre, qui part de la première interaction et
+non du chargement de la page.
 
-Garde-fou supplémentaire : si aucune interaction n'a pu être mesurée, **on envoie quand même**.
-Mieux vaut laisser passer un robot qu'égarer une inscription réelle.
+Ces deux gardes ne valent que pour les robots qui exécutent la page. La vraie protection est
+côté base : validation et limitation de cadence dans les RPC (voir le tableau des codes
+d'erreur ci-dessus).
 
-C'est le minimum ; si le spam devient un problème, ajouter une limitation de débit côté Supabase
-plutôt que de durcir ces seuils.
+### Limitation de cadence — l'adresse IP retenue
+
+5 envois par heure et par adresse, comptés dans `landing_submissions_log`. L'adresse vient de
+`public.landing_client_ip()`.
+
+⚠️ **Ne jamais prendre la première valeur de `x-forwarded-for`.** C'est exactement celle que
+l'appelant fournit, le proxy se contentant d'ajouter la sienne derrière : jusqu'au 22 août
+2026 la fonction lisait cette première valeur, et un robot qui changeait l'en-tête à chaque
+requête n'atteignait donc jamais le seuil. La fonction lit désormais `cf-connecting-ip`, avec
+repli sur la **dernière** valeur de `x-forwarded-for`.
+
+Vérifié sur ce projet le 22 août 2026, sur des appels réels :
+
+| Requête | `cf-connecting-ip` | `x-forwarded-for` |
+|---|---|---|
+| sans en-tête | `102.17.2.168` (réelle) | `102.17.2.168` |
+| `X-Forwarded-For: 203.0.113.77` | `102.17.2.168` (inchangée) | `203.0.113.77,102.17.2.168` |
+| en posant soi-même `CF-Connecting-IP` | — | requête **rejetée par Cloudflare** (`error code: 1000`, HTTP 403), elle n'atteint jamais Postgres |
+
+`cf-connecting-ip` n'est donc pas usurpable sur ce projet. Si Supabase changeait un jour de
+passerelle, **re-journaliser `current_setting('request.headers', true)` sur un appel réel**
+avant de changer la fonction : c'est la seule façon de savoir quel en-tête porte l'adresse
+d'origine.
 
 ---
 
@@ -249,8 +397,9 @@ Le dossier publié est **`landing/`**.
 
 **Le domaine doit exister AVANT le premier déploiement public.** Ce n'est pas une préférence :
 l'intégralité des URL absolues du site — `canonical`, `og:url`, `og:image`, `twitter:image`, les
-deux `<loc>` du `sitemap.xml` et les vingt `@id`/`url` du graphe JSON-LD des deux pages — pointent
-sur `https://taxifood.rentanoo.com/`.
+**sept** `<loc>` du `sitemap.xml`, les vingt-quatre `<xhtml:link rel="alternate">` du graphe
+hreflang et les `@id`/`url` du graphe JSON-LD des six pages — pointent sur
+`https://taxifood.rentanoo.com/`.
 
 Au 21 août 2026, **ce nom n'existe pas** :
 
@@ -265,7 +414,23 @@ Publier sur `*.netlify.app` avant de créer l'enregistrement DNS coûte trois ch
    non canonique et la sort de l'index. C'est un auto-désindexage ;
 2. l'`og:image` est infetchable par les scrapers : **aucun aperçu sur WhatsApp ni Facebook**, qui
    sont *le* canal de partage de cette audience ;
-3. le `sitemap.xml` déclare deux URL mortes.
+3. le `sitemap.xml` déclare sept URL mortes.
+
+### 🛑 Les six pages doivent être commitées, pas seulement les deux françaises
+
+Netlify déploie **depuis git**, pas depuis le disque. Les quatre pages EN/IT sont générées :
+il est facile de les laisser en `??` dans `git status` alors que le `sitemap.xml` et les
+`hreflang` des pages françaises, eux, sont commités. On publie alors un graphe hreflang qui
+pointe vers quatre URL en 404 — et Google, voyant des liens non réciproques, **ignore le
+groupe entier** : ni `/en/` ni `/it/` ne sont indexés, et la page française perd le bénéfice
+du groupe. C'est exactement ce que le hreflang est censé éviter.
+
+Avant tout déploiement :
+
+```bash
+git status --porcelain -uall landing/     # aucune ligne "??" ne doit subsister
+git ls-files landing/en landing/it landing/i18n landing/tools   # doit lister les fichiers
+```
 
 **Séquence à respecter :**
 
@@ -283,10 +448,18 @@ Publier sur `*.netlify.app` avant de créer l'enregistrement DNS coûte trois ch
 ```bash
 dig @8.8.8.8 taxifood.rentanoo.com +short                            # doit renvoyer une réponse
 curl -I https://taxifood.rentanoo.com/og/taxi-food-nosy-be.jpg       # attendu : 200, image/jpeg
-for u in / /restaurants-partenaires/ /confidentialite/ /sitemap.xml; do
+
+# LES SIX PAGES, pas deux : les quatre EN/IT sont celles qui risquent le 404.
+for u in / /en/ /it/ \
+         /restaurants-partenaires/ /en/restaurant-partners/ /it/ristoranti-partner/ \
+         /confidentialite/ /sitemap.xml \
+         /site.webmanifest /en/site.webmanifest /it/site.webmanifest; do
   curl -s -o /dev/null -w "%{http_code} $u\n" -L https://taxifood.rentanoo.com$u
 done
 ```
+
+Les onze doivent renvoyer `200`. **Tant que ce n'est pas le cas, ne pas soumettre le sitemap
+à Search Console** : un sitemap qui déclare des URL mortes coûte plus qu'il ne rapporte.
 
 Si un déploiement de test sur `*.netlify.app` est inévitable entre-temps, décommenter la
 redirection de domaine préparée en bas de `_redirects` (il y a un `NOM-DU-SITE` à remplacer).
@@ -303,11 +476,14 @@ immédiatement.
 
 ### Juste après la mise en ligne
 
-- [ ] Passer les deux URL dans <https://developers.facebook.com/tools/debug/> et cliquer
+- [ ] Passer les **six** URL dans <https://developers.facebook.com/tools/debug/> et cliquer
       **Scrape Again** — Facebook et WhatsApp gardent l'ancien aperçu jusqu'à 30 jours.
-- [ ] S'envoyer les deux liens sur WhatsApp depuis un téléphone et vérifier que le grand aperçu
-      s'affiche (les images font 98 et 91 Ko, bien sous le seuil d'environ 300 Ko de WhatsApp).
-- [ ] Déclarer les deux URL dans Google Search Console et demander l'indexation.
+- [ ] S'envoyer les **six** liens sur WhatsApp depuis un téléphone et vérifier que le grand
+      aperçu s'affiche (les images font 98 et 91 Ko, bien sous le seuil d'environ 300 Ko de
+      WhatsApp).
+- [ ] Déclarer les **six** URL dans Google Search Console et demander l'indexation, puis
+      vérifier dans le rapport *Ciblage international* que les trois groupes hreflang sont
+      reconnus. Un « lien alternatif non réciproque » signale une page manquante en ligne.
 - [ ] Vérifier le balisage sur <https://search.google.com/test/rich-results>.
 - [ ] Poser un lien depuis la page d'accueil de `rentanoo.com` vers `taxifood.rentanoo.com`,
       avec l'ancre « Livraison de repas à Nosy Be ». C'est le meilleur lien entrant disponible,
@@ -328,25 +504,44 @@ Un simple double-clic sur `index.html` ne suffit pas : les chemins sont absolus 
 
 ### Bloquant pour la publicité
 
-- [x] **Page `/confidentialite/` — créée.** Le lien du pied de page des deux pages ne tombe plus
-      dans le vide. Elle porte `noindex, follow` et n'est **volontairement pas** dans
-      `sitemap.xml` (une page légale n'a pas à être indexée, mais elle doit transmettre le
-      PageRank des liens qui la pointent). Meta **exige** une URL de politique de confidentialité
+- [x] **Page `/confidentialite/` — créée, et trilingue depuis le 22 août 2026.** Le lien du
+      pied de page des six pages ne tombe plus dans le vide, et un visiteur anglophone ou
+      italophone y trouve désormais **sa** langue : les trois versions vivent dans la même
+      URL, chacune dans un `<section lang="…">`. C'est indispensable, pas décoratif — le
+      document se déclare `lang="fr"`, et sans le `lang` par section Google voyait une page
+      française dont les deux tiers du texte ne le sont pas.
+      Elle est **indexable et présente dans `sitemap.xml`** (elle porte un `canonical` et une
+      `meta description` depuis la même date), sans alternative `hreflang` puisqu'il n'existe
+      qu'une URL. Ne pas créer `/en/privacy/` ni `/it/privacy/` sans refaire en même temps le
+      groupe hreflang du sitemap.
+      ⚠️ Les trois sections décrivent **les deux formulaires de pré-lancement**, pas seulement
+      l'application : ce sont les seules données que le site collecte aujourd'hui. La version
+      anglaise ne les couvrait pas jusqu'au 22 août 2026, alors que le formulaire de `/en/`
+      renvoyait déjà vers elle. Si vous modifiez une section, modifiez les trois, dates de
+      mise à jour comprises.
+      Meta **exige** une URL de politique de confidentialité
       pour valider un compte publicitaire et diffuser des publicités à formulaire — or Facebook
       sera le premier canal d'acquisition à Nosy Be.
-- [ ] ⚠️ **Deux points de la page de confidentialité sont à faire confirmer par le porteur avant
-      la première campagne publicitaire**, parce qu'ils ne se déduisent pas du code :
-      - **l'identité juridique exacte du responsable de traitement** (la page dit aujourd'hui
-        « l'équipe Taxi Food, à Nosy Be — la même équipe que Rentanoo », ce que dit déjà le pied
-        de page du site ; s'il existe une société immatriculée, mettre sa raison sociale) ;
-      - **les durées de conservation** annoncées (12 mois après l'ouverture pour la liste
-        d'attente, 24 mois pour les leads restaurateurs) : ce sont des durées raisonnables et
-        tenables, pas des durées imposées. À valider ou à ajuster.
+- [ ] ⚠️ **Deux mentions MANQUENT dans les trois sections de la page de confidentialité**, et
+      il faut le porteur pour les écrire — elles ne se déduisent pas du code. Ce paragraphe
+      affirmait jusqu'au 22 août 2026 qu'elles y figuraient : c'était faux, la page ne les a
+      jamais contenues (vérifié : aucune occurrence de « Rentanoo », « responsable » ni d'une
+      durée en mois dans le fichier).
+      - **l'identité juridique exacte du responsable de traitement.** S'il existe une société
+        immatriculée, mettre sa raison sociale ; sinon, nommer explicitement la personne ou
+        l'équipe responsable. Une notice sans responsable identifiable ne vaut rien.
+      - **les durées de conservation des deux formulaires de pré-lancement.** La page annonce
+        une durée pour les données de l'application (« tant que vous utilisez le service »),
+        mais rien pour la liste d'attente ni pour les demandes de partenariat. Une durée de
+        l'ordre de 12 mois après l'ouverture pour la liste d'attente et de 24 mois pour les
+        prospects restaurateurs serait raisonnable et tenable — **à trancher par le porteur**,
+        puis à écrire dans les **trois** sections.
 
       Tout le reste de la page est factuel et vérifié dans le code : champs collectés, tables
-      `waitlist_signups` / `restaurant_leads`, région `eu-west-1`, chargement de Calendly
-      seulement au clic, absence de cookie de mesure, `Permissions-Policy` qui coupe la
-      géolocalisation.
+      `waitlist_signups` / `restaurant_leads`, hébergement Supabase en **`eu-north-1`
+      (Stockholm, Suède)** — et non `eu-west-1`, comme l'indiquait ce paragraphe par erreur —,
+      chargement de Calendly seulement au clic, absence de cookie de mesure,
+      `Permissions-Policy` qui coupe la géolocalisation.
 
 ### Réseaux sociaux
 
@@ -363,7 +558,8 @@ Un simple double-clic sur `index.html` ne suffit pas : les chemins sont absolus 
          style="…mêmes styles que le lien YouTube voisin…"> … </a>
       ```
 
-      Et ajouter les URL dans le tableau `"sameAs"` du JSON-LD des deux pages.
+      Et ajouter les URL dans le tableau `"sameAs"` du JSON-LD des **deux pages
+      françaises**, puis `python3 tools/build-i18n.py` pour propager aux quatre autres.
 
 ### Contenu et suivi
 
@@ -372,8 +568,9 @@ Un simple double-clic sur `index.html` ne suffit pas : les chemins sont absolus 
       fiche Maps captera plus de contacts que tout le référencement naturel du site. **À créer
       le jour du lancement, pas avant** : une fiche pour un service qui n'ouvre pas encore
       génère des avis négatifs.
-- [ ] Mettre à jour `"dateModified"` dans le JSON-LD et `<lastmod>` dans `sitemap.xml` à chaque
-      modification réelle du contenu.
+- [ ] Mettre à jour `"dateModified"` dans le JSON-LD (constante `MODIFIED` de
+      `tools/build-i18n.py` pour les pages traduites) et les **sept** `<lastmod>` du
+      `sitemap.xml` à chaque modification réelle du contenu.
 - [x] Le nœud `MobileApplication` du JSON-LD porte maintenant
       `"offers": {"@type":"Offer","price":"0","priceCurrency":"EUR","availability":"…/PreOrder"}`.
       Il lui manque encore `aggregateRating` pour être éligible au résultat enrichi complet —
@@ -381,12 +578,13 @@ Un simple double-clic sur `index.html` ne suffit pas : les chemins sont absolus 
       fabriqué est une violation des règles de spam de Google qui expose à une action manuelle.
       Sans note réelle, l'app n'aura pas d'étoiles : c'est le comportement correct.
 - [ ] Dès que les fiches App Store / Play Store sont en ligne, ajouter `installUrl` et
-      `downloadUrl` au nœud `MobileApplication` des deux pages.
+      `downloadUrl` au nœud `MobileApplication` des deux pages françaises, puis regénérer.
 - [ ] Le lien Calendly est codé en dur dans `restaurants-partenaires/index.html` (constante
       `CALENDLY_URL` et attribut `data-url`) : **deux endroits à changer** s'il évolue.
 - [ ] Le numéro `+261 37 34 37 912` apparaît **trois fois** sur la page restaurateur (texte
-      affiché, `href="tel:"`, lien `wa.me`) et dans le JSON-LD des deux pages. À changer partout
-      en même temps.
+      affiché, `href="tel:"`, lien `wa.me`) et dans le JSON-LD des deux pages françaises.
+      À changer partout en même temps, puis `python3 tools/build-i18n.py` — sinon les quatre
+      pages traduites gardent l'ancien numéro.
 
 ### Accessibilité — contrastes : corrigés le 21 août 2026
 
@@ -464,6 +662,24 @@ ligne à éditer dans `index.html` (chercher `id="h-hero"`).
 
 **2. Le badge « Bientôt à Nosy Be » est devenu « Bientôt à Nosy Be, Madagascar ».** Le mot
 « Madagascar » n'apparaissait nulle part sur le site — c'est pourtant le pays.
+
+**3. Deux phrases de la page restaurateur ont été enrichies** (22 août 2026). Cette page ne
+contenait **aucune** occurrence de « Madagascar » ni de « Hell-Ville », alors que ce sont les
+deux repères géographiques que cherche un restaurateur de l'île :
+
+> chapô — « …arrive à Nosy Be**, à Madagascar**. »
+> section partenaire — « **Que votre restaurant soit à Ambatoloaka, à Hell-Ville ou ailleurs
+> sur l'île,** on passe vous voir… »
+
+Rien d'autre n'a bougé dans l'argumentaire, et aucun mot-clé n'a été ajouté ailleurs.
+
+**Pas de redirection automatique selon la langue du navigateur.** Elle a été envisagée puis
+écartée : Googlebot explore depuis les États-Unis avec un `Accept-Language` anglais et exécute
+le JavaScript. Une redirection l'enverrait de `/` vers `/en/` — soit exactement la page que
+`x-default` et le `canonical` désignent comme *ne devant pas* être servie par défaut. Sur un
+site neuf, le risque de désindexer la page française pour un confort marginal n'en vaut pas la
+peine ; Google recommande d'ailleurs explicitement un sélecteur visible plutôt qu'une
+redirection. Le sélecteur FR / EN / IT de l'en-tête joue ce rôle.
 
 **Ajouts** (aucune suppression) : une phrase de zone desservie sous les personas (elle apporte
 « livre », « Hell-Ville », « à domicile », « commander à manger » — tous absents), une phrase sur

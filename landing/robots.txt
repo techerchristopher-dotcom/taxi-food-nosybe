@@ -5,9 +5,17 @@ User-agent: *
 Allow: /
 
 # Aucune zone privee sur ce site : rien a bloquer.
-# /confidentialite/ n'est pas dans le sitemap et porte un meta robots
-# "noindex, follow" : ne PAS l'interdire ici, sinon le robot ne lit jamais
-# le noindex et l'URL peut rester indexee sans contenu.
+#
+# Le site existe en trois langues, six pages au total :
+#   /                          /en/                      /it/
+#   /restaurants-partenaires/  /en/restaurant-partners/  /it/ristoranti-partner/
+# Elles se declarent mutuellement en hreflang (dans le <head> ET dans le
+# sitemap). Ne rien interdire ici : un Disallow sur une variante casserait
+# le groupe hreflang entier, Google exigeant des liens reciproques.
+#
+# /confidentialite/ est un document unique TRILINGUE : les trois versions
+# (FR, EN, IT) vivent dans la meme URL, chacune dans un <section lang="...">.
+# Il est indexable et present dans le sitemap, sans alternative hreflang.
 #
 # ATTENTION, contenu duplique. Netlify pose un X-Robots-Tag: noindex
 # automatique sur les deploy previews et les branch deploys UNIQUEMENT.

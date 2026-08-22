@@ -1,0 +1,22 @@
+{
+  "name": "Taxi Food Nosy Be",
+  "short_name": "Taxi Food",
+  "description": "Consegna di cibo a domicilio a Nosy Be, Madagascar",
+  "lang": "it",
+  "start_url": "/it/",
+  "display": "browser",
+  "background_color": "#F5F2EF",
+  "theme_color": "#E8342A",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,9 +1,37 @@
 <!doctype html>
+<!--
+  Document TRILINGUE dans une seule URL : français, English, italiano.
+
+  ⚠️ Chaque moitié est enveloppée dans un <section lang="…"> et c'est
+  indispensable, pas décoratif. Le document se déclare lang="fr" ; sans le
+  lang par section, Google voyait une page française dont les deux tiers du
+  texte ne sont pas en français — cas classique de page multilingue mal
+  signalée, pénalisant pour l'indexation. La classe CSS ne porte QUE la
+  couleur : une classe n'est pas un signal de langue.
+
+  ⚠️ Les trois sections doivent dire la même chose. Si vous modifiez le
+  français, répercutez dans les deux autres et alignez les trois dates de
+  « dernière mise à jour ». Une notice qui ne décrit pas un traitement dans la
+  langue du visiteur ne vaut rien pour lui.
+
+  Cette page N'EST PAS générée par tools/build-i18n.py (qui ne traite que les
+  six pages marketing) : elle s'édite à la main, ici, en entier.
+-->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Politique de confidentialité — Taxi Food</title>
+<title>Politique de confidentialité · Privacy policy · Informativa privacy — Taxi Food</title>
+<meta name="description" content="Ce que Taxi Food collecte à Nosy Be, pourquoi, où les données sont hébergées et comment les faire effacer. Couvre aussi les formulaires du site de pré-lancement. Document trilingue : français, English, italiano.">
+<link rel="canonical" href="https://taxifood.rentanoo.com/confidentialite/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Taxi Food Nosy Be">
+<meta property="og:url" content="https://taxifood.rentanoo.com/confidentialite/">
+<meta property="og:title" content="Politique de confidentialité — Taxi Food">
+<meta property="og:description" content="Ce que Taxi Food collecte à Nosy Be, pourquoi, où les données sont hébergées et comment les faire effacer. Document trilingue.">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
 <style>
   :root { color-scheme: light dark; }
   body {
@@ -22,14 +50,37 @@
   a { color: #e8342a; }
   hr { border: 0; border-top: 1px solid #d9d4cd; margin: 48px 0; }
   @media (prefers-color-scheme: dark) { hr { border-color: #3a3733; } }
-  .en { color: #4a4744; }
-  @media (prefers-color-scheme: dark) { .en { color: #b8b4b0; } }
+  /* Couleur seulement : le signal de langue est l'attribut lang de la section. */
+  section[lang="en"], section[lang="it"] { color: #4a4744; }
+  @media (prefers-color-scheme: dark) {
+    section[lang="en"], section[lang="it"] { color: #b8b4b0; }
+  }
+  .langues {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin: 0 0 28px; padding: 0; list-style: none;
+    font-size: 14px;
+  }
+  .langues a {
+    display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px;
+    border: 1px solid #d9d4cd; border-radius: 999px; text-decoration: none;
+  }
+  @media (prefers-color-scheme: dark) { .langues a { border-color: #3a3733; } }
 </style>
 </head>
 <body>
 
+<nav aria-label="Langue de ce document / Document language / Lingua del documento">
+  <ul class="langues">
+    <li><a href="#fr" lang="fr" hreflang="fr">Français</a></li>
+    <li><a href="#en" lang="en" hreflang="en">English</a></li>
+    <li><a href="#it" lang="it" hreflang="it">Italiano</a></li>
+  </ul>
+</nav>
+
+<section lang="fr" id="fr">
+
 <h1>Politique de confidentialité</h1>
-<p class="maj">Taxi Food — Nosy Be, Madagascar. Dernière mise à jour : 21 août 2026.</p>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Dernière mise à jour : 22 août 2026.</p>
 
 <p>Taxi Food met en relation des clients, des restaurants et des livreurs à Nosy Be. Cette
 page décrit précisément les données que l'application collecte, pourquoi, et ce que vous
@@ -137,16 +188,49 @@ anonymisées</strong> — elles ne portent plus aucun lien vers vous. Elles rest
 
 <p><a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a></p>
 
+</section>
+
 <hr>
 
-<h1 class="en">Privacy policy</h1>
-<p class="maj">Taxi Food — Nosy Be, Madagascar. Last updated: 18 August 2026.</p>
+<section lang="en" id="en">
 
-<p class="en">Taxi Food connects customers, restaurants and couriers in Nosy Be. This page
-describes exactly what the app collects, why, and what you can do about it.</p>
+<h1>Privacy policy</h1>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Last updated: 22 August 2026.</p>
 
-<h2 class="en">What we collect</h2>
-<p class="en">Your name (to identify your order to the restaurant and courier), email
+<p>Taxi Food connects customers, restaurants and couriers in Nosy Be. This page
+describes exactly what the app collects, why, and what you can do about it. It also covers
+the two forms on the pre-launch website, described right below.</p>
+
+<h2>Before we open: waiting list and partnership requests</h2>
+
+<p>The pre-launch website has two forms. They are separate from the app:
+<strong>they do not create an account</strong>.</p>
+
+<table>
+<tr><th>Form</th><th>What we ask for</th><th>Why</th></tr>
+<tr>
+  <td>Waiting list</td>
+  <td>Name, phone number, email address (optional)</td>
+  <td>To tell you, once, on the day Taxi Food opens in Nosy Be.</td>
+</tr>
+<tr>
+  <td>Request a call back (restaurant owners)</td>
+  <td>First name, last name, restaurant name, phone number</td>
+  <td>To call you back and discuss a partnership.</td>
+</tr>
+</table>
+
+<p>This information is stored with Supabase, on the same European servers as the rest of
+the service. It is used only for what you gave it for: no advertising, no resale, no
+commercial transfer to any third party. The pre-launch website sets no analytics cookie and
+no advertising tracker.</p>
+
+<p>To be removed from the waiting list, or to have a partnership request erased, simply ask
+at the contact address at the bottom of this section — it is done with no questions asked
+and no delay.</p>
+
+<h2>What the app collects</h2>
+<p>Your name (to identify your order to the restaurant and courier), email
 address (to create and recover your account), phone number (so the courier can reach you),
 <strong>precise GPS location</strong> (to record your delivery address — Nosy Be has no
 reliable street addressing; location is captured only when you save an address, never in the
@@ -154,12 +238,12 @@ background and never while the app is closed), order history (so you can find yo
 and to settle payments owed to restaurants), and a device identifier for notifications (only
 if you allow them).</p>
 
-<p class="en">We do <strong>not</strong> collect your contacts, photos or background
+<p>We do <strong>not</strong> collect your contacts, photos or background
 location. There are no advertising trackers and no profiling. Payment is
 <strong>in cash on delivery</strong> — no banking details are ever entered or stored.</p>
 
-<h2 class="en">Where the data goes</h2>
-<p class="en">Data is hosted with <strong>Supabase</strong> on servers in
+<h2>Where the data goes</h2>
+<p>Data is hosted with <strong>Supabase</strong> on servers in
 <strong>Northern Europe (Stockholm, Sweden)</strong>. It is never sold, rented or shared for
 commercial purposes. Three providers are involved, solely to run the service: Supabase
 (database and accounts), Expo and Apple (delivering notifications — only a device identifier
@@ -167,21 +251,111 @@ and the notification text pass through), and Meta/WhatsApp (sending the sign-up 
 code if you choose phone sign-in; only your number and the code pass through, and the code is
 never written to our logs).</p>
 
-<p class="en">The restaurant you order from sees your order. The courier who takes the
+<p>The restaurant you order from sees your order. The courier who takes the
 delivery sees your name, phone number and delivery address, for as long as it takes to
 deliver. No other restaurant or courier has access.</p>
 
-<h2 class="en">Deleting your account</h2>
-<p class="en">You can delete your account <strong>from within the app</strong>: Profile tab,
+<h2>Deleting your account</h2>
+<p>You can delete your account <strong>from within the app</strong>: Profile tab,
 at the bottom, “Delete my account”. It is immediate and irreversible. Your profile,
 addresses, phone number and registered devices are permanently erased. <strong>Past orders
 are kept but anonymised</strong> — they no longer carry any link to you. They remain
 necessary for the restaurants’ accounting, as those restaurants were paid for them.</p>
 
-<h2 class="en">Your rights and contact</h2>
-<p class="en">You may request access to, correction of, or deletion of your data by writing
+<h2>Your rights and contact</h2>
+<p>You may request access to, correction of, or deletion of your data by writing
 to <a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a>. We reply
 within 30 days.</p>
+
+</section>
+
+<hr>
+
+<section lang="it" id="it">
+
+<h1>Informativa sulla privacy</h1>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Ultimo aggiornamento: 22 agosto 2026.</p>
+
+<p>Taxi Food mette in contatto clienti, ristoranti e fattorini a Nosy Be. Questa pagina
+descrive con precisione quali dati raccoglie l'applicazione, perché, e cosa potete farne.
+Riguarda anche i due moduli del sito di pre-lancio, descritti qui sotto.</p>
+
+<h2>Prima dell'apertura: lista d'attesa e richieste di partnership</h2>
+
+<p>Il sito di pre-lancio propone due moduli. Sono indipendenti dall'applicazione:
+<strong>non creano alcun account</strong>.</p>
+
+<table>
+<tr><th>Modulo</th><th>Dati richiesti</th><th>Perché</th></tr>
+<tr>
+  <td>Lista d'attesa</td>
+  <td>Nome, numero di telefono, e-mail (facoltativa)</td>
+  <td>Avvisarvi, una sola volta, il giorno in cui Taxi Food apre a Nosy Be.</td>
+</tr>
+<tr>
+  <td>Essere richiamati (ristoratori)</td>
+  <td>Nome, cognome, nome del ristorante, numero di telefono</td>
+  <td>Richiamarvi per parlare di una partnership.</td>
+</tr>
+</table>
+
+<p>Queste informazioni sono registrate presso Supabase, sugli stessi server europei del
+resto del servizio. Servono solo allo scopo per cui le avete fornite: nessuna pubblicità,
+nessuna rivendita, nessun trasferimento commerciale a terzi. Il sito di pre-lancio non
+deposita alcun cookie di misurazione del pubblico né alcun tracciatore pubblicitario.</p>
+
+<p>Per essere tolti dalla lista d'attesa o far cancellare una richiesta di partnership,
+basta chiederlo al contatto indicato in fondo a questa sezione — viene fatto senza
+condizioni e senza ritardo.</p>
+
+<h2>Dati raccolti dall'applicazione</h2>
+<p>Il vostro nome (per identificare il vostro ordine presso il ristorante e il fattorino),
+l'indirizzo e-mail (per creare e recuperare il vostro account), il numero di telefono
+(perché il fattorino possa raggiungervi), la <strong>posizione precisa (GPS)</strong> (per
+registrare il vostro indirizzo di consegna — Nosy Be non ha un sistema di indirizzi postali
+affidabile; la posizione viene rilevata solo nel momento in cui salvate un indirizzo, mai in
+secondo piano e mai mentre l'applicazione è chiusa), lo storico degli ordini (per permettervi
+di ritrovare i vostri ordini e per stabilire i versamenti dovuti ai ristoranti), e un
+identificativo del dispositivo per le notifiche (registrato solo se le accettate).</p>
+
+<p>L'applicazione <strong>non raccoglie</strong> i vostri contatti, le vostre foto, né la
+vostra posizione in secondo piano. Non contiene alcun tracciatore pubblicitario e non
+pratica alcuna profilazione. Il pagamento avviene <strong>in contanti alla consegna</strong>:
+nessun dato bancario viene mai inserito, trasmesso o conservato.</p>
+
+<h2>Dove finiscono questi dati</h2>
+<p>Sono ospitati presso <strong>Supabase</strong>, su server situati nell'<strong>Europa
+del Nord (Stoccolma, Svezia)</strong>. Non vengono né venduti, né affittati, né trasmessi a
+terzi per scopi commerciali. Intervengono tre fornitori, unicamente per far funzionare il
+servizio: Supabase (database e account), Expo e Apple (instradamento delle notifiche —
+transitano solo un identificativo del dispositivo e il testo della notifica), e Meta/WhatsApp
+(invio del codice di verifica all'iscrizione tramite numero, se scegliete questa modalità di
+accesso; transitano solo il vostro numero e il codice, che non viene mai conservato nei
+nostri registri).</p>
+
+<p>Quando ordinate, il ristorante interessato vede il contenuto del vostro ordine. Il
+fattorino che prende la consegna vede il vostro nome, il vostro numero di telefono e il
+vostro indirizzo di consegna, per il tempo necessario a consegnarvi l'ordine. Nessun altro
+ristorante né alcun altro fattorino vi ha accesso.</p>
+
+<h2>Durata di conservazione</h2>
+<p>Il vostro account e i vostri dati sono conservati finché utilizzate il servizio. Gli
+ordini sono conservati per la contabilità dei ristoranti.</p>
+
+<h2>Cancellare il vostro account</h2>
+<p>Potete cancellare il vostro account <strong>direttamente dall'applicazione</strong>:
+scheda Profilo, in fondo, «Cancella il mio account». È immediato e irreversibile.
+Spariscono allora definitivamente: il vostro profilo, i vostri indirizzi, il vostro numero di
+telefono e i vostri dispositivi registrati. <strong>I vostri ordini passati sono conservati,
+ma resi anonimi</strong> — non recano più alcun collegamento con voi. Restano necessari alla
+contabilità dei ristoranti, che sono stati pagati per quegli ordini.</p>
+
+<h2>I vostri diritti e contatto</h2>
+<p>Potete chiedere l'accesso ai vostri dati, la loro correzione o la loro cancellazione
+scrivendo a <a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a>.
+Rispondiamo entro 30 giorni.</p>
+
+</section>
 
 </body>
 </html>

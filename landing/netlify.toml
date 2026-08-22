@@ -73,13 +73,28 @@
 # Filet de secours si un deploiement netlify.app est inevitable avant le
 # branchement : voir la ligne commentee en bas de _redirects.
 
+# Normalisation d'URL : une regle par racine de langue. Sans les deux dernieres,
+# /en/index.html et /it/index.html restent servis comme doublons de /en/ et /it/.
 [[redirects]]
   from = "/index.html"
   to = "/"
   status = 301
   force = true
 
+[[redirects]]
+  from = "/en/index.html"
+  to = "/en/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/it/index.html"
+  to = "/it/"
+  status = 301
+  force = true
+
 # Anciennes ancres de la maquette a onglet unique -> nouvelle URL dediee.
+# Un raccourci mene a la page de SA langue.
 [[redirects]]
   from = "/restaurateurs"
   to = "/restaurants-partenaires/"
@@ -88,4 +103,14 @@
 [[redirects]]
   from = "/partenaire"
   to = "/restaurants-partenaires/"
+  status = 301
+
+[[redirects]]
+  from = "/en/partner"
+  to = "/en/restaurant-partners/"
+  status = 301
+
+[[redirects]]
+  from = "/it/partner"
+  to = "/it/ristoranti-partner/"
   status = 301

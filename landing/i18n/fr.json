@@ -283,6 +283,20 @@
   "resto.lead.sent.title": "Merci ! On vous rappelle très vite.",
   "resto.lead.sent.again": "Envoyer une autre demande",
 
+  "founder.client.title": "Pourquoi Taxi Food ?",
+  "founder.client.p1": "Je m'appelle Christopher, business developer installé à Nosy Be depuis décembre 2025. J'y ai monté Rentanoo, la plateforme qui s'occupe des voyageurs de A à Z : transfert aéroport, hébergement, location, excursions — et maintenant la restauration.",
+  "founder.client.p2": "Deux choses revenaient sans arrêt. Les résidents me disaient qu'ils aimeraient bien manger comme à Ambatoloaka, mais sans le bruit, l'ambiance et la foule. Et les voyageurs, eux, me demandaient systématiquement où manger, quelles sont les bonnes tables, à qui faire confiance — et si on pouvait les livrer.",
+  "founder.client.p3": "Alors j'ai essayé moi-même. La plupart des restos ne livrent pas. On envoie un badjaj, et la commande n'arrive jamais, arrive entamée parce que le chauffeur a eu faim en route, ou arrive froide.",
+  "founder.client.p4": "J'ai créé Taxi Food pour ça : de vrais restaurants, de vrais livreurs, et ta commande que tu suis jusqu'à ta porte.",
+
+  "founder.resto.title": "Qui est derrière Taxi Food ?",
+  "founder.resto.p1": "Je m'appelle Christopher, business developer installé à Nosy Be depuis décembre 2025. J'y ai monté Rentanoo, la plateforme qui accompagne les voyageurs de A à Z : transfert aéroport, hébergement, location, excursions — et maintenant la restauration.",
+  "founder.resto.p2": "C'est par là que tout est venu. Les voyageurs que je reçois me demandent systématiquement où manger, quelles sont les bonnes tables d'Ambatoloaka, à qui faire confiance. Et les résidents veulent votre cuisine, mais sans le bruit du quartier. La demande est déjà là. Ce qui manque, c'est le chemin entre votre cuisine et eux.",
+  "founder.resto.p3": "J'ai voulu vérifier avant de construire quoi que ce soit : j'ai commandé moi-même, ici. Peu de restaurants livrent, et quand on envoie un badjaj, la commande n'arrive jamais, arrive entamée, ou arrive froide. Ce n'est bon pour personne — et c'est votre nom qui est dessus, pas celui du chauffeur.",
+  "founder.resto.p4": "Taxi Food règle exactement ça : nos livreurs, la commande écrite noir sur blanc, le client géolocalisé. Vous cuisinez, on s'occupe du reste. La Cabane a été le premier à me faire confiance.",
+
+  "founder.photoAlt": "Christopher, le fondateur de Taxi Food, en polo noir Taxi Food sur la terrasse d'une pizzeria en bord de plage à Nosy Be, un four à pizza et un scooter de livraison derrière lui.",
+
   "schema.inLanguage": "fr",
   "schema.org.description": "Taxi Food est le premier service de livraison de repas à domicile de Nosy Be, à Madagascar. Les clients commandent dans les restaurants de l'île depuis l'application, et sont livrés chez eux, à leur hôtel ou dans leur villa.",
   "schema.org.slogan": "Les meilleurs restos d'Ambatoloaka, sans le bruit.",

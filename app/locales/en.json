@@ -94,7 +94,8 @@
     "greeting": "Hello {{name}}",
     "title": "How do you want to use Taxi Food?",
     "restaurantActive": "Handle {{restaurant}}'s orders.",
-    "restaurantEnterNamed": "Enter — {{restaurant}}"
+    "restaurantEnterNamed": "Enter — {{restaurant}}",
+    "signOut": "Sign out"
   },
   "home": {
     "deliverTo": "Deliver to",

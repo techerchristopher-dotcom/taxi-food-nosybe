@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { colors, fonts, radius, shadow, spacing, withAlpha } from '../theme/tokens';
 import { useSession } from '../store/session';
+import { retourOnglets } from '../lib/nav';
 import { AppRole, imageUrl } from '../data/types';
 
 /**
@@ -51,11 +52,12 @@ export default function RoleSelectScreen() {
   const [busy, setBusy] = useState<AppRole | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // `return null` produisait un écran ENTIÈREMENT BLANC, sans barre d'onglets ni retour —
-  // et il était atteignable : le bouton « Se déconnecter » ci-dessous ne navigue nulle
-  // part, la session passait à null et l'écran se vidait. On repasse par l'aiguillage, qui
-  // dépose sur le catalogue en l'absence de compte.
-  if (!session) return <Redirect href="/" />;
+  // Filet de sécurité si la session disparaît par une autre voie que le bouton ci-dessous
+  // (expiration du jeton, suppression du compte depuis un autre appareil). Le bouton, lui,
+  // navigue désormais lui-même : compter sur cette garde donnait un écran blanc, expo-router
+  // réutilisant l'instance d'`Index` déjà montée. `return null` serait pire encore — un
+  // écran vide, sans onglets ni retour, dont on ne peut plus sortir.
+  if (!session) return <Redirect href="/(tabs)" />;
   const statusOf = (role: AppRole) => session.roles.find((r) => r.role === role)?.status;
   const restaurantActive = statusOf('restaurant') === 'active' && !!session.restaurantId;
 
@@ -99,7 +101,24 @@ export default function RoleSelectScreen() {
           <Text style={styles.hi}>{t('roleSelect.greeting', { name: session.fullName.split(' ')[0] })}</Text>
           <Text style={styles.title}>{t('roleSelect.title')}</Text>
         </View>
-        <Pressable onPress={() => void signOut()} hitSlop={8} style={styles.logout}>
+        {/* Se déconnecter DOIT naviguer explicitement. Ce bouton se contentait de vider la
+            session en comptant sur la garde `if (!session)` plus haut pour repasser par
+            l'aiguillage : sur appareil, ça donnait un ÉCRAN BLANC (constaté le 2026-08-23).
+            On dépose donc directement sur le catalogue, qui reste ouvert sans compte — et
+            via `retourOnglets`, pour ne pas empiler un second jeu d'onglets (voir
+            `lib/nav.ts`). */}
+        <Pressable
+          onPress={() => {
+            void (async () => {
+              await signOut();
+              retourOnglets(router, '/(tabs)');
+            })();
+          }}
+          hitSlop={8}
+          style={styles.logout}
+          accessibilityRole="button"
+          accessibilityLabel={t('roleSelect.signOut')}
+        >
           <Icon name="logout" size={20} color={colors.textMuted} />
         </Pressable>
       </View>

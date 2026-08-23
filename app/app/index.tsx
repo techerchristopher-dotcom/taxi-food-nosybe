@@ -68,19 +68,28 @@ function destination(session: Session | null, mode: AppMode | null, intent: stri
  * ⚠️ Navigation IMPÉRATIVE et non `<Redirect>` : le `<Redirect>` d'expo-router fait un
  * `replace`, qui posait un SECOND `(tabs)` par-dessus celui qui vit au fond de la pile
  * (voir `lib/nav.ts`).
+ *
+ * ⚠️ Le verrou porte sur la DESTINATION, pas sur un simple booléen « j'ai déjà navigué ».
+ * Le booléen produisait un ÉCRAN BLANC, constaté sur appareil le 2026-08-23 : en se
+ * déconnectant depuis la sélection de rôle, on repasse par `/`, mais expo-router réutilise
+ * l'instance d'`Index` déjà montée au démarrage — le booléen valait donc déjà `true`,
+ * l'effet sortait aussitôt, et le `return null` de fin laissait l'écran vide, sans onglets
+ * ni retour. Comparer la destination règle les deux cas d'un coup : on ne navigue jamais
+ * deux fois vers le MÊME endroit (pas de boucle), et une destination qui change parce que
+ * l'état a réellement changé (une session qui disparaît) est bien suivie.
  */
 export default function Index() {
   const router = useRouter();
   const session = useSession((s) => s.session);
   const mode = useSession((s) => s.mode);
   const [intent] = useState(() => useAuthIntent.getState().intent);
-  const navigated = useRef(false);
+  const dejaNavigue = useRef<string | null>(null);
 
   const href = destination(session, mode, intent);
 
   useEffect(() => {
-    if (navigated.current) return;
-    navigated.current = true;
+    if (dejaNavigue.current === href) return;
+    dejaNavigue.current = href;
 
     // Une intention ne sert qu'une fois — sinon une connexion demandée depuis le Profil
     // finirait par déposer quelqu'un sur l'écran d'adresse des semaines plus tard.

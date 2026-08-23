@@ -94,7 +94,8 @@
     "greeting": "Bonjour {{name}}",
     "title": "Comment veux-tu utiliser Taxi Food ?",
     "restaurantActive": "Traiter les commandes de {{restaurant}}.",
-    "restaurantEnterNamed": "Entrer — {{restaurant}}"
+    "restaurantEnterNamed": "Entrer — {{restaurant}}",
+    "signOut": "Se déconnecter"
   },
   "home": {
     "deliverTo": "Livrer à",

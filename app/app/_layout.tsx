@@ -75,10 +75,23 @@ export default function RootLayout() {
   /** Écran à ouvrir suite au tap sur une notification, en attente que le router soit prêt. */
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
+  /**
+   * Filet de dernier recours du splash. Les trois hydratations posent maintenant leur
+   * drapeau dans un `finally`, donc plus aucune erreur ne peut bloquer le lancement — mais
+   * une requête qui ne répond JAMAIS n'est pas une erreur, et `buildSession()` en enchaîne
+   * trois (profil, rôles, restaurant lié) sans délai maximal. Sur la liaison de Nosy Be,
+   * c'est un cas réel. Passé ce délai on ouvre le catalogue : il est public, il ne demande
+   * rien à personne, et la session s'installera d'elle-même quand elle arrivera
+   * (`auth.onAuthChange`). Rester sur le logo, en revanche, est un motif de rejet (2.1).
+   */
+  const [delaiDepasse, setDelaiDepasse] = useState(false);
+
   useEffect(() => {
-    hydrateSession();
-    hydrateCart();
+    void hydrateSession();
+    void hydrateCart();
     void hydrateLanguage().finally(() => setLangReady(true));
+    const t = setTimeout(() => setDelaiDepasse(true), 8000);
+    return () => clearTimeout(t);
   }, [hydrateSession, hydrateCart]);
 
   // Jeton push : rattaché au compte à chaque connexion ET à chaque lancement. Le jeton
@@ -111,7 +124,8 @@ export default function RootLayout() {
   }, []);
 
   const ready =
-    !sessionLoading && cartHydrated && langReady && (Platform.OS === 'web' || fontsLoaded);
+    (!sessionLoading && cartHydrated && langReady && (Platform.OS === 'web' || fontsLoaded)) ||
+    delaiDepasse;
 
   // La navigation attend que le Stack existe : au démarrage à froid depuis une
   // notification, l'écouteur se déclenche pendant le splash, où `router.push` n'a
@@ -125,6 +139,11 @@ export default function RootLayout() {
     // entre-temps peut encore recevoir une course, il ne doit pas entrer pour autant.
     // Et on bascule le `mode` au passage, sinon le prochain lancement ramènerait sur
     // l'espace précédent alors que la personne travaille manifestement dans celui-ci.
+    // Notification orpheline : une notification restée dans le centre de notifications
+    // après une déconnexion ouvrirait un suivi de commande que la RLS ne laisse plus lire
+    // — quatre secondes de spinner pour finir sur « Commande introuvable ». On l'ignore.
+    if (pendingRoute.startsWith('/order/') && !userId) return;
+
     if (pendingRoute === '/(restaurant)') {
       const ok = !!roles?.some((r) => r.role === 'restaurant' && r.status === 'active') && !!restaurantId;
       if (!ok) return;
@@ -136,7 +155,7 @@ export default function RootLayout() {
     }
 
     router.push(pendingRoute);
-  }, [ready, pendingRoute, router, roles, restaurantId, setMode]);
+  }, [ready, pendingRoute, router, roles, restaurantId, setMode, userId]);
 
   if (!ready) return <Splash />;
 

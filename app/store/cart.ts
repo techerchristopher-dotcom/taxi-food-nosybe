@@ -93,24 +93,27 @@ export const useCart = create<CartState>((set, get) => ({
   ...EMPTY,
   hydrated: false,
 
+  // ⚠️ `hydrated: true` est posé dans un `finally`, et le `try` couvre la LECTURE du
+  // stockage autant que l'analyse JSON. `hydrated` retient le splash de `app/_layout.tsx` :
+  // un `AsyncStorage.getItem` qui échoue laissait l'app sur son logo pour toujours. Un
+  // panier illisible, c'est un panier vide — pas une app morte.
   hydrate: async () => {
-    const raw = await AsyncStorage.getItem(CART_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as Persisted;
-        const lines = (parsed.lines ?? []).map((l) => ({
-          ...l,
-          options: l.options ?? [],
-          key: l.key ?? lineKey(l.product.id, (l.options ?? []).map((o) => o.optionId)),
-        }));
-        // `restaurantLogoUrl` est absent des paniers persistés avant son introduction.
-        set({ ...parsed, restaurantLogoUrl: parsed.restaurantLogoUrl ?? null, lines, hydrated: true });
-        return;
-      } catch {
-        // ignore
-      }
+    try {
+      const raw = await AsyncStorage.getItem(CART_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Persisted;
+      const lines = (parsed.lines ?? []).map((l) => ({
+        ...l,
+        options: l.options ?? [],
+        key: l.key ?? lineKey(l.product.id, (l.options ?? []).map((o) => o.optionId)),
+      }));
+      // `restaurantLogoUrl` est absent des paniers persistés avant son introduction.
+      set({ ...parsed, restaurantLogoUrl: parsed.restaurantLogoUrl ?? null, lines });
+    } catch (e) {
+      console.warn('[panier] hydratation impossible', e);
+    } finally {
+      set({ hydrated: true });
     }
-    set({ hydrated: true });
   },
 
   canAdd: (product) => {

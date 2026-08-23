@@ -100,12 +100,15 @@ export default function RestaurantMenuScreen() {
             onError={({ error }) => console.warn('[resto] échec bannière', restaurant.coverUrl, error)}
           />
         ) : null}
+        {/* Pas de cœur « favori » ici : il donnait le retour visuel d'un bouton et ne
+            faisait rien — les favoris ne sont pas au programme du MVP. Un `Pressable` sans
+            gestionnaire est un motif de rejet Apple (règle 2.1), et cet écran est celui que
+            le rejet du 2026-08-23 désigne nommément (« viewing the menu »). Même arbitrage
+            que pour « Ajouter » et « … » du Profil : tant que l'action n'existe pas, le
+            bouton non plus. */}
         <View style={styles.bannerActions}>
           <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
             <Icon name="arrow_back" size={22} color={colors.ink} />
-          </Pressable>
-          <Pressable style={styles.roundBtn} hitSlop={8}>
-            <Icon name="favorite" size={22} color={colors.ink} />
           </Pressable>
         </View>
         {!restaurant.coverUrl ? <Text style={styles.bannerHint}>{t('restaurant.coverHint')}</Text> : null}

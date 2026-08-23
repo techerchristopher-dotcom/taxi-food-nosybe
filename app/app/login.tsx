@@ -10,6 +10,7 @@ import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { useSession } from '../store/session';
+import { useAuthIntent } from '../store/authIntent';
 import {
   appleSignInAvailable,
   facebookConfigured,
@@ -34,6 +35,16 @@ export default function LoginScreen() {
   const signInWithGoogleNative = useSession((s) => s.signInWithGoogleNative);
   const signInWithFacebookNative = useSession((s) => s.signInWithFacebookNative);
   const completeFromUrl = useSession((s) => s.completeFromUrl);
+  // Retour en attente : présent quand on a été envoyé ici depuis le tunnel de commande.
+  // Il change l'accroche de l'écran, et il est effacé si la personne renonce.
+  //
+  // ⚠️ LU UNE FOIS, pas abonné au store. Avec un abonnement réactif, l'effacement de
+  // `leave()` provoquait un rendu de plus : l'accroche « Plus qu'une étape avant d'être
+  // livré… » redevenait le texte générique PENDANT que l'écran glissait hors champ. C'est
+  // le geste d'abandon — celui que fera un relecteur Apple pour vérifier qu'on peut sortir
+  // de la connexion. Même précaution que dans `app/index.tsx`, pour la même raison.
+  const [intent] = useState(() => useAuthIntent.getState().intent);
+  const clearIntent = useAuthIntent((s) => s.clear);
   // Quel bouton social est en cours (pour n'afficher le spinner que sur celui-là).
   const [pending, setPending] = useState<OAuthProvider | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +135,21 @@ export default function LoginScreen() {
     }
   }
 
+  /**
+   * Sortie de l'écran de connexion : la navigation libre doit toujours rester joignable
+   * (règle Apple 5.1.1(v)). Cet écran était la racine de l'app, il n'avait donc aucun
+   * bouton retour ; il est désormais empilé par-dessus le catalogue et un relecteur qui
+   * n'aurait aucune échappatoire cocherait le motif de rejet une seconde fois.
+   *
+   * On efface l'intention au passage : quelqu'un qui renonce à se connecter ne doit pas
+   * être renvoyé dans le tunnel de commande à sa prochaine connexion.
+   */
+  function leave() {
+    clearIntent();
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
+  }
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -133,11 +159,23 @@ export default function LoginScreen() {
         end={{ x: 0.9, y: 1 }}
         style={[styles.hero, { paddingTop: insets.top }]}
       />
+      <Pressable
+        onPress={leave}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={t('login.close')}
+        style={[styles.close, { top: insets.top + 8 }]}
+      >
+        <Icon name="close" size={22} color={colors.white} />
+      </Pressable>
       <View style={styles.body}>
         <Image source={require('../assets/icon-tile.png')} style={styles.logo} />
         <Text style={styles.wordmark}>TAXI FOOD</Text>
         <Text style={styles.tagline}>{t('login.tagline')}</Text>
-        <Text style={styles.pitch}>{t('login.pitch')}</Text>
+        {/* Accroche contextuelle : quand on arrive du panier, dire pourquoi le compte est
+            demandé MAINTENANT (et que le panier est conservé) vaut mieux que de vanter la
+            livraison à quelqu'un qui a déjà choisi ses plats. */}
+        <Text style={styles.pitch}>{intent ? t('login.pitchOrder') : t('login.pitch')}</Text>
 
         <View style={{ flex: 1 }} />
 
@@ -254,6 +292,19 @@ function GoogleG() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   hero: { height: 200 },
+  // Croix de sortie, flottante au-dessus du dégradé (`top` posé à l'exécution avec
+  // l'encoche). Fond translucide : lisible sur le rouge comme sur l'orange.
+  close: {
+    position: 'absolute',
+    left: 18,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   body: {
     flex: 1,
     alignItems: 'center',

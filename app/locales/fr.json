@@ -44,7 +44,9 @@
     "noAccount": "Pas encore de compte ?",
     "createAccount": "Créer un compte par e-mail",
     "facebookNotConfigured": "Connexion Facebook pas encore configurée (EXPO_PUBLIC_FACEBOOK_APP_ID absent de app/.env, et provider Facebook à activer côté Supabase).",
-    "actionHint": "Connecte-toi ou crée ton compte en un tap"
+    "actionHint": "Connecte-toi ou crée ton compte en un tap",
+    "close": "Fermer",
+    "pitchOrder": "Plus qu'une étape avant d'être livré. Ton panier est conservé — le compte sert à te suivre et à te trouver."
   },
   "phone": {
     "countryLabel": "Indicatif du pays",
@@ -101,7 +103,12 @@
     "filterAll": "Tout",
     "openCount_one": "{{count}} restaurant ouvert",
     "openCount_other": "{{count}} restaurants ouverts",
-    "emptyFilter": "Aucun restaurant pour ce filtre."
+    "emptyFilter": "Aucun restaurant pour ce filtre.",
+    "guestZone": "Toute l'île de Nosy Be",
+    "guestBanner": "Parcours les restaurants librement. Le compte n'est demandé qu'au moment de commander, pour savoir où te livrer et te prévenir.",
+    "guestBannerCta": "Créer un compte ou se connecter",
+    "emptySearch": "Aucun restaurant ne correspond à « {{query}} ».",
+    "searchClear": "Effacer la recherche"
   },
   "restaurantCard": {
     "popular": "Populaire",
@@ -205,7 +212,11 @@
     "emptyAction": "Commander maintenant",
     "previously": "Précédemment",
     "track": "Suivre",
-    "reorder": "Recommander"
+    "reorder": "Recommander",
+    "guestTitle": "Suis ta livraison",
+    "guestText": "Avec un compte, tu vois minute par minute où en est ta commande, tu retrouves les précédentes et tu les recommandes d'un geste.",
+    "guestAction": "Créer un compte ou se connecter",
+    "guestHint": "Parcourir les restaurants ne demande aucun compte."
   },
   "tracking": {
     "notFound": "Commande introuvable.",
@@ -262,7 +273,15 @@
     "deleteBody": "Ton profil, tes adresses et tes appareils seront définitivement effacés. C'est irréversible. Tes commandes passées sont conservées de façon anonyme, pour la comptabilité des restaurants.",
     "deleteConfirm": "Supprimer",
     "deleteFailedTitle": "Suppression impossible",
-    "deleteFailed": "Impossible de supprimer le compte pour le moment."
+    "deleteFailed": "Impossible de supprimer le compte pour le moment.",
+    "guestTitle": "Bienvenue",
+    "guestSubtitle": "Tu n'es pas connecté",
+    "whyTitle": "Ce que le compte t'apporte",
+    "whyTracking": "Suivre ton livreur en direct jusqu'à ta porte",
+    "whyAddress": "Enregistrer tes adresses : la commande suivante prend dix secondes",
+    "whyHistory": "Retrouver tes commandes et les recommander d'un geste",
+    "guestAction": "Créer un compte ou se connecter",
+    "guestHint": "Tu peux parcourir les restaurants et remplir ton panier sans compte. Il n'est demandé qu'au moment de commander."
   },
   "authEmail": {
     "signInTitle": "Connexion\npar e-mail",

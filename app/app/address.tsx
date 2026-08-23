@@ -15,6 +15,7 @@ import { formatAddressLine } from '../data/types';
 import { useLoad } from '../lib/useLoad';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
+import { useAuthIntent } from '../store/authIntent';
 
 /**
  * Écran 06 — Adresse de livraison. La POSITION GPS est l'action principale : sans elle,
@@ -37,7 +38,52 @@ function preciseLine(g?: Location.LocationGeocodedAddress): string {
   return head;
 }
 
+/**
+ * GARDE UNIQUE DU TUNNEL DE COMMANDE.
+ *
+ * Ni le bouton « Commander » du panier ni `/checkout` n'en ont : un seul verrou, ici.
+ * `/address` est la première étape liée au compte (adresses enregistrées, création
+ * d'adresse, téléphone du profil) et tout chemin vers le paiement y passe — bouton du
+ * panier, lien « Modifier » de `/checkout`, lien profond, notification.
+ *
+ * Navigation IMPÉRATIVE et non `<Redirect>` : il faut la garantie que l'intention est
+ * posée AVANT la navigation. Avec `<Redirect>`, l'effet de l'enfant part avant celui du
+ * parent, et l'ordre devient une question à laquelle on ne veut pas avoir à répondre.
+ *
+ * ⚠️ `replace` et non `push` : l'écran d'adresse quitte la pile, donc le retour depuis la
+ * connexion ramène au panier. Avec `push`, ce retour repasserait par `/address`, qui
+ * redirigerait aussitôt vers `/login` — boucle.
+ *
+ * Découpage en deux composants (et non un `if` en tête de l'existant) : les quinze hooks
+ * du formulaire — dont `useLoad(listAddresses)` et l'animation de pulsation — ne doivent
+ * pas s'exécuter pour quelqu'un qui va être redirigé.
+ */
 export default function AddressScreen() {
+  const router = useRouter();
+  const session = useSession((s) => s.session);
+  const clearIntent = useAuthIntent((s) => s.clear);
+
+  useEffect(() => {
+    if (session) {
+      // Arrivé à destination : une intention ne sert qu'une fois. `app/index.tsx` l'a
+      // normalement déjà consommée en nous envoyant ici ; ce second effacement couvre les
+      // entrées qui ne passent pas par l'aiguillage (lien profond, lien « Modifier » de
+      // `/checkout`) et ne coûte rien quand il n'y a rien à effacer.
+      clearIntent();
+      return;
+    }
+    useAuthIntent.getState().set('/address');
+    router.replace('/login');
+  }, [session, router, clearIntent]);
+
+  // Le temps de la bascule (une frame) : fond neutre, pas de spinner — un spinner
+  // laisserait croire à un chargement alors qu'on quitte l'écran.
+  if (!session) return <View style={styles.container} />;
+  return <AddressForm />;
+}
+
+/** Écran 06 — Adresse de livraison (formulaire, réservé aux comptes connectés). */
+function AddressForm() {
   const router = useRouter();
   const { t } = useTranslation();
   const selectedId = useCheckout((s) => s.addressId);

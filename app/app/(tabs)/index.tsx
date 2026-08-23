@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,10 +9,20 @@ import { FeaturedRestaurantCard, RestaurantRow } from '../../components/Restaura
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
 import { listAddresses, listRestaurants } from '../../data/api';
-import { FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
+import { Address, FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
+import { useSession } from '../../store/session';
+import { signInFor } from '../../store/authIntent';
 
 /** Sentinelle du filtre « tout » — jamais affichée telle quelle (le libellé est traduit). */
 const TOUT = '__all__';
+
+/**
+ * Minuscules sans accent : « Américain » doit se trouver en tapant « americain », et
+ * « CRÊPE » en tapant « crepe ». Personne ne pose les accents sur un clavier de téléphone.
+ */
+function sansAccent(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 /** Écran 02 — Accueil : restaurants de Nosy Be. */
 export default function HomeScreen() {
@@ -20,9 +30,18 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [filter, setFilter] = useState<string>(TOUT);
+  const [query, setQuery] = useState('');
+
+  const session = useSession((s) => s.session);
 
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
-  const { data: addresses } = useLoad(() => listAddresses(), []);
+  // Le catalogue est public : `listRestaurants()` n'a besoin d'aucun compte. Les adresses,
+  // si — inutile d'interroger la base à chaque focus d'onglet pour un visiteur, la RLS
+  // renverrait de toute façon une liste vide.
+  const { data: addresses } = useLoad(
+    () => (session ? listAddresses() : Promise.resolve<Address[]>([])),
+    [session?.userId ?? ''],
+  );
 
   const defaultAddress = addresses?.find((a) => a.isDefault) ?? addresses?.[0] ?? null;
 
@@ -38,13 +57,30 @@ export default function HomeScreen() {
     return [TOUT, ...types];
   }, [restaurants]);
 
+  // Filtre par type de plat PUIS recherche libre. Tout se fait en mémoire : les
+  // restaurants sont déjà tous chargés, la recherche ne coûte aucune requête.
   const list = useMemo(() => {
-    const all = restaurants ?? [];
-    if (filter === TOUT) return all;
-    return all.filter((r) => r.foodTypes.includes(filter));
-  }, [filter, restaurants]);
+    const base =
+      filter === TOUT
+        ? (restaurants ?? [])
+        : (restaurants ?? []).filter((r) => r.foodTypes.includes(filter));
+    const q = sansAccent(query.trim());
+    if (!q) return base;
+    // On cherche dans ce que le client a sous les yeux ou en tête : le nom du resto, sa
+    // cuisine, sa zone, et les plats qu'il propose (« pizza », « tacos »…).
+    return base.filter((r) =>
+      sansAccent(
+        [r.name, r.cuisineType, r.zone, ...r.foodTypes, ...(r.categoryTags ?? []).map((c) => c.name)]
+          .filter(Boolean)
+          .join(' '),
+      ).includes(q),
+    );
+  }, [filter, query, restaurants]);
 
-  const openCount = (restaurants ?? []).filter((r) => r.isOpen).length;
+  // Compté sur la liste AFFICHÉE : annoncer « 12 restaurants ouverts » au-dessus d'un
+  // unique résultat de recherche n'aurait aucun sens.
+  const openCount = list.filter((r) => r.isOpen).length;
+  const searching = query.trim().length > 0;
   const [featured, ...rows] = list;
 
   return (
@@ -60,19 +96,51 @@ export default function HomeScreen() {
             <Text style={styles.deliverTo}>{t('home.deliverTo')}</Text>
             <View style={styles.addressRow}>
               <Icon name="location_on" size={20} color={colors.accent} />
+              {/* Visiteur : ni « Choisir une adresse » (il n'a rien à choisir) ni chevron
+                  (il n'y a rien à dérouler) — on annonce la zone desservie. La ligne n'est
+                  volontairement pas rendue cliquable : elle ne l'est pas non plus pour un
+                  compte connecté, et un nom de lieu qui ouvre une connexion est une
+                  surprise désagréable. La porte de l'accueil est le bandeau ci-dessous. */}
               <Text style={styles.addressText} numberOfLines={1}>
                 {defaultAddress
                   ? formatAddressLine(defaultAddress.zone, defaultAddress.label)
-                  : t('home.chooseAddress')}
+                  : session
+                    ? t('home.chooseAddress')
+                    : t('home.guestZone')}
               </Text>
-              <Icon name="expand_more" size={18} color={colors.white} />
+              {session ? <Icon name="expand_more" size={18} color={colors.white} /> : null}
             </View>
           </View>
           <Image source={require('../../assets/icon-tile.png')} style={styles.headerLogo} />
         </View>
+        {/* Recherche RÉELLE.
+            Ce bloc a longtemps été un `<View>` contenant un `<Text>` : la pastille blanche,
+            la loupe et le texte d'invite d'un champ de saisie — sans le champ. Une
+            affordance morte est un motif de rejet Apple (règle 2.1), et depuis que l'app
+            s'ouvre sur le catalogue, c'est la PREMIÈRE chose que touche un relecteur. */}
         <View style={styles.search}>
           <Icon name="search" size={20} color={colors.textMuted} />
-          <Text style={styles.searchText}>{t('home.search')}</Text>
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('home.search')}
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+            accessibilityLabel={t('home.search')}
+          />
+          {searching ? (
+            <Pressable
+              onPress={() => setQuery('')}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.searchClear')}
+            >
+              <Icon name="close" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
       </LinearGradient>
 
@@ -80,6 +148,20 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* La porte d'entrée vers le compte, sur l'écran d'accueil. Elle dit ce que le
+            compte apporte ET ce qu'il ne conditionne pas — c'est cette seconde moitié
+            qu'Apple cherchait : la navigation est libre, le compte sert à livrer. */}
+        {!session ? (
+          <Pressable style={styles.guestBanner} onPress={() => signInFor(router, '/(tabs)')}>
+            <Icon name="local_shipping" size={20} color={colors.secondary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.guestBannerText}>{t('home.guestBanner')}</Text>
+              <Text style={styles.guestBannerCta}>{t('home.guestBannerCta')}</Text>
+            </View>
+            <Icon name="chevron_right" size={20} color={colors.textFaint} />
+          </Pressable>
+        ) : null}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -124,7 +206,11 @@ export default function HomeScreen() {
                   onPress={() => router.push(`/restaurant/${r.id}`)}
                 />
               ))}
-              {list.length === 0 ? <Text style={styles.emptyFilter}>{t('home.emptyFilter')}</Text> : null}
+              {list.length === 0 ? (
+                <Text style={styles.emptyFilter}>
+                  {searching ? t('home.emptySearch', { query: query.trim() }) : t('home.emptyFilter')}
+                </Text>
+              ) : null}
             </View>
           </>
         )}
@@ -162,7 +248,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 8,
   },
-  searchText: { fontFamily: fonts.regular, fontSize: 14, color: colors.textMuted },
+  // `paddingVertical: 0` : sans lui, Android ajoute sa propre marge interne au TextInput
+  // et le texte se décale vers le bas dans la pastille.
+  searchInput: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.ink,
+    paddingVertical: 0,
+  },
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  guestBannerText: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 18, color: colors.textDark },
+  guestBannerCta: { fontFamily: fonts.bold, fontSize: 13, color: colors.primary, marginTop: 3 },
   filtersScroll: { marginBottom: 16, marginHorizontal: -spacing.screen },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.screen },
   chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },

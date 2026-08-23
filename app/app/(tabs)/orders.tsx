@@ -10,13 +10,22 @@ import { Order, Product, SelectedOption } from '../../data/types';
 import { listOrders } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useCart } from '../../store/cart';
+import { useSession } from '../../store/session';
+import { signInFor } from '../../store/authIntent';
 
-/** Écran 10 — Historique des commandes (et 10b — état vide). */
+/** Écran 10 — Historique des commandes (10b — état vide, 10c — visiteur non connecté). */
 export default function OrdersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { data: orders, loading } = useLoad(() => listOrders(), []);
+  const session = useSession((s) => s.session);
+  // Pas de session = pas de commandes à lire. `listOrders()` ne lèverait pas (la RLS filtre
+  // sur `auth.uid()` et renvoie une liste vide), mais on évite la requête à chaque focus
+  // d'onglet — et surtout on distingue « aucune commande » de « pas connecté ».
+  const { data: orders, loading } = useLoad(
+    () => (session ? listOrders() : Promise.resolve<Order[]>([])),
+    [session?.userId ?? ''],
+  );
   const clear = useCart((s) => s.clear);
   const add = useCart((s) => s.add);
 
@@ -59,6 +68,33 @@ export default function OrdersScreen() {
         return `${it.quantity} × ${it.name}${opts ? ` (${opts})` : ''}`;
       })
       .join(' · ');
+
+  /**
+   * Visiteur non connecté. Distinct de l'état « aucune commande » : lui dire « aucune
+   * commande » serait faux, il en a peut-être — sur un compte auquel il n'est pas connecté.
+   * Le texte dit à quoi sert le compte, pas « connecte-toi ».
+   */
+  if (!session) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+          <Text style={styles.headerTitle}>{t('orders.title')}</Text>
+        </View>
+        <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <Icon name="receipt_long" size={44} color={colors.secondary} />
+          </View>
+          <Text style={styles.emptyTitle}>{t('orders.guestTitle')}</Text>
+          <Text style={styles.emptyText}>{t('orders.guestText')}</Text>
+          <Pressable style={styles.emptyBtn} onPress={() => signInFor(router, '/(tabs)/orders')}>
+            <Text style={styles.emptyBtnText}>{t('orders.guestAction')}</Text>
+          </Pressable>
+          {/* La moitié du message qu'Apple attend : nommer ce qui NE demande pas de compte. */}
+          <Text style={styles.guestHint}>{t('orders.guestHint')}</Text>
+        </View>
+      </View>
+    );
+  }
 
   if (loading && !orders) {
     return (
@@ -225,4 +261,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyBtnText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+  guestHint: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textFaint,
+    textAlign: 'center',
+    marginTop: 16,
+  },
 });

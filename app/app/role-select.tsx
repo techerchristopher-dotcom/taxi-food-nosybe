@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -51,7 +51,11 @@ export default function RoleSelectScreen() {
   const [busy, setBusy] = useState<AppRole | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!session) return null;
+  // `return null` produisait un écran ENTIÈREMENT BLANC, sans barre d'onglets ni retour —
+  // et il était atteignable : le bouton « Se déconnecter » ci-dessous ne navigue nulle
+  // part, la session passait à null et l'écran se vidait. On repasse par l'aiguillage, qui
+  // dépose sur le catalogue en l'absence de compte.
+  if (!session) return <Redirect href="/" />;
   const statusOf = (role: AppRole) => session.roles.find((r) => r.role === role)?.status;
   const restaurantActive = statusOf('restaurant') === 'active' && !!session.restaurantId;
 

@@ -31,8 +31,51 @@ interactif (capability Sign In with Apple) ; n°12 réussi sans conséquence ; n
 
 ## Dans le prochain build
 
-Rien en attente. Le n°17 est le build de soumission ; le prochain chantier de code
-redémarrera cette section.
+| Chantier | Vérifié |
+|---|---|
+| **Navigation libre du catalogue — réponse au rejet Apple 5.1.1(v) du 2026-08-23.** L'app s'ouvrait sur l'écran de connexion ; elle s'ouvre désormais sur la liste des restaurants. Parcourir les restaurants, un menu, une fiche produit et remplir son panier ne demande plus de compte. Le compte n'est exigé qu'à l'entrée du tunnel de commande (`/address`), qui porte l'unique garde de l'app. Écran de connexion doté d'une croix de sortie (il n'en avait aucune), onglets Commandes et Profil dotés d'un état visiteur explicite, espaces pro (`(restaurant)`, `(livreur)`) dotés de leur propre garde de rôle — `app/index.tsx` était jusque-là leur seule protection. | `tsc --noEmit` ✅ · parité des 3 fichiers de langue ✅ (272 clés) · **parcours anonyme complet vérifié dans un navigateur** : accueil → menu → fiche produit → panier (36 000 Ar) → « Commander » → connexion → croix → retour au panier intact ; onglets Commandes et Profil visiteur ; liens profonds `/(restaurant)`, `/(livreur)`, `/role-select`, `/address` tous refermés. ⚠️ **Les parcours CONNECTÉS restent à vérifier sur appareil** (compte SMS neuf sans nom ni téléphone, compte multi-rôle, espaces pro) — voir la recette ci-dessous |
+| **Revue adversariale du chantier ci-dessus (2026-08-23), six défauts corrigés.** (1) **Boucle sur `/role-select`** : le Profil visiteur y envoyait via « Devenir partenaire », mais l'intention n'était jamais consommée — « Continuer comme client » repassait par `/`, qui relisait la même intention et y renvoyait aussitôt. L'écran n'ayant ni onglets ni retour, la seule sortie était la déconnexion. (2) **Second `(tabs)` empilé à chaque connexion** : depuis que la connexion est *posée par-dessus* le catalogue, `replace('/(tabs)')` créait un `(tabs)` NEUF et laissait l'original dessous — le retour Android / le glissé iOS dévoilaient un deuxième navigateur d'onglets (et, si l'inscription avait été empilée, rouvraient la connexion). (3) **Fausse barre de recherche** sur l'écran d'atterrissage : `<View>` + `<Text>` déguisés en champ de saisie — remplacée par une **vraie recherche** (nom, cuisine, zone, types de plats ; insensible aux accents ; filtrage local, aucune requête de plus). (4) **Trois `<Pressable>` sans gestionnaire** : cœur « favori » de la fiche restaurant retiré (pas de favoris au MVP), lignes « Aide & contact » des deux Profils branchées sur la page d'assistance en ligne. (5) **`/login-phone` court-circuitait l'écran du NOM** : `session.phone` retombe sur le numéro d'authentification, donc toujours renseigné pour un compte WhatsApp — le compte entrait sans nom et restait « Client » sur la commande. (6) **`/checkout` sans garde** : `taxifood:///checkout` ouvrait le paiement à un visiteur ; second verrou posé. Plus deux durcissements : hydratations session/panier en `try/finally` + délai maximal de 8 s sur le splash (une app figée au lancement = rejet 2.1), et liste **fermée et typée** des retours possibles (`RETOURS` dans `store/authIntent.ts`) — renommer une route casse désormais le build au lieu du parcours. | `tsc --noEmit` ✅ · `expo export -p web` ✅ · parité des 3 fichiers de langue ✅ (274 clés) · **navigateur** : recherche « crepe » → La Cabane (accents ignorés), croix d'effacement, compteur cohérent ; fiche menu sans cœur mort ; Profil visiteur « Aide & contact » exposé en lien ; `taxifood:///checkout` → connexion puis croix → catalogue · **preuves hors interface** (parcours connectés impossibles à piloter sans identifiants) : la boucle `/role-select` est reproduite puis résolue en rejouant la vraie fonction `destination()` extraite de `app/index.tsx` sur six scénarios ; la duplication de `(tabs)` est reproduite puis résolue contre le réducteur `StackRouter` d'expo-router 57 lui-même |
+
+Recette restante, à passer sur appareil réel avant l'envoi :
+
+1. Connexion avec un compte Google existant depuis « Commander » → on doit arriver sur
+   **`/address`**, panier intact (et pas sur l'accueil).
+2. Compte SMS **neuf** (sans nom, sans téléphone) depuis « Commander » → nom → téléphone →
+   **`/address`**. C'est le cas le plus dur : l'intention de retour doit traverser les deux
+   écrans intermédiaires.
+3. Profil connecté → « Modifier » le téléphone → enregistrer → retour aux **onglets**
+   (et surtout pas `/address`).
+4. Comptes pro : restaurant, livreur, et multi-rôle avec mode persisté → espaces inchangés.
+5. Déconnexion depuis le Profil → l'accueil reste parcourable (plus de mur de connexion).
+6. **Après connexion, appuyer sur RETOUR** (bouton Android, glissé iOS) : l'app doit se
+   fermer, et surtout pas dévoiler un second jeu d'onglets ni rouvrir la connexion. À
+   refaire après un cycle déconnexion / reconnexion, c'est là que les copies s'empilaient.
+7. Profil visiteur → « Devenir partenaire » → se connecter avec un compte **client simple** →
+   « Continuer comme client » : on doit sortir sur les onglets. C'était la boucle sans issue.
+8. Compte multi-rôle **avec un panier en cours** : « Commander » → connexion → sélection de
+   rôle → « Continuer comme client » → on doit atterrir sur **`/address`**, pas sur l'accueil.
+
+⚠️ Piège connu, à ne pas « nettoyer » : `app/index.tsx` lit l'intention de retour **une
+seule fois** (`useState(() => …)`), ne navigue **qu'une fois** (`navigated`), et n'efface
+l'intention que lorsqu'elle SERT de destination (`href === intent`). Rendre cette lecture
+réactive, effacer plus tôt, ou effacer sur une simple liste d'écrans « de transit » : les
+trois ont déjà cassé le parcours (le dernier a produit la boucle `/role-select`).
+
+⚠️ Piège connu : ne pas remettre `router.replace('/(tabs)')` là où le code appelle
+`retourOnglets()` (`lib/nav.ts`). `(tabs)` est la RACINE de la pile depuis l'ouverture du
+catalogue ; un `replace` en pose une seconde copie au lieu de revenir à la première.
+
+⚠️ Reste connu, volontairement NON corrigé : les gardes de `(restaurant)/_layout.tsx` et
+`(livreur)/_layout.tsx` sortent par `<Redirect href="/(tabs)" />`, donc par un `replace` —
+elles peuvent encore laisser un `(tabs)` de trop. Le cas est étroit (un rôle pro retiré
+pendant qu'on est DANS l'espace pro) et ces deux gardes ont déjà produit un
+« Maximum update depth exceeded » quand on y a touché : à ne reprendre que manette en main,
+avec un compte pro pour vérifier.
+
+⚠️ Piège rencontré et corrigé : dans `(restaurant)/_layout.tsx` et `(livreur)/_layout.tsx`,
+la garde sort vers `/(tabs)` et **non** vers `/`. Depuis l'intérieur d'un groupe, `/` se
+résout sur l'`index` de ce même groupe : la garde se redéclenchait à l'infini
+(« Maximum update depth exceeded », reproduit puis corrigé).
 
 ⚠️ Voir [SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) et [FICHE-APP-STORE.md](FICHE-APP-STORE.md)
 pour la suite : choisir ce build dans App Store Connect, remplir la fiche, App Privacy et le

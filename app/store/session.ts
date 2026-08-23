@@ -62,17 +62,30 @@ export const useSession = create<SessionState>((set) => ({
   session: null,
   loading: true,
   mode: null,
+  // ⚠️ `loading: false` est posé dans un `finally`, jamais sur le seul chemin heureux.
+  // C'est lui qui lève le splash de `app/_layout.tsx` : si `getSession()` échoue — jeton
+  // illisible, stockage local en erreur, réseau coupé au mauvais moment — l'app resterait
+  // sinon indéfiniment sur son logo. Une app figée au lancement est un motif de rejet
+  // Apple (règle 2.1). Sans session on repart en visiteur, et le catalogue est libre.
   hydrate: async () => {
-    const [session, mode] = await Promise.all([
-      auth.getSession(),
-      AsyncStorage.getItem(MODE_KEY),
-    ]);
-    set({ session, mode: (mode as AppMode | null) ?? null, loading: false });
-    // Sur web, le retour de la redirection OAuth établit la session au chargement :
-    // on la propage ici (sinon l'écran reste bloqué sur le login).
-    if (!authSubscribed) {
-      authSubscribed = true;
-      auth.onAuthChange((s) => set({ session: s, loading: false }));
+    try {
+      const [session, mode] = await Promise.all([
+        auth.getSession(),
+        AsyncStorage.getItem(MODE_KEY),
+      ]);
+      set({ session, mode: (mode as AppMode | null) ?? null });
+    } catch (e) {
+      console.warn('[session] hydratation impossible', e);
+      set({ session: null, mode: null });
+    } finally {
+      set({ loading: false });
+      // Sur web, le retour de la redirection OAuth établit la session au chargement :
+      // on la propage ici (sinon l'écran reste bloqué sur le login). L'abonnement est
+      // aussi le rattrapage d'une hydratation ratée : la session arrivera par là.
+      if (!authSubscribed) {
+        authSubscribed = true;
+        auth.onAuthChange((s) => set({ session: s, loading: false }));
+      }
     }
   },
   refresh: async () => {

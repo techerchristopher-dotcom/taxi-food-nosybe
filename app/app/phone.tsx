@@ -16,6 +16,8 @@ import { Button } from '../components/Button';
 import { PhoneField } from '../components/PhoneField';
 import { colors, fonts, radius } from '../theme/tokens';
 import { useSession } from '../store/session';
+import { useAuthIntent } from '../store/authIntent';
+import { retourOnglets } from '../lib/nav';
 import { PhoneAlreadyUsedError } from '../lib/auth';
 import { Country, DEFAULT_COUNTRY, isValidNumber, toE164 } from '../data/countries';
 
@@ -26,6 +28,7 @@ export default function PhoneScreen() {
   const { t } = useTranslation();
   const session = useSession((s) => s.session);
   const setPhone = useSession((s) => s.setPhone);
+  const intent = useAuthIntent((s) => s.intent);
   const [digits, setDigits] = useState('');
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +44,17 @@ export default function PhoneScreen() {
     try {
       // Stocké en E.164 : même format que le numéro d'authentification, donc comparable.
       await setPhone(toE164(country, digits));
-      router.replace('/(tabs)');
+      // Repasser par l'aiguillage UNIQUEMENT s'il y a un retour à honorer : c'est lui qui
+      // renvoie dans le tunnel de commande un compte neuf qui vient de se créer.
+      // Sans intention on garde `/(tabs)` — cet écran sert aussi à MODIFIER son numéro
+      // depuis le Profil, et un compte multi-rôle en mode « restaurant » serait sinon
+      // éjecté vers son espace pro au lieu de revenir aux onglets client.
+      //
+      // `retourOnglets` et non `replace` : cet écran est EMPILÉ par-dessus les onglets, un
+      // `replace` en poserait donc une seconde copie au lieu de revenir à la première
+      // (voir `lib/nav.ts`).
+      if (intent) router.replace('/');
+      else retourOnglets(router, '/(tabs)');
     } catch (e: unknown) {
       // Le numéro est unique en base : s'il est déjà pris, on le dit au lieu de laisser
       // l'écran figé sur une erreur silencieuse.

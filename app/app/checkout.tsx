@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
@@ -13,6 +13,8 @@ import { createOrder, listAddresses } from '../data/api';
 import { useLoad } from '../lib/useLoad';
 import { lineUnitPrice, useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
+import { useSession } from '../store/session';
+import { useAuthIntent } from '../store/authIntent';
 
 const METHODS: { key: PaymentMethod; icon: string; iconColor: string; subKey: string }[] = [
   { key: 'cb', icon: 'credit_card', iconColor: colors.textDark, subKey: 'checkout.cbSub' },
@@ -20,8 +22,46 @@ const METHODS: { key: PaymentMethod; icon: string; iconColor: string; subKey: st
   { key: 'orange_money', icon: 'smartphone', iconColor: colors.secondary, subKey: 'checkout.orangeSub' },
 ];
 
-/** Écran 07 — Validation de la commande (récap + choix du paiement). */
+/**
+ * GARDE DU TUNNEL DE COMMANDE, second verrou.
+ *
+ * `app/address.tsx` porte le verrou principal et prétendait couvrir « tout chemin vers le
+ * paiement, lien profond compris ». C'était faux : le schéma `taxifood` est déclaré et
+ * expo-router expose chaque fichier de route, donc `taxifood:///checkout` ouvrait le
+ * récapitulatif, le choix du paiement et le bouton « Valider » à quelqu'un sans compte.
+ * Le dégât restait contenu (`useCheckout` vit en mémoire : `addressId` vaut null au
+ * démarrage à froid, et `validate()` s'arrêtait sur « adresse manquante »), mais le message
+ * parlait d'adresse là où il fallait proposer un compte.
+ *
+ * Deux cas, deux sorties :
+ *  - pas de compte → connexion, avec `/address` en retour (l'écran qui vient juste avant) ;
+ *  - compte mais aucune adresse choisie → `/address`, qui est précisément l'étape sautée.
+ *
+ * Composant séparé, comme dans `address.tsx` : les hooks du récapitulatif — dont
+ * `useLoad(listAddresses)` — n'ont pas à s'exécuter pour quelqu'un qu'on redirige.
+ */
 export default function CheckoutScreen() {
+  const router = useRouter();
+  const session = useSession((s) => s.session);
+  const addressId = useCheckout((s) => s.addressId);
+
+  useEffect(() => {
+    if (!session) {
+      useAuthIntent.getState().set('/address');
+      router.replace('/login');
+      return;
+    }
+    if (!addressId) router.replace('/address');
+  }, [session, addressId, router]);
+
+  // Le temps de la bascule : fond neutre, pas de spinner — il laisserait croire à un
+  // chargement alors qu'on quitte l'écran.
+  if (!session || !addressId) return <View style={styles.container} />;
+  return <CheckoutForm />;
+}
+
+/** Écran 07 — Validation de la commande (récap + choix du paiement). */
+function CheckoutForm() {
   const router = useRouter();
   const { t } = useTranslation();
 

@@ -69,7 +69,16 @@ export default function LoginPhoneScreen() {
       // on entre directement dans l'app, sans repasser par la création de profil.
       // Sinon `/` aiguille vers la suite de l'inscription.
       const session = await verifyPhoneOtp(fullPhone, otp.trim());
-      if (session) router.replace(session.phone ? '/(tabs)' : '/');
+      // TOUJOURS par l'aiguillage : lui seul sait dans quel ordre viennent le nom, le
+      // téléphone, la sélection de rôle et le retour en attente.
+      //
+      // ⚠️ Le raccourci précédent (`session.phone ? '/(tabs)' : '/'`) sautait l'écran du
+      // NOM. `session.phone` retombe sur le numéro d'AUTHENTIFICATION (`lib/auth.ts`), il
+      // est donc toujours renseigné pour un compte créé par WhatsApp — dès la toute
+      // première connexion, alors que `hasName` est faux. Le compte entrait dans l'app sans
+      // jamais donner son nom et restait affiché « Client » sur la commande que voient le
+      // restaurant et le livreur.
+      if (session) router.replace('/');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t('phone.otpFailed'));
     } finally {

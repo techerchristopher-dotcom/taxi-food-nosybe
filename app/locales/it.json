@@ -44,7 +44,9 @@
     "noAccount": "Non hai ancora un account?",
     "createAccount": "Crea un account via e-mail",
     "facebookNotConfigured": "Accesso con Facebook non ancora configurato (EXPO_PUBLIC_FACEBOOK_APP_ID assente da app/.env, e provider Facebook da attivare su Supabase).",
-    "actionHint": "Accedi o crea il tuo account in un tap"
+    "actionHint": "Accedi o crea il tuo account in un tap",
+    "close": "Chiudi",
+    "pitchOrder": "Manca solo un passo alla consegna. Il carrello resta salvato — l'account serve per trovarti e tenerti aggiornato."
   },
   "phone": {
     "countryLabel": "Prefisso del paese",
@@ -101,7 +103,12 @@
     "filterAll": "Tutti",
     "openCount_one": "{{count}} ristorante aperto",
     "openCount_other": "{{count}} ristoranti aperti",
-    "emptyFilter": "Nessun ristorante per questo filtro."
+    "emptyFilter": "Nessun ristorante per questo filtro.",
+    "guestZone": "Tutta l'isola di Nosy Be",
+    "guestBanner": "Sfoglia liberamente i ristoranti. L'account è richiesto solo al momento dell'ordine, per sapere dove consegnare e avvisarti.",
+    "guestBannerCta": "Crea un account o accedi",
+    "emptySearch": "Nessun ristorante corrisponde a «{{query}}».",
+    "searchClear": "Cancella la ricerca"
   },
   "restaurantCard": {
     "popular": "Popolare",
@@ -205,7 +212,11 @@
     "emptyAction": "Ordina adesso",
     "previously": "In precedenza",
     "track": "Segui",
-    "reorder": "Riordina"
+    "reorder": "Riordina",
+    "guestTitle": "Segui la tua consegna",
+    "guestText": "Con un account vedi minuto per minuto a che punto è il tuo ordine, ritrovi quelli passati e li riordini con un tocco.",
+    "guestAction": "Crea un account o accedi",
+    "guestHint": "Sfogliare i ristoranti non richiede alcun account."
   },
   "tracking": {
     "notFound": "Ordine non trovato.",
@@ -262,7 +273,15 @@
     "deleteBody": "Il tuo profilo, i tuoi indirizzi e i tuoi dispositivi saranno cancellati definitivamente. È irreversibile. I tuoi ordini passati restano in forma anonima, per la contabilità dei ristoranti.",
     "deleteConfirm": "Elimina",
     "deleteFailedTitle": "Eliminazione impossibile",
-    "deleteFailed": "Impossibile eliminare l’account in questo momento."
+    "deleteFailed": "Impossibile eliminare l’account in questo momento.",
+    "guestTitle": "Benvenuto",
+    "guestSubtitle": "Non hai effettuato l'accesso",
+    "whyTitle": "Cosa ti dà l'account",
+    "whyTracking": "Seguire il rider in diretta fino alla tua porta",
+    "whyAddress": "Salvare i tuoi indirizzi: il prossimo ordine richiede dieci secondi",
+    "whyHistory": "Ritrovare i tuoi ordini e riordinarli con un tocco",
+    "guestAction": "Crea un account o accedi",
+    "guestHint": "Puoi sfogliare i ristoranti e riempire il carrello senza account. Viene chiesto solo al momento dell'ordine."
   },
   "authEmail": {
     "signInTitle": "Accedi\ncon e-mail",

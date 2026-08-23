@@ -44,7 +44,9 @@
     "noAccount": "Don't have an account?",
     "createAccount": "Create an account by email",
     "facebookNotConfigured": "Facebook sign-in isn't configured yet (EXPO_PUBLIC_FACEBOOK_APP_ID missing from app/.env, and the Facebook provider must be enabled in Supabase).",
-    "actionHint": "Sign in or create your account in one tap"
+    "actionHint": "Sign in or create your account in one tap",
+    "close": "Close",
+    "pitchOrder": "One step left before delivery. Your cart is saved — the account is how we find you and keep you posted."
   },
   "phone": {
     "countryLabel": "Country code",
@@ -101,7 +103,12 @@
     "filterAll": "All",
     "openCount_one": "{{count}} restaurant open",
     "openCount_other": "{{count}} restaurants open",
-    "emptyFilter": "No restaurant matches this filter."
+    "emptyFilter": "No restaurant matches this filter.",
+    "guestZone": "All over Nosy Be",
+    "guestBanner": "Browse the restaurants freely. An account is only asked when you order, so we know where to deliver and can keep you posted.",
+    "guestBannerCta": "Create an account or sign in",
+    "emptySearch": "No restaurant matches “{{query}}”.",
+    "searchClear": "Clear search"
   },
   "restaurantCard": {
     "popular": "Popular",
@@ -205,7 +212,11 @@
     "emptyAction": "Order now",
     "previously": "Earlier",
     "track": "Track",
-    "reorder": "Order again"
+    "reorder": "Order again",
+    "guestTitle": "Track your delivery",
+    "guestText": "With an account you see minute by minute where your order is, find your past ones and re-order them in one tap.",
+    "guestAction": "Create an account or sign in",
+    "guestHint": "Browsing restaurants needs no account."
   },
   "tracking": {
     "notFound": "Order not found.",
@@ -262,7 +273,15 @@
     "deleteBody": "Your profile, addresses and devices will be permanently erased. This cannot be undone. Your past orders are kept anonymously, for the restaurants’ accounting.",
     "deleteConfirm": "Delete",
     "deleteFailedTitle": "Cannot delete",
-    "deleteFailed": "Could not delete the account right now."
+    "deleteFailed": "Could not delete the account right now.",
+    "guestTitle": "Welcome",
+    "guestSubtitle": "You are not signed in",
+    "whyTitle": "What an account gets you",
+    "whyTracking": "Follow your courier live, all the way to your door",
+    "whyAddress": "Save your addresses: your next order takes ten seconds",
+    "whyHistory": "Find your past orders and re-order them in one tap",
+    "guestAction": "Create an account or sign in",
+    "guestHint": "You can browse the restaurants and fill your cart without an account. It is only asked when you order."
   },
   "authEmail": {
     "signInTitle": "Sign in\nwith email",

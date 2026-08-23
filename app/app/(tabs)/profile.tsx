@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
@@ -10,10 +10,25 @@ import { colors, fonts, radius, shadow, spacing } from '../../theme/tokens';
 import { listAddresses } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { signInFor } from '../../store/authIntent';
+import { SUPPORT_URL } from '../../lib/links';
 import { LANGUAGES, LanguageCode, setLanguage } from '../../lib/i18n';
 
-/** Écran 11 — Profil. */
+/**
+ * Écran 11 — Profil : compte connecté, ou porte d'entrée pour un visiteur.
+ *
+ * Deux composants distincts, et non un écran unique en `session?.` : le profil connecté
+ * a des replis (« Client », initiales « ·· », téléphone « — ») qui fabriqueraient une
+ * fausse identité pour quelqu'un qui n'a pas de compte, et des actions qui n'ont aucun
+ * sens sans compte (se déconnecter, supprimer son compte, modifier son numéro).
+ */
 export default function ProfileScreen() {
+  const session = useSession((s) => s.session);
+  return session ? <AccountProfile /> : <GuestProfile />;
+}
+
+/** Profil d'un compte connecté. */
+function AccountProfile() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
@@ -29,9 +44,12 @@ export default function ProfileScreen() {
   const phone = session?.phone ?? '—';
   const initials = session?.initials ?? '··';
 
+  // L'app reste parcourable sans compte : après déconnexion on rend le CATALOGUE, pas un
+  // écran de connexion dont on ne pourrait plus sortir. Sinon on recrée exactement le mur
+  // qu'Apple reproche (règle 5.1.1(v)).
   async function handleSignOut() {
     await signOut();
-    router.replace('/login');
+    router.replace('/(tabs)');
   }
 
   // Double confirmation : c'est irréversible et Apple exige que ce soit clair. Le second
@@ -48,7 +66,8 @@ export default function ProfileScreen() {
             setDeleting(true);
             try {
               await deleteAccount();
-              router.replace('/login');
+              // Même raison que la déconnexion : le catalogue reste ouvert à tous.
+              router.replace('/(tabs)');
             } catch (e: unknown) {
               Alert.alert(
                 t('profile.deleteFailedTitle'),
@@ -146,11 +165,7 @@ export default function ProfileScreen() {
               thumbColor={colors.white}
             />
           </View>
-          <Pressable style={styles.line}>
-            <Icon name="help" size={22} color={colors.textDark} />
-            <Text style={styles.settingLabel}>{t('profile.help')}</Text>
-            <Icon name="chevron_right" size={20} color={colors.textFaint} />
-          </Pressable>
+          <HelpLine />
         </Card>
 
         <View style={styles.sectionHead}>
@@ -198,6 +213,137 @@ export default function ProfileScreen() {
 
         <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * Profil d'un visiteur non connecté — la porte d'entrée principale vers le compte, celle
+ * que cherche un relecteur Apple qui se demande « comment je crée un compte ? ».
+ *
+ * ⚠️ Aucune identité factice : pas d'initiales inventées, pas de « Client » en gros.
+ * Ce que l'écran montre, c'est CE QUE LE COMPTE APPORTE, et les réglages qui n'en
+ * dépendent pas (langue, aide) restent utilisables tels quels. Ni « Se déconnecter » ni
+ * « Supprimer mon compte » : il n'y a rien à déconnecter ni à supprimer.
+ */
+function GuestProfile() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.primary, colors.secondary]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
+      >
+        <View style={styles.profileRow}>
+          <View style={styles.avatar}>
+            <Icon name="person" size={30} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{t('profile.guestTitle')}</Text>
+            <Text style={styles.email}>{t('profile.guestSubtitle')}</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        <Card style={{ padding: 18 }}>
+          <Text style={styles.whyTitle}>{t('profile.whyTitle')}</Text>
+          <Benefit icon="local_shipping" text={t('profile.whyTracking')} />
+          <Benefit icon="location_on" text={t('profile.whyAddress')} />
+          <Benefit icon="replay" text={t('profile.whyHistory')} />
+          <Pressable style={styles.signInBtn} onPress={() => signInFor(router, '/(tabs)/profile')}>
+            <Text style={styles.signInText}>{t('profile.guestAction')}</Text>
+          </Pressable>
+          {/* Dire explicitement où passe la frontière entre le libre et le compte. */}
+          <Text style={styles.guestHint}>{t('profile.guestHint')}</Text>
+        </Card>
+
+        {/* Aide : aucun compte requis, bloc repris tel quel du profil connecté. */}
+        <Card style={{ padding: 0, overflow: 'hidden', marginTop: 20 }}>
+          <HelpLine />
+        </Card>
+
+        {/* Langue : stockée localement (`lib/i18n.ts`), sans aucun lien avec le compte. */}
+        <View style={styles.sectionHead}>
+          <SectionLabel>{t('profile.language')}</SectionLabel>
+        </View>
+        <View style={styles.langRow}>
+          {LANGUAGES.map((l) => {
+            const active = i18n.language === l.code;
+            return (
+              <Pressable
+                key={l.code}
+                style={[styles.langChip, active && styles.langChipActive]}
+                onPress={() => void setLanguage(l.code as LanguageCode)}
+              >
+                <Text style={styles.langFlag}>{l.flag}</Text>
+                <Text style={[styles.langLabel, active && styles.langLabelActive]}>{l.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* `/role-select` fait `if (!session) return <Redirect href="/" />` : y envoyer un
+            visiteur le renverrait aussitôt. On passe donc par la connexion, avec la
+            sélection de rôle comme destination de retour. */}
+        <Pressable style={styles.partner} onPress={() => signInFor(router, '/role-select')}>
+          <Icon name="storefront" size={22} color={colors.secondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.partnerLabel}>{t('profile.partnerLabel')}</Text>
+            <Text style={styles.partnerSub}>{t('profile.partnerSub')}</Text>
+          </View>
+          <Icon name="chevron_right" size={20} color={colors.textFaint} />
+        </Pressable>
+
+        <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * Ligne « Aide & contact », partagée par les deux profils.
+ *
+ * La page d'assistance est EN LIGNE (c'est l'adresse déclarée dans la fiche App Store).
+ * Cette ligne s'affichait pourtant avec son chevron et SANS gestionnaire : un bouton qui
+ * ne fait rien, exactement le motif de rejet (règle 2.1) qui a déjà fait retirer
+ * « Ajouter » et « … » de cet écran. Sur le profil VISITEUR, c'était même le seul contenu
+ * à côté du bouton de connexion — donc la première chose que touche un relecteur venu
+ * chercher le support et la création de compte.
+ *
+ * `open_in_new` et non `chevron_right` : la page s'ouvre dans le navigateur, pas dans
+ * l'app. L'icône doit le dire avant le tap, pas après.
+ */
+function HelpLine() {
+  const { t } = useTranslation();
+  return (
+    <Pressable
+      style={styles.line}
+      accessibilityRole="link"
+      onPress={() => {
+        // Un `openURL` peut être refusé (aucun navigateur, gestion d'URL désactivée) :
+        // on ne laisse pas remonter un rejet non intercepté pour une page d'aide.
+        Linking.openURL(SUPPORT_URL).catch((e) => console.warn('[profil] aide', e));
+      }}
+    >
+      <Icon name="help" size={22} color={colors.textDark} />
+      <Text style={styles.settingLabel}>{t('profile.help')}</Text>
+      <Icon name="open_in_new" size={20} color={colors.textFaint} />
+    </Pressable>
+  );
+}
+
+/** Une ligne « ce que le compte apporte ». */
+function Benefit({ icon, text }: { icon: string; text: string }) {
+  return (
+    <View style={styles.benefit}>
+      <Icon name={icon} size={20} color={colors.primary} />
+      <Text style={styles.benefitText}>{text}</Text>
     </View>
   );
 }
@@ -285,6 +431,27 @@ const styles = StyleSheet.create({
   langFlag: { fontSize: 22 },
   langLabel: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
   langLabelActive: { fontFamily: fonts.bold, color: colors.primary },
+  // ===== Profil visiteur =====
+  whyTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginBottom: 14 },
+  benefit: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginBottom: 12 },
+  benefitText: { flex: 1, fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textDark },
+  signInBtn: {
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  signInText: { fontFamily: fonts.bold, fontSize: 15, color: colors.white },
+  guestHint: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 12,
+  },
   partnerLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   partnerSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   version: {

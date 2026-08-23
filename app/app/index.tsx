@@ -41,6 +41,21 @@ function destination(session: Session | null, mode: AppMode | null, intent: stri
     if (!session.phone) return '/phone';
     return intent ?? '/(tabs)';
   }
+
+  // Un seul rôle possible → rien à demander. Un compte purement professionnel (employé de
+  // restaurant, livreur) n'a pas de rôle client : lui poser « comment veux-tu utiliser
+  // Taxi Food ? » à chaque nouvel appareil n'a pas de sens, et la carte la plus mise en
+  // avant de cet écran est justement « Je commande » — on l'envoyait donc du mauvais côté.
+  // C'est aussi ce qui aurait fait échouer la revue Apple : le relecteur connecté avec le
+  // compte restaurant de démonstration serait tombé sur ce choix et aurait pu conclure,
+  // une seconde fois, qu'il n'accède pas à l'espace restaurant.
+  // On sort par le bouton `swap_horiz` de l'en-tête, présent sur tous les écrans pro.
+  const clientActif = session.roles.some((r) => r.role === 'client' && r.status === 'active');
+  if (!clientActif) {
+    if (activeRestaurant && !activeCourier) return '/(restaurant)';
+    if (activeCourier && !activeRestaurant) return '/(livreur)';
+  }
+
   return '/role-select';
 }
 

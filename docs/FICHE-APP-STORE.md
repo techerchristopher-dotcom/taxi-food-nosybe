@@ -134,18 +134,42 @@ horreur, langage grossier, contenu web non filtré) → **Aucun**.
 
 ---
 
-## 4. Compte de démonstration et notes pour le relecteur
+## 4. Comptes de démonstration et notes pour le relecteur
 
-### ✅ Le compte est créé (2026-08-19)
+### ✅ Trois comptes, un par rôle (2026-08-23)
 
-```
-E-mail        : demo.apple@taxifood.mg
-Mot de passe  : TaxiFoodDemo2026
-```
+⚠️ **Il en fallait trois, et c'est ce qui a causé le second rejet.** Le 23/08, Apple a
+répondu *« we cannot access the "Restaurant" and "Courier" accounts »* (guideline 2.1(a)) :
+un seul compte client avait été fourni, et les notes disaient que les espaces pro ne
+faisaient pas partie du parcours à tester. Apple ne l'entend pas ainsi — **le relecteur veut
+pouvoir vérifier CHAQUE type de compte**. Il avait d'ailleurs demandé le rôle restaurant
+depuis l'app, qui le laisse en `pending` jusqu'à validation manuelle : il est resté bloqué là.
 
-Prêt à l'emploi, avec nom, téléphone **et une adresse de livraison déjà géolocalisée**
-(Hell-Ville, en face du marché couvert) — sans adresse, le relecteur ne pourrait pas valider
-de commande et conclurait que l'app est cassée.
+| Rôle | E-mail | Ce qu'il voit |
+|---|---|---|
+| Client | `demo.apple@taxifood.mg` | parcours de commande, adresse déjà géolocalisée |
+| Restaurant | `demo.resto@taxifood.mg` | espace restaurant de **Taxi Be**, 3 commandes en 3 états |
+| Livreur | `demo.livreur@taxifood.mg` | 3 courses disponibles à prendre |
+
+Mot de passe commun : `TaxiFoodDemo2026`.
+
+**Pourquoi Taxi Be pour le compte restaurant** : c'est le seul des trois restaurants avec
+**zéro commande réelle**, et il a un vrai menu. Le relecteur voit donc une interface
+authentique et peut accepter, préparer et clôturer des commandes **sans jamais toucher aux
+données de La Cabane ni d'Angelo**.
+
+Trois commandes de démonstration ont été créées chez Taxi Be, réparties sur **reçue /
+confirmée / en préparation**, pour que le cycle complet soit exerçable dès la connexion.
+Un espace vide aurait conduit au même rejet une seconde fois.
+
+Le compte client est prêt à l'emploi, avec nom, téléphone **et une adresse de livraison déjà
+géolocalisée** (Hell-Ville, en face du marché couvert) — sans adresse, le relecteur ne
+pourrait pas valider de commande et conclurait que l'app est cassée.
+
+**Les trois connexions sont vérifiées par l'API d'authentification**, pas déduites du code :
+jeton obtenu pour chacun, puis lecture sous RLS confirmant que `demo.resto` est bien rattaché
+à Taxi Be (`current_restaurant_id()`) et que `demo.livreur` est bien livreur actif
+(`is_active_courier()` → true).
 
 **Vérifié pour de vrai**, pas supposé : connexion testée via l'API d'authentification (jeton
 obtenu), puis lecture du catalogue et de l'adresse **sous les droits du compte** (RLS active)
@@ -164,42 +188,74 @@ relecteur n'en a pas besoin.
 
 ### Notes à coller dans « App Review Information »
 
+⚠️ Réécrites le 2026-08-23 après le second rejet. Deux changements de fond : les **trois**
+comptes sont donnés (et non le seul compte client), et la phrase qui disait que les espaces
+pro « ne font pas partie du parcours à tester » a disparu — c'est précisément elle qui a
+déclenché le rejet 2.1(a). On indique désormais explicitement comment y entrer.
+
 ```
-L'application est une plateforme de livraison de repas opérant à Nosy Be (Madagascar).
+Taxi Food is a food delivery platform operating in Nosy Be, Madagascar.
 
-COMPTE DE DÉMONSTRATION
-E-mail : demo.apple@taxifood.mg
-Mot de passe : TaxiFoodDemo2026
+WHAT CHANGED SINCE THE LAST REVIEW
+1. Guideline 5.1.1(v) — browsing no longer requires an account. The app now opens directly
+   on the restaurant list. Browsing restaurants, menus and dish details, and filling the
+   cart, all work with no account at all. Signing in is requested only when placing an
+   order, which is an account-based feature.
+2. Guideline 2.1(a) — demo accounts are now provided for all three account types, below.
 
-Ce compte est un compte client, avec une adresse de livraison déjà enregistrée.
+DEMO ACCOUNTS — password is the same for all three: TaxiFoodDemo2026
 
-PARCOURS À TESTER
-1. Se connecter avec le compte ci-dessus (bouton « E-mail »).
-2. Choisir un restaurant sur l'écran d'accueil.
-3. Ouvrir un plat à composer (par exemple un tacos) pour voir la sélection des viandes,
-   sauces et suppléments, avec le prix mis à jour en direct.
-4. Ajouter au panier, puis valider la commande depuis le panier.
-5. L'écran de suivi affiche l'état de la commande.
+  Customer     demo.apple@taxifood.mg
+  Restaurant   demo.resto@taxifood.mg
+  Courier      demo.livreur@taxifood.mg
 
-À PROPOS DE LA LOCALISATION
-L'autorisation de localisation est demandée uniquement lors de l'enregistrement d'une adresse
-de livraison. Nosy Be n'a pas d'adressage postal fiable : les coordonnées GPS sont
-indispensables pour que le livreur trouve le client. La position n'est jamais captée en
-arrière-plan ni lorsque l'application est fermée. Le compte de démonstration a déjà une
-adresse enregistrée, cette étape peut donc être ignorée.
+To switch account: Profile tab > Sign out, then sign in with another one.
+All three sign in with the "E-mail" button on the sign-in screen.
 
-PAIEMENT
-Le paiement se fait en espèces au livreur, à la livraison. Aucune donnée bancaire n'est
-saisie ni conservée, et l'application ne propose aucun achat intégré : elle vend des biens
-physiques livrés (règle 3.1.1).
+BROWSING WITHOUT AN ACCOUNT (no sign-in needed)
+1. Open the app. You land on the restaurant list, not on a sign-in screen.
+2. Tap a restaurant to see its full menu with prices.
+3. Tap a dish (for example a tacos at La Cabane) to see the meat, sauce and topping
+   options, with the price updating live.
+4. Add it to the cart. The cart works without an account.
+5. Tap "Order". Only here are you asked to sign in, and you are returned to checkout
+   afterwards with the cart intact.
 
-SUPPRESSION DE COMPTE
-Accessible depuis l'application : onglet Profil, tout en bas, « Supprimer mon compte ».
+CUSTOMER ACCOUNT (demo.apple@taxifood.mg)
+This account already has a delivery address saved with GPS coordinates, so you can complete
+an order without going through location capture.
 
-ESPACES PROFESSIONNELS
-L'application contient aussi des espaces restaurant et livreur, accessibles seulement aux
-comptes dont le rôle a été validé manuellement. Un compte client n'y a pas accès ; ils ne
-font pas partie du parcours à tester.
+RESTAURANT ACCOUNT (demo.resto@taxifood.mg)
+Signs in to the restaurant space of "Taxi Be". Three demo orders are waiting, one in each
+state, so the full cycle can be exercised:
+  - one "Received"     -> you can Accept or Decline it
+  - one "Confirmed"    -> you can start preparation
+  - one "In preparation" -> you can mark it ready
+This restaurant has no real customer orders, so nothing you do there affects live data.
+
+COURIER ACCOUNT (demo.livreur@taxifood.mg)
+Signs in to the courier space, with deliveries available to claim. You can take one, mark it
+picked up, then mark it delivered.
+
+ABOUT LOCATION
+Location permission is requested only when saving a delivery address. Nosy Be has no
+reliable street addressing, so GPS coordinates are what allows the courier to find the
+customer. Location is never captured in the background or while the app is closed. The
+customer demo account already has an address saved, so this step can be skipped.
+
+PAYMENT
+Payment is cash on delivery, to the courier. No banking details are entered or stored, and
+the app offers no in-app purchase: it sells physical goods that are delivered (guideline
+3.1.1).
+
+ACCOUNT DELETION
+In the app: Profile tab, at the bottom, "Delete my account".
+
+EXTERNAL SERVICES
+Supabase (database, authentication, storage), Sign in with Apple / Google Sign-In / Facebook
+Login for authentication, Expo Push Notifications (relaying to APNs) for order updates,
+Apple MapKit for the address map. No AI services, no payment processor, no analytics or
+advertising SDK.
 ```
 
 ⚠️ **Pendant toute la durée de la revue**, quelqu'un doit pouvoir traiter une commande qui

@@ -257,13 +257,17 @@
            reaffecter video.src ne fait rien de fiable et le changement de
            langue echoue sans erreur. */
         v.src = srcUrl(film, etat.loc);
-        /* Le film est en 9:16, la coque en 19.5:9 : il reste donc du vide en
+        /* Le rayon est repete SUR la video, pas seulement sur le cadre :
+           iOS Safari ne decoupe pas toujours une couche video composee avec
+           overflow:hidden + border-radius. Sans ca, la video ressort en coins
+           carres par-dessus la coque arrondie.
+           Le film est en 9:16, la coque en 19.5:9 : il reste donc du vide en
            haut et en bas. Sur du NOIR, ce vide se lit comme un defaut
            d'encodage. Sur le creme du film lui-meme (#F4F0ED, mesure sur les
            posters, a deux unites du fond du site), il se lit comme un
            cadrage : l'ecran parait afficher une appli claire qui joue une
            video. Meme raison pour la roue d'attente plus haut. */
-        v.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;background:#F4F0ED";
+        v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#F4F0ED;border-radius:34px";
         cadre.innerHTML = "";
         cadre.appendChild(v);
         etat.video = v;

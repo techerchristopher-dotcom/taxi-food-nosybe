@@ -17,21 +17,23 @@
   "use strict";
 
   var CSS =
-    /* L'etat occupe : le contenu s'efface (en fondu, les pastilles ayant
-       deja une transition sur la couleur) et une roue tourne au centre.
-       min-width/min-height sont figes a la volee pour que le bouton ne se
-       retracte pas quand son texte disparait. */
-    ".tf-occupe{position:relative!important;pointer-events:none!important;color:transparent!important}" +
-    ".tf-occupe>*{opacity:0!important}" +
-    ".tf-occupe::after{content:'';position:absolute;top:50%;left:50%;width:15px;height:15px;" +
-    "margin:-8px 0 0 -8px;border-radius:999px;border:2px solid rgba(26,26,26,.28);" +
-    "border-top-color:#C42419;animation:tf-tourne .62s linear infinite}" +
-    "@keyframes tf-tourne{to{transform:rotate(360deg)}}" +
-    /* Sur fond sombre ou colore, la roue passe en blanc. */
-    ".tf-occupe-clair::after{border-color:rgba(255,255,255,.35);border-top-color:#fff}" +
+    /* L'element clique GARDE son libelle. Le remplacer par une roue donne un
+       bouton vide avec un petit rond au milieu : sur mobile, ou les pastilles
+       sont larges et le texte sur deux lignes, ca ne se lit pas comme un
+       chargement mais comme un bug. Essaye le 2026-08-24, retire le meme jour.
+       On se contente donc d'estomper, et de laisser la barre du haut porter le
+       message — c'est ce que font les sites ou la navigation est fluide. */
+    ".tf-occupe{pointer-events:none!important;opacity:.45!important}" +
+    /* Un trait indetermine glisse sous la pastille : discret, mais il BOUGE,
+       et c'est le mouvement qui dit « en cours ». */
+    ".tf-occupe::after{content:'';position:absolute;left:10%;right:10%;bottom:5px;height:2px;" +
+    "border-radius:2px;background:currentColor;opacity:.5;" +
+    "animation:tf-glisse 1s ease-in-out infinite;transform-origin:left center}" +
+    "@keyframes tf-glisse{0%{transform:scaleX(0);opacity:.15}" +
+    "50%{transform:scaleX(1);opacity:.6}100%{transform:scaleX(0) translateX(100%);opacity:.15}}" +
     "#tf-barre{position:fixed;top:0;left:0;height:3px;width:0;background:#E8342A;z-index:9999;" +
     "pointer-events:none;transition:width .3s ease-out,opacity .3s;box-shadow:0 0 8px rgba(232,52,42,.6)}" +
-    "@media (prefers-reduced-motion:reduce){.tf-occupe::after{animation-duration:2s}" +
+    "@media (prefers-reduced-motion:reduce){.tf-occupe::after{animation:none;transform:scaleX(1)}" +
     "#tf-barre{transition:none}}";
 
   var style = document.createElement("style");
@@ -70,34 +72,19 @@
 
   /* ------------------------- L'element clique ------------------------- */
 
-  /* Un fond sombre ou sature demande une roue claire. On regarde la couleur
-     calculee plutot que de maintenir une liste de selecteurs. */
-  function fondSombre(el) {
-    var c = getComputedStyle(el).backgroundColor;
-    var m = c.match(/\d+/g);
-    if (!m || m.length < 3) return false;
-    if (m.length > 3 && parseFloat(m[3]) < 0.5) return false;
-    return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) < 150;
-  }
-
   function occuper(el) {
     if (!el || el.classList.contains("tf-occupe")) return;
-    /* On fige la taille : sans ca, un bouton dont le texte disparait se
-       retracte et la mise en page saute au pire moment. */
-    var r = el.getBoundingClientRect();
-    el.style.minWidth = Math.round(r.width) + "px";
-    el.style.minHeight = Math.round(r.height) + "px";
+    /* Le trait se place en absolu DANS le bouton : il lui faut un contexte de
+       positionnement. Les pastilles n'en ont pas toutes. */
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
     el.classList.add("tf-occupe");
-    if (fondSombre(el)) el.classList.add("tf-occupe-clair");
     el.setAttribute("aria-busy", "true");
   }
 
   function liberer(el) {
     if (!el) return;
-    el.classList.remove("tf-occupe", "tf-occupe-clair");
+    el.classList.remove("tf-occupe");
     el.removeAttribute("aria-busy");
-    el.style.minWidth = "";
-    el.style.minHeight = "";
   }
 
   function toutLiberer() {

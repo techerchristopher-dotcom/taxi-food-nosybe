@@ -58,6 +58,11 @@ OUT = {
     },
 }
 PUBLISHED = {"fr": "2026-08-21", "en": "2026-08-22", "it": "2026-08-22"}
+# Largeur declaree du badge Apple, en pixels : (hero, section sombre).
+# Elle DEPEND DE LA LANGUE — le badge francais est plus large (viewBox 126,5
+# contre 119,7) parce que « Telecharger dans » est plus long que « Download
+# on ». Une largeur unique decalerait la mise en page au chargement.
+APPLE_W = {"fr": ("139", "164"), "en": ("132", "156"), "it": ("132", "156")}
 MODIFIED = "2026-08-22"
 
 # Cles de i18n/fr.json qui ne sont PAS des segments de texte a chercher dans
@@ -69,6 +74,10 @@ SKIP_KEYS = {
     "schema.inLanguage",
     "client.seo.keywords",
     "resto.seo.keywords",
+    # Sert UNIQUEMENT au site.webmanifest (voir ecrire_manifestes) : elle n'a
+    # aucune raison d'apparaitre dans le HTML, et le controle ci-dessous la
+    # signalerait a tort.
+    "common.manifest.description",
     # Les trois accroches multilingues sont posees par le jeton {{@teasers}} :
     # chaque page affiche les deux AUTRES langues, pas la sienne.
     "client.signup.teaserFr",
@@ -190,6 +199,50 @@ def structural(html, page):
         1,
         "og:locale:alternate",
     )
+    # Badges des stores : le FICHIER et la LARGEUR dependent de la langue, mais
+    # ce ne sont pas des SEGMENTS DE TEXTE — le dictionnaire ne peut donc pas
+    # les traduire. Sans ces jetons, les pages EN et IT ressortaient avec le
+    # badge FRANCAIS et la largeur francaise, alors meme que le alt etait bien
+    # traduit. Constate le 2026-08-24 ; les six pages avaient ete corrigees a
+    # la main, et relancer ce script les recassait.
+    n_blanc = 1 if page == "client" else 0
+    html = swap(
+        html,
+        '/img/stores/apple-fr.svg',
+        '/img/stores/apple-{{@lang}}.svg',
+        1,
+        "badge Apple (fichier)",
+    )
+    html = swap(
+        html,
+        'width="139" height="44"',
+        'width="{{@appleW}}" height="44"',
+        1,
+        "badge Apple (largeur, hero)",
+    )
+    if n_blanc:
+        html = swap(
+            html,
+            '/img/stores/apple-fr-blanc.svg',
+            '/img/stores/apple-{{@lang}}-blanc.svg',
+            1,
+            "badge Apple blanc (fichier)",
+        )
+        html = swap(
+            html,
+            'width="164" height="52"',
+            'width="{{@appleWbig}}" height="52"',
+            1,
+            "badge Apple blanc (largeur, section sombre)",
+        )
+    html = swap(
+        html,
+        '/img/stores/play-fr.webp',
+        '/img/stores/play-{{@lang}}.webp',
+        2 if page == "client" else 1,
+        "badge Google Play (fichier)",
+    )
+
     html = swap(
         html,
         '<meta property="og:url" content="%s">' % fr_url,
@@ -338,6 +391,8 @@ def render(tpl, page, loc, d):
             "@manifestUrl": PATHS["manifeste"][loc],
             "@homeAbs": BASE + PATHS["client"][loc],
             "@published": PUBLISHED[loc],
+            "@appleW": APPLE_W[loc][0],
+            "@appleWbig": APPLE_W[loc][1],
             "@modified": MODIFIED,
             "@langNav": lang_nav(page, loc, d),
             "@teasers": teasers(loc, d),
@@ -424,6 +479,40 @@ def main():
 
     global OGL
     OGL = {l: dicts[l]["common.og.locale"] for l in LANGS}
+
+    # GARDE-FOU : toute cle doit se retrouver TELLE QUELLE dans l'une des deux
+    # pages francaises. Sans ce controle, une cle qui ne matche pas est
+    # silencieusement ignoree : le gabarit ne pose pas de jeton, et la page
+    # traduite ressort avec le texte FRANCAIS a cet endroit. Le controle de
+    # fuite de la fin ne le voit pas non plus, puisqu'il cherche exactement la
+    # meme chaine, avec le meme echec.
+    #
+    # C'est exactement ce qui est arrive au bloc fondateur et aux badges des
+    # stores : 15 cles sur 304 etaient invisibles (apostrophes ecrites &#x27;
+    # dans le HTML et ' dans le dictionnaire), les six pages ont donc ete
+    # corrigees a la main, et relancer ce script les recassait. Constate le
+    # 2026-08-24.
+    sources = {}
+    for page in ("client", "resto"):
+        with open(SRC[page], encoding="utf-8") as f:
+            sources[page] = f.read()
+    absentes = [
+        k
+        for k, v in a_traduire(dicts)
+        if not any(esc(v) in src for src in sources.values())
+    ]
+    if absentes:
+        raise SystemExit(
+            "STOP — %d cle(s) de i18n/fr.json ne se retrouvent dans AUCUNE des\n"
+            "deux pages sources. Elles ne seraient jamais traduites, et la page\n"
+            "produite garderait le francais a cet endroit :\n  %s\n\n"
+            "Causes habituelles : le HTML echappe un caractere que le\n"
+            "dictionnaire ecrit en clair (apostrophe, esperluette) ; la valeur\n"
+            "est coupee en deux par une balise inline (<a>, <strong>) et doit\n"
+            "etre scindee en deux cles ; ou la cle est morte et doit sortir des\n"
+            "trois dictionnaires."
+            % (len(absentes), "\n  ".join(absentes))
+        )
 
     written = []
     for page in ("client", "resto"):

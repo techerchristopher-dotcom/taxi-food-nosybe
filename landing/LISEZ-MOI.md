@@ -37,6 +37,38 @@ Sur une 3G lente à Nosy Be (~50 ko/s) : de près de 6 minutes à **environ 5 se
 
 ## 2. Comment modifier la page
 
+### ⚠️ Piège corrigé le 2026-08-24 : une clé qui ne matche pas est ignorée EN SILENCE
+
+Le générateur cherche la valeur de `i18n/fr.json` **littéralement** dans la page
+française. Si elle ne s'y trouve pas, il ne pose aucun jeton — et la page traduite
+ressort avec **le texte français** à cet endroit. Le contrôle de fuite ne le voyait
+pas non plus : il cherchait la même chaîne, avec le même échec.
+
+**15 clés sur 304 étaient dans ce cas** : tout le bloc fondateur, les deux textes de
+badge, et cinq autres. Les six pages avaient donc été corrigées à la main, et
+relancer `build-i18n.py` — la commande que ce document recommande — les recassait.
+
+Trois causes, toutes traitées :
+
+1. **L'apostrophe.** Le HTML source écrivait `l&#x27;App`, le dictionnaire `l'App`.
+   Les 27 occurrences ont été normalisées en apostrophe droite dans les deux pages
+   sources. **Ne jamais réintroduire `&#x27;`** : écrire `'` directement.
+2. **Une balise au milieu de la valeur.** `founder.*.p1` contenait le lien vers
+   Rentanoo ; la valeur pleine ne pouvait pas matcher. Scindée en `p1a` / `p1b`,
+   le lien restant dans le HTML.
+3. **Des clés mortes.** `resto.hero.imgAlt` et `resto.hero.imgCaption` ne
+   correspondaient plus à rien depuis que la vidéo a remplacé l'image du hero
+   restaurateur. Retirées des trois dictionnaires.
+
+Et **les badges des stores** posaient un problème distinct : le fichier
+(`apple-fr.svg`) et la largeur (139 px contre 132) dépendent de la langue sans être
+du texte. Ils sont désormais posés par les jetons `{{@lang}}`, `{{@appleW}}` et
+`{{@appleWbig}}`.
+
+Depuis, le script **refuse de tourner** si une clé ne se retrouve dans aucune des
+deux pages sources : il s'arrête en nommant les clés fautives et les trois causes
+habituelles. Une clé nouvelle qui ne matche pas est maintenant une erreur bruyante.
+
 ### ⚠️ Le site est en trois langues — ne jamais éditer `/en/` ni `/it/` à la main
 
 Six pages, deux groupes :

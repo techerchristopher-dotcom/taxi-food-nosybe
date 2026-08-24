@@ -65,11 +65,13 @@
 # canonical vers un hote injoignable — Google desindexe, et les scrapers
 # WhatsApp/Facebook ne peuvent pas recuperer l'image d'apercu.
 #
-# Le "primary domain" est aussi la seule protection contre le contenu
-# duplique : Netlify redirige alors en 301 <site>.netlify.app vers le domaine
-# canonique. Contrairement a une idee repandue, Netlify ne pose PAS de
-# X-Robots-Tag: noindex sur le sous-domaine netlify.app de production ; il ne
-# le fait que sur les deploy previews et les branch deploys.
+# ⚠️ Le "primary domain" NE SUFFIT PAS, verifie le 2026-08-24 : une fois le
+# domaine pose, le certificat emis et HTTPS force, le sous-domaine
+# <site>.netlify.app repondait toujours 200 avec le site entier. Netlify ne
+# redirige pas son propre sous-domaine, et ne pose PAS de X-Robots-Tag:
+# noindex dessus en production (il ne le fait que sur les deploy previews et
+# les branch deploys). La protection reelle est la regle de redirection
+# absolue posee dans _redirects.
 # Filet de secours si un deploiement netlify.app est inevitable avant le
 # branchement : voir la ligne commentee en bas de _redirects.
 

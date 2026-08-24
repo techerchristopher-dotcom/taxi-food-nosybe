@@ -20,8 +20,14 @@
 # canonical designe un hote injoignable : Google les sort de l'index et aucun
 # apercu ne s'affiche sur WhatsApp ou Facebook.
 #
-# Le "primary domain" de Netlify suffit normalement. Si vous devez malgre tout
-# publier sur netlify.app avant le branchement du domaine, decommentez la ligne
-# ci-dessous en remplacant NOM-DU-SITE, pour rediriger le sous-domaine :
+# ATTENTION, ce qui suit a ete VERIFIE le 2026-08-24 et contredit ce qu'on lit
+# partout : definir taxifood.rentanoo.com comme "primary domain" ne suffit PAS.
+# Le domaine a ete pose, le certificat emis, HTTPS force — et le sous-domaine
+# taxifood-nosybe-landing.netlify.app continuait de repondre 200 avec le site
+# entier, canonical compris. Quatre essais sur deux minutes, jamais de 301.
+# Netlify ne redirige donc pas son propre sous-domaine vers le domaine
+# principal ; il ne pose pas non plus de noindex dessus en production.
 #
-# https://NOM-DU-SITE.netlify.app/*  https://taxifood.rentanoo.com/:splat  301!
+# Sans la regle ci-dessous, le site existe a deux adresses avec le meme
+# contenu. Ne pas la retirer.
+https://taxifood-nosybe-landing.netlify.app/*  https://taxifood.rentanoo.com/:splat  301!

@@ -62,6 +62,19 @@ svg.i{display:block;flex:none;fill:currentColor}
 :focus-visible{outline:3px solid #E8342A;outline-offset:2px;border-radius:6px}
 .champ:focus{outline:none;border-color:#1A1A1A;box-shadow:0 0 0 3px rgba(26,26,26,.09)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:560px){
+  /* Trois onglets ne tiennent pas a 375 px avec les icones et la police de
+     bureau : 422 px de libelles pour 339 px reellement disponibles. On retire
+     les icones et on resserre. Le libelle passe alors sur deux lignes DANS la
+     pastille ("Je suis / livreur") — c'est voulu : les trois onglets restent
+     cote a cote sur UNE rangee, et la hauteur du bandeau ne bouge pas (133 px,
+     comme avec deux onglets).
+     Ne pas ajouter white-space:nowrap ici : les pastilles ne pourraient plus
+     retrecir, et c'est la RANGEE qui se casserait en deux — essaye le
+     2026-08-24, c'est nettement moins lisible. Cas dimensionnant : l'italien. */
+  .vtab{font-size:12px!important;padding:0 12px!important;gap:5px!important}
+  .vtab svg{display:none!important}
+}
 </style>
 
 <script type="application/ld+json">
@@ -145,7 +158,7 @@ svg.i{display:block;flex:none;fill:currentColor}
 <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:.2em;color:#6B6662">NOSY BE</span>
 </div>
 </div>
-<nav aria-label="Choisissez votre profil" style="display:flex;align-items:center;gap:5px;padding:5px;border-radius:999px;background:#EAE5E0;border:1px solid #DCD8D3;flex-wrap:wrap">
+<nav aria-label="Choisissez votre profil" class="vtabs" style="display:flex;align-items:center;gap:5px;padding:5px;border-radius:999px;background:#EAE5E0;border:1px solid #DCD8D3">
 <a href="/" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:transparent;color:#6B6662"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-shopping_bag"/></svg>Je suis client</a>
 <a href="/restaurants-partenaires/" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:transparent;color:#6B6662"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-storefront"/></svg>Je suis restaurateur</a>
 <a href="/devenir-livreur/" aria-current="page" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:#E8342A;color:#fff;box-shadow:0 4px 12px rgba(232,52,42,.30)"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-two_wheeler"/></svg>Je suis livreur</a>

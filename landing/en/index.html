@@ -86,6 +86,19 @@ svg.i{display:block;flex:none;fill:currentColor}
 @media (prefers-reduced-motion:reduce){
 *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+@media (max-width:560px){
+  /* Trois onglets ne tiennent pas a 375 px avec les icones et la police de
+     bureau : 422 px de libelles pour 339 px reellement disponibles. On retire
+     les icones et on resserre. Le libelle passe alors sur deux lignes DANS la
+     pastille ("Je suis / livreur") — c'est voulu : les trois onglets restent
+     cote a cote sur UNE rangee, et la hauteur du bandeau ne bouge pas (133 px,
+     comme avec deux onglets).
+     Ne pas ajouter white-space:nowrap ici : les pastilles ne pourraient plus
+     retrecir, et c'est la RANGEE qui se casserait en deux — essaye le
+     2026-08-24, c'est nettement moins lisible. Cas dimensionnant : l'italien. */
+  .vtab{font-size:12px!important;padding:0 12px!important;gap:5px!important}
+  .vtab svg{display:none!important}
+}
 </style>
 
 <script type="application/ld+json">
@@ -356,7 +369,7 @@ svg.i{display:block;flex:none;fill:currentColor}
 </head>
 <body>
 
-<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><symbol id="ic-arrow_forward" viewBox="0 -960 960 960"><path fill="currentColor" d="M647-440H200q-17 0-28.5-11.5T160-480q0-17 11.5-28.5T200-520h447L451-716q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l264 264q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L508-188q-11 11-27.5 11T452-188q-12-12-12-28.5t12-28.5l195-195Z"/></symbol>
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><symbol id="ic-two_wheeler" viewBox="0 0 24 24"><path fill="currentColor" d="M12.7 4a1 1 0 0 0 0 2h1.24l.86 2H9.6a4.5 4.5 0 0 0-3.18 1.32A1 1 0 0 0 6 9H3.6a1 1 0 0 0 0 2H6a1 1 0 0 0 .7-.29 4.47 4.47 0 0 0-.6 1.62A4.25 4.25 0 1 0 10.2 17.9h3.6a4.25 4.25 0 1 0 4.2-5 4.2 4.2 0 0 0-.5.03l-2.34-5.5-.02-.05-.9-2.1A1 1 0 0 0 13.32 4h-.62Zm2.96 6 .82 1.92A4.27 4.27 0 0 0 13.8 15.9h-3.6a4.26 4.26 0 0 0-2.05-3.06A2.5 2.5 0 0 1 9.6 10h6.06ZM6.15 14.4a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Zm11.85 0a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5Z"/></symbol><symbol id="ic-arrow_forward" viewBox="0 -960 960 960"><path fill="currentColor" d="M647-440H200q-17 0-28.5-11.5T160-480q0-17 11.5-28.5T200-520h447L451-716q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l264 264q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L508-188q-11 11-27.5 11T452-188q-12-12-12-28.5t12-28.5l195-195Z"/></symbol>
 <symbol id="ic-card_giftcard" viewBox="0 -960 960 960"><path fill="currentColor" d="M160-280v80h640v-80H160Zm0-440h88q-5-9-6.5-19t-1.5-21q0-50 35-85t85-35q30 0 55.5 15.5T460-826l20 26 20-26q18-24 44-39t56-15q50 0 85 35t35 85q0 11-1.5 21t-6.5 19h88q33 0 56.5 23.5T880-640v440q0 33-23.5 56.5T800-120H160q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720Zm0 320h640v-240H596l60 82q10 14 8 29.5T648-503q-14 10-29.5 7.5T593-511L480-664 367-511q-10 13-25.5 15.5T312-503q-14-10-16.5-25.5T303-558l59-82H160v240Zm228.5-331.5Q400-743 400-760t-11.5-28.5Q377-800 360-800t-28.5 11.5Q320-777 320-760t11.5 28.5Q343-720 360-720t28.5-11.5ZM600-720q17 0 28.5-11.5T640-760q0-17-11.5-28.5T600-800q-17 0-28.5 11.5T560-760q0 17 11.5 28.5T600-720Z"/></symbol>
 <symbol id="ic-check" viewBox="0 -960 960 960"><path fill="currentColor" d="m382-354 339-339q12-12 28-12t28 12q12 12 12 28.5T777-636L410-268q-12 12-28 12t-28-12L182-440q-12-12-11.5-28.5T183-497q12-12 28.5-12t28.5 12l142 143Z"/></symbol>
 <symbol id="ic-check_circle" viewBox="0 -960 960 960"><path fill="currentColor" d="m424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></symbol>
@@ -385,9 +398,10 @@ svg.i{display:block;flex:none;fill:currentColor}
 <a href="/en/" hreflang="en" lang="en" aria-current="page" aria-label="English" class="lgt" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:28px;padding:0 8px;border-radius:999px;font:800 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;background:#1A1A1A;color:#fff">EN</a>
 <a href="/it/" hreflang="it" lang="it" aria-label="Italiano" class="lgt" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:28px;padding:0 8px;border-radius:999px;font:800 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;background:transparent;color:#6B6662">IT</a>
 </nav>
-<nav aria-label="Choose your profile" style="display:flex;align-items:center;gap:5px;padding:5px;border-radius:999px;background:#EAE5E0;border:1px solid #DCD8D3">
+<nav aria-label="Choose your profile" class="vtabs" style="display:flex;align-items:center;gap:5px;padding:5px;border-radius:999px;background:#EAE5E0;border:1px solid #DCD8D3">
 <a href="/en/" aria-current="page" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:#DF3228;color:#fff;box-shadow:0 4px 12px rgba(232,52,42,.32)"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-shopping_bag"/></svg>I'm ordering</a>
 <a href="/en/restaurant-partners/" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:transparent;color:#6B6662"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-storefront"/></svg>I run a restaurant</a>
+<a href="/devenir-livreur/" hreflang="fr" class="vtab" style="display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:999px;cursor:pointer;font:700 13px/1 Archivo,sans-serif;transition:background .18s,color .18s;background:transparent;color:#6B6662"><svg class="i" width="17" height="17" aria-hidden="true"><use href="#ic-two_wheeler"/></svg>I deliver</a>
 </nav>
 </div>
 </header>

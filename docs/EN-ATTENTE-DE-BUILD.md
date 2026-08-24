@@ -126,3 +126,20 @@ builds 7, 8 et 11.
 Google et Facebook natifs n'ont besoin d'aucune capability côté portail Apple — seuls des
 schémas d'URL dans Info.plist, gérés par leurs plugins de config sans jamais toucher aux
 serveurs Apple. Un build non-interactif suffit pour ces deux-là.
+
+## Registre tu/vous unifie (2026-08-24)
+
+37 chaines de l'application changees, non encore compilees.
+
+- `app/locales/fr.json` : 36 chaines. L'espace client passe de 21 tutoiements
+  contre 28 vouvoiements a **49 tutoiements et zero vouvoiement**.
+- `app/components/RefuseSheet.tsx` : ecran restaurant, passe au vouvoiement.
+
+Regle appliquee : **on tutoie les personnes, on vouvoie les entreprises.**
+Client et livreur au « tu », restaurateur au « vous ». L'espace livreur
+tutoyait deja et n'a pas ete touche.
+
+⚠️ A verifier sur appareil au prochain build : les titres sur deux lignes,
+dont le saut de ligne a ete conserve a la meme place — `phone.askTitle`,
+`phone.loginTitle` (« Ton numero\nde telephone ») et `authEmail.askNameTitle`
+(« Comment\nt'appelles-tu ? »). Un titre qui deborde ne se voit qu'a l'ecran.

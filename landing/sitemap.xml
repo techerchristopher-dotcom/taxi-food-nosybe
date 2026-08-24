@@ -3,7 +3,11 @@
   Chaque page declare l'ENSEMBLE de son groupe linguistique, elle-meme
   comprise : Google exige que les liens hreflang soient reciproques et
   auto-referents, faute de quoi il ignore le groupe entier.
-  Deux groupes ici : les trois pages client, et les trois pages restaurateur.
+  Deux groupes de trois ici : les pages client, et les pages restaurateur.
+  /devenir-livreur/ n'existe QU'EN FRANCAIS pour l'instant : son groupe ne
+  contient qu'elle-meme. Le malgache y est prevu (et nulle part ailleurs :
+  c'est le seul public structurellement malgachophone du site) — le jour ou
+  il arrive, ajouter ici la paire fr/mg ET l'auto-reference sur les deux.
   /confidentialite/ est un document unique TRILINGUE (FR + EN + IT dans la meme
   URL, chaque moitie dans un <section lang="...">) : il n'a pas d'alternative a
   declarer, et il ne faut surtout pas creer /en/privacy/ ni /it/privacy/ sans
@@ -64,6 +68,13 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://taxifood.rentanoo.com/en/restaurant-partners/"/>
     <xhtml:link rel="alternate" hreflang="it" href="https://taxifood.rentanoo.com/it/ristoranti-partner/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/restaurants-partenaires/"/>
+  </url>
+
+  <url>
+    <loc>https://taxifood.rentanoo.com/devenir-livreur/</loc>
+    <lastmod>2026-08-24</lastmod>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifood.rentanoo.com/devenir-livreur/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifood.rentanoo.com/devenir-livreur/"/>
   </url>
 
   <url>

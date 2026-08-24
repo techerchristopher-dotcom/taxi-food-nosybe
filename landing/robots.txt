@@ -6,12 +6,17 @@ Allow: /
 
 # Aucune zone privee sur ce site : rien a bloquer.
 #
-# Le site existe en trois langues, six pages au total :
+# Le site existe en trois langues, six pages traduites :
 #   /                          /en/                      /it/
 #   /restaurants-partenaires/  /en/restaurant-partners/  /it/ristoranti-partner/
 # Elles se declarent mutuellement en hreflang (dans le <head> ET dans le
 # sitemap). Ne rien interdire ici : un Disallow sur une variante casserait
 # le groupe hreflang entier, Google exigeant des liens reciproques.
+#
+# /devenir-livreur/ est la page de recrutement des livreurs, en FRANCAIS
+# SEULEMENT. C'est volontaire : son public est local, il cherche du travail
+# en francais ou en malgache, jamais en anglais ni en italien. C'est aussi
+# la seule page ou le malgache est prevu — voir sitemap.xml.
 #
 # /confidentialite/ est un document unique TRILINGUE : les trois versions
 # (FR, EN, IT) vivent dans la meme URL, chacune dans un <section lang="...">.

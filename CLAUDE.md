@@ -2,15 +2,31 @@
 
 Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec trois **vrais restaurants** (Angelo, Taxi Be, La Cabane). Branche de travail : `main`.
 
-**iOS** : ✅ build 1.0.0 (17) **soumis à Apple pour vérification le 2026-08-19** (délai annoncé jusqu'à 48 h). Plus aucun bloquant de code. Voir [docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md).
+Trois livrables distincts, à ne pas confondre :
 
-**Android** : connexion Google native, connexion Facebook (flux web), clé Google Maps et notifications push (FCM) tous configurés et **testés en conditions réelles** le 2026-08-19. Compte développeur Google Play créé (25 $ payés), **en attente de vérification d'identité par Google** (délai annoncé : plusieurs jours) avant de pouvoir soumettre un premier build `production`. Voir [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
+| | Quoi | Où |
+|---|---|---|
+| **`app/`** | l'application mobile (Expo, iOS + Android) | soumise à l'App Store |
+| **`admin/`** | le tableau de bord de gestion (Next.js, web) | `taxi-food-admin-nosybe.netlify.app` |
+| **`landing/`** | le site de **pré-lancement**, trilingue | `taxifood-nosybe-landing.netlify.app` |
 
-⚠️ **Trois documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
+## Où en est la soumission
 
-- **[docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md)** — ce qui est écrit mais pas encore compilé. Décision du 2026-08-18 : on empile les chantiers et on ne fait **qu'un seul gros build**, la liaison de Nosy Be rendant chaque envoi coûteux. À vider après chaque build.
-- **[docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md)** — audit de conformité iOS, bloquant par bloquant. **Soumis le 2026-08-19**, en attente de la revue Apple.
-- **[docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md)** — état des lieux Android : ce qui est fait (code), ce qui est bloqué par du code, et ce qui est bloqué par un compte externe (Google Play, Firebase) que seul le porteur du projet peut créer.
+**iOS — build 1.0.0 (22) soumis le 2026-08-23**, après **deux rejets** du build 17 :
+
+1. **Guideline 5.1.1(v)** — « the app requires users to register before viewing the menu ». L'app s'ouvrait sur l'écran de connexion. Corrigé : le catalogue est désormais libre, voir la section « Navigation libre » plus bas. C'est le changement de comportement le plus important de tout le projet.
+2. **Guideline 2.1(a)** — « we cannot access the Restaurant and Courier accounts ». Un seul compte de démo était fourni, et les notes disaient que les espaces pro étaient hors périmètre. **Apple veut vérifier CHAQUE type de compte.** Trois comptes actifs sont maintenant fournis.
+
+⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
+
+**Android** — toute la chaîne technique est prête et testée en conditions réelles le 2026-08-19 (Google natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé, **identité vérifiée**. Restent la vérification du numéro de téléphone et celle de l'accès à un **appareil Android physique** — cette dernière est refusée depuis un émulateur (détection anti-fraude de Google, message trompeur parlant d'Android 10). Aucun build `production` Android n'est encore sorti.
+
+⚠️ **Quatre documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
+
+- **[docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md)** — ce qui est écrit mais pas encore compilé, et la recette à passer sur appareil avant l'envoi. Décision du 2026-08-18 : on empile les chantiers et on ne fait **qu'un seul gros build**, la liaison de Nosy Be rendant chaque envoi coûteux. À vider après chaque build.
+- **[docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md)** — audit de conformité iOS, bloquant par bloquant.
+- **[docs/FICHE-APP-STORE.md](docs/FICHE-APP-STORE.md)** — textes de la fiche, questionnaire App Privacy, classement d'âge, **et les notes de revue à coller** (§ 4, rédigées en anglais).
+- **[docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md)** — état des lieux Android : ce qui est fait, ce qui est bloqué par du code, et ce qui l'est par un compte externe que seul le porteur du projet peut créer.
 
 ## Lancer l'app en local
 
@@ -21,8 +37,8 @@ npx expo start --web --port 8081 --prefix app   # aperçu web direct
 
 ⚠️ **Expo Go NE MARCHE PAS** : le projet est en **Expo SDK 57** (RN 0.86, React 19.2), plus récent que ce qu'Expo Go du store embarque → « projet incompatible ». Pour tester sur téléphone, il faut une **build de dev EAS** (voir `app/eas.json`), pas Expo Go.
 
-- **Web** (aperçu rapide) : `http://localhost:8081`. L'accueil est derrière le login Google ; pour voir l'app sans se connecter, ouvrir directement `http://localhost:8081/(tabs)` (les routes ne sont pas gardées individuellement, et les lectures resto/produit sont en RLS publique).
-- Compte de test : connexion **Google réelle** uniquement (pas de démo). Voir Auth ci-dessous.
+- **Web** (aperçu rapide) : `http://localhost:8081`. L'accueil **est libre depuis le 2026-08-22** (voir « Navigation libre ») : on arrive directement sur le catalogue, sans compte.
+- Comptes de démonstration : trois, créés pour la revue Apple — voir « Comptes de démonstration » plus bas.
 
 ## Stack & backend
 
@@ -48,7 +64,7 @@ Les menus, compositions et photos viennent de photos de carte déposées dans le
 | `logo` | logos des restaurants | — |
 | `produits` | visuels produits et sauces (`sauces/<nom>.png`) | `public.is_admin()` |
 | `boissons` | visuels boissons | `public.is_admin()` |
-| `marketing` | visuels de communication, hors app. `app-store/` = les 6 captures de la fiche App Store | `public.is_admin()` |
+| `marketing` | visuels de communication, hors app : `app-store/` (les captures de la fiche, en 6,9" **et** 6,5"), `video/` (rushes des vidéos du site) | `public.is_admin()` |
 
 Tous sont **publics en lecture**.
 
@@ -76,7 +92,7 @@ Un même compte Google peut être **client** et/ou **restaurant** (et **livreur*
 - **Helpers rôle** (SECURITY DEFINER) : `is_active_restaurant_staff_of(rid)`, `current_restaurant_id()`. Un « restaurant actif » = rôle restaurant `active` **ET** lien `restaurant_staff`.
 - **RLS restaurant** : policies SELECT additives sur `orders`/`order_items`/`order_item_options` → le staff voit les commandes de **son** restaurant (les policies client, par `user_id`, restent inchangées).
 - **Transitions de statut** : RPC **`set_order_status(order_id, new_status, reason)`** (SECURITY DEFINER, comme `create_order` — aucune policy UPDATE ouverte sur `orders`). Vérifie l'appartenance au restaurant et n'autorise que les transitions valides : `recue→confirmee|annulee`, `confirmee→en_preparation|annulee`, `en_preparation→en_livraison`. `annulee` exige un motif (stocké dans `orders.cancellation_reason`, visible côté client).
-- **Routage app** (`app/index.tsx`) : client **sans** rôle pro → parcours inchangé (aucun écran de sélection) ; compte multi-rôle → `mode` persisté (AsyncStorage `tf_mode`) respecté, sinon `role-select`. Espace restaurant = groupe de routes `app/(restaurant)/` : 3 onglets **Commandes en cours** (polling 12 s, badge du nb de commandes en attente d'action via le store `restaurantQueue`) · **En livraison** (`en_livraison`, lecture seule) · **Historique** (`livree`/`annulee`). Le suivi client affiche l'état **refusée + motif**. ⚠️ Tout écran resto filtre **explicitement** par `restaurant_id` (`listRestaurantOrders`) — un compte multi-rôle a deux policies SELECT sur `orders` (staff OU propriétaire) qui se cumulent en OR, la seule RLS laisserait fuiter ses commandes client.
+- **Routage app** (`app/index.tsx`) : `mode` persisté (AsyncStorage `tf_mode`) respecté ; `role-select` **uniquement pour un vrai compte multi-rôle**, jamais pour un compte à rôle unique — voir « Navigation libre » pour la règle complète et pourquoi elle a changé. Espace restaurant = groupe de routes `app/(restaurant)/` : 3 onglets **Commandes en cours** (polling 12 s, badge du nb de commandes en attente d'action via le store `restaurantQueue`) · **En livraison** (`en_livraison`, lecture seule) · **Historique** (`livree`/`annulee`). Le suivi client affiche l'état **refusée + motif**. ⚠️ Tout écran resto filtre **explicitement** par `restaurant_id` (`listRestaurantOrders`) — un compte multi-rôle a deux policies SELECT sur `orders` (staff OU propriétaire) qui se cumulent en OR, la seule RLS laisserait fuiter ses commandes client.
 - **Espace livreur** (`app/(livreur)/`, mode `livreur`) : colonnes `orders.courier_id`/`picked_up_at`/`delivered_at`/`cash_confirmed` (pas de nouvel enum — le statut reste `en_livraison` de la prise jusqu'à `livree` ; `courier_id`/`picked_up_at` distinguent disponible/prise/récupérée). Helper `is_active_courier()`. RLS SELECT livreur : commandes **disponibles** (`en_livraison`, `courier_id is null`) + **les siennes** (`courier_id = auth.uid()`). RPC SECURITY DEFINER : **`claim_order`** (attribution atomique `UPDATE … WHERE courier_id IS NULL`, une seule commande à la fois), `release_order`, `mark_order_picked_up`, `mark_order_delivered` (encaissement espèces obligatoire), `set_courier_availability` (upsert `couriers.is_available`). 2 onglets : **Livraisons** (toggle dispo, prise « Je la prends », cycle Récupérée→Livrée, polling 12 s) + **Historique**. Le suivi client distingue « en attente d'un livreur » vs « récupérée, en route » via `picked_up_at`.
 - ⚠️ **Compte de test** : le compte `techerchristopher@gmail.com` (`9ca91352…`) est lié à **Angelo** (staff restaurant **actif**) **et** a le rôle **livreur actif** (pour tester les deux espaces). À sa connexion il voit l'écran de sélection de rôle. Pour lier un **vrai** compte restaurant : `user_roles(user_id,'restaurant','active',now())` + `restaurant_staff(user_id, restaurant_id)` ; pour un **livreur** : `user_roles(user_id,'livreur','active',now())` (la ligne `couriers` est créée au 1er toggle de disponibilité).
 - **Non fait (P2 futur)** : édition menu/horaires depuis l'app, filtrage livreur par zone (`couriers.zone`), stats. Notifications push : **faites** pour les trois publics — client, restaurant, livreur (voir plus bas).
@@ -195,26 +211,83 @@ ligne « Connecte-toi ou crée ton compte en un tap » sur `login.tsx`. Tout est
   - Sécurité : `verify_jwt` désactivé (l'appelant est Supabase Auth), signature **Standard Webhooks** vérifiée par la fonction elle-même (HMAC-SHA256, comparaison à temps constant, refus au-delà de 5 min → anti-rejeu). Identifiants Meta + secret du hook dans le **Vault**, lus par `whatsapp_hook_config()` réservée à `service_role`. Le code à 6 chiffres n'est **jamais journalisé**.
   - ⚠️ **Inerte tant que les secrets ne sont pas posés** (répond `500 whatsapp not configured`) : il faut une app Meta Business, un numéro WhatsApp Business, un **jeton système permanent** (les temporaires expirent en 24 h) et un **modèle « Authentification » approuvé**. Procédure complète, table de diagnostic des erreurs Meta et SQL de pose des secrets : **[docs/OTP-WHATSAPP.md](docs/OTP-WHATSAPP.md)**.
 
+## Navigation libre (rejet Apple 5.1.1(v), corrigé le 2026-08-22)
+
+**Parcourir Taxi Food ne demande aucun compte.** Restaurants, menus, fiches produit, configurateur d'options, panier : tout est accessible déconnecté. Le compte n'est réclamé qu'au moment de **commander**, parce qu'il faut alors une adresse et un numéro.
+
+C'est un principe, pas un réglage : Apple rejette une app qui met du contenu non personnalisé derrière une inscription. Si un écran de découverte redevient gardé un jour, le rejet reviendra.
+
+- **`app/app/index.tsx`** porte tout l'aiguillage dans une fonction **pure** `destination(session, mode, intent)`, lisible d'un bloc. Pas de session → `/(tabs)`. Les longs commentaires en tête de fichier expliquent chaque garde ; ils valent mieux que ce résumé.
+- **La garde est sur le tunnel de commande** (`app/address.tsx`), pas sur les écrans de découverte.
+- **`app/store/authIntent.ts`** mémorise en RAM où la personne voulait aller avant de se connecter, pour l'y ramener après. L'intention est **consommée quand elle sert de destination**, jamais avant — sinon on boucle.
+- ⚠️ **Le verrou de navigation porte sur la DESTINATION, pas sur un booléen.** Un simple « j'ai déjà navigué » produisait un **écran blanc**, constaté sur appareil : en se déconnectant depuis la sélection de rôle on repasse par `/`, mais expo-router **réutilise l'instance déjà montée** — le booléen valait déjà `true`, l'effet sortait aussitôt, et le `return null` laissait un écran vide sans onglets ni retour.
+- ⚠️ **`retourOnglets()` (`app/lib/nav.ts`) et non `router.replace`** pour rentrer dans `(tabs)` : le `replace` empilait un **second** jeu d'onglets par-dessus celui du fond de pile (deux barres d'onglets visibles).
+- ⚠️ **Un compte à rôle unique entre DIRECTEMENT dans son espace.** Un employé de restaurant ou un livreur n'a pas de rôle client : lui présenter `/role-select`, dont la carte mise en avant est « Je commande », l'envoyait du mauvais côté. C'est très probablement ce qui aurait provoqué un troisième rejet. On sort de l'espace pro par le bouton `swap_horiz` de l'en-tête (`components/RestaurantHeader.tsx`, `components/CourierHeader.tsx` — **dans `components/`, pas dans les dossiers de routes** : un grep limité aux routes ne les trouve pas).
+
+## Comptes de démonstration (revue Apple)
+
+Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifiants et notes de revue en anglais : **[docs/FICHE-APP-STORE.md](docs/FICHE-APP-STORE.md) § 4** — à recopier dans *App Review Information* à chaque soumission.
+
+⚠️ **Apple veut vérifier chaque type de compte.** Le rejet 2.1(a) du build 17 vient précisément de là : un seul compte fourni, et des notes de revue qui présentaient les espaces professionnels comme hors périmètre. Le relecteur a demandé le rôle restaurant depuis l'app, l'a obtenu en statut `pending`, et n'a donc rien vu.
+
+⚠️ Ces comptes ont été créés **par l'API Auth**, pas par un `INSERT` SQL. Une ligne `auth.users` insérée en SQL laisse huit colonnes de jetons à `NULL` et GoTrue répond « Database error querying schema » à la connexion. Piège déjà rencontré, ne pas le refaire.
+
+⚠️ `auth.users` **n'a pas de contrainte unique sur `email`** : `ON CONFLICT (email)` échoue. Et la table `user_roles` porte `activated_at`, pas `approved_at`.
+
 ## Build de production (EAS) — état
 
 - **Compte Apple Developer actif** (Team « jean christopher techer », `CV2FA6NJ75`) ; certificat de distribution + provisioning profile iOS gérés par EAS (Expo server), valides jusqu'à 08/2027.
 - `app/eas.json` : profils `development` (dev client), `preview` (interne), `production` (`distribution: "store"`, `autoIncrement: true` → **chaque build de prod incrémente automatiquement `buildNumber`**, ne jamais le fixer à la main), `simulator` (build iOS pour simulateur, jamais soumis). `appVersionSource: "remote"`.
 - Bundle ids : iOS `com.chris97416.taxi-food-nosybe`, Android `com.chris97416.taxifoodnosybe` (Android interdit les tirets). Soumission App Store Connect : `submit.production.ios.ascAppId = "6802418114"`.
-- **iOS build 1.0.0 (17) — dernier sorti, soumis à Apple le 2026-08-19.** Contient tous les correctifs d'authentification native (Apple/Google/Facebook), la suppression de compte, le masquage du bouton téléphone (secrets WhatsApp non posés), le retrait du diagnostic temporaire, le correctif de police tronquée au 1er écran, et les correctifs trouvés en préparant les captures App Store (commandes mortes du Profil, tiret solitaire à la place des horaires). Détail complet et historique des builds précédents (5 à 17) : [docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md) et [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md).
+- **iOS build 1.0.0 (22) — dernier sorti, envoyé à App Store Connect le 2026-08-23.** Répond aux deux rejets du build 17 : catalogue libre sans compte (5.1.1(v)), trois comptes de démonstration à rôles actifs (2.1(a)), entrée directe dans l'espace pro pour un compte à rôle unique, et le correctif de l'écran blanc à la déconnexion. Le build 17 apportait l'authentification native (Apple/Google/Facebook), la suppression de compte et les correctifs des captures App Store. Historique complet des builds 5 à 22 : [docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md) et [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md).
 - ⚠️ **Un build touchant les capabilities Apple (Push, Sign In with Apple) doit être lancé par Christopher lui-même, dans son propre terminal, en interactif** (`eas build -p ios --profile production`, **sans** `--non-interactive`). Lancé depuis un outil sans TTY réel, EAS bascule silencieusement en mode non-interactif et réutilise un profil de provisioning obsolète sans jamais contacter Apple — cause exacte de l'échec des builds 7, 8 et 11. Google et Facebook natifs n'ont besoin d'aucune capability côté portail Apple (juste des schémas d'URL dans Info.plist) : un build non-interactif suffirait pour ces deux-là, mais autant garder le même réflexe partout.
 - **Android** : builds `development` testés avec succès le 2026-08-19 (émulateur Pixel 8 local, `eas build --profile development --platform android`) — connexion Google native, Facebook (flux web) et position GPS tous confirmés fonctionnels en conditions réelles. **Jamais buildé en profil `production` à ce jour** : bloqué sur la vérification d'identité du compte développeur Google Play (en cours chez Google). Voir [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ## Ce qui est vérifié vs pas encore
 
 - ✅ Vérifié en web (lectures publiques, sans login) : accueil/filtres/logos/emojis, menu, configurateur d'options + prix temps réel, panier (clé par produit+options), blocage GPS obligatoire + capture (position simulée), `tsc --noEmit`, bundle web.
-- ✅ Vérifié côté build iOS : `eas build`/`eas submit` production opérationnels de bout en bout, build 17 **soumis à Apple** le 2026-08-19.
+- ✅ Vérifié côté build iOS : `eas build`/`eas submit` production opérationnels de bout en bout, build 22 **envoyé** le 2026-08-23.
+- ✅ Vérifié en navigateur : aiguillage de `destination()` sur les 12 combinaisons de session/rôle/mode, et la déconnexion depuis la sélection de rôle (l'écran blanc ne revient pas).
+- ✅ Vérifié en production sur le site : écriture réelle en `waitlist`, refus du `INSERT` direct, limitation de débit non falsifiable, badges chargés et inertes.
 - ✅ Vérifié sur appareil réel (iOS, TestFlight) : connexion native Apple/Google/Facebook, suppression de compte, écrans multilingues.
 - ✅ Vérifié sur appareil réel (Android, émulateur Pixel 8, 2026-08-19) : connexion Google native, connexion Facebook (flux web), position GPS — testé en conditions réelles, parcours client complet, par le porteur du projet.
-- ⏳ **Non testé** : build `production` Android (bloqué sur la vérification d'identité du compte Play Console, voir plus haut) ; parcours restaurant et livreur sur appareil réel, toutes plateformes.
+- ⏳ **Non testé** : build `production` Android (bloqué sur la vérification de l'appareil physique, voir plus haut) ; parcours restaurant et livreur sur appareil réel, toutes plateformes. **Recette du build 22 sur appareil** : liste dans [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md) — notamment un compte SMS neuf (sans nom ni numéro) qui part de « Commander » et doit arriver sur `/address`, et le bouton Retour après connexion qui doit fermer l'app, pas révéler une seconde barre d'onglets.
+
+## Le site de pré-lancement (`landing/`)
+
+**https://taxifood-nosybe-landing.netlify.app** — site statique, aucun build, aucune dépendance. Déploiement `netlify deploy --prod --dir=landing`. Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).
+
+⚠️ **Le domaine `taxifood.rentanoo.com` n'est PAS branché.** Les `canonical` et les `hreflang` pointent déjà dessus : tant que le DNS n'est pas posé, **Google n'indexe rien**. Il faut ajouter le domaine dans Netlify, poser un CNAME `taxifood` → `taxifood-nosybe-landing.netlify.app` chez **Hostinger** (rentanoo.com y est géré, `ns1/ns2.dns-parking.com` ; le site rentanoo lui-même tourne sur Railway), puis en faire le **domaine principal** dans Netlify — sinon les deux adresses se font concurrence.
+
+**Six pages, deux parcours × trois langues.** Client : `/`, `/en/`, `/it/`. Restaurateur : `/restaurants-partenaires/`, `/en/restaurant-partners/`, `/it/ristoranti-partner/`.
+
+⚠️ **Deux pages distinctes, pas un onglet.** La maquette d'origine cachait le contenu restaurateur en `display:none` — invisible pour Google, et pénalisé. Séparer les URL était la seule façon de référencer les deux offres.
+
+- **La maquette Claude Design (`.dc.html`) n'a pas été livrée telle quelle.** Elle chargeait React + Babel standalone depuis unpkg et recompilait le JSX **dans le navigateur** : ~3 Mo de dépendances externes pour une page de contenu. Remplacée par un runtime maison d'environ 120 lignes qui fait des **mises à jour chirurgicales du DOM** — vérifié en navigateur : le champ de saisie conserve son focus et sa valeur à chaque changement d'état, ce que le re-rendu naïf cassait. **16,98 Mo → 207 ko.**
+- **Traductions** : `landing/i18n/{fr,en,it}.json`, **304 clés**, parité vérifiée. Rien n'est traduit à la volée : chaque page sert sa langue en dur, avec `hreflang` réciproques + `x-default`.
+- **SEO** : JSON-LD en `@graph` (Organization, WebSite, LocalBusiness, FAQPage), Open Graph par langue, images en WebP + `srcset`, `robots.txt` et `sitemap.xml` couvrant les 6 URL.
+- **Sécurité** : en-têtes dans `landing/_headers` (CSP, HSTS, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`).
+- **Vidéos** (`landing/media/`) : `taxi-food-540.mp4` côté client, `resto-540.mp4` côté restaurateur. **Chargées au clic seulement** — une image fixe WebP légère et un `poster` tiennent la place avant. La liaison de Nosy Be ne pardonne pas un `<video autoplay preload>`.
+- **Bloc fondateur** : photo + récit personnel, sur les 6 pages, en 3 langues. Le polo au logo Taxi Food est une image générée ; le logo y est **approximé**, pas le vrai fichier — recomposer le vrai laissait un halo visible.
+- **Badges App Store / Google Play** (2026-08-24) : **fichiers rapatriés en local** (deux requêtes externes en moins), localisés par langue, ratio Play/Apple de 1,22. Le badge Apple **français est plus large** (viewBox 126,5 contre 119,7 — « Télécharger dans » est plus long) : une largeur unique décalerait la mise en page. La section sombre `#comment` utilise la déclinaison **blanche** d'Apple, sinon le badge noir disparaît. Pour l'instant `pointer-events:none` + pastille « bientôt disponible ».
+  - **Le jour du lancement**, trois gestes : envelopper chaque `<img>` dans un `<a href>` vers la fiche, retirer `pointer-events:none`, supprimer les pastilles.
+  - ⚠️ Les **licences d'usage** (Apple *Marketing Resources*, formulaire partenaire Google) restent à accepter par le porteur du projet.
+
+### Liste d'attente
+
+Le formulaire écrit réellement en base (`waitlist`), vérifié en soumettant le formulaire en production puis en relisant la ligne.
+
+- ⚠️ **L'écriture directe en table est fermée.** Elle passe par des RPC `SECURITY DEFINER`. Une fois les RPC en place, le `INSERT` direct était **resté ouvert** — un oubli classique : ajouter la porte propre ne ferme pas l'ancienne. Le POST répond désormais 401 (`42501`), la RPC 204.
+- ⚠️ **La limitation de débit lisait la MAUVAISE valeur de `x-forwarded-for`.** Elle prenait la **première**, que le client contrôle : il suffisait d'envoyer une fausse IP à chaque requête pour ne jamais être limité. Elle lit maintenant la **dernière** (celle posée par le proxy). Vérifié : 7 requêtes avec 7 fausses IP, bloquées dès la 4ᵉ.
+- ⚠️ **La normalisation des téléphones laissait passer des doublons** : `+261 34 11 111 11` et `0261341111111` donnaient deux clés différentes. `normaliser_telephone()` traite le préfixe `00`, le `0` national et la forme à 9 chiffres. L'index unique a **refusé de se construire** tant que les doublons de test n'étaient pas purgés — ce qui prouve la correction.
 
 ## Conventions
 
-- Dépôt git **isolé** dans `taxi-food-nosybe/`. GitHub : https://github.com/techerchristopher-dotcom/taxi-food-nosybe . **Commit + push (HTTPS) après chaque étape.**
+- Dépôt git **isolé** dans `taxi-food-nosybe/`. GitHub : https://github.com/techerchristopher-dotcom/taxi-food-nosybe . **Commit + push (HTTPS, pas SSH) après chaque étape.**
+- ⚠️ **Ne jamais committer depuis un répertoire parent.** `/Users/christopher` est lui-même couvert par un dépôt git : un `git add` lancé d'un cran au-dessus embarque le home entier.
+- ⚠️ **Secrets.** `app/.env` est git-ignoré et doit le rester. La clé **anon/publishable** y est publique par conception (la RLS protège) ; la clé **`service_role` n'y a jamais sa place**. Les identifiants Meta/WhatsApp et l'App Secret Facebook ne transitent pas par la conversation — ils vont dans le Vault Supabase. Une clé privée Firebase a déjà traîné dans le dépôt (commit `84fe5c9`) : `.gitignore` couvre désormais `*firebase-adminsdk*.json`.
+- ⚠️ **La base Supabase est la base de PRODUCTION.** Pas de bac à sable. Tout test à effet de bord se fait dans une transaction annulée, et les lignes de test se nettoient.
+- ⚠️ **Avancer point par point.** Consigne explicite du porteur du projet : vérifier chaque correctif isolément avant de passer au suivant, plutôt que d'empiler les changements et de tout casser d'un coup.
 - Après toute migration touchant le schéma : penser à régénérer les types si un fichier `db-types` est réintroduit (actuellement les types sont mappés à la main dans `app/data/api.ts`).
 - ⚠️ **Tester une RPC à effet de bord en SQL** : utiliser `select * from create_order(...)` (une seule évaluation). **Jamais `select (create_order(...)).*`** : l'expansion `.*` d'un type composite évalue la fonction **une fois par colonne** → autant d'insertions parasites. Et pour reproduire un souci RLS, tester sous `set local role authenticated` + `set_config('request.jwt.claims', ...)` dans une transaction annulée — sinon on tourne en superuser et la RLS est ignorée (le bug reste invisible).
 - ⚠️ **`revoke ... from public` ne retire PAS `anon` / `authenticated`.** Supabase pose un `ALTER DEFAULT PRIVILEGES` qui accorde `EXECUTE` à ces deux **rôles nommés** sur **toute** fonction nouvellement créée dans `public`. `PUBLIC` est une notion distincte : le révoquer laisse les grants nommés intacts. Pour verrouiller une fonction interne, révoquer **explicitement** chaque rôle *et* `public` séparément, puis vérifier dans `pg_proc.proacl` (`=X/postgres` = grant PUBLIC résiduel).
@@ -222,5 +295,6 @@ ligne « Connecte-toi ou crée ton compte en un tap » sur `login.tsx`. Tout est
 - 💡 **Lire le résultat d'un test SQL par MCP** : `RAISE NOTICE` n'est pas remonté par `execute_sql`. Accumuler le résultat dans une variable `text` puis `raise exception 'RESULTAT >>> %', v_out` — ça affiche **et** annule la transaction, donc le test ne laisse aucune trace.
 - 💡 **Diagnostiquer un flux d'auth natif (Apple/Google/Facebook) sans les logs** : `query_logs` sur `auth_logs` a connu des pannes prolongées côté Supabase (« Backend error », service entier indisponible, pas juste cette table). En repli : interroger directement `auth.users` / `auth.identities` (`created_at`, `last_sign_in_at`) — ça dit si une tentative a **atteint** Supabase et créé quelque chose, ce qui suffit souvent à localiser le problème (avant vs après l'échange avec le fournisseur) sans avoir besoin du message d'erreur exact.
 - 💡 **`npx expo install` ajoute les plugins natifs SANS leurs options.** Vérifié deux fois le 2026-08-18 (`@react-native-google-signin/google-signin` et `react-native-fbsdk-next`) : l'entrée nue route vers une branche de config différente (souvent Firebase) qui exige un fichier absent et **fait échouer la compilation native**. Toujours lire le code du plugin (`node_modules/<pkg>/plugin/`) avant de laisser l'entrée telle quelle, et lui donner ses options explicitement.
+- ⚠️ **Les prix et les contenus produits viennent de la base** : jamais traduits, jamais écrits en dur, ni dans l'app, ni sur le site.
 - Documentation en français.
 - Docs de référence : `CAHIER-DES-CHARGES-MVP.md`, `SCHEMA-TAXI-FOOD.md`, `PROMPT_BUILD_APP_CLIENT.md`.

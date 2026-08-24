@@ -55,7 +55,7 @@ export function RefuseSheet({
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>Refuser la commande{orderNumber ? ` #${orderNumber}` : ''}</Text>
-        <Text style={styles.sub}>Choisis un motif — le client le verra sur son suivi.</Text>
+        <Text style={styles.sub}>Choisissez un motif — le client le verra sur son suivi.</Text>
 
         <View style={styles.chips}>
           {REFUSAL_REASONS.map((r) => {

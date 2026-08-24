@@ -196,10 +196,10 @@
     d.setAttribute("role", "status");
     d.style.cssText =
       "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
-      "background:#000;z-index:2";
+      "background:#F4F0ED;z-index:2";
     d.innerHTML =
-      '<span style="width:34px;height:34px;border-radius:999px;border:3px solid rgba(255,255,255,.25);' +
-      'border-top-color:#fff;animation:tf-tourne-video .7s linear infinite"></span>';
+      '<span style="width:34px;height:34px;border-radius:999px;border:3px solid rgba(26,26,26,.18);' +
+      'border-top-color:#C42419;animation:tf-tourne-video .7s linear infinite"></span>';
     if (!document.getElementById("tf-style-video")) {
       var st = document.createElement("style");
       st.id = "tf-style-video";
@@ -257,7 +257,13 @@
            reaffecter video.src ne fait rien de fiable et le changement de
            langue echoue sans erreur. */
         v.src = srcUrl(film, etat.loc);
-        v.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;background:#000";
+        /* Le film est en 9:16, la coque en 19.5:9 : il reste donc du vide en
+           haut et en bas. Sur du NOIR, ce vide se lit comme un defaut
+           d'encodage. Sur le creme du film lui-meme (#F4F0ED, mesure sur les
+           posters, a deux unites du fond du site), il se lit comme un
+           cadrage : l'ecran parait afficher une appli claire qui joue une
+           video. Meme raison pour la roue d'attente plus haut. */
+        v.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;background:#F4F0ED";
         cadre.innerHTML = "";
         cadre.appendChild(v);
         etat.video = v;

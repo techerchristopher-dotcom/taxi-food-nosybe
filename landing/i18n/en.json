@@ -297,5 +297,10 @@
   "schema.breadcrumb.restos": "Partner restaurants",
   "resto.hero.videoButtonAriaLabel": "Play the introduction video for restaurant owners",
   "resto.hero.videoPosterAlt": "A restaurant owner in Nosy Be plating a dish in his kitchen",
-  "resto.hero.videoCaption": "Tap to play the video"
+  "resto.hero.videoCaption": "Tap to play the video",
+  "stores.soon": "COMING SOON",
+  "stores.soonTitle": "Coming soon",
+  "stores.appleAlt": "Download on the App Store — coming soon",
+  "stores.playAlt": "Get it on Google Play — coming soon",
+  "stores.free": "Free. Nothing else to install."
 }

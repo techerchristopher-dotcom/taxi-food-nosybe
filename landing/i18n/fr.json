@@ -297,5 +297,10 @@
   "schema.breadcrumb.restos": "Restaurants partenaires",
   "resto.hero.videoButtonAriaLabel": "Lancer la vidéo de présentation pour les restaurateurs",
   "resto.hero.videoPosterAlt": "Un restaurateur de Nosy Be dresse une assiette dans sa cuisine",
-  "resto.hero.videoCaption": "Touchez pour lancer la vidéo"
+  "resto.hero.videoCaption": "Touchez pour lancer la vidéo",
+  "stores.soon": "BIENTÔT DISPONIBLE",
+  "stores.soonTitle": "Bientôt disponible",
+  "stores.appleAlt": "Télécharger dans l'App Store — bientôt disponible",
+  "stores.playAlt": "Disponible sur Google Play — bientôt disponible",
+  "stores.free": "Gratuite. Rien à installer d'autre."
 }

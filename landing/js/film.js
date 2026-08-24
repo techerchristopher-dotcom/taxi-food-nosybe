@@ -115,7 +115,7 @@
     "margin:0;cursor:pointer;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.08em;" +
     "border-radius:6px;transition:color .16s";
 
-  function construireSelecteur(boite, film, etat) {
+  function construireSelecteur(boite, film, etat, cadre) {
     var liste = document.createElement("span");
     liste.style.cssText = "display:inline-flex;align-items:center;gap:2px";
 
@@ -148,7 +148,13 @@
         if (etat.loc === loc) return;
         etat.loc = loc;
         epingler(loc);
-        if (etat.video) changerLangue(etat.video, film, loc);
+        if (etat.video) {
+          /* La bascule recharge la source : meme attente, meme signal. */
+          if (!(etat.video.currentTime === 0 && etat.video.paused)) {
+            suivreChargement(cadre, etat.video);
+          }
+          changerLangue(etat.video, film, loc);
+        }
         peindre();
         /* Seule mesure qui dira si une version malgache merite d'etre
            produite. Ne fait rien tant qu'aucun analytics n'est installe. */
@@ -178,6 +184,51 @@
   }
 
   /* ================================ Montage ================================ */
+
+  /* Une roue posee sur le cadre pendant que la video se telecharge. Sur la
+     liaison de Nosy Be, 13 Mo prennent du temps : sans ce signal, le visiteur
+     voit un rectangle noir et croit que rien ne s'est passe. On la retire au
+     premier `playing`, pas au `canplay` — c'est le moment ou l'image bouge
+     reellement. */
+  function attente(cadre) {
+    var d = document.createElement("div");
+    d.setAttribute("aria-label", "Chargement de la vidéo");
+    d.setAttribute("role", "status");
+    d.style.cssText =
+      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
+      "background:#000;z-index:2";
+    d.innerHTML =
+      '<span style="width:34px;height:34px;border-radius:999px;border:3px solid rgba(255,255,255,.25);' +
+      'border-top-color:#fff;animation:tf-tourne-video .7s linear infinite"></span>';
+    if (!document.getElementById("tf-style-video")) {
+      var st = document.createElement("style");
+      st.id = "tf-style-video";
+      st.textContent = "@keyframes tf-tourne-video{to{transform:rotate(360deg)}}" +
+        "@media (prefers-reduced-motion:reduce){#tf-style-video~*[role=status]>span{animation-duration:2.5s}}";
+      document.head.appendChild(st);
+    }
+    cadre.appendChild(d);
+    return d;
+  }
+
+  function suivreChargement(cadre, video) {
+    var roue = attente(cadre);
+    var fini = false;
+    function retirer() {
+      if (fini) return;
+      fini = true;
+      if (roue && roue.parentNode) roue.parentNode.removeChild(roue);
+    }
+    video.addEventListener("playing", retirer, { once: true });
+    /* Filet : si la lecture automatique est refusee, la roue ne doit pas
+       rester par-dessus les controles natifs. */
+    video.addEventListener("canplay", function () { setTimeout(retirer, 400); }, { once: true });
+    video.addEventListener("error", retirer, { once: true });
+    /* Et si le reseau ne repond pas du tout, on rend la main au bout de 25 s
+       plutot que de laisser une roue tourner indefiniment. */
+    setTimeout(retirer, 25000);
+    return retirer;
+  }
 
   function monter(cadre) {
     var film = cadre.getAttribute("data-film");
@@ -210,6 +261,7 @@
         cadre.innerHTML = "";
         cadre.appendChild(v);
         etat.video = v;
+        suivreChargement(cadre, v);
         /* play() appele de facon synchrone dans le gestionnaire de clic :
            seule maniere fiable de demarrer une video non muette sur iOS. */
         var p = v.play();
@@ -218,7 +270,7 @@
     }
 
     var boite = document.querySelector('[data-film-langs="' + film + '"]');
-    if (boite) construireSelecteur(boite, film, etat);
+    if (boite) construireSelecteur(boite, film, etat, cadre);
   }
 
   function demarrer() {

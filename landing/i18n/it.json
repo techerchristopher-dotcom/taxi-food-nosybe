@@ -15,7 +15,6 @@
   "common.og.siteName": "Taxi Food Nosy Be",
   "common.og.locale": "it_IT",
   "common.htmlLang": "it",
-
   "client.meta.title": "Consegna cibo a domicilio a Nosy Be e Ambatoloaka | Taxi Food",
   "client.meta.description": "Consegna cibo a domicilio a Nosy Be: i migliori ristoranti di Ambatoloaka a casa tua, in hotel o in villa. Iscriviti e ti avvisiamo all'apertura.",
   "client.seo.keywords": "consegna cibo a domicilio Nosy Be, ordinare cibo Nosy Be, consegna ristoranti Ambatoloaka",
@@ -25,12 +24,10 @@
   "client.twitter.title": "Consegna cibo a domicilio a Nosy Be e Ambatoloaka | Taxi Food",
   "client.twitter.description": "I migliori ristoranti di Ambatoloaka a casa tua, in hotel o in villa. Iscriviti: ti avvisiamo appena apriamo.",
   "client.twitter.imageAlt": "Una famiglia cena in tranquillità a casa, a Nosy Be, con un pasto consegnato da Taxi Food",
-
   "client.noscript.intro": "JavaScript è disattivato sul tuo browser. Puoi leggere tutta la pagina, ma il modulo di iscrizione, il video e la dimostrazione dell'app non funzioneranno.",
   "client.noscript.contactBefore": " Per iscriverti alla lista d'attesa, scrivici su ",
   "client.noscript.whatsappLink": "WhatsApp al +261 37 34 37 912",
   "client.noscript.contactAfter": ".",
-
   "client.hero.badge": "Presto a Nosy Be, Madagascar",
   "client.hero.titleBefore": "Consegna cibo a domicilio a Nosy Be: i migliori ristoranti di Ambatoloaka, ",
   "client.hero.titleAccent": "senza la confusione.",
@@ -41,7 +38,6 @@
   "client.hero.videoButtonAriaLabel": "Avvia il video di presentazione di Taxi Food",
   "client.hero.videoPosterAlt": "Video di presentazione Taxi Food",
   "client.hero.videoCaption": "Tocca per avviare il video",
-
   "client.restos.eyebrow": "I RISTORANTI DELL'ISOLA",
   "client.restos.title": "Un partner già confermato, altri in trattativa.",
   "client.restos.cabane.logoAlt": "Logo La Cabane",
@@ -55,7 +51,6 @@
   "client.restos.angelo.name": "Angelo & Taxi Be",
   "client.restos.angelo.badge": "TRATTATIVA IN CORSO 🛵",
   "client.restos.angelo.desc": "Stiamo ancora cercando di convincerli. Torniamo domani, con il sorriso. 😇",
-
   "client.personas.eyebrow": "È FATTO PER TE",
   "client.personas.title": "Che tu sia in famiglia, in coppia o tra amici stanchi dopo una giornata in mare.",
   "client.personas.famille.imgAlt": "Una famiglia cena tranquillamente sulla veranda della sua casa a Nosy Be",
@@ -68,7 +63,6 @@
   "client.personas.amis.title": "Tra amici, dopo l'escursione",
   "client.personas.amis.desc": "Stanco dopo una giornata in mare? Nessuna voglia di uscire di nuovo. Ti portiamo da mangiare, in hotel o in villa — a te resta solo da rilassarti.",
   "client.personas.footnote": "Taxi Food consegna ad Ambatoloaka, Hell-Ville e in tutta l'isola di Nosy Be, in Madagascar. Potrai ordinare cibo a Nosy Be e farti consegnare il pasto a domicilio, in hotel o in villa.",
-
   "client.pourquoi.eyebrow": "PERCHÉ TAXI FOOD",
   "client.pourquoi.title": "Il buon sapore di Ambatoloaka, senza metterci piede stasera.",
   "client.pourquoi.badge": "Novità a Nosy Be",
@@ -77,54 +71,46 @@
   "client.pourquoi.check1": "Nessun indirizzo da dettare",
   "client.pourquoi.check2": "Il fattorino ti trova da solo",
   "client.pourquoi.imgAlt": "Schermata dell'indirizzo Taxi Food con localizzazione automatica",
-
   "client.sim.eyebrow": "PROVA L'APP",
   "client.sim.title": "Fai un ordine, per davvero.",
   "client.sim.lede": "Tocca lo schermo qui sotto per scoprire La Cabane, scegliere i tuoi piatti e seguire il tuo ordine come nell'app.",
   "client.sim.phoneAriaLabel": "Passaggio successivo della dimostrazione",
-
   "client.sim.step1.aria": "Passaggio 1: Scegli un ristorante",
   "client.sim.step1.label": "1 · Ristorante",
   "client.sim.step1.hint": "Tocca per aprire La Cabane",
   "client.sim.step1.title": "Scegli un ristorante",
   "client.sim.step1.desc": "L'elenco dei ristoranti di Nosy Be, con foto e menu. Tocchiamo La Cabane.",
   "client.sim.step1.alt": "Schermata iniziale dell'app Taxi Food: l'elenco dei ristoranti di Nosy Be",
-
   "client.sim.step2.aria": "Passaggio 2: Sfoglia il menu",
   "client.sim.step2.label": "2 · Menu",
   "client.sim.step2.hint": "Tocca un piatto per vederlo",
   "client.sim.step2.title": "Sfoglia il menu",
   "client.sim.step2.desc": "Kebab, hamburger, tacos, bevande — tutto il menu di La Cabane, con i prezzi.",
   "client.sim.step2.alt": "Il menu di La Cabane nell'app Taxi Food, con le foto e i prezzi",
-
   "client.sim.step3.aria": "Passaggio 3: Personalizza il tuo piatto",
   "client.sim.step3.label": "3 · Opzioni",
   "client.sim.step3.hint": "Scegli le opzioni e aggiungi al carrello",
   "client.sim.step3.title": "Personalizza il tuo piatto",
   "client.sim.step3.desc": "Salsa, aggiunte, bevanda — adatti l'ordine ai tuoi gusti.",
   "client.sim.step3.alt": "Schermata delle opzioni di un piatto nell'app Taxi Food: salse, aggiunte, bevanda",
-
   "client.sim.step4.aria": "Passaggio 4: Controlla il carrello",
   "client.sim.step4.label": "4 · Carrello",
   "client.sim.step4.hint": "Controlla il tuo ordine",
   "client.sim.step4.title": "Controlla il carrello",
   "client.sim.step4.desc": "Il riepilogo completo prima di confermare, con il totale da pagare.",
   "client.sim.step4.alt": "Il carrello dell'ordine nell'app Taxi Food, con il riepilogo e il totale",
-
   "client.sim.step5.aria": "Passaggio 5: Indica dove ti trovi",
   "client.sim.step5.label": "5 · Indirizzo",
   "client.sim.step5.hint": "Conferma la tua posizione",
   "client.sim.step5.title": "Indica dove ti trovi",
   "client.sim.step5.desc": "Ci pensa la geolocalizzazione — non devi più descrivere un indirizzo.",
   "client.sim.step5.alt": "Schermata dell'indirizzo nell'app Taxi Food: la posizione del cliente rilevata tramite geolocalizzazione",
-
   "client.sim.step6.aria": "Passaggio 6: Segui la consegna in diretta",
   "client.sim.step6.label": "6 · Tracciamento",
   "client.sim.step6.hint": "Tocca per ricominciare",
   "client.sim.step6.title": "Segui la consegna in diretta",
   "client.sim.step6.desc": "Sai sempre a che punto è il tuo pasto, fino a quando arriva.",
   "client.sim.step6.alt": "Schermata di tracciamento dell'ordine in diretta nell'app Taxi Food",
-
   "client.comment.eyebrow": "PRIMA DELL'APERTURA",
   "client.comment.title": "Come essere avvisato per primo.",
   "client.comment.step1.title": "Ti iscrivi",
@@ -133,7 +119,6 @@
   "client.comment.step2.desc": "Appena apriamo ufficialmente, tu per primo.",
   "client.comment.step3.title": "Ordini",
   "client.comment.step3.desc": "Il tuo ristorante preferito, consegnato dove sei.",
-
   "client.signup.imgAlt": "Una ragazza si iscrive alla lista d'attesa di Taxi Food dal suo telefono",
   "client.signup.eyebrow": "LISTA D'ATTESA",
   "client.signup.title": "Fatti avvisare appena apriamo.",
@@ -142,7 +127,6 @@
   "client.signup.teaserFr": "Livraison de repas à Nosy Be : commande dans les meilleurs restos d'Ambatoloaka et fais-toi livrer chez toi, à l'hôtel ou en villa. Inscris-toi ci-dessous, on te prévient dès l'ouverture.",
   "client.signup.teaserEn": "Food delivery in Nosy Be: order from the best restaurants in Ambatoloaka and have your meal delivered to your home, hotel or villa. Sign up below and we will let you know as soon as we open.",
   "client.signup.teaserIt": "Consegna cibo a domicilio a Nosy Be: ordina dai migliori ristoranti di Ambatoloaka. Iscriviti per essere avvisato all'apertura.",
-
   "client.form.name.label": "Nome e cognome",
   "client.form.name.placeholder": "Es. Rasoa Andriamana",
   "client.form.phone.label": "Numero di telefono",
@@ -160,7 +144,6 @@
   "client.form.sent.title": "Ricevuto, grazie!",
   "client.form.sent.desc": "Sei nella lista. Ti mandiamo un messaggio appena Taxi Food apre a Nosy Be.",
   "client.form.sent.again": "Iscrivi un'altra persona",
-
   "resto.meta.title": "Diventare ristorante partner a Nosy Be | Taxi Food",
   "resto.meta.description": "Entri tra i primi ristoranti partner di Nosy Be. Iscrizione gratuita, nessuna attrezzatura da acquistare: configuriamo il menu insieme a Lei.",
   "resto.seo.keywords": "ristorante partner Nosy Be, app consegna pasti Nosy Be, consegna ristoranti Ambatoloaka",
@@ -170,14 +153,12 @@
   "resto.twitter.title": "Diventare ristorante partner a Nosy Be | Taxi Food",
   "resto.twitter.description": "Entri tra i primi ristoranti partner di Nosy Be. Iscrizione gratuita, nessuna attrezzatura da acquistare: configuriamo il menu insieme a Lei.",
   "resto.twitter.imageAlt": "Prima/dopo: un titolare di ristorante in difficoltà senza fattorino, poi un fattorino Taxi Food che ritira l'ordine",
-
   "resto.noscript.intro": "JavaScript è disattivato sul Suo browser. Può leggere tutta la pagina, ma il modulo di richiamata e la dimostrazione dell'app non funzioneranno.",
   "resto.noscript.contactBefore": " Per contattarci, chiami il ",
   "resto.noscript.phoneLink": "+261 37 34 37 912",
   "resto.noscript.contactMiddle": " oppure ci scriva su ",
   "resto.noscript.whatsappLink": "WhatsApp",
   "resto.noscript.contactAfter": ".",
-
   "resto.hero.badge": "Diventi partner",
   "resto.hero.titleBefore": "Diventi uno dei primissimi ",
   "resto.hero.titleAccent": "ristoranti partner",
@@ -189,7 +170,6 @@
   "resto.hero.check2": "Nessuna attrezzatura da acquistare",
   "resto.hero.imgAlt": "Schermata dell'area ristorante Angelo: nuovo ordine ricevuto, da accettare o rifiutare",
   "resto.hero.imgCaption": "LA SUA AREA RISTORANTE — ORDINE RICEVUTO",
-
   "resto.galeres.eyebrow": "PERCHÉ ENTRARE IN TAXI FOOD",
   "resto.galeres.title": "I veri grattacapi dei ristoratori, risolti.",
   "resto.galeres.card1.imgAlt": "Prima/dopo: un titolare in difficoltà senza fattorino, poi un fattorino Taxi Food che ritira l'ordine nel ristorante",
@@ -201,7 +181,6 @@
   "resto.galeres.card3.imgAlt": "Prima/dopo: una turista passa davanti al ristorante senza vederlo, poi si ferma grazie all'app e viene accolta",
   "resto.galeres.card3.title": "Una vetrina online, senza sforzo",
   "resto.galeres.card3.desc": "Non serve essere esperti di digitale. Il Suo menu e le Sue foto sono visibili nell'app, anche senza sito né social.",
-
   "resto.miseenplace.eyebrow": "COME FUNZIONA",
   "resto.miseenplace.title": "Alla configurazione pensiamo noi.",
   "resto.miseenplace.step1.imgAlt": "Un tecnico Taxi Food configura il menu al computer insieme al titolare di una pizzeria malgascia",
@@ -213,47 +192,40 @@
   "resto.miseenplace.step3.imgAlt": "Un fattorino Taxi Food consegna una pizza al cliente e riceve il pagamento in contanti alla consegna",
   "resto.miseenplace.step3.title": "Il cliente paga in contanti alla consegna",
   "resto.miseenplace.step3.desc": "Esattamente come oggi — su questo per Lei non cambia nulla.",
-
   "resto.sim.eyebrow": "IL CICLO DI UN ORDINE",
   "resto.sim.title": "Simuli un ordine, passaggio dopo passaggio.",
   "resto.sim.lede": "Tocchi lo schermo qui sotto per far avanzare l'ordine, esattamente come nell'app.",
   "resto.sim.phoneAriaLabel": "Passaggio successivo della dimostrazione",
-
   "resto.sim.step1.aria": "Passaggio 1: Ricevuto",
   "resto.sim.step1.label": "1 · Ricevuto",
   "resto.sim.step1.hint": "Tocchi per accettare l'ordine",
   "resto.sim.step1.title": "Ricevuto",
   "resto.sim.step1.desc": "L'ordine arriva con il dettaglio esatto. Lei Accetta o Rifiuta.",
   "resto.sim.step1.alt": "Area ristorante Taxi Food: un nuovo ordine ricevuto, da accettare o rifiutare",
-
   "resto.sim.step2.aria": "Passaggio 2: Confermato",
   "resto.sim.step2.label": "2 · Confermato",
   "resto.sim.step2.hint": "Tocchi per avviare la preparazione",
   "resto.sim.step2.title": "Confermato",
   "resto.sim.step2.desc": "Con un tocco avvia la preparazione quando è pronto.",
   "resto.sim.step2.alt": "Area ristorante Taxi Food: l'ordine confermato, la preparazione può iniziare",
-
   "resto.sim.step3.aria": "Passaggio 3: In preparazione",
   "resto.sim.step3.label": "3 · In preparazione",
   "resto.sim.step3.hint": "Tocchi quando il piatto è pronto",
   "resto.sim.step3.title": "In preparazione",
   "resto.sim.step3.desc": "Lei cucina. Un tocco su « Segna come pronto » quando ha finito.",
   "resto.sim.step3.alt": "Area ristorante Taxi Food: l'ordine in preparazione in cucina",
-
   "resto.sim.step4.aria": "Passaggio 4: Ritirato",
   "resto.sim.step4.label": "4 · Ritirato",
   "resto.sim.step4.hint": "Il fattorino ritira e parte verso il cliente",
   "resto.sim.step4.title": "Ritirato",
   "resto.sim.step4.desc": "Il fattorino passa a ritirarlo e prende in carico la consegna fino al cliente.",
   "resto.sim.step4.alt": "Area ristorante Taxi Food: l'ordine ritirato dal fattorino",
-
   "resto.sim.step5.aria": "Passaggio 5: Consegnato",
   "resto.sim.step5.label": "5 · Consegnato",
   "resto.sim.step5.hint": "Consegnato — tocchi per un nuovo ordine",
   "resto.sim.step5.title": "Consegnato",
   "resto.sim.step5.desc": "Finisce nello storico, con il dettaglio completo della vendita.",
   "resto.sim.step5.alt": "Area ristorante Taxi Food: l'ordine consegnato, nello storico delle vendite",
-
   "resto.partenaire.cabaneLogoAlt": "Logo La Cabane",
   "resto.partenaire.cabaneTitle": "La Cabane è già entrata in Taxi Food.",
   "resto.partenaire.cabaneSub": "Ambatoloaka · kebab, tacos, hamburger fatti in casa",
@@ -267,7 +239,6 @@
   "resto.partenaire.produit.saladeTenders": "Insalata con tenders La Cabane",
   "resto.partenaire.title": "Il prossimo ristorante può essere il Suo.",
   "resto.partenaire.lede": "Entri tra i primissimi ristoranti partner di Nosy Be. Che il Suo ristorante sia ad Ambatoloaka, a Hell-Ville o altrove sull'isola, passiamo a trovarLa, configuriamo il Suo menu e può partire.",
-
   "resto.contact.tabCall": "Ci contatti",
   "resto.contact.tabCallback": "Farsi richiamare",
   "resto.contact.contactLabel": "Il Suo referente Taxi Food",
@@ -276,7 +247,6 @@
   "resto.contact.whatsapp": "Scrivere su WhatsApp",
   "resto.contact.booking": "Fissare un appuntamento",
   "resto.contact.bookingNoscript": "Aprire la pagina per fissare un appuntamento",
-
   "resto.lead.firstName.label": "Nome",
   "resto.lead.firstName.placeholder": "Nome",
   "resto.lead.lastName.label": "Cognome",
@@ -293,21 +263,17 @@
   "resto.lead.errorRate": "Troppi tentativi da questa connessione. Attenda qualche minuto prima di riprovare.",
   "resto.lead.sent.title": "Grazie! La richiamiamo al più presto.",
   "resto.lead.sent.again": "Inviare un'altra richiesta",
-
   "founder.photoAlt": "Christopher, fondatore di Taxi Food, in polo nera Taxi Food sulla terrazza di una pizzeria in riva al mare a Nosy Be, con il forno per la pizza e lo scooter delle consegne dietro di lui.",
-
   "founder.client.title": "Perché Taxi Food?",
   "founder.client.p1": "Mi chiamo Christopher, business developer, vivo a Nosy Be da dicembre 2025. Qui ho creato Rentanoo, la piattaforma che si occupa dei viaggiatori dalla A alla Z: transfer dall'aeroporto, alloggio, noleggio, escursioni — e ora la ristorazione.",
   "founder.client.p2": "Due cose tornavano di continuo. I residenti mi dicevano che avrebbero voglia di mangiare come ad Ambatoloaka, ma senza il rumore, la confusione e la folla. E i viaggiatori, loro, mi chiedevano sistematicamente dove mangiare, quali sono gli indirizzi giusti, di chi fidarsi — e se potevamo consegnare a domicilio.",
   "founder.client.p3": "Allora ho provato di persona. La maggior parte dei ristoranti non fa consegne. Mandi un badjaj — il tuk-tuk locale — e l'ordine non arriva mai, arriva già assaggiato perché all'autista è venuta fame per strada, oppure arriva freddo.",
   "founder.client.p4": "Ho creato Taxi Food per questo: ristoranti veri, fattorini veri, e il tuo ordine che segui fino alla tua porta.",
-
   "founder.resto.title": "Chi c'è dietro Taxi Food?",
   "founder.resto.p1": "Mi chiamo Christopher, business developer, vivo a Nosy Be da dicembre 2025. Qui ho creato Rentanoo, la piattaforma che accompagna i viaggiatori dalla A alla Z: transfer dall'aeroporto, alloggio, noleggio, escursioni — e ora la ristorazione.",
   "founder.resto.p2": "È da lì che è nato tutto. I viaggiatori che accolgo mi chiedono sistematicamente dove mangiare, quali sono gli indirizzi giusti di Ambatoloaka, di chi fidarsi. E i residenti vogliono la Sua cucina, ma senza il caos del quartiere. La domanda c'è già. Quello che manca è la strada tra la Sua cucina e loro.",
   "founder.resto.p3": "Prima di costruire qualsiasi cosa ho voluto verificare: ho ordinato di persona, qui. Pochi ristoranti fanno consegne, e quando si manda un badjaj — il tuk-tuk locale — l'ordine non arriva mai, arriva già assaggiato, oppure arriva freddo. Non va bene per nessuno — e sopra c'è il Suo nome, non quello dell'autista.",
   "founder.resto.p4": "Taxi Food risolve esattamente questo: i nostri fattorini, l'ordine scritto nero su bianco, il cliente geolocalizzato. Lei cucina, al resto pensiamo noi. La Cabane è stato il primo a fidarsi di me.",
-
   "schema.inLanguage": "it",
   "schema.org.description": "Taxi Food è il primo servizio di consegna cibo a domicilio di Nosy Be, in Madagascar. I clienti ordinano nei ristoranti dell'isola dall'applicazione e ricevono il pasto a casa, in hotel o nella loro villa.",
   "schema.org.slogan": "I migliori ristoranti di Ambatoloaka, senza la confusione.",
@@ -328,5 +294,8 @@
   "schema.resto.webpage.description": "Entri tra i primi ristoranti partner di Nosy Be. Iscrizione gratuita, nessuna attrezzatura da acquistare: configuriamo il menu insieme a Lei.",
   "schema.resto.ogImage.caption": "Prima/dopo: un titolare di ristorante in difficoltà senza fattorino, poi un fattorino Taxi Food che ritira l'ordine",
   "schema.breadcrumb.home": "Home",
-  "schema.breadcrumb.restos": "Ristoranti partner"
+  "schema.breadcrumb.restos": "Ristoranti partner",
+  "resto.hero.videoButtonAriaLabel": "Avvia il video di presentazione per i ristoratori",
+  "resto.hero.videoPosterAlt": "Un ristoratore di Nosy Be prepara un piatto nella sua cucina",
+  "resto.hero.videoCaption": "Tocca per avviare il video"
 }

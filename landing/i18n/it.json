@@ -303,5 +303,7 @@
   "stores.soonTitle": "Presto disponibile",
   "stores.appleAlt": "Scarica su App Store — presto disponibile",
   "stores.playAlt": "Disponibile su Google Play — presto disponibile",
-  "stores.free": "Gratuita. Nient'altro da installare."
+  "stores.free": "Gratuita. Nient'altro da installare.",
+  "film.langLabel": "Lingua del video:",
+  "film.mgNote": "voce malgascia, testi a schermo in francese"
 }

@@ -303,5 +303,7 @@
   "stores.soonTitle": "Coming soon",
   "stores.appleAlt": "Download on the App Store — coming soon",
   "stores.playAlt": "Get it on Google Play — coming soon",
-  "stores.free": "Free. Nothing else to install."
+  "stores.free": "Free. Nothing else to install.",
+  "film.langLabel": "Video language:",
+  "film.mgNote": "Malagasy voice-over, on-screen text in French"
 }

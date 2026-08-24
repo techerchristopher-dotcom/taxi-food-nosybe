@@ -451,8 +451,8 @@ svg.i{display:block;flex:none;fill:currentColor}
 <div style="position:absolute;top:120px;left:-2px;width:3px;height:46px;border-radius:2px;background:#2A2A2E"></div>
 <div style="position:absolute;top:78px;right:-2px;width:3px;height:64px;border-radius:2px;background:#2A2A2E"></div>
 <div style="position:absolute;top:20px;left:50%;transform:translateX(-50%);width:88px;height:26px;border-radius:999px;background:#0A0A0B;z-index:3"></div>
-<div id="video-frame" style="position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden">
-<button type="button" class="btn" id="video-play" style="cursor:pointer;position:absolute;inset:0;width:100%" aria-label="Avvia il video di presentazione di Taxi Food">
+<div id="video-frame" data-film="client" style="position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden">
+<button type="button" class="btn" id="video-play" data-film-play style="cursor:pointer;position:absolute;inset:0;width:100%" aria-label="Avvia il video di presentazione di Taxi Food">
 <img src="/media/idle-tacos-720.webp" alt="Video di presentazione Taxi Food" width="720" height="720" fetchpriority="high" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.9">
 <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 40%,rgba(0,0,0,.7) 100%)"></span>
 <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
@@ -464,6 +464,9 @@ svg.i{display:block;flex:none;fill:currentColor}
 <span style="position:absolute;left:14px;bottom:14px;right:14px;text-align:center;font:700 13px/1.3 Archivo,sans-serif;color:#fff">Tocca per avviare il video</span>
 </button>
 </div>
+</div>
+<div data-film-langs="client" data-note-mg="voce malgascia, testi a schermo in francese" style="display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;font:400 11px/1.4 Archivo,sans-serif;color:#6B6662">
+<span>Lingua del video:</span>
 </div>
 </div>
 </div>
@@ -1117,30 +1120,6 @@ svg.i{display:block;flex:none;fill:currentColor}
     });
   }
 
-  /* ---- Video : l'element n'existe qu'apres le tap (1,8 Mo economises au chargement).
-     play() est appele de facon synchrone dans le gestionnaire de clic, seule
-     maniere fiable de demarrer une video non muette sur iOS et Android. ---- */
-  var playBtn = document.getElementById("video-play");
-  if (playBtn) {
-    playBtn.addEventListener("click", function () {
-      if (st.videoOpen) return;
-      st.videoOpen = true;
-      var frame = document.getElementById("video-frame");
-      var v = document.createElement("video");
-      v.setAttribute("playsinline", "");
-      v.setAttribute("controls", "");
-      v.setAttribute("preload", "none");
-      v.setAttribute("poster", "/media/poster-video.jpg");
-      v.setAttribute("width", "540");
-      v.setAttribute("height", "960");
-      v.style.cssText = "width:100%;height:100%;object-fit:contain;display:block;background:#000";
-      v.src = "/media/taxi-food-540.mp4";
-      frame.innerHTML = "";
-      frame.appendChild(v);
-      var p = v.play();
-      if (p && p["catch"]) p["catch"](function () { /* l'utilisateur lancera via les controles natifs */ });
-    });
-  }
 
   TF.render(renderVals());
 
@@ -1177,5 +1156,6 @@ svg.i{display:block;flex:none;fill:currentColor}
   })();
 })();
 </script>
+<script defer src="/js/film.js"></script>
 </body>
 </html>

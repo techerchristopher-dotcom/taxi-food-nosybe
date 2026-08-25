@@ -12,14 +12,27 @@ Trois livrables distincts, à ne pas confondre :
 
 ## Où en est la soumission
 
-**iOS — build 1.0.0 (22) soumis le 2026-08-23**, après **deux rejets** du build 17 :
+**iOS — ✅ VALIDÉE PAR APPLE** (annoncé par le porteur du projet le 2026-08-24 ; je n'ai pas
+accès à App Store Connect pour le confirmer moi-même). Le build 1.0.0 (22) est passé, après
+**deux rejets** du build 17 :
 
 1. **Guideline 5.1.1(v)** — « the app requires users to register before viewing the menu ». L'app s'ouvrait sur l'écran de connexion. Corrigé : le catalogue est désormais libre, voir la section « Navigation libre » plus bas. C'est le changement de comportement le plus important de tout le projet.
 2. **Guideline 2.1(a)** — « we cannot access the Restaurant and Courier accounts ». Un seul compte de démo était fourni, et les notes disaient que les espaces pro étaient hors périmètre. **Apple veut vérifier CHAQUE type de compte.** Trois comptes actifs sont maintenant fournis.
 
 ⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
 
-**Android** — toute la chaîne technique est prête et testée en conditions réelles le 2026-08-19 (Google natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé, **identité vérifiée**. Restent la vérification du numéro de téléphone et celle de l'accès à un **appareil Android physique** — cette dernière est refusée depuis un émulateur (détection anti-fraude de Google, message trompeur parlant d'Android 10). Aucun build `production` Android n'est encore sorti.
+**Android** — toute la chaîne technique est prête et testée en conditions réelles le
+2026-08-19 (Google natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google
+Play créé, **identité vérifiée**, et **un appareil Android physique est disponible depuis le
+2026-08-24** — la vérification d'appareil n'est donc plus bloquée. Aucun build `production`
+Android n'est encore sorti.
+
+⚠️ **Le vrai obstacle Android n'est pas technique, c'est une règle de Google** : tout compte
+**personnel** créé après le 13 novembre 2023 — le nôtre date du 2026-08-19 — doit faire
+tourner un **test fermé avec 12 testeurs pendant 14 jours continus**, avec usage réel
+vérifié, avant de pouvoir demander l'accès à la production. Un compte **organisation** en est
+exempt, mais exige un numéro **D-U-N-S** dont l'émission va jusqu'à 30 jours. Les deux
+chemins et leur arbitrage chiffré : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ⚠️ **Quatre documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
 

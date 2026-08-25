@@ -100,6 +100,79 @@ permanente, pas un chantier en attente.
 ⚠️ **À vérifier au premier build Android** : que le flux web (feuille de navigateur système)
 s'ouvre et se referme correctement sur un vrai retour de session, comme sur web.
 
+## ⛔ Le vrai calendrier : 12 testeurs pendant 14 jours
+
+**Vérifié le 2026-08-24 sur la page officielle de Google**
+([Play Console Help](https://support.google.com/googleplay/android-developer/answer/14151465)).
+Ce point manquait à ce dossier, et il commande tout le reste.
+
+Tout compte de développeur **personnel** créé **après le 13 novembre 2023** ne peut pas
+publier directement en production. Le nôtre a été créé le **2026-08-19** : la règle
+s'applique.
+
+| Exigence | Valeur |
+|---|---|
+| Testeurs inscrits au test fermé | **12 minimum** |
+| Durée d'inscription **continue** | **14 jours sans interruption** |
+| Ce qu'on attend d'eux | **un usage réel** — Google vérifie depuis 2026 que les testeurs ont effectivement utilisé l'app, pas seulement accepté l'invitation |
+| Puis | demander l'accès à la production, examen « une semaine ou moins » |
+
+**Conséquence : il faut compter trois semaines entre le premier build et la publication**,
+et ça ne se raccourcit pas. Le compte à rebours des 14 jours ne démarre qu'une fois les
+12 testeurs inscrits — un treizième qui se désinscrit au jour 10 ne remet pas le compteur
+à zéro, mais descendre sous 12 le fait.
+
+⚠️ **Ce qu'il faut préparer MAINTENANT, en parallèle du reste** : réunir 12 personnes avec
+un téléphone Android et un compte Google. À Nosy Be c'est faisable — le personnel des trois
+restaurants partenaires, les livreurs qu'on recrute, l'entourage — mais ça se prépare, ça ne
+s'improvise pas le jour du build. Les invitations se font par adresse Gmail ou par groupe
+Google.
+
+⚠️ **Ne pas confondre avec TestFlight.** Côté Apple, le test interne était facultatif et
+instantané. Ici il est **obligatoire, minuté, et vérifié**.
+
+
+### La sortie par le compte « organisation » — et pourquoi elle est peut-être plus lente
+
+La règle des 12 testeurs ne vise que les comptes **personnels**. Un compte
+**organisation** y échappe. Christopher a une société — **Rentanoo, SAS, RCS Saint-Pierre
+de La Réunion 100 000 926** — donc l'option existe vraiment.
+
+Mais elle a un péage : **le numéro D-U-N-S est obligatoire**. Google est explicite :
+« Sans ce numéro, vous ne pourrez pas créer de compte de développeur pour une
+organisation. » Il est gratuit, demandé à Dun & Bradstreet, et **son délai d'émission
+standard va jusqu'à 30 jours**.
+
+Les deux chemins, chiffrés :
+
+| | Test fermé (compte actuel) | Compte organisation |
+|---|---|---|
+| Prérequis | 12 personnes avec un Android | D-U-N-S + vérification société |
+| Délai | 14 jours de test + examen ≤ 1 semaine | D-U-N-S jusqu'à 30 j + vérification 2 à 4 semaines |
+| Coût | 0 € | 25 $ de nouveau (nouveau compte) |
+| **Total réaliste** | **≈ 3 semaines** | **≈ 4 à 8 semaines** |
+
+⚠️ **La conversion d'un compte personnel en compte organisation n'est documentée nulle
+part chez Google.** Sa page sur le type de compte ne l'aborde pas. Plusieurs sources
+tierces affirment qu'elle est impossible et qu'il faut créer un second compte puis
+transférer l'application — je n'ai pas trouvé de confirmation officielle, donc à vérifier
+auprès du support Play avant de payer quoi que ce soit une deuxième fois.
+
+**Le fait qui décide, et il se vérifie en cinq minutes :** la SAS a-t-elle déjà un
+numéro D-U-N-S ? Beaucoup de sociétés françaises sont déjà dans la base de Dun &
+Bradstreet sans le savoir. Si le numéro existe, le compte organisation devient le chemin
+court. S'il faut le demander, les 30 jours annoncés rendent le test fermé plus rapide.
+
+**Recommandation : mener les deux de front.** Demander le D-U-N-S coûte zéro et n'engage
+à rien ; pendant ce temps, le test fermé tourne et son compteur de 14 jours avance. Le
+premier qui aboutit gagne. Ce qu'il ne faut pas faire, c'est attendre le D-U-N-S sans
+rien lancer.
+
+**À noter pour plus tard, indépendamment du calendrier :** un compte organisation affiche
+le **nom de la société** sur la fiche Play plutôt qu'un nom de personne. Pour un service
+commercial, c'est le bon état final, même si on publie d'abord depuis le compte personnel.
+
+
 ## B. Comptes externes — à créer par le porteur du projet
 
 Aucun de ces trois points ne peut être fait par un agent : identité, paiement, ou compte
@@ -124,8 +197,8 @@ demandées par Google avant de pouvoir publier :
 3. **Vérification d'accès à un appareil Android réel** — installer l'app « Google Play
    Console » depuis le Play Store sur un vrai téléphone et s'y connecter. ⚠️ Nécessite un
    appareil Android physique ; Google bloque généralement cette vérification depuis un
-   émulateur (détection anti-fraude). Pas encore fait — à faire dès qu'un appareil est
-   disponible (emprunté ou personnel).
+   émulateur (détection anti-fraude). ✅ **Un appareil Android est disponible depuis le
+   2026-08-24** — ce blocage est levé, la vérification peut être faite.
 
 **Plus rien à faire côté code ou configuration pour Android tant que ces trois points ne
 sont pas validés par Google.** Le compte étant en cours de vérification, aucun build

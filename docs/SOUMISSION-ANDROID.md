@@ -132,6 +132,30 @@ Google.
 instantané. Ici il est **obligatoire, minuté, et vérifié**.
 
 
+### ⛔ L'ordre est imposé : les vérifications d'abord
+
+Constaté dans le Play Console le **2026-08-24** : le bouton **« Create app » est verrouillé**,
+avec la mention *« Complete account verifications to create new apps »*. Tant que les
+vérifications de compte ne sont pas terminées, **rien** n'avance — ni la création d'une
+application, ni le changement de type de compte.
+
+L'identité n'est donc **pas** validée, contrairement à ce que ce dossier affirmait. Google
+enchaîne les trois vérifications dans cet ordre, chacune bloquant la suivante :
+
+| # | Vérification | État au 2026-08-24 | Ce qu'il faut |
+|---|---|---|---|
+| 1 | **Accès à un appareil Android** | ⏳ à faire, **débloquée** | installer l'app **Play Console** sur l'Android et s'y connecter |
+| 2 | **Identité** | ⏳ en attente d'approbation | documents envoyés, Google les approuve |
+| 3 | **Numéro de téléphone** | 🔒 bloquée | exige que l'identité soit approuvée |
+
+**Le compte a un identifiant : `6682410097385681985`.** Page « À propos de vous » :
+`https://play.google.com/console/u/0/developers/6682410097385681985/account-details`
+
+⚠️ **La conversion en compte organisation vient APRÈS ces trois vérifications**, pas avant.
+La procédure en 11 étapes plus haut reste valable, mais elle est inaccessible tant que le
+compte n'est pas débloqué. Ne pas s'y attaquer en premier — c'est l'erreur que ce dossier
+induisait.
+
 ### ✅ La sortie retenue : convertir le compte en « organisation »
 
 La règle des 12 testeurs ne vise que les comptes **personnels**. Un compte

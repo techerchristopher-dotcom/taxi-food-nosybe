@@ -132,46 +132,47 @@ Google.
 instantané. Ici il est **obligatoire, minuté, et vérifié**.
 
 
-### La sortie par le compte « organisation » — et pourquoi elle est peut-être plus lente
+### ✅ La sortie retenue : convertir le compte en « organisation »
 
 La règle des 12 testeurs ne vise que les comptes **personnels**. Un compte
 **organisation** y échappe. Christopher a une société — **Rentanoo, SAS, RCS Saint-Pierre
-de La Réunion 100 000 926** — donc l'option existe vraiment.
+de La Réunion 100 000 926** — **et elle a déjà un numéro D-U-N-S** (confirmé le
+2026-08-24). Le seul vrai péage de cette voie est donc déjà payé.
 
-Mais elle a un péage : **le numéro D-U-N-S est obligatoire**. Google est explicite :
-« Sans ce numéro, vous ne pourrez pas créer de compte de développeur pour une
-organisation. » Il est gratuit, demandé à Dun & Bradstreet, et **son délai d'émission
-standard va jusqu'à 30 jours**.
+**La conversion est officiellement possible**, et elle ne demande NI nouveau compte, NI
+nouveaux 25 $, NI transfert d'application. Ce qui change, c'est le **profil de paiement** :
+le pays, le type de compte et le D-U-N-S ne peuvent pas être modifiés sur un profil
+existant, il faut donc en créer un nouveau et le rattacher.
 
-Les deux chemins, chiffrés :
+Procédure officielle, dans l'ordre
+([Play Console Help](https://support.google.com/googleplay/android-developer/answer/16260648)) :
 
-| | Test fermé (compte actuel) | Compte organisation |
-|---|---|---|
-| Prérequis | 12 personnes avec un Android | D-U-N-S + vérification société |
-| Délai | 14 jours de test + examen ≤ 1 semaine | D-U-N-S jusqu'à 30 j + vérification 2 à 4 semaines |
-| Coût | 0 € | 25 $ de nouveau (nouveau compte) |
-| **Total réaliste** | **≈ 3 semaines** | **≈ 4 à 8 semaines** |
+1. **Compte de développeur → À propos de vous**
+2. Renseigner et enregistrer le **site web officiel de l'organisation**
+3. **Envoyer une demande de validation** pour ce site — étape bloquante, à lancer en premier
+4. Une fois le site validé : **Modifier le type de compte**
+5. **Créer un nouveau profil de paiement** (l'ancien ne peut pas changer de type)
+6. Renseigner les informations de l'organisation : type, taille, téléphone
+7. Coordonnées de contact
+8. Vérification d'identité si Google la demande
+9. Associer le profil au compte développeur
+10. **Confirmer**, puis **Enregistrer**
+11. ⏳ **Attendre 72 heures** avant de soumettre une nouvelle application
 
-⚠️ **La conversion d'un compte personnel en compte organisation n'est documentée nulle
-part chez Google.** Sa page sur le type de compte ne l'aborde pas. Plusieurs sources
-tierces affirment qu'elle est impossible et qu'il faut créer un second compte puis
-transférer l'application — je n'ai pas trouvé de confirmation officielle, donc à vérifier
-auprès du support Play avant de payer quoi que ce soit une deuxième fois.
+Aucun frais supplémentaire n'est mentionné : les 25 $ sont des frais d'inscription uniques,
+déjà réglés.
 
-**Le fait qui décide, et il se vérifie en cinq minutes :** la SAS a-t-elle déjà un
-numéro D-U-N-S ? Beaucoup de sociétés françaises sont déjà dans la base de Dun &
-Bradstreet sans le savoir. Si le numéro existe, le compte organisation devient le chemin
-court. S'il faut le demander, les 30 jours annoncés rendent le test fermé plus rapide.
+**Nouveau calendrier réaliste : environ une semaine**, contre trois pour le test fermé. La
+voie organisation devient donc le chemin court — l'inverse de ce que ce dossier concluait
+avant de savoir que le D-U-N-S existait déjà.
 
-**Recommandation : mener les deux de front.** Demander le D-U-N-S coûte zéro et n'engage
-à rien ; pendant ce temps, le test fermé tourne et son compteur de 14 jours avance. Le
-premier qui aboutit gagne. Ce qu'il ne faut pas faire, c'est attendre le D-U-N-S sans
-rien lancer.
+⚠️ **Le nom affiché sur la fiche Play sera celui de l'entité du D-U-N-S**, donc
+**Rentanoo** et non « Taxi Food ». Ce n'est pas un défaut — le site dit déjà « de la même
+équipe que Rentanoo, déjà présente sur l'île », et une société identifiable rassure sur une
+place de marché. Mais c'est à savoir avant de valider, pas après.
 
-**À noter pour plus tard, indépendamment du calendrier :** un compte organisation affiche
-le **nom de la société** sur la fiche Play plutôt qu'un nom de personne. Pour un service
-commercial, c'est le bon état final, même si on publie d'abord depuis le compte personnel.
-
+⚠️ **Le site web à faire valider est celui de l'ORGANISATION**, pas celui de l'app :
+`rentanoo.com`, et non `taxifood.rentanoo.com`.
 
 ## B. Comptes externes — à créer par le porteur du projet
 

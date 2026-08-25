@@ -29,10 +29,15 @@ Android n'est encore sorti.
 
 ⚠️ **Le vrai obstacle Android n'est pas technique, c'est une règle de Google** : tout compte
 **personnel** créé après le 13 novembre 2023 — le nôtre date du 2026-08-19 — doit faire
-tourner un **test fermé avec 12 testeurs pendant 14 jours continus**, avec usage réel
-vérifié, avant de pouvoir demander l'accès à la production. Un compte **organisation** en est
-exempt, mais exige un numéro **D-U-N-S** dont l'émission va jusqu'à 30 jours. Les deux
-chemins et leur arbitrage chiffré : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
+tourner un **test fermé avec 12 testeurs pendant 14 jours continus** avant de pouvoir
+demander l'accès à la production.
+
+**La voie retenue est d'y échapper en convertissant le compte en « organisation »**, exempt
+de cette règle. La SAS Rentanoo a déjà son numéro **D-U-N-S**, qui était le seul vrai péage.
+La conversion ne demande ni nouveau compte, ni nouveaux 25 $, ni transfert d'app — seulement
+un **nouveau profil de paiement** et la **validation du site de l'organisation**
+(`rentanoo.com`). Compter une semaine, dont 72 h d'attente imposées après la bascule.
+Procédure pas à pas : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ⚠️ **Quatre documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
 

@@ -6,12 +6,12 @@ import { ProductThumb } from '../../components/ProductThumb';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import {
   getMyRestaurant,
-  getRestaurantMenu,
+  getMenu,
   setProductAvailable,
   setRestaurantHours,
   setRestaurantOpen,
 } from '../../data/api';
-import { formatTime } from '../../data/types';
+import { Category, Product, formatTime } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 
@@ -44,7 +44,7 @@ export default function RestaurantSettingsScreen() {
 
   const { data, loading, reload } = useLoad(async () => {
     const resto = await getMyRestaurant(restaurantId);
-    const menu = restaurantId ? await getRestaurantMenu(restaurantId) : null;
+    const menu = restaurantId ? await getMenu(restaurantId) : null;
     return { resto, menu };
   }, [restaurantId]);
 
@@ -220,8 +220,8 @@ export default function RestaurantSettingsScreen() {
             « Bientôt de retour ». Il n'est simplement plus commandable.
           </Text>
 
-          {menu?.categories.map((cat) => {
-            const produits = menu.products.filter((p) => p.categoryId === cat.id);
+          {menu?.categories.map((cat: Category) => {
+            const produits = menu.products.filter((p: Product) => p.categoryId === cat.id);
             if (!produits.length) return null;
             return (
               <View key={cat.id} style={styles.carte}>
@@ -229,7 +229,7 @@ export default function RestaurantSettingsScreen() {
                   {cat.icon ? `${cat.icon}  ` : ''}
                   {cat.name}
                 </Text>
-                {produits.map((p, i) => (
+                {produits.map((p: Product, i: number) => (
                   <View key={p.id}>
                     {i ? <View style={styles.separateur} /> : null}
                     <View style={styles.ligne}>
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: fonts.semibold,
     fontSize: 13,
-    color: colors.danger,
-    backgroundColor: colors.dangerSoft,
+    color: colors.dangerText,
+    backgroundColor: colors.dangerBg,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,

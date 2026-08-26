@@ -14,7 +14,7 @@ import Constants from 'expo-constants';
  * script de build pour une ligne de texte. Une constante assumée est plus
  * honnête : quand elle est fausse, ça se voit.
  */
-export const DATE_MISE_A_JOUR = '2026-08-25';
+export const DATE_MISE_A_JOUR = '2026-08-26';
 
 /** Version déclarée dans app.json, ex. « 1.0.0 ». */
 export const VERSION: string = Constants.expoConfig?.version ?? '1.0.0';

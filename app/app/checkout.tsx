@@ -69,6 +69,8 @@ function CheckoutForm() {
   const restaurantId = useCart((s) => s.restaurantId);
   const restaurantName = useCart((s) => s.restaurantName);
   const restaurantInitials = useCart((s) => s.restaurantInitials);
+  const subtotal = useCart((s) => s.subtotal());
+  const deliveryFee = useCart((s) => s.deliveryFee());
   const total = useCart((s) => s.total());
   const clear = useCart((s) => s.clear);
 
@@ -200,6 +202,19 @@ function CheckoutForm() {
       </ScrollView>
 
       <BottomBar>
+        {/* Marchandise et livraison SEPAREES avant le total. Le client doit voir
+            ce qu'il paie au restaurant et ce qu'il paie pour etre livre — un
+            montant unique donne l'impression que le repas coute plus cher qu'il
+            ne coute. C'est la meme decomposition que le panier et que la base. */}
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>{t('cart.subtotal')}</Text>
+          <Text style={styles.detailValue}>{formatAr(subtotal)}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>{t('common.deliveryFee')}</Text>
+          <Text style={styles.detailValue}>{formatAr(deliveryFee)}</Text>
+        </View>
+        <View style={styles.separateur} />
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t('checkout.totalToPay', { method: paymentShort(paymentMethod) })}</Text>
           <Text style={styles.totalValue}>{formatAr(total)}</Text>
@@ -234,6 +249,10 @@ const styles = StyleSheet.create({
   payTitle: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   paySub: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
+  detailLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted },
+  detailValue: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDark },
+  separateur: { height: 1, backgroundColor: colors.border, marginTop: 6, marginBottom: 10 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 },
   totalLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
   totalValue: { fontFamily: fonts.extrabold, fontSize: 22, color: colors.primary },

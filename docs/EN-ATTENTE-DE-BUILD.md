@@ -159,3 +159,12 @@ tenir **trois**, à condition qu'elles viennent **toutes du même restaurant**.
 - après la première prise, la file ne doit plus montrer que ce restaurant ;
 - abandonner une commande doit libérer une place ;
 - livrer une commande doit libérer une place et faire réapparaître la file.
+
+## Écran de validation : marchandise et livraison séparées (2026-08-25)
+
+Le panier montrait déjà les trois lignes. L'écran de **validation** n'affichait
+qu'un total unique — `app/checkout.tsx` affiche maintenant marchandise,
+livraison, puis total.
+
+⚠️ **À vérifier sur appareil** : que le bas d'écran reste lisible avec trois
+lignes au lieu d'une, notamment sur un petit téléphone.

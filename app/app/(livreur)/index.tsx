@@ -9,8 +9,9 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import {
   claimDelivery,
   getCourierAvailability,
-  getMyActiveDelivery,
+  listMyActiveDeliveries,
   listAvailableDeliveries,
+  MAX_TOURNEE,
   markDelivered,
   markPickedUp,
   releaseDelivery,
@@ -28,10 +29,14 @@ export default function CourierDeliveriesScreen() {
 
   const { data, loading, reload } = useLoad(async () => {
     const available = await getCourierAvailability(userId);
-    const active = await getMyActiveDelivery(userId);
-    // On ne charge la file des dispo que si le livreur est disponible et libre.
-    const list = available && !active ? await listAvailableDeliveries() : [];
-    return { available, active, list };
+    const actives = await listMyActiveDeliveries(userId);
+    // Des qu'il tient une commande, la base n'acceptera plus que le MEME
+    // restaurant : on filtre la file sur celui-la. Lui montrer des commandes
+    // qu'il ne peut pas prendre, c'est lui donner un bouton qui echoue.
+    const resto = actives.length ? actives[0].restaurantId : null;
+    const complet = actives.length >= MAX_TOURNEE;
+    const list = available && !complet ? await listAvailableDeliveries(resto) : [];
+    return { available, actives, list, complet };
   }, [userId]);
 
   useEffect(() => {
@@ -60,8 +65,9 @@ export default function CourierDeliveriesScreen() {
   }
 
   const available = data?.available ?? false;
-  const active = data?.active ?? null;
+  const actives = data?.actives ?? [];
   const list = data?.list ?? [];
+  const complet = data?.complet ?? false;
 
   return (
     <View style={styles.container}>
@@ -95,70 +101,100 @@ export default function CourierDeliveriesScreen() {
           <View style={styles.center}>
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : active ? (
-          // Une livraison en cours : la montrer avec ses actions.
-          <>
-            <Text style={styles.section}>Ma livraison en cours</Text>
-            <RestaurantOrderCard
-              order={active}
-              footer={
-                active.pickedUp ? (
-                  <Button
-                    label="Marquer livrée"
-                    icon="check_circle"
-                    onPress={() => setDeliverTarget(active)}
-                    loading={busy === active.id}
-                  />
-                ) : (
-                  <View style={styles.row}>
-                    <Button
-                      label="Abandonner"
-                      variant="outline"
-                      onPress={() => run(active.id, () => releaseDelivery(active.id), 'Abandon impossible.')}
-                      disabled={busy === active.id}
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      label="Récupérée"
-                      icon="inventory_2"
-                      onPress={() => run(active.id, () => markPickedUp(active.id), 'Action impossible.')}
-                      loading={busy === active.id}
-                      style={{ flex: 1.3 }}
-                    />
-                  </View>
-                )
-              }
-            />
-          </>
-        ) : !available ? (
-          <View style={styles.center}>
-            <Icon name="pause_circle" size={40} color={colors.textFaint} />
-            <Text style={styles.emptyTitle}>Tu es indisponible</Text>
-            <Text style={styles.emptySub}>Active ta disponibilité pour voir les commandes à livrer.</Text>
-          </View>
-        ) : list.length === 0 ? (
-          <View style={styles.center}>
-            <Icon name="two_wheeler" size={40} color={colors.textFaint} />
-            <Text style={styles.emptyTitle}>Aucune commande à livrer</Text>
-            <Text style={styles.emptySub}>Les commandes prêtes apparaissent ici automatiquement.</Text>
-          </View>
         ) : (
           <>
-            <Text style={styles.section}>Commandes à livrer</Text>
-            {list.map((order) => (
-              <RestaurantOrderCard
-                key={order.id}
-                order={order}
-                footer={
-                  <Button
-                    label="Je la prends"
-                    icon="pan_tool"
-                    onPress={() => run(order.id, () => claimDelivery(order.id), 'Commande déjà prise.')}
-                    loading={busy === order.id}
+            {/* La tournee : ce que le livreur tient deja. Chaque commande garde
+                ses propres actions — on recupere tout au restaurant, puis on
+                livre client par client, dans l'ordre qu'on veut. */}
+            {actives.length > 0 ? (
+              <>
+                <Text style={styles.section}>
+                  Ma tournée · {actives.length}/{MAX_TOURNEE}
+                </Text>
+                {actives.map((order) => (
+                  <RestaurantOrderCard
+                    key={order.id}
+                    order={order}
+                    footer={
+                      order.pickedUp ? (
+                        <Button
+                          label="Marquer livrée"
+                          icon="check_circle"
+                          onPress={() => setDeliverTarget(order)}
+                          loading={busy === order.id}
+                        />
+                      ) : (
+                        <View style={styles.row}>
+                          <Button
+                            label="Abandonner"
+                            variant="outline"
+                            onPress={() => run(order.id, () => releaseDelivery(order.id), 'Abandon impossible.')}
+                            disabled={busy === order.id}
+                            style={{ flex: 1 }}
+                          />
+                          <Button
+                            label="Récupérée"
+                            icon="inventory_2"
+                            onPress={() => run(order.id, () => markPickedUp(order.id), 'Action impossible.')}
+                            loading={busy === order.id}
+                            style={{ flex: 1.3 }}
+                          />
+                        </View>
+                      )
+                    }
                   />
-                }
-              />
-            ))}
+                ))}
+              </>
+            ) : null}
+
+            {/* Ce qu'il peut encore prendre. */}
+            {!available ? (
+              <View style={styles.center}>
+                <Icon name="pause_circle" size={40} color={colors.textFaint} />
+                <Text style={styles.emptyTitle}>Tu es indisponible</Text>
+                <Text style={styles.emptySub}>Active ta disponibilité pour voir les commandes à livrer.</Text>
+              </View>
+            ) : complet ? (
+              <View style={styles.center}>
+                <Icon name="inventory_2" size={40} color={colors.textFaint} />
+                <Text style={styles.emptyTitle}>Ta tournée est complète</Text>
+                <Text style={styles.emptySub}>
+                  Livre une commande pour pouvoir en prendre une autre.
+                </Text>
+              </View>
+            ) : list.length === 0 ? (
+              <View style={styles.center}>
+                <Icon name="two_wheeler" size={40} color={colors.textFaint} />
+                <Text style={styles.emptyTitle}>
+                  {actives.length ? 'Rien d\'autre dans ce restaurant' : 'Aucune commande à livrer'}
+                </Text>
+                <Text style={styles.emptySub}>
+                  {actives.length
+                    ? 'Une tournée ne mélange pas deux restaurants. Livre celles-ci, puis reviens.'
+                    : 'Les commandes prêtes apparaissent ici automatiquement.'}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.section}>
+                  {actives.length ? 'À ajouter à ta tournée' : 'Commandes à livrer'}
+                </Text>
+                {list.map((order) => (
+                  <RestaurantOrderCard
+                    key={order.id}
+                    order={order}
+                    footer={
+                      <Button
+                        label="Je la prends"
+                        icon="pan_tool"
+                        onPress={() => run(order.id, () => claimDelivery(order.id), 'Commande déjà prise.')}
+                        loading={busy === order.id}
+                      />
+                    }
+                  />
+                ))}
+              </>
+            )}
           </>
         )}
       </ScrollView>

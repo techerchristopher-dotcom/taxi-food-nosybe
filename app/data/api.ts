@@ -592,37 +592,49 @@ export async function setOrderStatus(
 
 // --- Espace livreur ---------------------------------------------------------
 
+/** Nombre maximum de commandes qu'un livreur peut tenir en même temps. */
+export const MAX_TOURNEE = 3;
+
 /**
- * Commandes DISPONIBLES à livrer (en_livraison, pas encore prises), tous restaurants
- * confondus. Filtre explicite `courier_id is null` (pas seulement la RLS).
+ * Commandes DISPONIBLES à livrer (en_livraison, pas encore prises).
+ * Filtre explicite `courier_id is null` (pas seulement la RLS).
+ *
+ * `restaurantId` restreint au restaurant demandé. On s'en sert dès que le
+ * livreur tient déjà une commande : les autres restaurants lui seraient
+ * refusés par la base, autant ne pas les lui montrer. Lui proposer un bouton
+ * qui échoue à tous les coups, c'est le piège classique.
  */
-export async function listAvailableDeliveries(): Promise<Order[]> {
-  const { data, error } = await supabase
+export async function listAvailableDeliveries(restaurantId?: string | null): Promise<Order[]> {
+  let q = supabase
     .from('orders')
     .select(ORDER_SELECT)
     .eq('status', 'en_livraison')
-    .is('courier_id', null)
-    .order('created_at', { ascending: true });
+    .is('courier_id', null);
+  if (restaurantId) q = q.eq('restaurant_id', restaurantId);
+  const { data, error } = await q.order('created_at', { ascending: true });
   if (error) throw error;
   return (data as unknown as OrderJoinRow[]).map(mapOrder);
 }
 
 /**
- * La livraison en cours du livreur courant (en_livraison prise par lui), ou null.
- * Filtre explicite par `courierId` (compte multi-rôle : évite toute fuite).
+ * La tournée du livreur courant : les commandes qu'il tient, de la plus
+ * ancienne à la plus récente. Jusqu'à MAX_TOURNEE, toutes du même restaurant
+ * — c'est la base qui l'impose (voir la RPC claim_order).
+ *
+ * Filtre explicite par `courierId` : un compte multi-rôle a plusieurs
+ * politiques de lecture qui se cumulent, la RLS seule laisserait passer
+ * les commandes qu'il a passées comme client.
  */
-export async function getMyActiveDelivery(courierId: string): Promise<Order | null> {
-  if (!courierId) return null;
+export async function listMyActiveDeliveries(courierId: string): Promise<Order[]> {
+  if (!courierId) return [];
   const { data, error } = await supabase
     .from('orders')
     .select(ORDER_SELECT)
     .eq('courier_id', courierId)
     .eq('status', 'en_livraison')
-    .order('created_at', { ascending: true })
-    .limit(1);
+    .order('created_at', { ascending: true });
   if (error) throw error;
-  const rows = data as unknown as OrderJoinRow[];
-  return rows.length ? mapOrder(rows[0]) : null;
+  return (data as unknown as OrderJoinRow[]).map(mapOrder);
 }
 
 /** Historique des livraisons du livreur courant (livree), plus récent d'abord. */

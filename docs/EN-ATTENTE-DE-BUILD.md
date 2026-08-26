@@ -143,3 +143,19 @@ tutoyait deja et n'a pas ete touche.
 dont le saut de ligne a ete conserve a la meme place — `phone.askTitle`,
 `phone.loginTitle` (« Ton numero\nde telephone ») et `authEmail.askNameTitle`
 (« Comment\nt'appelles-tu ? »). Un titre qui deborde ne se voit qu'a l'ecran.
+
+## Tournée du livreur : jusqu'à 3 commandes (2026-08-25)
+
+Le livreur ne pouvait tenir qu'**une** commande à la fois. Il peut désormais en
+tenir **trois**, à condition qu'elles viennent **toutes du même restaurant**.
+
+- Base : RPC `claim_order` — la règle est côté serveur, pas côté écran.
+- App : `data/api.ts` (`listMyActiveDeliveries` remplace `getMyActiveDelivery`,
+  la file des disponibles se filtre sur le restaurant en cours) et
+  `app/(livreur)/index.tsx` (section « Ma tournée · n/3 »).
+
+⚠️ **À vérifier sur appareil au prochain build :**
+- prendre trois commandes du même restaurant, la quatrième doit être refusée ;
+- après la première prise, la file ne doit plus montrer que ce restaurant ;
+- abandonner une commande doit libérer une place ;
+- livrer une commande doit libérer une place et faire réapparaître la file.

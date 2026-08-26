@@ -146,6 +146,8 @@ export type Restaurant = {
   isOpen: boolean;
   opensAt: string;
   closesAt: string;
+  /** true : l'ouverture se déduit des horaires ; false : bascule manuelle. */
+  autoOpen: boolean;
   hoursLabel: string; // dérivé de opens_at/closes_at
   etaLabel: string; // cosmétique (non stocké) — placeholder
   deliveryFee: number; // ariary

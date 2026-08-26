@@ -168,3 +168,27 @@ livraison, puis total.
 
 ⚠️ **À vérifier sur appareil** : que le bas d'écran reste lisible avec trois
 lignes au lieu d'une, notamment sur un petit téléphone.
+
+## Espace réglages du restaurateur (2026-08-25)
+
+Nouvel onglet **Réglages** dans l'espace restaurant : horaires, ouverture
+automatique, bascule manuelle, et mise en rupture produit par produit.
+
+- Base : `restaurants.auto_open`, fonction `ouvert_maintenant()`, RPC
+  `set_restaurant_hours` / `set_restaurant_open` / `set_product_available`.
+  Tout est déjà actif — seul l'écran attend le build.
+- App : `app/(restaurant)/reglages.tsx`, `data/api.ts`, `data/types.ts`.
+- Le badge produit passe de « Indisponible » à « **Bientôt de retour** ».
+
+⚠️ **À vérifier sur appareil :**
+- saisir « 8h30 » et « 22h » — les formes libres doivent être acceptées ;
+- basculer l'ouverture automatique, vérifier que la bascule manuelle disparaît ;
+- mettre un produit en rupture, puis le retrouver grisé côté client avec la
+  mention « Bientôt de retour », toujours visible mais non commandable.
+
+## Pied de page : version et date (2026-08-25)
+
+`app/lib/version.ts` remplace le « v1.0 MVP » codé en dur.
+
+⚠️ **`DATE_MISE_A_JOUR` est à remonter À CHAQUE BUILD envoyé aux magasins.**
+C'est une ligne, et c'est le seul geste de sortie manuel du projet.

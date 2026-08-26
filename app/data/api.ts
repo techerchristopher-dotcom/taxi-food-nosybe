@@ -36,6 +36,8 @@ type RestaurantRow = {
   logo_url: string | null;
   cover_url: string | null;
   is_open: boolean;
+  ouvert_maintenant?: boolean | null;
+  auto_open?: boolean | null;
   opens_at: string | null;
   closes_at: string | null;
   delivery_fee: number;
@@ -98,7 +100,11 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     coverUrl: r.cover_url,
     cuisineType: r.cuisine_type ?? '',
     zone: r.zone_served ?? '',
-    isOpen: r.is_open,
+    // L'ouverture EFFECTIVE, calculee par la base : deduite des horaires si
+    // le restaurant est en automatique, sinon la bascule manuelle. On ne la
+    // calcule PAS ici : l'horloge du telephone n'est pas une reference.
+    isOpen: r.ouvert_maintenant ?? r.is_open,
+    autoOpen: r.auto_open ?? false,
     opensAt: r.opens_at ?? '',
     closesAt: r.closes_at ?? '',
     hoursLabel: hoursLabel(r.opens_at ?? '', r.closes_at ?? ''),
@@ -108,7 +114,7 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     foodTypes: r.food_types ?? [],
     categoryTags: [],
     popular: false,
-    closedLabel: r.is_open ? undefined : r.opens_at ? `Ouvre à ${formatTime(r.opens_at)}` : 'Fermé',
+    closedLabel: (r.ouvert_maintenant ?? r.is_open) ? undefined : r.opens_at ? `Ouvre à ${formatTime(r.opens_at)}` : 'Fermé',
   };
 }
 
@@ -171,7 +177,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
     .order('created_at', { ascending: true });
   if (error) throw error;
   const rows = data as RestaurantRow[];
@@ -200,7 +206,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, opens_at, closes_at, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -693,4 +699,48 @@ export async function markDelivered(orderId: string, cashConfirmed: boolean): Pr
     p_cash_confirmed: cashConfirmed,
   });
   if (error) throw error;
+}
+
+
+// --- Espace restaurant : reglages -------------------------------------------
+
+/** Horaires et mode d'ouverture. `null, null, false` efface les horaires. */
+export async function setRestaurantHours(
+  opensAt: string | null,
+  closesAt: string | null,
+  autoOpen: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_hours', {
+    p_opens_at: opensAt,
+    p_closes_at: closesAt,
+    p_auto_open: autoOpen,
+  });
+  if (error) throw error;
+}
+
+/** Ouvrir ou fermer a la main. Bascule aussi le restaurant en mode manuel. */
+export async function setRestaurantOpen(isOpen: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_open', { p_is_open: isOpen });
+  if (error) throw error;
+}
+
+/** Mettre un produit en rupture, ou le remettre en vente. */
+export async function setProductAvailable(productId: string, available: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_product_available', {
+    p_product_id: productId,
+    p_available: available,
+  });
+  if (error) throw error;
+}
+
+/** Le restaurant de l'utilisateur courant, avec ses horaires. */
+export async function getMyRestaurant(restaurantId: string): Promise<Restaurant | null> {
+  if (!restaurantId) return null;
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
+    .eq('id', restaurantId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapRestaurant(data as RestaurantRow) : null;
 }

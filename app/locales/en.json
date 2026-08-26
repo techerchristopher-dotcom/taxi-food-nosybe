@@ -115,7 +115,7 @@
     "popular": "Popular",
     "closed": "Closed",
     "open": "Open",
-    "unavailable": "Unavailable",
+    "unavailable": "Back soon",
     "opensAt": "Opens at {{time}}"
   },
   "restaurant": {

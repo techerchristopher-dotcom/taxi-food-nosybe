@@ -63,6 +63,14 @@ export default function RestaurantLayout() {
           tabBarIcon: ({ color }) => <Icon name="history" size={24} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="reglages"
+        options={{
+          title: 'Réglages',
+          tabBarLabel: 'Réglages',
+          tabBarIcon: ({ color }) => <Icon name="settings" size={24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

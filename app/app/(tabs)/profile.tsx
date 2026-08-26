@@ -10,6 +10,7 @@ import { colors, fonts, radius, shadow, spacing } from '../../theme/tokens';
 import { listAddresses } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { ligneVersion } from '../../lib/version';
 import { signInFor } from '../../store/authIntent';
 import { SUPPORT_URL } from '../../lib/links';
 import { LANGUAGES, LanguageCode, setLanguage } from '../../lib/i18n';
@@ -211,7 +212,7 @@ function AccountProfile() {
           </Text>
         </Pressable>
 
-        <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
+        <Text style={styles.version}>{ligneVersion()}</Text>
       </ScrollView>
     </View>
   );
@@ -300,7 +301,7 @@ function GuestProfile() {
           <Icon name="chevron_right" size={20} color={colors.textFaint} />
         </Pressable>
 
-        <Text style={styles.version}>TAXI FOOD · v1.0 MVP · NOSY BE</Text>
+        <Text style={styles.version}>{ligneVersion()}</Text>
       </ScrollView>
     </View>
   );

@@ -162,9 +162,10 @@ par un rejet difficile à comprendre après coup.
 
 ## 6. Ce qui reste à faire, dans l'ordre
 
-- [ ] **Débloquer le compte** — vérifications appareil, identité, téléphone
-      (voir [SOUMISSION-ANDROID.md](SOUMISSION-ANDROID.md))
-- [ ] **Convertir en compte organisation** pour échapper aux 12 testeurs
+- [x] **Débloquer le compte** — vérifications appareil, identité, téléphone : les trois
+      passées au **2026-08-29** (voir [SOUMISSION-ANDROID.md](SOUMISSION-ANDROID.md))
+- [ ] **Convertir en compte organisation** pour échapper aux 12 testeurs — ⏳ **en cours**,
+      bloqué sur la validation du domaine `rentanoo.com` par Google
 - [ ] Créer l'application dans le Play Console
 - [ ] Clé de compte de service : Play Console › Configuration › Accès à l'API › Comptes de
       service → télécharger le JSON → le poser en `app/google-play-service-account.json`

@@ -139,22 +139,34 @@ avec la mention *« Complete account verifications to create new apps »*. Tant 
 vérifications de compte ne sont pas terminées, **rien** n'avance — ni la création d'une
 application, ni le changement de type de compte.
 
-L'identité n'est donc **pas** validée, contrairement à ce que ce dossier affirmait. Google
-enchaîne les trois vérifications dans cet ordre, chacune bloquant la suivante :
+Google enchaîne les trois vérifications dans cet ordre, chacune bloquant la suivante. Elles
+sont **toutes les trois terminées au 2026-08-29** — ce paragraphe est conservé parce qu'il
+explique l'ordre imposé, qui vaut pour toute reprise du dossier :
 
-| # | Vérification | État au 2026-08-24 | Ce qu'il faut |
+| # | Vérification | État au 2026-08-29 | Ce qu'il fallait |
 |---|---|---|---|
-| 1 | **Accès à un appareil Android** | ⏳ à faire, **débloquée** | installer l'app **Play Console** sur l'Android et s'y connecter |
-| 2 | **Identité** | ⏳ en attente d'approbation | documents envoyés, Google les approuve |
-| 3 | **Numéro de téléphone** | 🔒 bloquée | exige que l'identité soit approuvée |
+| 1 | **Accès à un appareil Android** | ✅ faite | app **Play Console** installée sur l'Android, connexion réussie |
+| 2 | **Identité** | ✅ approuvée | documents envoyés le 2026-08-19, approuvés par Google |
+| 3 | **Numéro de téléphone** | ✅ confirmée le **2026-08-29** | exigeait que l'identité soit approuvée — son déblocage le prouve |
+
+✅ **Les trois vérifications sont passées.** Le verrou « Complete account verifications to
+create new apps » est levé : la création d'application et le changement de type de compte
+sont désormais accessibles.
 
 **Le compte a un identifiant : `6682410097385681985`.** Page « À propos de vous » :
 `https://play.google.com/console/u/0/developers/6682410097385681985/account-details`
 
 ⚠️ **La conversion en compte organisation vient APRÈS ces trois vérifications**, pas avant.
-La procédure en 11 étapes plus haut reste valable, mais elle est inaccessible tant que le
-compte n'est pas débloqué. Ne pas s'y attaquer en premier — c'est l'erreur que ce dossier
-induisait.
+Elles sont faites : la conversion est donc **l'étape en cours**. Ne pas s'y attaquer en
+premier était l'erreur que ce dossier induisait ; l'ordre a été respecté.
+
+### 👉 Le geste suivant (au 2026-08-29)
+
+**Faire valider `rentanoo.com`** sur la page
+[À propos de vous](https://play.google.com/console/u/0/developers/6682410097385681985/account-details) :
+renseigner le site, enregistrer, puis **envoyer la demande de validation**. C'est l'étape 3
+de la procédure ci-dessous, et elle bloque tout le reste — « Modifier le type de compte »
+reste inaccessible tant que Google n'a pas validé le domaine.
 
 ### ✅ La sortie retenue : convertir le compte en « organisation »
 

@@ -198,6 +198,66 @@ Procédure officielle, dans l'ordre
 Aucun frais supplémentaire n'est mentionné : les 25 $ sont des frais d'inscription uniques,
 déjà réglés.
 
+### ⚠️ Le piège de l'étape 5 : « D-U-N-S for a different organization »
+
+Rencontré le **2026-08-29**. En saisissant le D-U-N-S de Rentanoo (**286027231**, vérifié
+chez Dun & Bradstreet), le Play Console répond :
+
+> *The D-U-N-S number you entered was for a different organization.*
+
+**Le numéro n'est pas en cause.** Google l'a bien résolu — sinon il dirait « introuvable ».
+Ce qu'il compare, c'est le **profil de paiement rattaché au compte**, pas le nom saisi dans
+le formulaire :
+
+| | Nom | Pays |
+|---|---|---|
+| Profil de paiement existant (personnel) | Jean Christopher TECHER | Mayotte (**YT**) |
+| Enregistrement D-U-N-S | RENTANOO | La Réunion (**RE**) |
+
+Nom différent, **pays différent** : le rapprochement échoue nécessairement. Et le pays d'un
+profil de paiement **ne peut pas être modifié** — c'est précisément pour ça que la procédure
+impose d'en créer un nouveau (étape 5), et pourquoi la deuxième suggestion du message
+d'erreur est « Select a different payments profile ».
+
+**La sortie** : revenir en arrière par la **flèche ←** (pas « Cancel », qui fait tout
+reperdre), choisir **créer un nouveau profil** au lieu de réutiliser l'existant, type
+*Organisation*, pays *La Réunion* — puis ressaisir le D-U-N-S. ✅ Résolu de cette façon le
+2026-08-29.
+
+⚠️ **Le nombre d'essais du D-U-N-S est limité** (« You have a limited number of tries »).
+Ne jamais retenter le même numéro en espérant que ça passe : chercher la cause d'abord.
+
+⚠️ **L'adresse du nouveau profil doit être celle de l'enregistrement D-U-N-S**, au caractère
+près, car c'est elle que Google rapproche de Dun & Bradstreet :
+
+```
+RENTANOO
+38 CHEMIN DE LA SOURCE
+LA CHALOUPE SAINT LEU LE CAP
+97416 SAINT-LEU
+La Réunion (RE)
+```
+
+Si l'erreur persiste malgré un profil neuf, la doc Google renvoie au **support Play
+Console** — y aller plutôt qu'insister, vu la limite d'essais.
+
+### État au 2026-08-29 — conversion en cours
+
+Nouveau profil de paiement créé et rattaché. Le Play Console affiche *« Google is checking
+whether your new payments profile is verified »* et grise **« Change account type »** le
+temps du contrôle (annoncé à moins d'une minute).
+
+- **Si le profil ressort vérifié** → la conversion s'enchaîne, puis **72 h** avant de
+  pouvoir soumettre une application.
+- **Sinon** → Google réclame une pièce d'identité et un justificatif officiel : prévoir un
+  **Kbis de Rentanoo SAS de moins de 3 mois**.
+
+⚠️ **À vérifier après la conversion** : le champ **« Developer name »** est un champ libre
+(« It can be different to your name », 50 caractères). Ce dossier affirmait plus haut que le
+nom public deviendrait forcément « Rentanoo » — ce n'est peut-être pas vrai. Regarder si le
+champ reste modifiable une fois le compte en organisation ; si oui, « Taxi Food » redevient
+possible comme nom affiché.
+
 **Nouveau calendrier réaliste : environ une semaine**, contre trois pour le test fermé. La
 voie organisation devient donc le chemin court — l'inverse de ce que ce dossier concluait
 avant de savoir que le D-U-N-S existait déjà.

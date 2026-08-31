@@ -380,3 +380,46 @@ sur appareil.
 - [ ] Clé de compte de service → `app/google-play-service-account.json`, pour que
       `eas submit -p android` remplace le dépôt manuel du `.aab`
 - [ ] Refaire les captures d'écran (celles en stock montrent l'ancien vouvoiement)
+
+---
+
+## ⛔ Play App Signing casse Google Sign-In et Maps — 2026-08-31
+
+**Symptôme** : depuis le build installé par le test interne, la connexion Google échoue.
+L'APK `preview`, lui, aurait fonctionné.
+
+**Cause** : le Play Console re-signe l'application avec **sa propre clé** (« Releases are
+signed by Google Play », App signing key *In use*). L'empreinte SHA-1 de l'app réellement
+installée n'est donc pas celle du keystore EAS.
+
+| Origine | SHA-1 |
+|---|---|
+| Keystore EAS — celui enregistré dans Google Cloud le 2026-08-19 | `6D:15:C4:4F:F6:B1:9E:A5:6E:BA:17:11:1E:1F:C4:1A:CC:87:E8:F5` |
+| **Clé de signature Google Play** — celle des builds du magasin | `20:5A:CE:0F:A4:64:E9:15:46:73:BB:69:94:DD:0C:C9:BE:4D:D8:36` |
+
+Google Cloud ne reconnaît pas l'application signée par Google : il refuse l'authentification.
+Rien à corriger dans le code.
+
+⚠️ **Deux services sont touchés, pas un.** La clé Google Maps est restreinte au même couple
+package + empreinte : depuis un build du magasin, la **carte de l'écran d'adresse** est
+rejetée elle aussi. Le symptôme est silencieux — une carte vide, pas une erreur.
+
+### La correction, sans rebuild
+
+C'est l'empreinte enregistrée **côté Google** qui identifie l'application, pas une valeur
+compilée. Dans le projet Cloud `227662072769` (`taxifoodnosybe`) :
+
+1. **Second client OAuth Android** — *Identifiants → Créer → ID client OAuth → Android*,
+   package `com.chris97416.taxifoodnosybe`, empreinte `20:5A:CE:…`.
+   ⚠️ **Garder l'ancien client** : il sert aux builds `preview` et `development`, signés par
+   EAS, qui restent le moyen de tester hors magasin.
+2. **Clé Google Maps** — *ajouter* la même paire package + empreinte à la restriction
+   « Applications Android », sans retirer l'existante.
+
+Quelques minutes de propagation, puis réessayer **sans réinstaller** : tout est côté serveur.
+
+### La leçon
+
+Tant que l'app était distribuée en APK signé par EAS, une seule empreinte suffisait. **Dès
+qu'on passe par le Play Store, il y en a deux**, et tout service Google restreint par
+empreinte doit connaître les deux. À vérifier pour chaque nouvelle restriction posée.

@@ -140,14 +140,14 @@ vérifications de compte ne sont pas terminées, **rien** n'avance — ni la cr�
 application, ni le changement de type de compte.
 
 Google enchaîne les trois vérifications dans cet ordre, chacune bloquant la suivante. Elles
-sont **toutes les trois terminées au 2026-08-29** — ce paragraphe est conservé parce qu'il
+sont **toutes les trois terminées au 2026-08-31** — ce paragraphe est conservé parce qu'il
 explique l'ordre imposé, qui vaut pour toute reprise du dossier :
 
-| # | Vérification | État au 2026-08-29 | Ce qu'il fallait |
+| # | Vérification | État au 2026-08-31 | Ce qu'il fallait |
 |---|---|---|---|
 | 1 | **Accès à un appareil Android** | ✅ faite | app **Play Console** installée sur l'Android, connexion réussie |
 | 2 | **Identité** | ✅ approuvée | documents envoyés le 2026-08-19, approuvés par Google |
-| 3 | **Numéro de téléphone** | ✅ confirmée le **2026-08-29** | exigeait que l'identité soit approuvée — son déblocage le prouve |
+| 3 | **Numéro de téléphone** | ✅ confirmée le **2026-08-31** | exigeait que l'identité soit approuvée — son déblocage le prouve |
 
 ✅ **Les trois vérifications sont passées.** Le verrou « Complete account verifications to
 create new apps » est levé : la création d'application et le changement de type de compte
@@ -160,7 +160,7 @@ sont désormais accessibles.
 Elles sont faites : la conversion est donc **l'étape en cours**. Ne pas s'y attaquer en
 premier était l'erreur que ce dossier induisait ; l'ordre a été respecté.
 
-### 👉 Le geste suivant (au 2026-08-29)
+### 👉 Le geste suivant (au 2026-08-31)
 
 **Faire valider `rentanoo.com`** sur la page
 [À propos de vous](https://play.google.com/console/u/0/developers/6682410097385681985/account-details) :
@@ -200,7 +200,7 @@ déjà réglés.
 
 ### ⚠️ Le piège de l'étape 5 : « D-U-N-S for a different organization »
 
-Rencontré le **2026-08-29**. En saisissant le D-U-N-S de Rentanoo (**286027231**, vérifié
+Rencontré le **2026-08-31**. En saisissant le D-U-N-S de Rentanoo (**286027231**, vérifié
 chez Dun & Bradstreet), le Play Console répond :
 
 > *The D-U-N-S number you entered was for a different organization.*
@@ -222,7 +222,7 @@ d'erreur est « Select a different payments profile ».
 **La sortie** : revenir en arrière par la **flèche ←** (pas « Cancel », qui fait tout
 reperdre), choisir **créer un nouveau profil** au lieu de réutiliser l'existant, type
 *Organisation*, pays *La Réunion* — puis ressaisir le D-U-N-S. ✅ Résolu de cette façon le
-2026-08-29.
+2026-08-31.
 
 ⚠️ **Le nombre d'essais du D-U-N-S est limité** (« You have a limited number of tries »).
 Ne jamais retenter le même numéro en espérant que ça passe : chercher la cause d'abord.
@@ -241,7 +241,7 @@ La Réunion (RE)
 Si l'erreur persiste malgré un profil neuf, la doc Google renvoie au **support Play
 Console** — y aller plutôt qu'insister, vu la limite d'essais.
 
-### État au 2026-08-29 — conversion en cours
+### État au 2026-08-31 — conversion en cours
 
 Nouveau profil de paiement créé et rattaché. Le Play Console affiche *« Google is checking
 whether your new payments profile is verified »* et grise **« Change account type »** le

@@ -163,7 +163,7 @@ par un rejet difficile à comprendre après coup.
 ## 6. Ce qui reste à faire, dans l'ordre
 
 - [x] **Débloquer le compte** — vérifications appareil, identité, téléphone : les trois
-      passées au **2026-08-29** (voir [SOUMISSION-ANDROID.md](SOUMISSION-ANDROID.md))
+      passées au **2026-08-31** (voir [SOUMISSION-ANDROID.md](SOUMISSION-ANDROID.md))
 - [ ] **Convertir en compte organisation** pour échapper aux 12 testeurs — ⏳ **en cours**,
       bloqué sur la validation du domaine `rentanoo.com` par Google
 - [ ] Créer l'application dans le Play Console

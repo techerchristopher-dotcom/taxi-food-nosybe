@@ -225,3 +225,56 @@ que les cases cochées à la création de l'application :
    que la règle du 2026-08-24 tutoie côté client. Elle est reprise mot pour mot de la fiche
    App Store, **déjà publiée et validée** : la changer ici seul ferait diverger les deux
    magasins. À harmoniser sur les deux à la fois, ou à assumer comme registre marketing.
+
+
+---
+
+## Déclarations de contenu — état au 2026-08-31
+
+### ✅ Faites
+
+| Déclaration | Réponse retenue |
+|---|---|
+| Politique de confidentialité | `https://taxifood.rentanoo.com/confidentialite/` |
+| **Identifiants de connexion** | les **trois** comptes (client, restaurant, livreur), chacun avec une note en anglais |
+| Publicité | aucune |
+| Fonctionnalités financières | aucune |
+| Apps gouvernementales | non |
+| Santé | aucune |
+| Public cible | **18 ans et plus** |
+| **Classement de contenu (IARC)** | catégorie *All Other App Types*, **alcool déclaré** |
+
+#### Ce qui a été répondu au questionnaire IARC
+
+| Question | Réponse | Raison |
+|---|---|---|
+| Contenu sensible dans le paquet téléchargé | non | |
+| Échange de contenu entre utilisateurs | non | pas de messagerie dans l'app |
+| Contenu en ligne hors téléchargement | **oui** | le catalogue vient du serveur, cas « product listings » |
+| Violence / Sexualité / Langage | non | |
+| Substances contrôlées (drogues illégales) | non | l'alcool relève de la section suivante |
+| Produits à limite d'âge | **oui**, dont **alcool** | 19 références de bière au catalogue |
+| **Partage de la position précise avec d'autres utilisateurs** | **oui** | le livreur reçoit les coordonnées GPS du client — c'est le cœur du produit |
+| Achat de biens numériques | non | paiement en espèces, biens physiques |
+| Récompenses / crypto / NFT, navigateur, actualités | non | |
+
+⚠️ **Le formulaire IARC n'offre que trois catégories** — Jeu, Social, *All Other App Types*.
+La mention « Achats et vente au détail » écrite plus haut dans cette fiche **n'existe pas**.
+
+⚠️ **Piège du formulaire** : le bouton **Next** reste grisé tant qu'on n'a pas cliqué
+**Save** au moins une fois, même quand toutes les sections affichent « Completed ».
+
+### ⏳ Restant — à faire à la main
+
+**1. Data safety.** Le formulaire s'est révélé rétif à l'automatisation : la console
+réinitialise la page à chaque tentative. Les réponses sont toutes dans le § 3 de cette fiche.
+Rappel des deux réponses globales : collecte **oui**, partage avec des tiers **non**,
+chiffrement en transit **oui**, suppression sur demande **oui**.
+💡 La page offre **« Import from CSV »** — plus rapide que la saisie écran par écran si un
+gabarit est récupéré par « Export to CSV ».
+
+**2. Catégorie et coordonnées.**
+
+**3. Les visuels de la fiche** — icône, image de présentation, six captures. Champ de fichier
+natif, non automatisable. ⚠️ Prendre les fichiers de `docs/captures-play-store/`, **jamais**
+ceux de `captures-app-store/` : les captures iPhone font 2,17 : 1 et seraient refusées.

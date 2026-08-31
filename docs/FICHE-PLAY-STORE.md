@@ -264,17 +264,33 @@ La mention « Achats et vente au détail » écrite plus haut dans cette fiche *
 ⚠️ **Piège du formulaire** : le bouton **Next** reste grisé tant qu'on n'a pas cliqué
 **Save** au moins une fois, même quand toutes les sections affichent « Completed ».
 
+### ✅ Data safety — terminé le 2026-08-31
+
+Le formulaire réinitialisait la page à chaque premier essai (URL de suppression, empreintes)
+mais a fini par tenir une fois relancé proprement. Les huit types déclarés à l'étape « Data
+types » :
+
+| Catégorie | Type(s) | Obligatoire |
+|---|---|---|
+| Location | Precise location | oui |
+| Personal info | Name, Email address, User IDs, Address, Phone number | oui (les 5) |
+| Financial info | Purchase history | oui |
+| Device or other IDs | Device or other IDs (jeton push) | **non** — l'utilisateur choisit |
+
+Pour chaque type, à l'étape « Data usage and handling » : **Collected** (jamais Shared),
+**non éphémère** (stocké en base), finalité **App functionality** uniquement. Aperçu final
+confirmé : *« No data shared with third parties »*, et le lien de suppression apparaît
+correctement : *« You can submit a request to delete your account and associated data for
+this app https://taxifood.rentanoo.com/suppression-compte/ »*.
+
+⚠️ **La question « Purchase history »** n'est pas sous « App activity » comme on aurait pu
+le croire, mais sous **« Financial info »** — c'est là qu'est l'historique des commandes,
+malgré l'absence de toute donnée bancaire.
+
 ### ⏳ Restant — à faire à la main
 
-**1. Data safety.** Le formulaire s'est révélé rétif à l'automatisation : la console
-réinitialise la page à chaque tentative. Les réponses sont toutes dans le § 3 de cette fiche.
-Rappel des deux réponses globales : collecte **oui**, partage avec des tiers **non**,
-chiffrement en transit **oui**, suppression sur demande **oui**.
-💡 La page offre **« Import from CSV »** — plus rapide que la saisie écran par écran si un
-gabarit est récupéré par « Export to CSV ».
+**1. Catégorie et coordonnées.**
 
-**2. Catégorie et coordonnées.**
-
-**3. Les visuels de la fiche** — icône, image de présentation, six captures. Champ de fichier
+**2. Les visuels de la fiche** — icône, image de présentation, six captures. Champ de fichier
 natif, non automatisable. ⚠️ Prendre les fichiers de `docs/captures-play-store/`, **jamais**
 ceux de `captures-app-store/` : les captures iPhone font 2,17 : 1 et seraient refusées.

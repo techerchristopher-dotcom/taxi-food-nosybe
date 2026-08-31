@@ -440,3 +440,42 @@ fonctionner.
 Le formulaire de Google Cloud annonce lui-même *« It may take 5 minutes to a few hours for
 settings to take effect »*. Un échec juste après l'enregistrement ne prouve donc rien —
 attendre avant de conclure.
+
+---
+
+## ⛔ Facebook sur Android : la liste des redirections était vide — 2026-08-31
+
+**Symptôme** : au premier essai réel de connexion Facebook depuis Android, Facebook affiche
+*« Impossible de charger cette URL : le domaine de cette URL n'est pas inscrit dans ceux de
+l'application. »*
+
+**Cause** : sur iOS, Facebook passe en *Limited Login* — jeton natif, aucune redirection web.
+Sur Android ce mode n'existe pas (voir A3), l'app bascule sur le **flux web**, qui redirige
+vers Supabase. Or dans la console Meta, **« URI de redirection OAuth valides » était vide**,
+avec « mode strict » activé. Aucune redirection n'était donc autorisée.
+
+Le flux web Android n'avait jamais tourné : ce dossier le listait comme « à vérifier au
+premier build Android ». C'est vérifié — il ne fonctionnait pas.
+
+**Correction (2026-08-31)** — application Meta `1040980255315507`,
+*Connexion Facebook → Paramètres → URI de redirection OAuth valides* :
+
+```
+https://bmdveawomizjpiebgtkj.supabase.co/auth/v1/callback
+```
+
+Confirmé par le **validateur d'URI** de Meta, sur la même page : *« Ceci est un URI de
+redirection valide pour cette application »*. Aucun rebuild — c'est de la configuration.
+
+⚠️ Si le message sur les domaines revient malgré tout, renseigner aussi
+`bmdveawomizjpiebgtkj.supabase.co` dans *Paramètres → De base → Domaines de l'app*. Non fait
+d'emblée : cette page affiche la clé secrète de l'application, et le validateur indiquait que
+la redirection suffisait.
+
+### Ce que cette panne dit du reste
+
+**Les deux connexions sociales ont échoué au premier contact avec un vrai Android**, pour
+deux raisons différentes et sans rapport (empreinte de signature pour Google, liste de
+redirections pour Facebook). Aucune des deux n'était un défaut de code. Toutes deux
+tenaient à une déclaration manquante chez un tiers, invisible tant que personne n'avait
+lancé l'application sur un appareil.

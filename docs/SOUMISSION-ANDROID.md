@@ -479,3 +479,83 @@ deux raisons différentes et sans rapport (empreinte de signature pour Google, l
 redirections pour Facebook). Aucune des deux n'était un défaut de code. Toutes deux
 tenaient à une déclaration manquante chez un tiers, invisible tant que personne n'avait
 lancé l'application sur un appareil.
+
+---
+
+## ⛔ Les notifications Android n'avaient jamais pu fonctionner — 2026-08-31
+
+**Symptôme** : aucune notification sur Android. La table `push_tokens` ne contenait que des
+jetons **iOS** — aucun Android n'y était jamais arrivé, depuis le début du projet.
+
+### Ce que le journal de l'appareil a révélé
+
+L'application **masque volontairement** l'erreur (`setError(t('login.failed'))`, et
+`console.warn` pour le push) : le message affiché ne dit rien. Il a fallu brancher `adb` :
+
+```
+Firebase-Installations: 403 Forbidden — "reason": "API_KEY_ANDROID_APP_BLOCKED"
+  "Requests from this Android client application com.chris97416.taxifoodnosybe are blocked."
+  "service": "firebaseinstallations.googleapis.com"
+FirebaseMessaging: FIS_AUTH_ERROR. Won't retry the operation.
+ReactNativeJS: '[push] enregistrement impossible', E_REGISTRATION_FAILED
+```
+
+### Deux causes superposées
+
+**1. `google-services.json` et `app.json` utilisent LA MÊME CLÉ API.** Vérifié en comparant
+les deux fichiers. Or cette clé a été restreinte le 2026-08-19 à **« Maps SDK for Android »
+uniquement**. Firebase n'a donc jamais eu le droit d'appeler `firebaseinstallations` ni
+`fcmregistration` : les notifications Android ne pouvaient pas fonctionner, même avec un
+build signé par EAS.
+
+→ Corrigé : la clé autorise désormais **3 API** — Maps SDK for Android, Firebase
+Installations API, FCM Registration API.
+
+**2. L'empreinte relevée dans le Play Console n'était pas la bonne.** La page « App signing »
+propose **quatre** empreintes (clé classique et clé post-quantique, SHA-1 et SHA-256). Celle
+qui avait été déclarée, `20:5A:CE:…`, ne correspondait pas à l'APK réellement installé.
+
+### ✅ La méthode fiable : mesurer, pas lire
+
+Plutôt que de relire la console, l'empreinte a été **extraite de l'APK installé sur
+l'appareil**, en analysant le bloc de signature APK (schéma v3) :
+
+```bash
+adb shell pm path com.chris97416.taxifoodnosybe     # chemin du base.apk
+adb pull <chemin> installe.apk
+# puis parcours du « APK Sig Block 42 », paire 0xf05368c0 (v3),
+# extraction du premier certificat X.509 et SHA-1 de son DER
+```
+
+⚠️ `keytool -printcert -jarfile` et `unzip META-INF/*.RSA` **ne marchent pas** : un APK
+signé par Google Play n'a pas de signature v1.
+
+**Résultat : `2A:78:28:3F:39:47:FE:98:B5:5D:38:78:5A:09:3E:19:33:81:3C:CA`**
+
+### État des empreintes déclarées
+
+| Empreinte | Origine | Rôle |
+|---|---|---|
+| `6D:15:C4:…` | keystore EAS | builds `preview` / `development`, hors magasin |
+| `20:5A:CE:…` | relevée dans le Play Console — **erronée** | inutile, laissée en place, inoffensive |
+| **`2A:78:28:…`** | **mesurée sur l'APK installé** | la vraie, celle du magasin |
+
+Déclarée à deux endroits : restrictions Android de la clé API, et nouveau client OAuth
+Android « Android client Play Store (reel) ».
+
+**✅ Vérifié** : jeton `platform = android` enregistré dans `push_tokens` le 2026-08-31 à
+12h40 UTC. La chaîne fonctionne de bout en bout.
+
+### Les leçons
+
+1. **Ne jamais relever une empreinte à l'œil dans une console qui en affiche quatre.**
+   L'extraire de l'APK installé est le seul procédé qui ne se trompe pas.
+2. **Une clé API partagée entre Maps et Firebase est un piège** : la restreindre pour un
+   usage casse l'autre, silencieusement, sans qu'aucun écran ne le signale.
+3. **Masquer les erreurs à l'utilisateur coûte cher au diagnostic.** Le choix est bon pour le
+   client, mais il impose `adb logcat` dès qu'il faut comprendre. Le brancher tôt.
+4. `adb pair` exige le port de la **fenêtre d'association**, différent de celui affiché sur
+   l'écran du débogage sans fil — et `ADB_MDNS_OPENSCREEN=1` aide quand la découverte échoue.
+5. ⚠️ **Sous `zsh`, `adb $VAR` ne découpe pas la variable en mots** : `-s` part sans sa
+   valeur et les commandes s'exécutent en silence sur le mauvais appareil. Passer le
+   sélecteur en clair.

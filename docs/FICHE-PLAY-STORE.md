@@ -164,8 +164,11 @@ par un rejet difficile à comprendre après coup.
 
 - [x] **Débloquer le compte** — vérifications appareil, identité, téléphone : les trois
       passées au **2026-08-31** (voir [SOUMISSION-ANDROID.md](SOUMISSION-ANDROID.md))
-- [ ] **Convertir en compte organisation** pour échapper aux 12 testeurs — ⏳ **en cours**,
-      bloqué sur la validation du domaine `rentanoo.com` par Google
+- [x] **Convertir en compte organisation** pour échapper aux 12 testeurs — ✅ fait le
+      **2026-08-31**, la règle des 12 testeurs ne s'applique plus (⏳ 72 h avant de pouvoir
+      soumettre)
+- [ ] **Changer le « Developer name »** de `christopher techer` en `Rentanoo` — c'est le nom
+      d'éditeur affiché publiquement sous l'application
 - [ ] Créer l'application dans le Play Console
 - [ ] Clé de compte de service : Play Console › Configuration › Accès à l'API › Comptes de
       service → télécharger le JSON → le poser en `app/google-play-service-account.json`

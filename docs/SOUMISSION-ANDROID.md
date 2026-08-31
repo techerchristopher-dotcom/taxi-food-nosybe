@@ -241,34 +241,29 @@ La Réunion (RE)
 Si l'erreur persiste malgré un profil neuf, la doc Google renvoie au **support Play
 Console** — y aller plutôt qu'insister, vu la limite d'essais.
 
-### État au 2026-08-31 — conversion en cours
+### ✅ Conversion faite le 2026-08-31 — compte ORGANISATION
 
-Nouveau profil de paiement créé et rattaché. Le Play Console affiche *« Google is checking
-whether your new payments profile is verified »* et grise **« Change account type »** le
-temps du contrôle (annoncé à moins d'une minute).
+Le Play Console affiche désormais **« Organization account »** (ID `6682410097385681985`).
 
-- **Si le profil ressort vérifié** → la conversion s'enchaîne, puis **72 h** avant de
-  pouvoir soumettre une application.
-- **Sinon** → Google réclame une pièce d'identité et un justificatif officiel : prévoir un
-  **Kbis de Rentanoo SAS de moins de 3 mois**.
+**La règle des 12 testeurs pendant 14 jours ne s'applique plus.** C'était le seul vrai
+obstacle de calendrier côté Android ; le chemin court est ouvert.
 
-⚠️ **À vérifier après la conversion** : le champ **« Developer name »** est un champ libre
-(« It can be different to your name », 50 caractères). Ce dossier affirmait plus haut que le
-nom public deviendrait forcément « Rentanoo » — ce n'est peut-être pas vrai. Regarder si le
-champ reste modifiable une fois le compte en organisation ; si oui, « Taxi Food » redevient
-possible comme nom affiché.
+⏳ **72 heures** entre la conversion et la possibilité de soumettre une application. Créer
+l'application et remplir les formulaires reste possible pendant ce délai — c'est le moment
+de le faire, il y a plusieurs heures de saisie.
 
-**Nouveau calendrier réaliste : environ une semaine**, contre trois pour le test fermé. La
-voie organisation devient donc le chemin court — l'inverse de ce que ce dossier concluait
-avant de savoir que le D-U-N-S existait déjà.
+#### Le « Developer name » reste un champ libre — réponse à la question laissée ouverte
 
-⚠️ **Le nom affiché sur la fiche Play sera celui de l'entité du D-U-N-S**, donc
-**Rentanoo** et non « Taxi Food ». Ce n'est pas un défaut — le site dit déjà « de la même
-équipe que Rentanoo, déjà présente sur l'île », et une société identifiable rassure sur une
-place de marché. Mais c'est à savoir avant de valider, pas après.
+Ce dossier annonçait que le nom public deviendrait forcément celui de l'entité du D-U-N-S.
+**C'est faux, vérifié après conversion** : le champ est resté sur `christopher techer`,
+inchangé, et modifiable (50 caractères, « It can be different to your name »). Google ne
+force pas le nom vérifié.
 
-⚠️ **Le site web à faire valider est celui de l'ORGANISATION**, pas celui de l'app :
-`rentanoo.com`, et non `taxifood.rentanoo.com`.
+⚠️ **À changer avant toute publication.** `christopher techer` est ce que les clients
+verront comme éditeur sous le nom de l'application. Sur une place de marché où l'on commande
+à manger et où l'on paie en espèces à un livreur, un prénom en minuscules ne rassure pas.
+Valeur retenue : **`Rentanoo`** — cohérent avec l'entité vérifiée et avec ce que le site
+annonce déjà.
 
 ## B. Comptes externes — à créer par le porteur du projet
 

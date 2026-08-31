@@ -423,3 +423,20 @@ Quelques minutes de propagation, puis réessayer **sans réinstaller** : tout es
 Tant que l'app était distribuée en APK signé par EAS, une seule empreinte suffisait. **Dès
 qu'on passe par le Play Store, il y en a deux**, et tout service Google restreint par
 empreinte doit connaître les deux. À vérifier pour chaque nouvelle restriction posée.
+
+### ✅ Corrigé le 2026-08-31
+
+Les deux déclarations ont été faites dans le projet Cloud `227662072769` :
+
+| Ce qui a été ajouté | Détail |
+|---|---|
+| **Client OAuth Android « Android client Play Store »** | `227662072769-bjcthu5se8uiru2i1rrc3rtkl0f9pgrh.apps.googleusercontent.com`, package `com.chris97416.taxifoodnosybe`, empreinte `20:5A:CE:…` |
+| **Seconde restriction sur la clé Maps** | même paire package + empreinte, ajoutée à côté de l'existante |
+
+Les deux clients Android coexistent, et la clé Maps porte désormais **deux** empreintes.
+Rien n'a été retiré : les builds `preview` et `development` signés par EAS continuent de
+fonctionner.
+
+Le formulaire de Google Cloud annonce lui-même *« It may take 5 minutes to a few hours for
+settings to take effect »*. Un échec juste après l'enregistrement ne prouve donc rien —
+attendre avant de conclure.

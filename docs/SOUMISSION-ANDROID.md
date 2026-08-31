@@ -335,3 +335,48 @@ com.chris97416.taxifoodnosybe for FCM V1"*.
   présence d'alcool au catalogue, à déclarer
 - [ ] Premier build `production` Android, jamais fait à ce jour — lancé en interactif par
   Christopher, même règle que pour iOS (`docs/EN-ATTENTE-DE-BUILD.md`)
+
+
+---
+
+## ✅ Application créée et test interne en ligne — 2026-08-31
+
+| | |
+|---|---|
+| ID application Play | `4972795001003481903` |
+| Package | `com.chris97416.taxifoodnosybe` |
+| Nom, langue, type | Taxi Food · Français (France) · Application · **Gratuite** |
+| Canal test interne | `4700730027165144358` — **actif** |
+| Release | **4 (1.1.0)**, publiée le 2026-08-31 |
+| Lien d'inscription | https://play.google.com/apps/internaltest/4700730027165144358 |
+| Liste de testeurs | « Equipe Taxi Food » — `techerchristopher@gmail.com` |
+
+**Le test interne ne passe par AUCUNE revue** (« Release your app early for internal testing
+without review », jusqu'à 100 testeurs) et **n'attend pas les 72 h** de la conversion en
+compte organisation. C'est donc la voie la plus courte pour installer l'app sur un appareil.
+
+Taille annoncée à l'installation : **33,6 Mo** (le `.aab` en fait 82 — c'est le découpage par
+appareil du format App Bundle qui fait la différence).
+
+⚠️ Tant que la fiche n'est pas complétée et validée, les testeurs voient le nom temporaire
+`com.chris97416.taxifoodnosybe (unreviewed)`. Ce n'est pas un défaut de configuration.
+
+⚠️ Un avertissement subsiste au dépôt : **pas de fichier de désobfuscation** joint au bundle.
+Sans conséquence sur l'installation ni le fonctionnement — seuls les rapports de plantage
+sont moins lisibles.
+
+### Le sideload d'APK, à ne pas retenter
+
+Avant d'en arriver là, plusieurs heures ont été perdues à installer l'APK à la main sur un
+Blackview : téléchargement bloqué en affichage alors que le fichier était complet, fichier
+introuvable dans le gestionnaire de fichiers, autorisation « sources inconnues » à débusquer.
+**Le test interne règle tout ça d'un coup** : c'est le Play Store qui installe, il est déjà
+autorisé, et il n'y a aucun fichier à manipuler. À réflexe pour toute prochaine vérification
+sur appareil.
+
+### Ce qui reste
+
+- [ ] Fiche du magasin (textes prêts dans FICHE-PLAY-STORE.md), Data Safety, IARC
+- [ ] Clé de compte de service → `app/google-play-service-account.json`, pour que
+      `eas submit -p android` remplace le dépôt manuel du `.aab`
+- [ ] Refaire les captures d'écran (celles en stock montrent l'ancien vouvoiement)

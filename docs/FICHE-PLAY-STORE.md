@@ -287,10 +287,18 @@ this app https://taxifood.rentanoo.com/suppression-compte/ »*.
 le croire, mais sous **« Financial info »** — c'est là qu'est l'historique des commandes,
 malgré l'absence de toute donnée bancaire.
 
+### ✅ Catégorie et coordonnées — terminé le 2026-08-31
+
+Store settings → App category : **Food & Drink**. Store listing contact details : e-mail
+`techerchristopher@gmail.com`, téléphone `+261373437912`, site `https://taxifood.rentanoo.com`.
+Publié immédiatement (le formulaire n'attend pas l'envoi global de la fiche).
+
 ### ⏳ Restant — à faire à la main
 
-**1. Catégorie et coordonnées.**
-
-**2. Les visuels de la fiche** — icône, image de présentation, six captures. Champ de fichier
+**Les visuels de la fiche** — icône, image de présentation, six captures. Champ de fichier
 natif, non automatisable. ⚠️ Prendre les fichiers de `docs/captures-play-store/`, **jamais**
 ceux de `captures-app-store/` : les captures iPhone font 2,17 : 1 et seraient refusées.
+
+**C'est la dernière déclaration.** Une fois les visuels déposés, les onze tâches de la
+fiche « Set up your app » seront complètes et « Send app for review » deviendra actionnable
+depuis Publishing overview.

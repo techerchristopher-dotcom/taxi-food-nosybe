@@ -246,3 +246,53 @@ directement de la règle 2.1 : un relecteur appuie sur tout ce qui ressemble à 
   invente pas.
 - Le sous-titre de `/phone` dit « Demandé une seule fois », formulation de première connexion,
   un peu étrange quand on y arrive par « Modifier ». Sans conséquence.
+
+---
+
+## Version 1.1.0 — déposée le 2026-08-31
+
+Build **24**, version **1.1.0**, téléversé sur App Store Connect et accepté.
+
+### ⚠️ Le piège : une soumission refusée sans message lisible
+
+Le 2026-08-26, le build **23** avait été refusé par `eas submit`. Le terminal n'affichait
+qu'une ligne — *« Something went wrong when submitting your app to Apple App Store
+Connect »* — et l'API d'Expo n'exposait **ni message d'erreur ni fichier de log** pour cette
+soumission (`error: null`, `logFiles: []`). Rien à lire nulle part.
+
+Ce qui a permis de trancher sans le log, par élimination :
+
+| Piste | Écartée parce que |
+|---|---|
+| Authentification Apple | la clé ASC `JS5M5UC2CN` (Admin) avait fait passer le build 22 trois jours plus tôt |
+| Binaire invalide | `app.json` et `package.json` **strictement identiques** au build 22 — aucune permission, aucun plugin, aucune entitlement en plus |
+| Numéro de build en double | `autoIncrement` avait bien produit 23 > 22 |
+
+Restait le **numéro de version**. Le build 23 portait `1.0.0`, **déjà publiée** sur l'App
+Store. Apple n'accepte pas de nouveau binaire sous un numéro de version déjà consommé.
+
+**Confirmé par l'expérience** : le build 24 ne diffère du 23 que par **deux lignes** —
+`version` passée à `1.1.0` et `DATE_MISE_A_JOUR` au 31 août. Même code, même clé, même
+configuration. Il est passé du premier coup.
+
+⚠️ **Règle à retenir pour toute mise à jour** : monter `expo.version` dans `app.json`
+**avant** de lancer le build. `autoIncrement` ne gère que le numéro de build (`24`), jamais
+le numéro de version (`1.1.0`) — les deux sont distincts et Apple les contrôle séparément.
+Découvrir l'oubli après coup coûte un build complet.
+
+### Ce que contient la 1.1.0
+
+- Espace **Réglages** du restaurateur : horaires, ouverture automatique, ruptures de stock
+- **Tournée** du livreur : jusqu'à trois commandes d'un même restaurant
+- Panier détaillé : **marchandise / livraison / total**, et commission calculée en base
+- Passage au **tutoiement** côté client (le vouvoiement reste côté professionnel)
+- Version et date de mise à jour affichées en pied de Profil
+
+### Reste à faire dans App Store Connect
+
+- [ ] Créer la version **1.1.0** dans la fiche, y rattacher le build 24
+- [ ] Rédiger les **Nouveautés de cette version**
+- [ ] Répondre à la conformité export (chiffrement)
+- [ ] Soumettre pour revue
+- [ ] ⚠️ **Captures d'écran** : celles en ligne datent du 2026-08-19 et montrent l'ancien
+      vouvoiement. Non bloquant pour la revue, mais incohérent avec l'app livrée.

@@ -177,3 +177,51 @@ par un rejet difficile à comprendre après coup.
       pour iOS
 - [ ] `eas submit -p android` — la configuration est prête dans `app/eas.json`, elle envoie
       d'abord sur le canal **interne** en **brouillon**, jamais directement en production
+
+---
+
+## État de la fiche au 2026-08-31
+
+### ✅ Fait
+
+- **Application créée** — `4972795001003481903`, package `com.chris97416.taxifoodnosybe`,
+  Taxi Food · Français (France) · Application · Gratuite
+- **Test interne en ligne** — release **4 (1.1.0)**, canal `4700730027165144358`,
+  lien d'inscription https://play.google.com/apps/internaltest/4700730027165144358
+- **Fiche par défaut (fr-FR), textes enregistrés en brouillon** : nom, description courte
+  (67/80), description complète reprise telle quelle de FICHE-APP-STORE.md § 1
+
+### ⛔ Ce qu'un agent ne peut pas faire ici
+
+**Les trois zones de visuels passent par un sélecteur de fichiers natif.** Le bouton
+« Add assets » ouvre un panneau interne dont le champ `input[type=file]` n'est pas exposé
+dans l'arbre d'accessibilité ; le bouton « Upload » déclenche la boîte de dialogue macOS,
+que les outils navigateur ne pilotent pas. À faire à la main, depuis
+`docs/captures-play-store/` :
+
+| Zone | Fichier |
+|---|---|
+| App icon | `00-icone-512x512.png` |
+| Feature graphic | `00-image-presentation-1024x500.png` |
+| Phone screenshots | `01-accueil.png` … `06-suivi.png` (les six) |
+
+### ⏳ Déclarations restantes (Policy and programs → App content)
+
+Ce sont des **déclarations engageantes**, à remplir par le porteur du projet — même nature
+que les cases cochées à la création de l'application :
+
+- Politique de confidentialité (URL)
+- Accès à l'application — ⚠️ fournir les **trois** comptes, § 5
+- Publicités : **non**
+- Data Safety — tableau de correspondance prêt, § 3
+- Classement IARC — ⚠️ **déclarer l'alcool**, § 4
+- Public cible et contenu
+
+### ⚠️ Deux incohérences à trancher
+
+1. **Les captures montrent l'ancien vouvoiement** (voir plus haut). Elles sont téléversables
+   telles quelles pour débloquer, mais à refaire depuis la 1.1.0 installée.
+2. **La description complète vouvoie** (« Choisissez votre restaurant… vous savez »), alors
+   que la règle du 2026-08-24 tutoie côté client. Elle est reprise mot pour mot de la fiche
+   App Store, **déjà publiée et validée** : la changer ici seul ferait diverger les deux
+   magasins. À harmoniser sur les deux à la fois, ou à assumer comme registre marketing.

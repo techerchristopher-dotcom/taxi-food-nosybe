@@ -1,0 +1,246 @@
+<!doctype html>
+<!--
+  Page EXIGÉE par Google Play : « Delete account URL », renseignée dans
+  Play Console → App content → Data safety.
+
+  Google impose trois choses à cette page, et les vérifie :
+    1. citer le nom de l'app ou du développeur tel qu'il apparaît sur la fiche ;
+    2. présenter EN ÉVIDENCE les étapes pour demander la suppression ;
+    3. préciser quelles données sont effacées, lesquelles sont conservées, et
+       la durée de conservation.
+
+  ⚠️ Le contenu du tableau n'est pas rédigé « au mieux » : il est déduit des
+  clés étrangères réelles de la base (ON DELETE CASCADE / SET NULL) et de la
+  fonction public.delete_my_account(). Si le schéma change, cette page ment.
+  Vérifier avec :
+    select conrelid::regclass, confdeltype from pg_constraint
+     where contype='f' and confrelid in ('auth.users'::regclass,'public.profiles'::regclass);
+
+  Même structure trilingue que /confidentialite/ : un <section lang="…"> par
+  langue, indispensable pour l'indexation. Les trois sections doivent dire la
+  même chose — modifier l'une, c'est modifier les trois.
+
+  Cette page N'EST PAS générée par tools/build-i18n.py : elle s'édite ici.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supprimer son compte · Delete your account · Eliminare l'account — Taxi Food</title>
+<meta name="description" content="Comment supprimer son compte Taxi Food et les données associées, depuis l'application ou par e-mail. Ce qui est effacé, ce qui est conservé. Document trilingue : français, English, italiano.">
+<link rel="canonical" href="https://taxifood.rentanoo.com/suppression-compte/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Taxi Food Nosy Be">
+<meta property="og:url" content="https://taxifood.rentanoo.com/suppression-compte/">
+<meta property="og:title" content="Supprimer son compte — Taxi Food">
+<meta property="og:description" content="Comment supprimer son compte Taxi Food et les données associées. Ce qui est effacé, ce qui est conservé.">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 720px; margin: 0 auto; padding: 32px 20px 80px;
+    line-height: 1.65; color: #1a1a1a; background: #f5f2ef;
+  }
+  @media (prefers-color-scheme: dark) { body { color: #eceae8; background: #16150f; } }
+  h1 { font-size: 28px; letter-spacing: -.5px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 36px 0 8px; }
+  .maj { color: #8a8580; font-size: 14px; margin: 0 0 28px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #d9d4cd; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #3a3733; } }
+  th { font-weight: 600; }
+  a { color: #e8342a; }
+  hr { border: 0; border-top: 1px solid #d9d4cd; margin: 48px 0; }
+  @media (prefers-color-scheme: dark) { hr { border-color: #3a3733; } }
+  section[lang="en"], section[lang="it"] { color: #4a4744; }
+  @media (prefers-color-scheme: dark) {
+    section[lang="en"], section[lang="it"] { color: #b8b4b0; }
+  }
+  .langues {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin: 0 0 28px; padding: 0; list-style: none;
+    font-size: 14px;
+  }
+  .langues a {
+    display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px;
+    border: 1px solid #d9d4cd; border-radius: 999px; text-decoration: none;
+  }
+  @media (prefers-color-scheme: dark) { .langues a { border-color: #3a3733; } }
+  /* Les etapes sont ce que Google veut voir « en evidence ». */
+  ol.etapes { padding-left: 22px; margin: 12px 0 4px; }
+  ol.etapes li { margin: 0 0 8px; }
+  .encadre {
+    border: 1px solid #d9d4cd; border-radius: 12px;
+    padding: 4px 18px 14px; margin: 16px 0 8px;
+  }
+  @media (prefers-color-scheme: dark) { .encadre { border-color: #3a3733; } }
+</style>
+</head>
+<body>
+
+<nav aria-label="Langue de ce document / Document language / Lingua del documento">
+  <ul class="langues">
+    <li><a href="#fr" lang="fr" hreflang="fr">Français</a></li>
+    <li><a href="#en" lang="en" hreflang="en">English</a></li>
+    <li><a href="#it" lang="it" hreflang="it">Italiano</a></li>
+  </ul>
+</nav>
+
+<section lang="fr" id="fr">
+
+<h1>Supprimer son compte Taxi Food</h1>
+<p class="maj">Taxi Food — application éditée par Rentanoo. Nosy Be, Madagascar. Dernière mise à jour : 31 août 2026.</p>
+
+<p>Vous pouvez supprimer votre compte Taxi Food et les données associées à tout moment,
+vous-même, depuis l'application. Aucune demande, aucun délai : la suppression est immédiate.</p>
+
+<div class="encadre">
+<h2>Depuis l'application, en quatre gestes</h2>
+<ol class="etapes">
+  <li>Ouvrez <strong>Taxi Food</strong> et connectez-vous.</li>
+  <li>Touchez l'onglet <strong>Profil</strong>, en bas de l'écran.</li>
+  <li>Descendez jusqu'à <strong>« Supprimer mon compte »</strong>.</li>
+  <li>Confirmez. Le compte et les données ci-dessous sont effacés <strong>immédiatement</strong>.</li>
+</ol>
+</div>
+
+<h2>Si vous n'avez plus l'application</h2>
+
+<p>Écrivez à <a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a> en
+indiquant le <strong>numéro de téléphone</strong> associé au compte. Nous procédons à la
+suppression et vous confirmons sous 30 jours.</p>
+
+<h2>Ce qui est effacé, ce qui est conservé</h2>
+
+<table>
+<tr><th>Donnée</th><th>Ce qui arrive</th></tr>
+<tr><td>Compte et moyens de connexion (e-mail, Google, Facebook, Apple)</td><td><strong>Effacé</strong> immédiatement</td></tr>
+<tr><td>Nom et numéro de téléphone</td><td><strong>Effacé</strong> immédiatement</td></tr>
+<tr><td>Adresses de livraison, y compris les coordonnées GPS</td><td><strong>Effacé</strong> immédiatement</td></tr>
+<tr><td>Jetons de notification de l'appareil</td><td><strong>Effacé</strong> immédiatement</td></tr>
+<tr><td>Rattachements de rôle (livreur, personnel d'un restaurant)</td><td><strong>Effacé</strong> immédiatement</td></tr>
+<tr><td>Commandes passées</td><td><strong>Conservées sans lien avec vous.</strong> Votre identifiant en est retiré : la commande subsiste pour la comptabilité du restaurant, sans nom, sans téléphone et sans adresse rattachés. Ces données anonymisées ne permettent plus de vous identifier et sont conservées sans limite de durée.</td></tr>
+</table>
+
+<p>Aucune donnée bancaire n'est concernée : Taxi Food ne collecte aucun moyen de paiement,
+le règlement se fait en espèces au livreur.</p>
+
+<h2>Un cas où la suppression est refusée</h2>
+
+<p>Si vous êtes <strong>livreur et qu'une course est en cours</strong>, la suppression est
+bloquée jusqu'à la livraison : sans cela, la commande resterait en plan pour le client et le
+restaurant. Terminez la course, puis recommencez.</p>
+
+<p>Le détail de ce que nous collectons et pourquoi figure dans notre
+<a href="https://taxifood.rentanoo.com/confidentialite/">politique de confidentialité</a>.</p>
+
+</section>
+
+<hr>
+
+<section lang="en" id="en">
+
+<h1>Delete your Taxi Food account</h1>
+<p class="maj">Taxi Food — app published by Rentanoo. Nosy Be, Madagascar. Last updated: 31 August 2026.</p>
+
+<p>You can delete your Taxi Food account and its associated data at any time, yourself, from
+inside the app. No request, no waiting: deletion is immediate.</p>
+
+<div class="encadre">
+<h2>From the app, in four steps</h2>
+<ol class="etapes">
+  <li>Open <strong>Taxi Food</strong> and sign in.</li>
+  <li>Tap the <strong>Profile</strong> tab at the bottom of the screen.</li>
+  <li>Scroll down to <strong>&ldquo;Delete my account&rdquo;</strong>.</li>
+  <li>Confirm. The account and the data listed below are erased <strong>immediately</strong>.</li>
+</ol>
+</div>
+
+<h2>If you no longer have the app</h2>
+
+<p>Email <a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a> with the
+<strong>phone number</strong> linked to the account. We delete it and confirm within 30 days.</p>
+
+<h2>What is erased, what is kept</h2>
+
+<table>
+<tr><th>Data</th><th>What happens</th></tr>
+<tr><td>Account and sign-in methods (email, Google, Facebook, Apple)</td><td><strong>Erased</strong> immediately</td></tr>
+<tr><td>Name and phone number</td><td><strong>Erased</strong> immediately</td></tr>
+<tr><td>Delivery addresses, including GPS coordinates</td><td><strong>Erased</strong> immediately</td></tr>
+<tr><td>Device notification tokens</td><td><strong>Erased</strong> immediately</td></tr>
+<tr><td>Role links (courier, restaurant staff)</td><td><strong>Erased</strong> immediately</td></tr>
+<tr><td>Past orders</td><td><strong>Kept, with no link to you.</strong> Your identifier is removed: the order remains for the restaurant's accounting, with no name, phone number or address attached. This anonymised data can no longer identify you and is kept with no time limit.</td></tr>
+</table>
+
+<p>No payment data is involved: Taxi Food never collects a payment method &mdash; you pay the
+courier in cash.</p>
+
+<h2>One case where deletion is refused</h2>
+
+<p>If you are a <strong>courier with a delivery in progress</strong>, deletion is blocked until
+it is completed: otherwise the order would be stranded for both the customer and the
+restaurant. Finish the delivery, then try again.</p>
+
+<p>What we collect and why is detailed in our
+<a href="https://taxifood.rentanoo.com/confidentialite/">privacy policy</a>.</p>
+
+</section>
+
+<hr>
+
+<section lang="it" id="it">
+
+<h1>Eliminare l'account Taxi Food</h1>
+<p class="maj">Taxi Food &mdash; app pubblicata da Rentanoo. Nosy Be, Madagascar. Ultimo aggiornamento: 31 agosto 2026.</p>
+
+<p>Puoi eliminare il tuo account Taxi Food e i dati associati in qualsiasi momento, da solo,
+dall'applicazione. Nessuna richiesta, nessuna attesa: l'eliminazione &egrave; immediata.</p>
+
+<div class="encadre">
+<h2>Dall'app, in quattro passaggi</h2>
+<ol class="etapes">
+  <li>Apri <strong>Taxi Food</strong> e accedi.</li>
+  <li>Tocca la scheda <strong>Profilo</strong>, in basso.</li>
+  <li>Scorri fino a <strong>&laquo;&nbsp;Elimina il mio account&nbsp;&raquo;</strong>.</li>
+  <li>Conferma. L'account e i dati elencati sotto vengono cancellati <strong>subito</strong>.</li>
+</ol>
+</div>
+
+<h2>Se non hai pi&ugrave; l'applicazione</h2>
+
+<p>Scrivi a <a href="mailto:techerchristopher@gmail.com">techerchristopher@gmail.com</a>
+indicando il <strong>numero di telefono</strong> associato all'account. Procediamo
+all'eliminazione e confermiamo entro 30 giorni.</p>
+
+<h2>Cosa viene cancellato, cosa viene conservato</h2>
+
+<table>
+<tr><th>Dato</th><th>Cosa succede</th></tr>
+<tr><td>Account e metodi di accesso (e-mail, Google, Facebook, Apple)</td><td><strong>Cancellato</strong> subito</td></tr>
+<tr><td>Nome e numero di telefono</td><td><strong>Cancellato</strong> subito</td></tr>
+<tr><td>Indirizzi di consegna, comprese le coordinate GPS</td><td><strong>Cancellato</strong> subito</td></tr>
+<tr><td>Token di notifica del dispositivo</td><td><strong>Cancellato</strong> subito</td></tr>
+<tr><td>Collegamenti di ruolo (fattorino, personale di un ristorante)</td><td><strong>Cancellato</strong> subito</td></tr>
+<tr><td>Ordini effettuati</td><td><strong>Conservati senza alcun legame con te.</strong> Il tuo identificativo viene rimosso: l'ordine resta per la contabilit&agrave; del ristorante, senza nome, telefono o indirizzo associati. Questi dati anonimizzati non permettono pi&ugrave; di identificarti e sono conservati senza limiti di tempo.</td></tr>
+</table>
+
+<p>Nessun dato bancario &egrave; coinvolto: Taxi Food non raccoglie alcun metodo di pagamento,
+si paga in contanti al fattorino.</p>
+
+<h2>Un caso in cui l'eliminazione viene rifiutata</h2>
+
+<p>Se sei un <strong>fattorino con una consegna in corso</strong>, l'eliminazione &egrave;
+bloccata fino al completamento: altrimenti l'ordine resterebbe fermo per il cliente e per il
+ristorante. Completa la consegna, poi riprova.</p>
+
+<p>Cosa raccogliamo e perch&eacute; &egrave; descritto nella nostra
+<a href="https://taxifood.rentanoo.com/confidentialite/">informativa sulla privacy</a>.</p>
+
+</section>
+
+</body>
+</html>

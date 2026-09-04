@@ -192,3 +192,83 @@ automatique, bascule manuelle, et mise en rupture produit par produit.
 
 ⚠️ **`DATE_MISE_A_JOUR` est à remonter À CHAQUE BUILD envoyé aux magasins.**
 C'est une ligne, et c'est le seul geste de sortie manuel du projet.
+
+## Mises à jour OTA activées (2026-09-05)
+
+`expo-updates` installé, `runtimeVersion` en politique `appVersion`, URL `updates`
+vers le projet EAS existant, et un `channel` par profil dans `eas.json`.
+
+⚠️ **Ce build-ci doit encore passer par les magasins** — c'est lui qui embarque le
+client de mise à jour dans le binaire. **Après** lui, tout changement purement JS
+(libellés, écrans, logique) pourra partir par `eas update --branch production`, sans
+revue Apple. Les changements natifs (nouveau module, permission, icône) continueront
+d'exiger un vrai build.
+
+## Horaires par jour de la semaine (2026-09-05)
+
+Remplace le créneau unique `opens_at`/`closes_at` valable tous les jours.
+
+- Base : table `restaurant_hours` (une ligne par jour, 0 = dimanche), fonction
+  `ouvert_maintenant()` réécrite pour lire le planning du jour, `horaires_du_jour()`
+  pour l'affichage, RPC `set_restaurant_week_hours` / `set_restaurant_auto_open`.
+  `set_restaurant_hours` a été **supprimée**.
+- App : `reglages.tsx` (liste des 7 jours), `data/api.ts`, `data/types.ts`,
+  `RestaurantCard.tsx`, `restaurant/[id].tsx`.
+
+✅ Déjà vérifié : les 3 cas de calcul en SQL (jour ouvert, jour fermé, créneau à
+cheval sur l'heure courante), les RPC avec un vrai jeton partenaire, et le rendu
+des 7 jours sur simulateur.
+
+⚠️ **À vérifier sur appareil :**
+- saisir des horaires différents lundi et samedi, enregistrer, puis activer
+  l'ouverture automatique et vérifier le badge Ouvert/Fermé côté client ;
+- marquer un jour « Fermé » et vérifier qu'il ferme bien ce jour-là.
+
+⚠️ **Aucun restaurant existant ne change de comportement** tant qu'il n'active pas
+l'ouverture automatique : `auto_open` est à `false` partout.
+
+## Logo et couverture déposés par le partenaire (2026-09-05)
+
+Le partenaire choisit ses visuels depuis son téléphone ; le recadrage est fait par
+l'OS (1:1 pour le logo, 16:9 pour la couverture), donc pas de cropper maison.
+
+- Base : bucket `partenaires` (lecture publique, **écriture réservée au personnel
+  actif du restaurant et limitée à son propre dossier**), RPC `set_restaurant_photo`.
+- App : `expo-image-picker` (**nouveau module natif** — d'où la nécessité du build),
+  `reglages.tsx`.
+
+✅ Déjà vérifié côté serveur : dépôt dans son dossier accepté, dans celui d'un autre
+restaurant refusé, dépôt anonyme refusé.
+
+⚠️ **À vérifier sur appareil :** changer le logo puis la couverture, et les retrouver
+correctement cadrés sur la fiche restaurant et la carte d'accueil.
+
+## Mise à l'affiche : plats du jour réutilisables (2026-09-05)
+
+« À l'affiche » est un état d'un produit. Retirer un plat du jour ne l'efface pas :
+il retourne en bibliothèque, prêt à être remis en un tap avec son formulaire
+pré-rempli. N'importe quel produit de la carte peut aussi être mis en avant, avec un
+libellé libre (« Pizza de la semaine », « Suggestion du chef »).
+
+- Base : `products.is_featured` / `featured_label` / `in_menu` / `is_archived` /
+  `stock_quantity`, RPC `save_featured_product` / `set_product_featured` /
+  `set_product_stock` / `archive_product`.
+- App : `reglages.tsx` (section À l'affiche + bibliothèque + étoile sur la carte),
+  `restaurant/[id].tsx` (carrousel client), `data/api.ts`, `data/types.ts`.
+
+✅ Déjà vérifié en transaction annulée : cycle complet créer → retirer → remettre à
+l'affiche photo intacte → ajuster le prix, mise en avant d'un plat de la carte, et
+les refus attendus. Rendu de l'écran partenaire vérifié sur simulateur.
+
+⚠️ **À vérifier sur appareil, jamais fait faute de pouvoir écrire sur un restaurant
+en activité :**
+- créer un plat à l'affiche avec photo depuis l'écran, et le voir apparaître dans le
+  carrousel en haut de la fiche restaurant ;
+- le retirer, vérifier qu'il tombe en bibliothèque **sans perdre sa photo**, puis le
+  remettre à l'affiche en un tap ;
+- mettre la quantité à 0 et vérifier qu'il passe grisé côté client ;
+- mettre une pizza de la carte en avant par l'étoile : elle doit apparaître dans le
+  carrousel **et** rester dans sa catégorie.
+
+⚠️ La quantité est un compteur **annoncé**, décrémenté à la main : `create_order`
+n'a pas été touché, il n'y a donc aucune réservation atomique.

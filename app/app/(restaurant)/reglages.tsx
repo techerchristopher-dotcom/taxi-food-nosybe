@@ -17,9 +17,13 @@ import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { ProductThumb } from '../../components/ProductThumb';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import {
+  archiveProduct,
+  getFeaturedLibrary,
   getMyRestaurant,
   getMenu,
+  saveFeaturedProduct,
   setProductAvailable,
+  setProductFeatured,
   setRestaurantAutoOpen,
   setRestaurantOpen,
   setRestaurantPhoto,
@@ -65,6 +69,43 @@ const JOURS: { weekday: number; label: string }[] = [
 ];
 
 type Brouillon = Record<number, { opensAt: string; closesAt: string; isClosed: boolean }>;
+
+/**
+ * Fiche de mise à l'affiche en cours d'édition. `productId` null = création ;
+ * sinon on reprend une fiche déjà en bibliothèque, pré-remplie — c'est tout
+ * l'intérêt : remettre le plat de jeudi à l'affiche vendredi sans rien ressaisir.
+ */
+type FicheAffiche = {
+  productId: string | null;
+  name: string;
+  label: string;
+  price: string;
+  stock: string;
+  description: string;
+  photoUrl: string | null;
+};
+
+const FICHE_VIDE: FicheAffiche = {
+  productId: null,
+  name: '',
+  label: 'Plat du jour',
+  price: '',
+  stock: '',
+  description: '',
+  photoUrl: null,
+};
+
+function ficheDepuis(p: Product): FicheAffiche {
+  return {
+    productId: p.id,
+    name: p.name,
+    label: p.featuredLabel ?? 'Plat du jour',
+    price: String(p.price),
+    stock: p.stockQuantity == null ? '' : String(p.stockQuantity),
+    description: p.description ?? '',
+    photoUrl: p.photoUrl ?? null,
+  };
+}
 
 function versBrouillon(weekHours: DayHours[]): Brouillon {
   const b: Brouillon = {};
@@ -127,15 +168,22 @@ export default function RestaurantSettingsScreen() {
   const { data, loading, reload } = useLoad(async () => {
     const resto = await getMyRestaurant(restaurantId);
     const menu = restaurantId ? await getMenu(restaurantId) : null;
-    return { resto, menu };
+    const bibliotheque = await getFeaturedLibrary(restaurantId);
+    return { resto, menu, bibliotheque };
   }, [restaurantId]);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
+  const [fiche, setFiche] = useState<FicheAffiche | null>(null);
 
   const resto = data?.resto ?? null;
   const menu = data?.menu ?? null;
+  const bibliotheque = data?.bibliotheque ?? [];
+  const alAffiche = menu?.featured ?? [];
+  // Créations dormantes : déjà prêtes (photo, prix, description), il suffit d'un
+  // tap pour les remettre à l'affiche.
+  const dormantes = bibliotheque.filter((p) => !p.isFeatured);
 
   // Les champs suivent la base tant que le restaurateur n'a rien tapé.
   const jours = brouillon ?? (resto ? versBrouillon(resto.weekHours) : {});
@@ -188,36 +236,100 @@ export default function RestaurantSettingsScreen() {
     );
   }
 
-  async function pickAndUpload(kind: 'logo' | 'cover') {
+  /**
+   * Choisit une photo, la recadre au bon format (le recadrage est fait par iOS/Android,
+   * ce qui garantit un cadre homogène sans cropper maison) et la dépose dans le bucket
+   * `partenaires`, sous le dossier du restaurant. Renvoie l'URL publique, ou null si
+   * l'utilisateur a annulé.
+   */
+  async function choisirEtEnvoyer(
+    prefixe: string,
+    aspect: [number, number],
+  ): Promise<string | null> {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      setError('Autorisation d\'accès aux photos refusée.');
-      return;
+      setError("Autorisation d'accès aux photos refusée.");
+      return null;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: kind === 'logo' ? [1, 1] : [16, 9],
+      aspect,
       quality: 0.8,
     });
-    if (result.canceled || !result.assets?.[0]) return;
-    const uri = result.assets[0].uri;
+    if (result.canceled || !result.assets?.[0]) return null;
 
+    const uri = result.assets[0].uri;
+    const arraybuffer = await fetch(uri).then((res) => res.arrayBuffer());
+    const isPng = uri.toLowerCase().endsWith('.png');
+    // L'horodatage dans le nom évite tout souci de cache d'image côté client.
+    const path = `${restaurantId}/${prefixe}-${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+    const { error: upErr } = await supabase.storage.from('partenaires').upload(path, arraybuffer, {
+      contentType: isPng ? 'image/png' : 'image/jpeg',
+      upsert: true,
+    });
+    if (upErr) throw upErr;
+    return supabase.storage.from('partenaires').getPublicUrl(path).data.publicUrl;
+  }
+
+  async function pickAndUpload(kind: 'logo' | 'cover') {
     await run(
       kind,
       async () => {
-        const arraybuffer = await fetch(uri).then((res) => res.arrayBuffer());
-        const isPng = uri.toLowerCase().endsWith('.png');
-        const path = `${restaurantId}/${kind}-${Date.now()}.${isPng ? 'png' : 'jpg'}`;
-        const { error: upErr } = await supabase.storage.from('partenaires').upload(path, arraybuffer, {
-          contentType: isPng ? 'image/png' : 'image/jpeg',
-          upsert: true,
-        });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from('partenaires').getPublicUrl(path);
-        await setRestaurantPhoto(kind, pub.publicUrl);
+        const url = await choisirEtEnvoyer(kind, kind === 'logo' ? [1, 1] : [16, 9]);
+        if (url) await setRestaurantPhoto(kind, url);
       },
       'Envoi de la photo impossible.',
+    );
+  }
+
+  async function photoDeLaFiche() {
+    if (!fiche) return;
+    setError(null);
+    setBusy('photo-fiche');
+    try {
+      const url = await choisirEtEnvoyer('plat', [4, 3]);
+      if (url) setFiche({ ...fiche, photoUrl: url });
+    } catch (e) {
+      setError((e as { message?: string })?.message || 'Envoi de la photo impossible.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function enregistrerFiche() {
+    if (!fiche) return;
+    const prix = Number(fiche.price.replace(/\s/g, '').replace(',', '.'));
+    if (!fiche.name.trim()) {
+      setError('Donnez un nom à votre plat.');
+      return;
+    }
+    if (!Number.isFinite(prix) || prix <= 0) {
+      setError('Indiquez un prix, par exemple 28000.');
+      return;
+    }
+    const stockBrut = fiche.stock.trim();
+    const stock = stockBrut === '' ? null : Number(stockBrut);
+    if (stock !== null && (!Number.isInteger(stock) || stock < 0)) {
+      setError('La quantité doit être un nombre entier, ou vide si vous ne comptez pas.');
+      return;
+    }
+
+    await run(
+      'fiche',
+      async () => {
+        await saveFeaturedProduct({
+          productId: fiche.productId,
+          name: fiche.name.trim(),
+          description: fiche.description.trim() || null,
+          price: Math.round(prix),
+          stockQuantity: stock,
+          photoUrl: fiche.photoUrl,
+          featuredLabel: fiche.label.trim() || null,
+        });
+        setFiche(null);
+      },
+      'Enregistrement impossible.',
     );
   }
 
@@ -394,11 +506,195 @@ export default function RestaurantSettingsScreen() {
             </Pressable>
           </View>
 
+          {/* ------------------------------------------------------ À l'affiche */}
+          <Text style={styles.section}>À l'affiche</Text>
+          <Text style={styles.intro}>
+            Vos plats mis en avant en haut de votre page. Retirer un plat ne l'efface pas :
+            il retourne dans votre bibliothèque, prêt à être remis à l'affiche en un tap.
+          </Text>
+
+          {alAffiche.length ? (
+            <View style={styles.carte}>
+              {alAffiche.map((p, i) => (
+                <View key={p.id}>
+                  {i ? <View style={styles.separateur} /> : null}
+                  <View style={styles.ligne}>
+                    <ProductThumb uri={p.photoUrl} size={52} radius={12} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      {p.featuredLabel ? (
+                        <Text style={styles.badgeAffiche}>{p.featuredLabel.toUpperCase()}</Text>
+                      ) : null}
+                      <Text style={styles.produitNom}>{p.name}</Text>
+                      <Text style={styles.produitPrix}>
+                        {formatAr(p.price)}
+                        {p.stockQuantity != null ? `  ·  ${p.stockQuantity} restant${p.stockQuantity > 1 ? 's' : ''}` : ''}
+                      </Text>
+                    </View>
+                    <View style={{ gap: 6 }}>
+                      <Pressable
+                        onPress={() => setFiche(ficheDepuis(p))}
+                        disabled={busy !== null}
+                        style={styles.miniBouton}
+                      >
+                        <Text style={styles.miniBoutonTexte}>Modifier</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          run(p.id, () => setProductFeatured(p.id, false), 'Retrait impossible.')
+                        }
+                        disabled={busy !== null}
+                        style={[styles.miniBouton, styles.miniBoutonSecondaire]}
+                      >
+                        <Text style={[styles.miniBoutonTexte, { color: colors.textDark }]}>Retirer</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.carte}>
+              <Text style={styles.ligneSous}>Aucun plat à l'affiche en ce moment.</Text>
+            </View>
+          )}
+
+          {!fiche ? (
+            <Pressable onPress={() => setFiche(FICHE_VIDE)} disabled={busy !== null} style={styles.bouton}>
+              <Text style={styles.boutonTexte}>Ajouter un plat à l'affiche</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.carte}>
+              <Text style={styles.categorie}>
+                {fiche.productId ? 'Remettre à l\'affiche' : 'Nouveau plat à l\'affiche'}
+              </Text>
+
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                <PhotoEditable
+                  uri={fiche.photoUrl}
+                  width={84}
+                  height={64}
+                  radiusValue={12}
+                  icon="photo_camera"
+                  busy={busy === 'photo-fiche'}
+                  onPick={photoDeLaFiche}
+                />
+                <View style={{ flex: 1, gap: 8 }}>
+                  <TextInput
+                    value={fiche.name}
+                    onChangeText={(v) => setFiche({ ...fiche, name: v })}
+                    placeholder="Nom du plat"
+                    placeholderTextColor={colors.textFaint}
+                    style={styles.champ}
+                  />
+                  <TextInput
+                    value={fiche.label}
+                    onChangeText={(v) => setFiche({ ...fiche, label: v })}
+                    placeholder="Plat du jour, Pizza de la semaine…"
+                    placeholderTextColor={colors.textFaint}
+                    style={styles.champ}
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.heuresRow, { marginTop: 8 }]}>
+                <TextInput
+                  value={fiche.price}
+                  onChangeText={(v) => setFiche({ ...fiche, price: v })}
+                  placeholder="Prix en Ar"
+                  placeholderTextColor={colors.textFaint}
+                  keyboardType="number-pad"
+                  style={[styles.champ, { flex: 1 }]}
+                />
+                <TextInput
+                  value={fiche.stock}
+                  onChangeText={(v) => setFiche({ ...fiche, stock: v })}
+                  placeholder="Quantité (option.)"
+                  placeholderTextColor={colors.textFaint}
+                  keyboardType="number-pad"
+                  style={[styles.champ, { flex: 1 }]}
+                />
+              </View>
+
+              <TextInput
+                value={fiche.description}
+                onChangeText={(v) => setFiche({ ...fiche, description: v })}
+                placeholder="Description (facultative)"
+                placeholderTextColor={colors.textFaint}
+                style={[styles.champ, { marginTop: 8, height: 60, paddingTop: 12 }]}
+                multiline
+              />
+
+              <Text style={styles.aide}>
+                Laissez la quantité vide si vous ne comptez pas les portions. À zéro, le plat
+                passe automatiquement en indisponible.
+              </Text>
+
+              <Pressable
+                onPress={enregistrerFiche}
+                disabled={busy !== null}
+                style={[styles.bouton, busy === 'fiche' && { opacity: 0.6 }]}
+              >
+                <Text style={styles.boutonTexte}>
+                  {busy === 'fiche' ? 'Enregistrement…' : 'Mettre à l\'affiche'}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setFiche(null)} disabled={busy !== null} style={styles.lienAnnuler}>
+                <Text style={styles.lienAnnulerTexte}>Annuler</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* --------------------------------------------------- Bibliothèque */}
+          {dormantes.length ? (
+            <>
+              <Text style={styles.section}>Votre bibliothèque</Text>
+              <Text style={styles.intro}>
+                Vos plats déjà préparés. Un tap les remet à l'affiche avec leur photo et leur
+                prix — vous pouvez ajuster avant de valider.
+              </Text>
+              <View style={styles.carte}>
+                {dormantes.map((p, i) => (
+                  <View key={p.id}>
+                    {i ? <View style={styles.separateur} /> : null}
+                    <View style={styles.ligne}>
+                      <ProductThumb uri={p.photoUrl} size={52} radius={12} muted />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.produitNom}>{p.name}</Text>
+                        <Text style={styles.produitPrix}>{formatAr(p.price)}</Text>
+                      </View>
+                      <View style={{ gap: 6 }}>
+                        <Pressable
+                          onPress={() => setFiche(ficheDepuis(p))}
+                          disabled={busy !== null}
+                          style={styles.miniBouton}
+                        >
+                          <Text style={styles.miniBoutonTexte}>Remettre</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() =>
+                            run(p.id, () => archiveProduct(p.id), 'Suppression impossible.')
+                          }
+                          disabled={busy !== null}
+                          style={[styles.miniBouton, styles.miniBoutonSecondaire]}
+                        >
+                          <Text style={[styles.miniBoutonTexte, { color: colors.textMuted }]}>
+                            Supprimer
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+
           {/* ------------------------------------------------------- La carte */}
           <Text style={styles.section}>Votre carte</Text>
           <Text style={styles.intro}>
             Un produit en rupture reste visible par vos clients, avec la mention
-            « Bientôt de retour ». Il n'est simplement plus commandable.
+            « Bientôt de retour ». Il n'est simplement plus commandable. L'étoile met un plat
+            de votre carte en avant, sans le sortir de sa catégorie.
           </Text>
 
           {menu?.categories.map((cat: Category) => {
@@ -424,6 +720,26 @@ export default function RestaurantSettingsScreen() {
                           {p.isAvailable ? '' : '  ·  Bientôt de retour'}
                         </Text>
                       </View>
+                      {/* Mise en avant d'un plat de la carte permanente : il reste
+                          dans sa catégorie ET remonte en tête de page. */}
+                      <Pressable
+                        onPress={() =>
+                          run(
+                            `star-${p.id}`,
+                            () => setProductFeatured(p.id, !p.isFeatured, cat.name),
+                            'Mise en avant impossible.',
+                          )
+                        }
+                        disabled={busy !== null}
+                        style={styles.etoile}
+                        hitSlop={6}
+                      >
+                        <Icon
+                          name={p.isFeatured ? 'star' : 'star_outline'}
+                          size={22}
+                          color={p.isFeatured ? colors.accent : colors.textFaint}
+                        />
+                      </Pressable>
                       <Switch
                         value={p.isAvailable}
                         disabled={busy !== null}
@@ -496,6 +812,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boutonTexte: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.white },
+  badgeAffiche: {
+    fontFamily: fonts.extrabold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: colors.primary,
+    marginBottom: 2,
+  },
+  miniBouton: {
+    height: 30,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniBoutonSecondaire: { backgroundColor: colors.fieldBg },
+  miniBoutonTexte: { fontFamily: fonts.semibold, fontSize: 12, color: colors.white },
+  lienAnnuler: { alignItems: 'center', paddingVertical: 10 },
+  lienAnnulerTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
+  etoile: { padding: 6 },
   categorie: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.textDark, marginBottom: 6 },
   produitNom: { fontFamily: fonts.semibold, fontSize: 14.5, color: colors.textDark },
   produitCoupe: { color: colors.textMuted },

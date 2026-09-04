@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
+import { ProductThumb } from '../../components/ProductThumb';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { imageUrl, Product, Restaurant, todayHoursLabel } from '../../data/types';
@@ -37,6 +38,7 @@ export default function RestaurantMenuScreen() {
   const { data: menu } = useLoad(() => getMenu(id!), [id]);
   const categories = menu?.categories ?? [];
   const productsByCat = menu?.products ?? [];
+  const featured = menu?.featured ?? [];
 
   const cartLines = useCart((s) => s.lines);
   const add = useCart((s) => s.add);
@@ -119,9 +121,54 @@ export default function RestaurantMenuScreen() {
         style={styles.sheet}
         contentContainerStyle={{ paddingBottom: count > 0 ? 120 : 40 }}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
+        stickyHeaderIndices={[2]}
       >
         <RestaurantHeader r={restaurant} />
+
+        {/* Mise en avant du restaurant : plats du jour, pizza de la semaine…
+            Un plat de la carte permanente mis en avant apparaît ici ET dans sa
+            catégorie — c'est un coup de projecteur, pas un déplacement. */}
+        {featured.length ? (
+          <View style={styles.featuredWrap}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingHorizontal: spacing.screen }}
+            >
+              {featured.map((p) => {
+                const epuise = !p.isAvailable || p.stockQuantity === 0;
+                return (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => router.push(`/product/${p.id}`)}
+                    disabled={epuise}
+                    style={[styles.featuredCard, epuise && styles.featuredCardOff]}
+                  >
+                    <ProductThumb uri={p.photoUrl} size={148} radius={radius.tile} muted={epuise} />
+                    <View style={{ paddingTop: 8, gap: 2 }}>
+                      {p.featuredLabel ? (
+                        <Text style={styles.featuredLabel}>{p.featuredLabel.toUpperCase()}</Text>
+                      ) : null}
+                      <Text style={styles.featuredName} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                      <Text style={styles.featuredPrice}>{formatAr(p.price)}</Text>
+                      {epuise ? (
+                        <Text style={styles.featuredSoldOut}>{t('restaurantCard.unavailable')}</Text>
+                      ) : p.stockQuantity != null ? (
+                        <Text style={styles.featuredStock}>
+                          {p.stockQuantity} restant{p.stockQuantity > 1 ? 's' : ''}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : (
+          <View />
+        )}
 
         <View style={styles.catBar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -290,6 +337,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  featuredWrap: { backgroundColor: colors.bg, paddingTop: 14, paddingBottom: 16 },
+  featuredCard: { width: 148 },
+  featuredCardOff: { opacity: 0.55 },
+  featuredLabel: { fontFamily: fonts.extrabold, fontSize: 10, letterSpacing: 0.8, color: colors.primary },
+  featuredName: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  featuredPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
+  featuredStock: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.textMuted },
+  featuredSoldOut: { fontFamily: fonts.semibold, fontSize: 11.5, color: colors.dangerText },
   catChip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   catChipActive: { backgroundColor: colors.ink },
   catChipIdle: { backgroundColor: colors.fieldBg },

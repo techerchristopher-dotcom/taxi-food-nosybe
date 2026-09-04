@@ -81,7 +81,16 @@ type ProductRow = {
   price: number;
   is_available: boolean;
   photo_url: string | null;
+  stock_quantity?: number | null;
+  is_featured?: boolean | null;
+  featured_label?: string | null;
+  in_menu?: boolean | null;
+  is_archived?: boolean | null;
 };
+
+/** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
+const PRODUCT_COLS =
+  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived';
 
 type CategoryRow = { id: string; restaurant_id: string; name: string; icon: string | null; sort_order: number };
 
@@ -157,6 +166,10 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     isAvailable: p.is_available,
     photoUrl: p.photo_url,
     hasOptions,
+    stockQuantity: p.stock_quantity ?? null,
+    isFeatured: p.is_featured ?? false,
+    featuredLabel: p.featured_label ?? null,
+    inMenu: p.in_menu ?? true,
   };
 }
 
@@ -243,7 +256,7 @@ export async function getRestaurant(id: string): Promise<Restaurant | null> {
 
 export async function getMenu(
   restaurantId: string,
-): Promise<{ categories: Category[]; products: Product[] }> {
+): Promise<{ categories: Category[]; products: Product[]; featured: Product[] }> {
   const [cats, prods] = await Promise.all([
     supabase
       .from('categories')
@@ -253,21 +266,27 @@ export async function getMenu(
       .order('sort_order', { ascending: true }),
     supabase
       .from('products')
-      .select('id, restaurant_id, category_id, name, description, price, is_available, photo_url')
-      .eq('restaurant_id', restaurantId),
+      .select(PRODUCT_COLS)
+      .eq('restaurant_id', restaurantId)
+      .eq('is_archived', false),
   ]);
   if (cats.error) throw cats.error;
   if (prods.error) throw prods.error;
 
-  const categories = (cats.data as CategoryRow[]).map(mapCategory);
-  // Masquage doux : on ne garde que les produits d'une catégorie ACTIVE.
+  const categories = (cats.data as unknown as CategoryRow[]).map(mapCategory);
+  const allRows = prods.data as unknown as ProductRow[];
+
+  // Masquage doux : on ne garde que les produits d'une catégorie ACTIVE. Les
+  // créations « à l'affiche » (in_menu = false) n'ont pas de catégorie : elles
+  // n'apparaissent QUE dans la mise en avant, jamais dans la carte permanente.
   const activeCatIds = new Set(categories.map((c) => c.id));
-  const productRows = (prods.data as ProductRow[]).filter(
-    (p) => p.category_id != null && activeCatIds.has(p.category_id),
+  const productRows = allRows.filter(
+    (p) => p.in_menu !== false && p.category_id != null && activeCatIds.has(p.category_id),
   );
+  const featuredRows = allRows.filter((p) => p.is_featured);
 
   // Quels produits ont des groupes d'options (→ le menu envoie vers le détail).
-  const ids = productRows.map((p) => p.id);
+  const ids = [...new Set([...productRows, ...featuredRows].map((p) => p.id))];
   const withOptions = new Set<string>();
   if (ids.length > 0) {
     const { data: groups, error } = await supabase
@@ -281,7 +300,26 @@ export async function getMenu(
   return {
     categories,
     products: productRows.map((p) => mapProduct(p, withOptions.has(p.id))),
+    featured: featuredRows.map((p) => mapProduct(p, withOptions.has(p.id))),
   };
+}
+
+/**
+ * Tout ce que le partenaire peut remettre à l'affiche : ses créations passées
+ * (in_menu = false), à l'affiche ou non. C'est la bibliothèque qui évite de
+ * re-téléverser la même photo chaque semaine.
+ */
+export async function getFeaturedLibrary(restaurantId: string): Promise<Product[]> {
+  if (!restaurantId) return [];
+  const { data, error } = await supabase
+    .from('products')
+    .select(PRODUCT_COLS)
+    .eq('restaurant_id', restaurantId)
+    .eq('in_menu', false)
+    .eq('is_archived', false)
+    .order('name', { ascending: true });
+  if (error) throw error;
+  return (data as unknown as ProductRow[]).map((p) => mapProduct(p));
 }
 
 function mapCategory(c: CategoryRow): Category {
@@ -769,6 +807,61 @@ export async function setProductAvailable(productId: string, available: boolean)
 /** Depose le logo ou la couverture (deja uploade cote client dans le bucket `partenaires`) et met a jour la fiche. */
 export async function setRestaurantPhoto(kind: 'logo' | 'cover', url: string): Promise<void> {
   const { error } = await supabase.rpc('set_restaurant_photo', { p_kind: kind, p_url: url });
+  if (error) throw error;
+}
+
+/**
+ * Cree une mise en avant, ou met a jour une fiche deja en bibliotheque puis la
+ * remet a l'affiche. `photoUrl` vide ne PAS effacer la photo existante : c'est
+ * ce qui permet de reprogrammer le meme plat sans rien re-televerser.
+ */
+export async function saveFeaturedProduct(input: {
+  productId?: string | null;
+  name: string;
+  description?: string | null;
+  price: number;
+  stockQuantity?: number | null;
+  photoUrl?: string | null;
+  featuredLabel?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.rpc('save_featured_product', {
+    p_product_id: input.productId ?? null,
+    p_name: input.name,
+    p_description: input.description ?? null,
+    p_price: input.price,
+    p_stock_quantity: input.stockQuantity ?? null,
+    p_photo_url: input.photoUrl ?? null,
+    p_featured_label: input.featuredLabel ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Met a l'affiche / retire n'importe quel produit (y compris de la carte permanente). */
+export async function setProductFeatured(
+  productId: string,
+  featured: boolean,
+  featuredLabel?: string | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('set_product_featured', {
+    p_product_id: productId,
+    p_featured: featured,
+    p_featured_label: featuredLabel ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Quantite restante annoncee (le restaurateur la decremente lui-meme). */
+export async function setProductStock(productId: string, stock: number | null): Promise<void> {
+  const { error } = await supabase.rpc('set_product_stock', {
+    p_product_id: productId,
+    p_stock: stock,
+  });
+  if (error) throw error;
+}
+
+/** Retrait DEFINITIF de la bibliotheque (archive si le plat a deja ete commande). */
+export async function archiveProduct(productId: string): Promise<void> {
+  const { error } = await supabase.rpc('archive_product', { p_product_id: productId });
   if (error) throw error;
 }
 

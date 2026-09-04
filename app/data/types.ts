@@ -49,6 +49,18 @@ export type Product = {
   photoUrl?: string | null; // URL photo produit (Supabase Storage), null si absente
   hasOptions?: boolean; // true si le produit a des groupes d'options (→ passer par le détail)
   tags?: string[]; // cosmétique — non stocké en base
+  /** Quantité restante annoncée par le restaurant. null = pas de compteur. */
+  stockQuantity?: number | null;
+  /** true = mis en avant en ce moment (plat du jour, pizza de la semaine…). */
+  isFeatured?: boolean;
+  /** Libellé libre du bandeau de mise en avant, choisi par le restaurant. */
+  featuredLabel?: string | null;
+  /**
+   * false = création du partenaire qui ne vit QUE le temps où elle est à
+   * l'affiche ; le reste du temps elle dort dans sa bibliothèque, réutilisable
+   * telle quelle. true = plat de la carte permanente.
+   */
+  inMenu?: boolean;
 };
 
 /** Une option d'un groupe (ex. « Poulet », « + Fromage »). */

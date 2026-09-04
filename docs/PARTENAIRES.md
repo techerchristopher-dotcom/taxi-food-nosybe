@@ -102,3 +102,53 @@ le porteur du projet le demande.
 
 ⚠️ **Logo et bannière absents** (`logo_url`, `cover_url` restés `null`) — pas demandés à ce
 stade.
+
+## Accompagnements et suppléments (2026-09-04)
+
+Sur demande explicite du porteur du projet, chaque produit a — **dans la mesure du possible**
+— un mécanisme d'accompagnement et un mécanisme de supplément, comme le fait déjà le système
+de suppléments pizza/tacos.
+
+### Accompagnement (Entrée, Plat, Pâtes, Tapas, Hamburger)
+
+Deux groupes d'options par produit concerné (41 sur 48) :
+- **« Accompagnement (1 au choix, inclus) »** — obligatoire, 1 choix, prix +0 Ar
+- **« 2e accompagnement (+5 000 Ar) »** — optionnel, 1 choix, prix +5 000 Ar
+
+Les deux groupes proposent les 5 mêmes choix, visuels générés par IA (Higgsfield, même
+exception ADR-007 que le reste de la carte) : Frites, Légumes sautés, Pâtes, Riz, Purée.
+
+**Exclus du mécanisme** : Dessert (6 produits, non pertinent) et Pommes frites (1 produit,
+un accompagnement-de-l'accompagnement n'aurait pas de sens).
+
+### Suppléments (tous les 48 produits)
+
+Un groupe **« Suppléments »** par produit, optionnel, +5 000 Ar par option (prix plat, comme
+demandé — volontairement différent des suppléments variables de La Cabane/Tacos qui vont de
+3 000 à 5 000 Ar selon l'ingrédient). Le choix des 2 ou 3 suppléments proposés dépend de la
+composition du plat, regroupée en 8 familles :
+
+| Famille | Suppléments proposés | Exemple de plat |
+|---|---|---|
+| Poisson / fruits de mer | Fromage, Crevettes, Avocat | Poisson fumé, Marmite du pêcheur |
+| Viande rouge (zébu) | Fromage, Bacon, Champignons | Steak haché, Filet de zébu |
+| Volaille | Fromage, Champignons, Oignons confits | Cuisse de poulet, Cordon bleu |
+| Œufs et plats gratinés | Fromage, Bacon, Champignons | Croque-monsieur, Camembert pané |
+| Salade | Avocat, Fromage, Crevettes | Salade tomate crevettes |
+| Pâtes | Fromage, Champignons, Bacon | Pâtes carbonara, bolognaise |
+| Frites seules | Fromage, Bacon | Pommes frites (frites façon « loaded ») |
+| Dessert | Chantilly, Coulis chocolat, Glace vanille | Les 6 desserts |
+
+Visuels générés pour les 9 suppléments salés/sucrés du vocabulaire (Fromage, Bacon,
+Champignons, Crevettes, Avocat, Oignons confits, Chantilly, Coulis chocolat, Glace vanille) —
+réutilisés d'un produit à l'autre selon la famille, pas un visuel par produit.
+
+### Mise en œuvre technique
+
+Plutôt que 683 instructions SQL générées une par une (une par option par produit), la
+migration `accompagnements_et_supplements_chez_bidul_et_truc` utilise un bloc PL/pgSQL avec
+des tables temporaires (plan produit → famille, photothèque accompagnement, photothèque
+supplément, famille → suppléments) puis quatre `insert...select` — même résultat, 7 500
+caractères au lieu de 320 000. Vérifié après coup : 41 produits avec accompagnement (2
+groupes, 5 options chacun), 48 avec suppléments (1 groupe, 2 ou 3 options), aucune photo
+manquante.

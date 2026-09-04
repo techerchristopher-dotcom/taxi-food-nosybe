@@ -16,7 +16,6 @@ import {
   DEFAULT_ETA,
   formatTime,
   getMapsNavigationUrl,
-  hoursLabel,
   formatAddressLine,
   initialsFromName,
   OptionGroup,
@@ -26,9 +25,17 @@ import {
   Product,
   ProductOption,
   Restaurant,
+  DayHours,
 } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
+type DayHoursRow = {
+  weekday: number | null;
+  opens_at: string | null;
+  closes_at: string | null;
+  is_closed: boolean | null;
+};
+
 type RestaurantRow = {
   id: string;
   name: string;
@@ -38,13 +45,32 @@ type RestaurantRow = {
   is_open: boolean;
   ouvert_maintenant?: boolean | null;
   auto_open?: boolean | null;
-  opens_at: string | null;
-  closes_at: string | null;
+  // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
+  // comme un OBJET, pas un tableau (verifie au curl sur l'API du projet). Quand
+  // aucun horaire n'existe pour aujourd'hui, l'objet est present mais tous ses
+  // champs valent null — d'ou le garde-fou sur `weekday` dans mapDayHours().
+  //
+  // /!\ L'inference de types de supabase-js suppose, elle, un tableau : elle ne
+  // sait pas distinguer un embed to-one d'un to-many sans relation FK. C'est
+  // pour cela que les trois `select` de ce fichier passent par `as unknown as`
+  // — le type genere est faux, la forme decrite ici est la bonne.
+  horaires_du_jour?: DayHoursRow | null;
   delivery_fee: number;
   min_order: number;
   zone_served: string | null;
   food_types: string[] | null;
 };
+
+function mapDayHours(h?: DayHoursRow | null): DayHours | null {
+  // `weekday` null = la fonction composite n'a trouve aucune ligne pour ce jour.
+  if (!h || h.weekday === null) return null;
+  return {
+    weekday: h.weekday,
+    opensAt: h.opens_at ?? '',
+    closesAt: h.closes_at ?? '',
+    isClosed: h.is_closed ?? false,
+  };
+}
 
 type ProductRow = {
   id: string;
@@ -105,16 +131,18 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     // calcule PAS ici : l'horloge du telephone n'est pas une reference.
     isOpen: r.ouvert_maintenant ?? r.is_open,
     autoOpen: r.auto_open ?? false,
-    opensAt: r.opens_at ?? '',
-    closesAt: r.closes_at ?? '',
-    hoursLabel: hoursLabel(r.opens_at ?? '', r.closes_at ?? ''),
+    todayHours: mapDayHours(r.horaires_du_jour),
     etaLabel: DEFAULT_ETA,
     deliveryFee: r.delivery_fee,
     minOrder: r.min_order,
     foodTypes: r.food_types ?? [],
     categoryTags: [],
     popular: false,
-    closedLabel: (r.ouvert_maintenant ?? r.is_open) ? undefined : r.opens_at ? `Ouvre à ${formatTime(r.opens_at)}` : 'Fermé',
+    closedLabel: (r.ouvert_maintenant ?? r.is_open)
+      ? undefined
+      : r.horaires_du_jour?.opens_at
+        ? `Ouvre à ${formatTime(r.horaires_du_jour.opens_at)}`
+        : 'Fermé',
   };
 }
 
@@ -177,10 +205,10 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  const rows = data as RestaurantRow[];
+  const rows = data as unknown as RestaurantRow[];
 
   // Catégories ACTIVES (emoji + nom) par restaurant, pour les tags des cartes.
   const ids = rows.map((r) => r.id);
@@ -206,11 +234,11 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? mapRestaurant(data as RestaurantRow) : null;
+  return data ? mapRestaurant(data as unknown as RestaurantRow) : null;
 }
 
 export async function getMenu(
@@ -704,17 +732,22 @@ export async function markDelivered(orderId: string, cashConfirmed: boolean): Pr
 
 // --- Espace restaurant : reglages -------------------------------------------
 
-/** Horaires et mode d'ouverture. `null, null, false` efface les horaires. */
-export async function setRestaurantHours(
-  opensAt: string | null,
-  closesAt: string | null,
-  autoOpen: boolean,
-): Promise<void> {
-  const { error } = await supabase.rpc('set_restaurant_hours', {
-    p_opens_at: opensAt,
-    p_closes_at: closesAt,
-    p_auto_open: autoOpen,
+/** Enregistre le planning des 7 jours d'un coup (un seul aller-retour reseau). */
+export async function setRestaurantWeekHours(days: DayHours[]): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_week_hours', {
+    p_days: days.map((d) => ({
+      weekday: d.weekday,
+      opens_at: d.isClosed ? null : d.opensAt || null,
+      closes_at: d.isClosed ? null : d.closesAt || null,
+      is_closed: d.isClosed,
+    })),
   });
+  if (error) throw error;
+}
+
+/** Bascule l'ouverture automatique (suit le planning) / manuelle. */
+export async function setRestaurantAutoOpen(autoOpen: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_auto_open', { p_auto_open: autoOpen });
   if (error) throw error;
 }
 
@@ -733,14 +766,37 @@ export async function setProductAvailable(productId: string, available: boolean)
   if (error) throw error;
 }
 
-/** Le restaurant de l'utilisateur courant, avec ses horaires. */
-export async function getMyRestaurant(restaurantId: string): Promise<Restaurant | null> {
-  if (!restaurantId) return null;
-  const { data, error } = await supabase
-    .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, opens_at, closes_at, auto_open, delivery_fee, min_order, zone_served, food_types')
-    .eq('id', restaurantId)
-    .maybeSingle();
+/** Depose le logo ou la couverture (deja uploade cote client dans le bucket `partenaires`) et met a jour la fiche. */
+export async function setRestaurantPhoto(kind: 'logo' | 'cover', url: string): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_photo', { p_kind: kind, p_url: url });
   if (error) throw error;
-  return data ? mapRestaurant(data as RestaurantRow) : null;
+}
+
+/** Le restaurant de l'utilisateur courant, avec son planning de la semaine complet. */
+export async function getMyRestaurant(
+  restaurantId: string,
+): Promise<(Restaurant & { weekHours: DayHours[] }) | null> {
+  if (!restaurantId) return null;
+  const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
+    supabase
+      .from('restaurants')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .eq('id', restaurantId)
+      .maybeSingle(),
+    supabase
+      .from('restaurant_hours')
+      .select('weekday, opens_at, closes_at, is_closed')
+      .eq('restaurant_id', restaurantId)
+      .order('weekday', { ascending: true }),
+  ]);
+  if (error) throw error;
+  if (hoursError) throw hoursError;
+  if (!data) return null;
+
+  const byWeekday = new Map((hoursRows as DayHoursRow[]).map((h) => [h.weekday, h]));
+  const weekHours: DayHours[] = Array.from({ length: 7 }, (_, weekday) =>
+    mapDayHours(byWeekday.get(weekday) ?? null) ?? { weekday, opensAt: '', closesAt: '', isClosed: false },
+  );
+
+  return { ...mapRestaurant(data as unknown as RestaurantRow), weekHours };
 }

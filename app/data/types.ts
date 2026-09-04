@@ -135,6 +135,14 @@ export type Category = {
 /** Tag de catégorie affiché sur la carte restaurant (emoji + nom). */
 export type CategoryTag = { name: string; icon: string | null };
 
+/** Une ligne de `restaurant_hours` — un jour de la semaine (0=dimanche..6=samedi, aligné sur `extract(dow from ...)`). */
+export type DayHours = {
+  weekday: number;
+  opensAt: string; // '' si non renseigné
+  closesAt: string;
+  isClosed: boolean;
+};
+
 export type Restaurant = {
   id: string;
   name: string;
@@ -144,11 +152,10 @@ export type Restaurant = {
   cuisineType: string;
   zone: string; // = zone_served
   isOpen: boolean;
-  opensAt: string;
-  closesAt: string;
-  /** true : l'ouverture se déduit des horaires ; false : bascule manuelle. */
+  /** Horaire du jour courant (dérivé de `restaurant_hours` via `horaires_du_jour`) — null si aucun horaire renseigné pour aujourd'hui. */
+  todayHours: DayHours | null;
+  /** true : l'ouverture se déduit des horaires du jour ; false : bascule manuelle. */
   autoOpen: boolean;
-  hoursLabel: string; // dérivé de opens_at/closes_at
   etaLabel: string; // cosmétique (non stocké) — placeholder
   deliveryFee: number; // ariary
   minOrder: number; // ariary
@@ -170,6 +177,19 @@ export const FOOD_TYPE_ORDER = [
   'Milkshake',
   'Tapas',
 ];
+
+/** Emoji par type de plat sur les puces de filtre accueil — reprend le vocabulaire déjà utilisé dans categories.icon (🍕 🍔 🥞 🥤 🍢) et complète pour les types sans catégorie dédiée. */
+export const FOOD_TYPE_ICON: Record<string, string> = {
+  Pizza: '🍕',
+  Tacos: '🌮',
+  Kebab: '🥙',
+  Burger: '🍔',
+  Américain: '🌭',
+  Panini: '🥪',
+  Crêpe: '🥞',
+  Milkshake: '🥤',
+  Tapas: '🍢',
+};
 
 export type Address = {
   id: string;
@@ -318,6 +338,17 @@ export function formatTime(t: string | null | undefined): string {
 export function hoursLabel(opensAt: string, closesAt: string): string {
   if (!opensAt || !closesAt) return '';
   return `${formatTime(opensAt)} – ${formatTime(closesAt)}`;
+}
+
+/**
+ * Libellé de l'horaire du jour courant, dérivé de `Restaurant.todayHours`
+ * (lui-même dérivé de `restaurant_hours` via `horaires_du_jour`).
+ * Chaîne vide si rien n'est renseigné pour aujourd'hui — même convention que `hoursLabel`.
+ */
+export function todayHoursLabel(h: DayHours | null): string {
+  if (!h) return '';
+  if (h.isClosed) return 'Fermé aujourd\'hui';
+  return hoursLabel(h.opensAt, h.closesAt);
 }
 
 /** Date ISO → libellé court « Aujourd'hui 09h52 » / « 6 août · 19h40 ». */

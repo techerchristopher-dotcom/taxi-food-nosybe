@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  DimensionValue,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { Icon } from '../../components/Icon';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { ProductThumb } from '../../components/ProductThumb';
@@ -8,12 +20,15 @@ import {
   getMyRestaurant,
   getMenu,
   setProductAvailable,
-  setRestaurantHours,
+  setRestaurantAutoOpen,
   setRestaurantOpen,
+  setRestaurantPhoto,
+  setRestaurantWeekHours,
 } from '../../data/api';
-import { Category, Product, formatTime } from '../../data/types';
+import { Category, DayHours, Product } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { supabase } from '../../lib/supabase';
 
 /** « 22:30:00 » ou « 22:30 » -> « 22:30 » pour la saisie. */
 function pourSaisie(h: string): string {
@@ -38,7 +53,74 @@ export function normaliserHeure(saisie: string): string | null {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
-/** Espace restaurant — Réglages : ouverture, horaires, ruptures de stock. */
+/** Lundi -> Dimanche à l'affichage ; la base indexe 0=dimanche..6=samedi (extract(dow from ...)). */
+const JOURS: { weekday: number; label: string }[] = [
+  { weekday: 1, label: 'Lundi' },
+  { weekday: 2, label: 'Mardi' },
+  { weekday: 3, label: 'Mercredi' },
+  { weekday: 4, label: 'Jeudi' },
+  { weekday: 5, label: 'Vendredi' },
+  { weekday: 6, label: 'Samedi' },
+  { weekday: 0, label: 'Dimanche' },
+];
+
+type Brouillon = Record<number, { opensAt: string; closesAt: string; isClosed: boolean }>;
+
+function versBrouillon(weekHours: DayHours[]): Brouillon {
+  const b: Brouillon = {};
+  for (const h of weekHours) {
+    b[h.weekday] = { opensAt: pourSaisie(h.opensAt), closesAt: pourSaisie(h.closesAt), isClosed: h.isClosed };
+  }
+  return b;
+}
+
+/** Zone tap-pour-changer (logo carré ou couverture panoramique), avec badge crayon superposé. */
+function PhotoEditable({
+  uri,
+  width,
+  height,
+  radiusValue,
+  icon,
+  busy,
+  onPick,
+}: {
+  uri?: string | null;
+  width: DimensionValue;
+  height: DimensionValue;
+  radiusValue: number;
+  icon: string;
+  busy: boolean;
+  onPick: () => void;
+}) {
+  return (
+    <Pressable onPress={onPick} disabled={busy} style={{ width, height }}>
+      <View style={[styles.photoBox, { width, height, borderRadius: radiusValue }]}>
+        {uri ? (
+          <Image
+            source={{ uri }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={220}
+            style={{ width, height, borderRadius: radiusValue }}
+          />
+        ) : (
+          <Icon name={icon} size={28} color={colors.textFaint} />
+        )}
+        {busy ? (
+          <View style={[styles.photoOverlay, { borderRadius: radiusValue }]}>
+            <ActivityIndicator color={colors.white} />
+          </View>
+        ) : (
+          <View style={styles.photoBadge}>
+            <Icon name="edit" size={14} color={colors.white} />
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+/** Espace restaurant — Réglages : ouverture, horaires, visuels, ruptures de stock. */
 export default function RestaurantSettingsScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
 
@@ -50,15 +132,13 @@ export default function RestaurantSettingsScreen() {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ouvre, setOuvre] = useState<string | null>(null);
-  const [ferme, setFerme] = useState<string | null>(null);
+  const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
 
   const resto = data?.resto ?? null;
   const menu = data?.menu ?? null;
 
   // Les champs suivent la base tant que le restaurateur n'a rien tapé.
-  const valOuvre = ouvre ?? pourSaisie(resto?.opensAt ?? '');
-  const valFerme = ferme ?? pourSaisie(resto?.closesAt ?? '');
+  const jours = brouillon ?? (resto ? versBrouillon(resto.weekHours) : {});
 
   async function run(key: string, fn: () => Promise<void>, msg: string) {
     setError(null);
@@ -74,20 +154,71 @@ export default function RestaurantSettingsScreen() {
     }
   }
 
-  async function enregistrerHoraires(auto: boolean) {
-    const o = normaliserHeure(valOuvre);
-    const f = normaliserHeure(valFerme);
-    if (valOuvre || valFerme) {
+  function majJour(weekday: number, patch: Partial<{ opensAt: string; closesAt: string; isClosed: boolean }>) {
+    setBrouillon({ ...jours, [weekday]: { ...jours[weekday], ...patch } });
+  }
+
+  async function enregistrerHoraires() {
+    const days: DayHours[] = [];
+    for (const { weekday } of JOURS) {
+      const j = jours[weekday] ?? { opensAt: '', closesAt: '', isClosed: false };
+      if (j.isClosed) {
+        days.push({ weekday, opensAt: '', closesAt: '', isClosed: true });
+        continue;
+      }
+      if (!j.opensAt && !j.closesAt) {
+        days.push({ weekday, opensAt: '', closesAt: '', isClosed: false });
+        continue;
+      }
+      const o = normaliserHeure(j.opensAt);
+      const f = normaliserHeure(j.closesAt);
       if (!o || !f) {
-        setError("Heures non comprises. Écrivez par exemple 8h30 et 22h.");
+        setError(`Horaire du ${JOURS.find((x) => x.weekday === weekday)?.label} incompris. Écrivez par exemple 8h30 et 22h.`);
         return;
       }
+      days.push({ weekday, opensAt: o, closesAt: f, isClosed: false });
     }
-    await run('horaires', async () => {
-      await setRestaurantHours(o, f, auto);
-      setOuvre(null);
-      setFerme(null);
-    }, 'Enregistrement impossible.');
+    await run(
+      'horaires',
+      async () => {
+        await setRestaurantWeekHours(days);
+        setBrouillon(null);
+      },
+      'Enregistrement impossible.',
+    );
+  }
+
+  async function pickAndUpload(kind: 'logo' | 'cover') {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setError('Autorisation d\'accès aux photos refusée.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: kind === 'logo' ? [1, 1] : [16, 9],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const uri = result.assets[0].uri;
+
+    await run(
+      kind,
+      async () => {
+        const arraybuffer = await fetch(uri).then((res) => res.arrayBuffer());
+        const isPng = uri.toLowerCase().endsWith('.png');
+        const path = `${restaurantId}/${kind}-${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+        const { error: upErr } = await supabase.storage.from('partenaires').upload(path, arraybuffer, {
+          contentType: isPng ? 'image/png' : 'image/jpeg',
+          upsert: true,
+        });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from('partenaires').getPublicUrl(path);
+        await setRestaurantPhoto(kind, pub.publicUrl);
+      },
+      'Envoi de la photo impossible.',
+    );
   }
 
   return (
@@ -104,6 +235,34 @@ export default function RestaurantSettingsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* ------------------------------------------------------ Visuels */}
+          <Text style={styles.section}>Logo et couverture</Text>
+          <View style={[styles.carte, { flexDirection: 'row', gap: 14, alignItems: 'flex-start' }]}>
+            <PhotoEditable
+              uri={resto?.logoUrl}
+              width={72}
+              height={72}
+              radiusValue={radius.tile}
+              icon="storefront"
+              busy={busy === 'logo'}
+              onPick={() => pickAndUpload('logo')}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ligneSous}>Logo carré — appuyez pour changer.</Text>
+              <View style={{ height: 10 }} />
+              <PhotoEditable
+                uri={resto?.coverUrl}
+                width="100%"
+                height={72}
+                radiusValue={radius.lg}
+                icon="image"
+                busy={busy === 'cover'}
+                onPick={() => pickAndUpload('cover')}
+              />
+              <Text style={styles.ligneSous}>Couverture — appuyez pour changer.</Text>
+            </View>
+          </View>
 
           {/* ---------------------------------------------------- Ouverture */}
           <Text style={styles.section}>Votre restaurant</Text>
@@ -139,7 +298,7 @@ export default function RestaurantSettingsScreen() {
               <Switch
                 value={resto?.autoOpen ?? false}
                 disabled={busy !== null}
-                onValueChange={(v) => enregistrerHoraires(v)}
+                onValueChange={(v) => run('auto', () => setRestaurantAutoOpen(v), 'Bascule impossible.')}
                 trackColor={{ true: colors.success, false: colors.borderStrong }}
                 thumbColor={colors.white}
               />
@@ -171,39 +330,61 @@ export default function RestaurantSettingsScreen() {
 
           {/* ----------------------------------------------------- Horaires */}
           <Text style={styles.section}>Vos horaires</Text>
+          <Text style={styles.intro}>
+            Un jour sans horaire renseigné est considéré fermé si l'ouverture automatique est activée.
+          </Text>
 
           <View style={styles.carte}>
-            <View style={styles.heuresRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.champLabel}>Ouverture</Text>
-                <TextInput
-                  value={valOuvre}
-                  onChangeText={setOuvre}
-                  placeholder="8h30"
-                  placeholderTextColor={colors.textFaint}
-                  keyboardType="numbers-and-punctuation"
-                  style={styles.champ}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.champLabel}>Fermeture</Text>
-                <TextInput
-                  value={valFerme}
-                  onChangeText={setFerme}
-                  placeholder="22h"
-                  placeholderTextColor={colors.textFaint}
-                  keyboardType="numbers-and-punctuation"
-                  style={styles.champ}
-                />
-              </View>
-            </View>
+            {JOURS.map(({ weekday, label }, i) => {
+              const j = jours[weekday] ?? { opensAt: '', closesAt: '', isClosed: false };
+              return (
+                <View key={weekday}>
+                  {i ? <View style={styles.separateur} /> : null}
+                  <View style={styles.jourLigne}>
+                    <View style={styles.jourEntete}>
+                      <Text style={styles.jourLabel}>{label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={styles.fermeLabel}>Fermé</Text>
+                        <Switch
+                          value={j.isClosed}
+                          disabled={busy !== null}
+                          onValueChange={(v) => majJour(weekday, { isClosed: v })}
+                          trackColor={{ true: colors.textMuted, false: colors.borderStrong }}
+                          thumbColor={colors.white}
+                        />
+                      </View>
+                    </View>
+                    {!j.isClosed ? (
+                      <View style={styles.heuresRow}>
+                        <TextInput
+                          value={j.opensAt}
+                          onChangeText={(v) => majJour(weekday, { opensAt: v })}
+                          placeholder="8h30"
+                          placeholderTextColor={colors.textFaint}
+                          keyboardType="numbers-and-punctuation"
+                          style={[styles.champ, { flex: 1 }]}
+                        />
+                        <TextInput
+                          value={j.closesAt}
+                          onChangeText={(v) => majJour(weekday, { closesAt: v })}
+                          placeholder="22h"
+                          placeholderTextColor={colors.textFaint}
+                          keyboardType="numbers-and-punctuation"
+                          style={[styles.champ, { flex: 1 }]}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
 
             <Text style={styles.aide}>
               Si vous fermez après minuit, indiquez-le tel quel — par exemple 18h et 2h.
             </Text>
 
             <Pressable
-              onPress={() => enregistrerHoraires(resto?.autoOpen ?? false)}
+              onPress={enregistrerHoraires}
               disabled={busy !== null}
               style={[styles.bouton, busy === 'horaires' && { opacity: 0.6 }]}
             >
@@ -258,12 +439,6 @@ export default function RestaurantSettingsScreen() {
               </View>
             );
           })}
-
-          {resto?.opensAt && resto?.closesAt ? (
-            <Text style={styles.pied}>
-              Horaires enregistrés : {formatTime(resto.opensAt)} – {formatTime(resto.closesAt)}
-            </Text>
-          ) : null}
         </ScrollView>
       )}
     </View>
@@ -295,23 +470,19 @@ const styles = StyleSheet.create({
   ligneTitre: { fontFamily: fonts.bold, fontSize: 15, color: colors.textDark },
   ligneSous: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
   separateur: { height: 1, backgroundColor: colors.border, marginVertical: 8 },
-  heuresRow: { flexDirection: 'row', gap: 12 },
-  champLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
+  jourLigne: { paddingVertical: 4 },
+  jourEntete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  jourLabel: { fontFamily: fonts.bold, fontSize: 14.5, color: colors.textDark },
+  fermeLabel: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
+  heuresRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   champ: {
-    height: 46,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colors.border,
     paddingHorizontal: 12,
     fontFamily: fonts.regular,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textDark,
     backgroundColor: colors.bg,
   },
@@ -329,7 +500,6 @@ const styles = StyleSheet.create({
   produitNom: { fontFamily: fonts.semibold, fontSize: 14.5, color: colors.textDark },
   produitCoupe: { color: colors.textMuted },
   produitPrix: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
-  pied: { fontFamily: fonts.regular, fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: 8 },
   error: {
     fontFamily: fonts.semibold,
     fontSize: 13,
@@ -338,5 +508,28 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  photoBox: {
+    backgroundColor: colors.fieldBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photoOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(26,26,26,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

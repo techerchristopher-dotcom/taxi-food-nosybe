@@ -17,7 +17,7 @@ import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { imageUrl, Product, Restaurant } from '../../data/types';
+import { imageUrl, Product, Restaurant, todayHoursLabel } from '../../data/types';
 
 /** Doit rester aligné sur `styles.banner.height`. */
 const BANNER_HEIGHT = 200;
@@ -206,11 +206,11 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
         <OpenBadge open={r.isOpen} />
       </View>
       <View style={styles.rMeta}>
-        {/* Masqué tant que les horaires ne sont pas renseignés : voir `hoursLabel`. */}
-        {r.hoursLabel ? (
+        {/* Masqué tant que les horaires du jour ne sont pas renseignés : voir `todayHoursLabel`. */}
+        {todayHoursLabel(r.todayHours) ? (
           <View style={styles.rMetaItem}>
             <Icon name="schedule" size={16} color={colors.secondary} />
-            <Text style={styles.rMetaText}>{r.hoursLabel}</Text>
+            <Text style={styles.rMetaText}>{todayHoursLabel(r.todayHours)}</Text>
           </View>
         ) : null}
         <View style={styles.rMetaItem}>

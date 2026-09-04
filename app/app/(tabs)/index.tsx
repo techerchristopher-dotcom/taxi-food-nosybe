@@ -9,7 +9,7 @@ import { FeaturedRestaurantCard, RestaurantRow } from '../../components/Restaura
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
 import { listAddresses, listRestaurants } from '../../data/api';
-import { Address, FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
+import { Address, FOOD_TYPE_ICON, FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
 import { useSession } from '../../store/session';
 import { signInFor } from '../../store/authIntent';
 
@@ -177,7 +177,7 @@ export default function HomeScreen() {
                 style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
               >
                 <Text style={[styles.chipText, { color: active ? colors.white : colors.textDark }]}>
-                  {f === TOUT ? t('home.filterAll') : f}
+                  {f === TOUT ? t('home.filterAll') : `${FOOD_TYPE_ICON[f] ? `${FOOD_TYPE_ICON[f]} ` : ''}${f}`}
                 </Text>
               </Pressable>
             );

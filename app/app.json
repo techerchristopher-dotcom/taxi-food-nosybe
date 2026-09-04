@@ -70,6 +70,12 @@
       ],
       "expo-image",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Taxi Food a besoin d'accéder à tes photos pour que tu puisses choisir le logo ou la couverture de ton restaurant."
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8"

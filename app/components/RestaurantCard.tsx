@@ -95,8 +95,8 @@ export function RestaurantRow({
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         ) : (
           <Text style={styles.closedText}>
-            {r.opensAt
-              ? t('restaurantCard.opensAt', { time: formatTime(r.opensAt) })
+            {r.todayHours?.opensAt && !r.todayHours.isClosed
+              ? t('restaurantCard.opensAt', { time: formatTime(r.todayHours.opensAt) })
               : t('restaurantCard.closed')}
           </Text>
         )}

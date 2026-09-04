@@ -55,6 +55,12 @@ npx expo start --web --port 8081 --prefix app   # aperçu web direct
 
 ⚠️ **Expo Go NE MARCHE PAS** : le projet est en **Expo SDK 57** (RN 0.86, React 19.2), plus récent que ce qu'Expo Go du store embarque → « projet incompatible ». Pour tester sur téléphone, il faut une **build de dev EAS** (voir `app/eas.json`), pas Expo Go.
 
+⚠️ **`expo run:ios` : forcer la locale UTF-8.** Quand un nouveau module natif est ajouté, `pod install` se relance et CocoaPods plante sur `Unicode Normalization not appropriate for ASCII-8BIT` : Ruby lit le chemin du projet en binaire quand `LANG`/`LC_ALL` sont vides, ce qui est le cas par défaut dans un shell non interactif. Le piège est déroutant parce que le build ne casse **qu'à l'ajout d'une dépendance native**, jamais sur un rebuild ordinaire (les Pods déjà installés ne sont pas retouchés). Remède :
+
+```bash
+LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device <udid>
+```
+
 - **Web** (aperçu rapide) : `http://localhost:8081`. L'accueil **est libre depuis le 2026-08-22** (voir « Navigation libre ») : on arrive directement sur le catalogue, sans compte.
 - Comptes de démonstration : trois, créés pour la revue Apple — voir « Comptes de démonstration » plus bas.
 

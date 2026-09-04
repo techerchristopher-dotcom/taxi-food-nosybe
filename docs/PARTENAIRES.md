@@ -49,11 +49,52 @@ sait pas supprimer une fonction, seulement la neutraliser.
 | Taxi Be | Hell-Ville | actif | complète |
 | La Cabane | Ambatoloaka | actif | complète |
 | Angelo | — | actif | complète |
-| **Chez Bidul & Truc** | **Dar es Salam** | **actif, carte partielle** | 1 produit (Tapas → Poisson fumé, 18 000 Ar) |
+| **Chez Bidul & Truc** | **Dar es Salam** | **actif, carte quasi complète** | 48 produits sur 6 catégories |
 
-⚠️ **La carte de Chez Bidul & Truc n'est pas terminée.** La photo reçue ne couvrait que
-boissons, apéritifs et tapas — un seul plat a été saisi (celui dont le visuel a été validé).
-Le reste de la carte (et les autres pages, si elles existent) reste à transmettre.
+### Carte du 2026-09-04 — tous les plats avec un prix écrit
+
+| Catégorie | Produits | Fourchette |
+|---|---|---|
+| Tapas | 5 (dont Poisson fumé) | 10 000 – 18 000 Ar |
+| Entrée | 12 | 8 000 – 29 000 Ar |
+| Hamburger | 3 | 24 000 – 28 000 Ar |
+| Plat | 18 | 14 000 – 33 000 Ar |
+| Pâtes | 4 | 14 000 – 30 000 Ar |
+| Dessert | 6 | 9 000 – 15 000 Ar |
+
+⚠️ **Grillade Brasero (9 plats) volontairement absente.** La carte papier renvoie à
+« voir tableau » pour chaque prix — aucun montant écrit, donc aucune fiche produit possible
+(`price` est obligatoire). **Les visuels sont déjà générés et prêts** (Higgsfield, même
+style) ; dès que les prix arrivent, l'ajout est rapide.
+
+⚠️ **Les apéritifs et boissons alcoolisées sont exclus sur demande du porteur du projet**,
+« pour le moment » — pas de date de reprise fixée.
+
+### Choix de modélisation retenus
+
+Plusieurs lignes de la carte proposent un choix (protéine, sauce) sur **une seule ligne, un
+seul prix** — ex. *« Le classique (…zébu ou poulet) »*, *« Filet de poisson sauce au choix
+(curry, poireaux, poivre vert) »*. Modélisées comme **un seul produit**, le choix décrit dans
+`description`, plutôt que par de vrais groupes d'options (`product_option_groups`) comme le
+fait le système de suppléments pizza. Plus simple, mais un peu moins riche pour le client au
+moment de composer sa commande — à améliorer plus tard si ça vaut le coup.
+
+Les **suppléments de la carte** (riz/rougail 4 000 Ar, sauce 5 000 Ar, fromage 6 000 Ar) n'ont
+**pas** été saisis comme produits indépendants — ce sont des modificateurs, pas des plats
+commandables seuls.
+
+### Erreurs de suivi pendant la génération — pour la prochaine fois
+
+Compiler 56 générations en parallèle à la main a produit deux types d'erreur, corrigées avant
+publication mais qui valent d'être notées : **deux doublons** (beignets, foie gras poêlé —
+générés deux fois sans le vouloir) et **quatre oublis** (crevettes croustillantes, salade de
+légumes, carpaccio de zébu, crevette/calamar sauce combava — jamais repris après leur premier
+échec). Un tableau de suivi explicite (nom → job_id → statut) plutôt qu'un suivi de tête
+aurait évité les deux.
+
+⚠️ **Le forfait Higgsfield plafonne à 8 générations simultanées.** Au-delà,
+`generate_image_batch` échoue entièrement (0 soumis), pas partiellement — down-grader à des
+lots de 8 dès le départ plutôt que de découvrir la limite en cours de route.
 
 ⚠️ **Aucun compte de connexion n'a été créé** pour ce restaurant (pas de ligne
 `restaurant_staff`) — il n'a donc pas encore d'accès à son espace de gestion. À faire quand

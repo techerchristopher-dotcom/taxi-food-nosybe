@@ -47,6 +47,23 @@ async function supabase(chemin) {
   return Array.isArray(j) ? j[0] ?? null : j;
 }
 
+
+/**
+ * Renvoi vers l'accueil, JAMAIS mis en cache.
+ *
+ * ⚠️ `Response.redirect()` ne pose aucun en-tête de cache, et les navigateurs
+ * mémorisent alors la redirection : quelqu'un qui ouvre un lien pendant une
+ * panne momentanée de cette fonction reste renvoyé sur l'accueil ensuite, même
+ * une fois la panne réparée — et un rechargement ordinaire n'y change rien.
+ * Constaté en vrai le 2026-09-05, sur le premier lien partagé.
+ */
+function versAccueil() {
+  return new Response(null, {
+    status: 302,
+    headers: { location: `${SITE}/`, 'cache-control': 'no-store, max-age=0' },
+  });
+}
+
 function page({ titre, description, image, lien, prix }) {
   const t = echapper(titre);
   const d = echapper(description);
@@ -113,12 +130,12 @@ export default async (request) => {
   // Identifiant absent ou mal formé : on renvoie sur l'accueil du site plutôt
   // que d'afficher une erreur — un lien tronqué dans une conversation reste
   // ainsi utile.
-  if (!m) return Response.redirect(`${SITE}/`, 302);
+  if (!m) return versAccueil();
   const [, genre, id] = m;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
-    return Response.redirect(`${SITE}/`, 302);
+    return versAccueil();
   }
 
   try {
@@ -126,7 +143,7 @@ export default async (request) => {
     if (genre === 'p') {
       const p = await supabase(
         `products?id=eq.${id}&is_available=eq.true&select=id,name,description,price,photo_url,restaurants(name)`);
-      if (!p) return Response.redirect(`${SITE}/`, 302);
+      if (!p) return versAccueil();
       const resto = p.restaurants?.name;
       vue = {
         titre: p.name,
@@ -142,7 +159,7 @@ export default async (request) => {
       // de cuisine et de la zone livrée.
       const r = await supabase(
         `restaurants?id=eq.${id}&select=id,name,cuisine_type,zone_served,delivery_fee,cover_url,logo_url`);
-      if (!r) return Response.redirect(`${SITE}/`, 302);
+      if (!r) return versAccueil();
       const ou = r.zone_served ? ` — livré à ${r.zone_served}` : ' à Nosy Be';
       vue = {
         titre: r.name,
@@ -162,7 +179,7 @@ export default async (request) => {
     });
   } catch (e) {
     console.error('[partage]', e);
-    return Response.redirect(`${SITE}/`, 302);
+    return versAccueil();
   }
 };
 

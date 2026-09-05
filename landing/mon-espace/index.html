@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Votre espace restaurant — Taxi Food</title>
+<meta name="description" content="Accéder à votre espace restaurant Taxi Food, en trois gestes.">
+<!-- Page destinee aux RESTAURATEURS : elle n'a rien a faire dans les resultats
+     de recherche, ou elle concurrencerait l'accueil. -->
+<meta name="robots" content="noindex,follow">
+<link rel="icon" href="/assets/favicon-32.png">
+<style>
+ *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+ html,body{height:100%}
+ body{margin:0;background:#F5F2EF;color:#1A1A1A;overflow:hidden;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}
+
+ .scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;overflow-y:auto;
+        padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+        opacity:0;visibility:hidden;transform:translateX(28px);
+        transition:opacity .32s ease,transform .32s ease,visibility .32s}
+ .scene.on{opacity:1;visibility:visible;transform:none}
+ .scene.gone{transform:translateX(-28px)}
+
+ .kick{font:700 11px/1 ui-monospace,monospace;letter-spacing:.2em;color:#A75B09;text-align:center}
+ h1{font-size:clamp(23px,6.2vw,31px);line-height:1.16;letter-spacing:-.025em;margin:12px 0 0;text-align:center;text-wrap:balance}
+ .sub{font-size:16px;line-height:1.55;color:#4A4744;margin:12px 0 0;text-align:center;max-width:22em;text-wrap:pretty}
+
+ /* Le telephone : cadre sombre + capture, pour que l'oeil reconnaisse
+    immediatement « c'est mon ecran ». */
+ .phone{position:relative;margin-top:18px;background:#17171A;border-radius:28px;padding:7px;
+        box-shadow:0 18px 44px rgba(0,0,0,.28);flex:0 1 auto;min-height:0}
+ .phone img{display:block;border-radius:22px;height:min(40svh,320px);width:auto;max-width:74vw;
+            object-fit:cover;object-position:top}
+
+ /* Le halo : c'est LUI qui guide l'oeil. Il bat lentement pour attirer sans
+    stresser, et il est place en pourcentage pour rester juste quelle que soit
+    la taille de l'ecran. */
+ .halo{position:absolute;border:3px solid #DF3228;border-radius:999px;pointer-events:none;
+       box-shadow:0 0 0 5px rgba(223,50,40,.18);animation:bat 1.7s ease-in-out infinite}
+ @keyframes bat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.72}}
+ .doigt{position:absolute;font-size:30px;pointer-events:none;animation:tape 1.7s ease-in-out infinite;
+        filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
+ @keyframes tape{0%,100%{transform:translate(0,0)}50%{transform:translate(-5px,-9px)}}
+
+ .barre{display:flex;gap:7px;margin-top:22px}
+ .pt{width:8px;height:8px;border-radius:999px;background:#DCD8D3;transition:.3s}
+ .pt.on{background:#DF3228;width:22px}
+
+ .btn{display:block;width:100%;max-width:330px;text-align:center;background:#DF3228;color:#fff;
+      text-decoration:none;font-weight:700;font-size:17px;padding:17px;border:0;border-radius:999px;
+      margin-top:20px;cursor:pointer;font-family:inherit;box-shadow:0 8px 20px rgba(223,50,40,.3)}
+ .btn.ghost{background:#fff;color:#1A1A1A;border:1.5px solid #DCD8D3;box-shadow:none;
+            margin-top:10px;font-size:15px;padding:13px}
+
+ /* Ecran 3 : le selecteur de comptes Google est un ecran systeme, impossible a
+    capturer. On le REDESSINE, ce qui a un avantage : on peut mettre en evidence
+    la bonne ligne, ce qu'une vraie capture ne permettrait pas. */
+ .choix{width:min(84vw,320px);background:#fff;border-radius:20px;border:1px solid #E9E5E0;
+        padding:8px;margin-top:20px;box-shadow:0 10px 26px rgba(26,26,26,.09)}
+ .cpt{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:14px}
+ .cpt.bon{background:#FFF1EF;outline:2px solid #DF3228;animation:bat 1.7s ease-in-out infinite}
+ .pastille{width:34px;height:34px;border-radius:999px;background:#DF3228;color:#fff;flex:none;
+           display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+ .pastille.gris{background:#C9C4BE}
+ .cpt b{display:block;font-size:14.5px}
+ .cpt span{display:block;font-size:12.5px;color:#8A827A;margin-top:1px}
+
+ .avert{display:flex;gap:10px;align-items:flex-start;background:#FFF7E8;border:1px solid #F3E3C2;
+        border-radius:15px;padding:13px 15px;margin-top:18px;max-width:340px;
+        font-size:14px;line-height:1.5;color:#6B4B12;text-align:left}
+ @media (prefers-reduced-motion:reduce){.halo,.doigt,.cpt.bon{animation:none}.scene{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- 0 : accueil. On felicite AVANT d'expliquer : la personne doit sentir
+     qu'elle est attendue, pas qu'on lui donne une notice. -->
+<section class="scene on" data-i="0">
+  <div style="font-size:62px;line-height:1">🎉</div>
+  <div class="kick" style="margin-top:14px">BIENVENUE SUR TAXI FOOD</div>
+  <h1>Félicitations,<br>votre restaurant<br>rejoint Taxi&nbsp;Food.</h1>
+  <p class="sub">Il ne reste qu’à ouvrir votre espace. Trois gestes, moins d’une minute.</p>
+  <button class="btn" data-go="1">Commencer</button>
+</section>
+
+<!-- 1 : ce qu'il va obtenir. Montrer le resultat avant l'effort. -->
+<section class="scene" data-i="1">
+  <div class="kick">VOTRE ESPACE</div>
+  <h1>Vos commandes,<br>en direct.</h1>
+  <p class="sub">Vous acceptez d’un appui. Rien à installer.</p>
+  <div class="phone">
+    <img src="/img/guide/2-espace-480.webp" alt="Écran des commandes" width="480" height="944">
+  </div>
+  <button class="btn" data-go="2">Suivant</button>
+</section>
+
+<!-- 2 -->
+<section class="scene" data-i="3">
+  <div class="kick">GESTE 1 SUR 2</div>
+  <h1>Appuyez sur Google.</h1>
+  <p class="sub">Pas de mot de passe à créer.</p>
+  <div class="phone">
+    <img src="/img/guide/1-connexion-480.webp" alt="Écran de connexion" width="480" height="944">
+    <!-- Positions en % : le halo suit l'image quelle que soit la taille. -->
+    <div class="halo" style="left:9%;right:9%;top:63.5%;height:7.4%"></div>
+    <div class="doigt" style="left:64%;top:69%">👆</div>
+  </div>
+  <div class="barre"><i class="pt on"></i><i class="pt"></i><i class="pt"></i></div>
+  <button class="btn" data-go="4">Suivant</button>
+</section>
+
+
+<!-- 2 : l'aiguillage. Tout le guide supposait un compte Gmail — or plusieurs
+     restaurateurs sont chez Yahoo ou ailleurs, et « Continuer avec Google » ne
+     leur sert a rien. On demande donc AVANT, en une question, plutot que de les
+     laisser buter sur un bouton qui ne les concerne pas. -->
+<section class="scene" data-i="2">
+  <div class="kick">UNE SEULE QUESTION</div>
+  <h1>Votre adresse mail,<br>c’est laquelle ?</h1>
+  <p class="sub">Le plus rapide dépend de votre boîte mail.</p>
+  <button class="btn" data-go="3" style="max-width:330px">
+    <span style="display:block;font-size:17px">Une adresse Gmail</span>
+    <span style="display:block;font-size:12.5px;font-weight:400;opacity:.85;margin-top:3px">…@gmail.com — 2 appuis, sans mot de passe</span>
+  </button>
+  <button class="btn ghost" data-go="6" style="max-width:330px;margin-top:12px">
+    <span style="display:block;font-size:16px">Une autre adresse</span>
+    <span style="display:block;font-size:12.5px;font-weight:400;color:#8A827A;margin-top:3px">Yahoo, Outlook, Orange, adresse pro…</span>
+  </button>
+</section>
+
+<!-- 3 -->
+<section class="scene" data-i="4">
+  <div class="kick">GESTE 2 SUR 2</div>
+  <h1>Choisissez l’adresse mail<br>de votre restaurant.</h1>
+  <p class="sub">C’est elle qui ouvrira votre espace, à chaque fois.</p>
+  <div class="choix">
+    <div class="cpt bon"><div class="pastille">✓</div>
+      <div><b>lacabane&#64;gmail.com</b><span>l’adresse de votre restaurant</span></div></div>
+    <div class="cpt"><div class="pastille gris">✕</div>
+      <div><b>julien.perso&#64;gmail.com</b><span>votre adresse personnelle</span></div></div>
+  </div>
+  <div class="avert"><span>⚠️</span><span>Si plusieurs adresses s’affichent, prenez <b>celle du restaurant</b> — c’est la seule qui donne accès à vos commandes.</span></div>
+  <div class="barre"><i class="pt"></i><i class="pt on"></i><i class="pt"></i></div>
+  <button class="btn" data-go="5">Suivant</button>
+</section>
+
+<!-- 4 -->
+<section class="scene" data-i="5">
+  <div class="kick">C’EST FAIT</div>
+  <h1>Vous y êtes.</h1>
+  <p class="sub">Vos commandes arrivent ici. Un appui pour accepter.</p>
+  <div class="phone">
+    <img src="/img/guide/2-espace-480.webp" alt="Écran des commandes en cours" width="480" height="944">
+    <div class="halo" style="left:11%;right:11%;top:57.3%;height:6.6%"></div>
+  </div>
+  <div class="barre"><i class="pt"></i><i class="pt"></i><i class="pt on"></i></div>
+  <a class="btn" href="https://taxifood.distripro207.com/login">Je me connecte</a>
+  <button class="btn ghost" data-go="0">Revoir depuis le début</button>
+</section>
+
+
+<!-- 6-8 : la route « autre adresse ». Elle demande un mot de passe, ce que la
+     route Gmail evite — d'ou l'aiguillage, plutot qu'un parcours unique qui
+     imposerait le cas le plus lourd a tout le monde. -->
+<section class="scene" data-i="6">
+  <div class="kick">GESTE 1 SUR 3</div>
+  <h1>Appuyez sur<br>« Créer un compte ».</h1>
+  <p class="sub">Tout en bas de l’écran.</p>
+  <div class="phone">
+    <img src="/img/guide/1-connexion-480.webp" alt="Écran de connexion" width="480" height="944">
+    <div class="halo" style="left:12%;right:12%;top:88.2%;height:4.4%"></div>
+    <div class="doigt" style="left:66%;top:92%">👆</div>
+  </div>
+  <div class="barre"><i class="pt on"></i><i class="pt"></i><i class="pt"></i></div>
+  <button class="btn" data-go="7">Suivant</button>
+</section>
+
+<section class="scene" data-i="7">
+  <div class="kick">GESTE 2 SUR 3</div>
+  <h1>Votre adresse,<br>puis un mot de passe.</h1>
+  <p class="sub">Choisissez-en un simple, que vous retiendrez.</p>
+  <div class="choix" style="padding:16px">
+    <div style="font:600 11px ui-monospace,monospace;letter-spacing:.14em;color:#8A827A">ADRESSE MAIL</div>
+    <div style="margin-top:7px;padding:13px 14px;border:1.5px solid #DCD8D3;border-radius:12px;font-size:15px;color:#1A1A1A">
+      restaurant&#64;yahoo.fr</div>
+    <div style="font:600 11px ui-monospace,monospace;letter-spacing:.14em;color:#8A827A;margin-top:16px">MOT DE PASSE</div>
+    <div style="margin-top:7px;padding:13px 14px;border:1.5px solid #DF3228;border-radius:12px;font-size:17px;color:#1A1A1A;letter-spacing:.18em">••••••••</div>
+  </div>
+  <div class="avert"><span>💡</span><span><b>Notez-le quelque part.</b> C’est lui qui vous rouvrira votre espace si vous changez de téléphone.</span></div>
+  <div class="barre"><i class="pt"></i><i class="pt on"></i><i class="pt"></i></div>
+  <button class="btn" data-go="8">Suivant</button>
+</section>
+
+<section class="scene" data-i="8">
+  <div class="kick">C’EST FAIT</div>
+  <h1>Vous y êtes.</h1>
+  <p class="sub">Vos commandes arrivent ici. Un appui pour accepter.</p>
+  <div class="phone">
+    <img src="/img/guide/2-espace-480.webp" alt="Écran des commandes en cours" width="480" height="944">
+    <div class="halo" style="left:11%;right:11%;top:57.3%;height:6.6%"></div>
+  </div>
+  <div class="barre"><i class="pt"></i><i class="pt"></i><i class="pt on"></i></div>
+  <a class="btn" href="https://taxifood.distripro207.com/login">Je me connecte</a>
+  <button class="btn ghost" data-go="0">Revoir depuis le début</button>
+</section>
+
+<script>
+/* Un parcours, pas une page a lire : une seule scene visible a la fois, et un
+   seul bouton par ecran. Le but est qu'il n'y ait jamais a choisir quoi faire. */
+(function () {
+  var scenes = [].slice.call(document.querySelectorAll('.scene'));
+  /* ⚠️ On cible par data-i, PAS par position dans le document. Avec un parcours
+     qui bifurque, l'ordre du HTML ne correspond plus a l'ordre des ecrans : un
+     ecran insere au mauvais endroit envoyait « Une autre adresse » vers l'ecran
+     Gmail, sans la moindre erreur visible. */
+  function aller(i) {
+    scenes.forEach(function (s) {
+      var n = parseInt(s.getAttribute('data-i'), 10);
+      s.classList.toggle('on', n === i);
+      s.classList.toggle('gone', n < i);
+    });
+    // On remonte en haut : sur un petit ecran, la scene suivante pourrait
+    // s'ouvrir a mi-hauteur et donner l'impression qu'il manque quelque chose.
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-go]');
+    if (b) aller(parseInt(b.getAttribute('data-go'), 10));
+  });
+})();
+</script>
+</body>
+</html>

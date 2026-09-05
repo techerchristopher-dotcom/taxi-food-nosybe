@@ -60,6 +60,11 @@
               "scheme": "https",
               "host": "taxifood.rentanoo.com",
               "pathPrefix": "/r/"
+            },
+            {
+              "scheme": "https",
+              "host": "taxifood.rentanoo.com",
+              "pathPrefix": "/o/"
             }
           ],
           "category": [

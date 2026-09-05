@@ -31,3 +31,10 @@
 # Sans la regle ci-dessous, le site existe a deux adresses avec le meme
 # contenu. Ne pas la retirer.
 https://taxifood-nosybe-landing.netlify.app/*  https://taxifood.rentanoo.com/:splat  301!
+
+# Suivi de commande depuis les e-mails : /o/<id>.
+# Avec l'app installee, iOS et Android interceptent ce lien AVANT le reseau et
+# ouvrent l'ecran de suivi. Sans l'app, la requete arrive ici et part sur le
+# site de commande. Le repli est donc automatique, sans detection de navigateur
+# — laquelle se trompe toujours sur un cas ou l'autre.
+/o/*  https://taxifood.distripro207.com/order/:splat  302

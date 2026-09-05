@@ -141,6 +141,48 @@ async function verifierSignature(
   return { ok: true };
 }
 
+
+/**
+ * Champs qu'on ne garde JAMAIS dans `payment_intents.raw_event`.
+ *
+ * ⚠️ POURQUOI CE NETTOYAGE EXISTE. `raw_event` est lisible par le client, par
+ * l'admin ET PAR LE PERSONNEL DU RESTAURANT (policy `payment_intents_select`
+ * -> `peut_voir_paiements_commande`). `creer-paiement` retire deja
+ * `client_secret` avant d'archiver le PaymentIntent, pour exactement cette
+ * raison. Archiver l'evenement Stripe brut le remettait — et y ajoutait les
+ * coordonnees bancaires : un evenement `charge.refunded` porte
+ * `billing_details` (nom, e-mail, telephone, adresse du client) et
+ * `payment_method_details.card` (4 derniers chiffres, reseau, expiration).
+ * Un employe de restaurant pouvait les lire pour toutes les commandes de son
+ * etablissement. On archive donc l'evenement AMPUTE de ces champs : ce qui
+ * reste (id, type, montants, statut, motif d'echec) suffit a l'enquete.
+ *
+ * Le nettoyage est RECURSIF : ces champs sont imbriques (`charges.data[]`,
+ * `last_payment_error.payment_method`), jamais seulement a la racine.
+ */
+const CHAMPS_A_RETIRER = new Set([
+  'client_secret',
+  'billing_details',
+  'payment_method_details',
+  'card',
+  'receipt_email',
+  'customer_email',
+  'payment_method_options',
+]);
+
+function nettoyerPourArchive(valeur: unknown): unknown {
+  if (Array.isArray(valeur)) return valeur.map(nettoyerPourArchive);
+  if (valeur && typeof valeur === 'object') {
+    const sortie: Record<string, unknown> = {};
+    for (const [cle, v] of Object.entries(valeur as Record<string, unknown>)) {
+      if (CHAMPS_A_RETIRER.has(cle)) continue;
+      sortie[cle] = nettoyerPourArchive(v);
+    }
+    return sortie;
+  }
+  return valeur;
+}
+
 /** Toujours 200 quand l'événement est reçu et compris : sinon Stripe rejoue en boucle. */
 function ok(detail: Record<string, unknown>): Response {
   return new Response(JSON.stringify({ recu: true, ...detail }), {
@@ -283,7 +325,12 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const archive = { ...evenement, _recu_le: new Date().toISOString() };
+  // ⚠️ Jamais l'evenement brut : voir `nettoyerPourArchive`. Le secret de
+  // confirmation et les coordonnees bancaires ne descendent pas en base.
+  const archive = {
+    ...(nettoyerPourArchive(evenement) as Record<string, unknown>),
+    _recu_le: new Date().toISOString(),
+  };
 
   if (nouveauStatut === null) {
     // Litige : on archive l'événement sans toucher au statut.

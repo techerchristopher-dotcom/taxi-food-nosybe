@@ -198,6 +198,29 @@ begin
   join public.categories c on c.restaurant_id = rid and c.name = v.cat
   join public.products   p on p.restaurant_id = rid and p.category_id = c.id and p.name = v.produit;
 
+  -- « CHAQUE INGREDIENT EN PLUS — 4 000 » (derniere ligne du bloc BURGER de la
+  -- carte). La carte ne dit PAS lesquels : la liste ci-dessous est celle des
+  -- ingredients qui apparaissent dans les compositions des burgers eux-memes,
+  -- confirmee par le porteur du projet le 2026-09-05, ainsi que le prix unique
+  -- de 4 000 Ar et le perimetre.
+  --
+  -- ⚠️ PERIMETRE : les 6 vrais burgers seulement. « Poulet grille » et « Poulet
+  -- milanese » sont des ASSIETTES (poulet + salade ou frites), pas des burgers,
+  -- meme si la mention figure sous le meme bloc sur la carte papier. « Steak
+  -- grille ou milanaise » est une assiette aussi.
+  --
+  -- Groupe facultatif et multiple : min_select = 0, max_select = 7, required
+  -- false — on peut n'en prendre aucun, ou les sept.
+  insert into public.product_option_groups
+    (product_id, name, min_select, max_select, required, sort_order)
+  select p.id, 'Suppléments', 0, 7, false, 20
+  from (values
+    ('Burger'), ('Cheeseburger'), ('Big cheeseburger'),
+    ('Chicken burger'), ('Chicken cheeseburger'), ('Crispy burger')
+  ) as v(produit)
+  join public.categories c on c.restaurant_id = rid and c.name = 'Burger'
+  join public.products   p on p.restaurant_id = rid and p.category_id = c.id and p.name = v.produit;
+
   -- Les options, rattachees a (produit, groupe) — jamais au seul nom de groupe.
   insert into public.product_options (group_id, name, price_delta, is_available, sort_order)
   select g.id, v.option, 0, true, v.ordre
@@ -215,7 +238,30 @@ begin
   ) as v(groupe, option, ordre)
   join public.product_option_groups g on g.name = v.groupe
   join public.products p on p.id = g.product_id and p.restaurant_id = rid;
+
+  -- Les 7 supplements, 4 000 Ar chacun, sur les 6 groupes « Suppléments ».
+  insert into public.product_options (group_id, name, price_delta, is_available, sort_order)
+  select g.id, v.option, 4000, true, v.ordre
+  from (values
+    ('Viande hachée',   1),
+    ('Poulet frit',     2),
+    ('Fromage',         3),
+    ('Bacon',           4),
+    ('Oignon',          5),
+    ('Tomate tranchée', 6),
+    ('Salade verte',    7)
+  ) as v(option, ordre)
+  join public.product_option_groups g on g.name = 'Suppléments'
+  join public.products p on p.id = g.product_id and p.restaurant_id = rid;
 end $$;
+
+-- ✅ TESTE LE 2026-09-05 contre la vraie base, dans une transaction annulee par
+-- exception (aucune trace laissee, verifie deux fois a zero ligne). Resultats :
+--   produits 46 · emballage 2 000 Ar 17 · tagues porc 4 · sans visuel 2
+--   groupes 14 · options 58 · dont 42 a 4 000 Ar
+-- Les 58 options prouvent a elles seules l'absence de reinjection : 8 groupes a
+-- choix unique x 2 + 6 groupes « Suppléments » x 7 = 58 exactement. Un doublon
+-- aurait fait deborder ce total.
 
 ------------------------------------------------------------------ CONTROLES
 -- A passer AVANT de rouvrir le restaurant. Attendus :
@@ -224,7 +270,12 @@ end $$;
 --   tagues porc   :  4  (pizza Carbonara, pates Amatriciana, pates Carbonara,
 --                        Big cheeseburger — « bacon » explicite uniquement)
 --   sans visuel   :  2  (Steak grille ou milanaise, Crispy burger)
---   groupes       :  8, chacun avec EXACTEMENT 2 options (16 options au total)
+--   groupes       : 14 — 8 groupes a choix unique (2 options chacun) et
+--                        6 groupes « Suppléments » (7 options chacun),
+--                        soit 58 options au total
+--   supplements   :  6 produits, 7 options a 4 000 Ar (les vrais burgers ;
+--                        ni « Poulet grille », ni « Poulet milanese », ni
+--                        « Steak grille ou milanaise » — ce sont des assiettes)
 --
 -- select count(*) from products p join restaurants r on r.id = p.restaurant_id where r.name = 'Les Siciliens';
 -- select count(*) from products p join restaurants r on r.id = p.restaurant_id where r.name = 'Les Siciliens' and p.packaging_fee > 0;
@@ -234,9 +285,15 @@ end $$;
 --   from products p join restaurants r on r.id = p.restaurant_id
 --   join product_option_groups g on g.product_id = p.id
 --   left join product_options o on o.group_id = g.id
---  where r.name = 'Les Siciliens' group by 1,2 order by 1;
+--  where r.name = 'Les Siciliens' group by p.id, p.name, g.id, g.name order by 1;
+--   -- ⚠️ GROUPER PAR p.id / g.id, PAS par les noms. « Poisson fumé » est le nom
+--   --    de DEUX produits de cette carte (une pizza et une entree) : un
+--   --    `group by 1,2` les fusionne et affiche 4 options la ou il y en a 2 par
+--   --    groupe. Faux positif rencontre le 2026-09-05 en testant ce script — il
+--   --    fait croire a la reinjection qu'on cherche justement a detecter.
 --   -- ⚠️ toute ligne a 4 options au lieu de 2 = les options se sont reinjectees
 --   --    dans un groupe voisin. C'est le defaut a chercher en priorite.
+--   --    Attendu : 2 options pour les groupes a choix unique, 7 pour « Suppléments ».
 
 ------------------------------------------------------------- MISE EN SERVICE
 -- A jouer SEPAREMENT, une fois les controles ci-dessus passes et la carte relue

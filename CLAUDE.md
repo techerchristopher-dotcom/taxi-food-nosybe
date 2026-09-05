@@ -21,11 +21,21 @@ accès à App Store Connect pour le confirmer moi-même). Le build 1.0.0 (22) es
 
 ⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
 
-**Android** — toute la chaîne technique est prête et testée en conditions réelles le
-2026-08-19 (Google natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google
-Play créé, **identité vérifiée**, et **un appareil Android physique est disponible depuis le
-2026-08-24** — la vérification d'appareil n'est donc plus bloquée. Aucun build `production`
-Android n'est encore sorti.
+**Android — ⏳ DÉPOSÉE SUR LE PLAY STORE, EN ATTENTE DE REVUE** (annoncé par le porteur du
+projet le 2026-09-05 : dépôt fait, environ une semaine d'attente à cette date ; je n'ai pas
+accès à la Play Console pour le confirmer moi-même).
+
+Toute la chaîne technique était prête et testée en conditions réelles le 2026-08-19 (Google
+natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé,
+**identité vérifiée**, appareil Android physique disponible depuis le 2026-08-24.
+
+⚠️ **Conséquence utile et peu connue** : dès le PREMIER dépôt d'un bundle, Google génère la
+**clé de signature d'application** (Play App Signing). Son empreinte SHA-256 est donc
+**déjà disponible**, sans attendre la validation — Play Console → *Release* → *Setup* →
+*App integrity* → *App signing key certificate*. C'est cette empreinte-là, et **pas** la clé
+de dépôt d'EAS, que vérifient les liens Android (App Links). Les confondre fait tomber tous
+les liens partagés dans le navigateur au lieu de l'app, et le symptôme est pénible à
+diagnostiquer.
 
 ⚠️ **Le vrai obstacle Android n'est pas technique, c'est une règle de Google** : tout compte
 **personnel** créé après le 13 novembre 2023 — le nôtre date du 2026-08-19 — doit faire

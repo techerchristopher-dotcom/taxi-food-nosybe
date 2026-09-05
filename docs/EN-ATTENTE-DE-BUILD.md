@@ -343,3 +343,62 @@ carte papier a été écrit « fromage de **montagne** » ; `cuisine_type` est r
    `PRODUCT_COLS` : le produit arrivait sans `packaging_fee`, donc la ligne
    n'apparaissait pas au panier alors que la base était juste. Toute requête sur
    `products` passe par `PRODUCT_COLS`.
+
+## 🔜 Partage social des produits et restaurants (cadré le 2026-09-05, PAS ENCORE ÉCRIT)
+
+Bouton de partage sur une fiche produit et sur une fiche restaurant : le destinataire
+reçoit un lien WhatsApp avec aperçu (photo, nom, prix). S'il a l'app, elle s'ouvre
+**directement sur la fiche** ; sinon une page web s'ouvre et le renvoie vers le store
+correspondant à son téléphone.
+
+⚠️ **Le schéma `taxifood://` ne peut pas servir à ça** : collé dans WhatsApp il n'est pas
+cliquable, et ne fait rien chez qui n'a pas l'app. Il faut de vrais liens `https://`
+(Universal Links iOS / App Links Android) sur `taxifood.rentanoo.com` — domaine déjà en
+ligne sur Netlify.
+
+**Éléments identifiés :**
+
+| | Valeur |
+|---|---|
+| Team ID Apple | `CV2FA6NJ75` |
+| Bundle iOS | `com.chris97416.taxi-food-nosybe` |
+| Package Android | `com.chris97416.taxifoodnosybe` |
+| Empreinte SHA-256 **de dépôt** (EAS, `Default`) | `02:05:17:F9:C3:DD:6E:15:1F:20:08:EC:C6:9E:85:9A:41:77:68:1A:DA:20:26:6A:FB:D4:10:9E:93:95:03:D4` |
+| Empreinte SHA-256 **de signature Google** | ⏳ à récupérer en Play Console |
+
+⚠️ **Ne pas confondre les deux empreintes Android.** Google re-signe l'app avec SA clé
+(Play App Signing). C'est **son** empreinte que vérifient les App Links, pas celle d'EAS.
+Ne mettre que celle d'EAS ferait tomber tous les liens partagés dans le navigateur au lieu
+de l'app — symptôme pénible à diagnostiquer. `assetlinks.json` accepte **plusieurs**
+empreintes : on met les deux. Elle est disponible **dès maintenant** (l'app est déposée),
+sans attendre la validation : Play Console → *Release* → *Setup* → *App integrity* →
+*App signing key certificate*.
+
+**À faire :**
+1. Page produit + page restaurant sur le site, avec balises Open Graph **rendues côté
+   serveur** (fonction Netlify lisant Supabase). WhatsApp et Facebook n'exécutent pas le
+   JavaScript : un aperçu généré en JS ne s'afficherait jamais.
+2. `/.well-known/apple-app-site-association` et `/.well-known/assetlinks.json`.
+3. `ios.associatedDomains` + `android.intentFilters` dans `app.json`.
+4. Bouton de partage sur les deux fiches, et bascule vers le store côté web.
+
+⚠️ **Limite assumée** : après INSTALLATION, l'app s'ouvre sur l'accueil, pas sur le produit
+partagé. Le *deferred deep linking* n'est fourni ni par iOS ni par Android ; il demande un
+service tiers payant (Branch, AppsFlyer) ou un bricolage fragile. À rouvrir seulement si le
+besoin se confirme à l'usage.
+
+⚠️ **Ce build DOIT être lancé par Christopher lui-même, en interactif.** « Associated
+Domains » est une capability Apple — voir le rappel plus haut : c'est ce qui a fait échouer
+les builds 7, 8 et 11.
+
+## 🎯 Consigne du 2026-09-05 : aligner les deux plateformes
+
+L'app est **validée sur l'App Store** et **en attente de revue sur le Play Store** (déposée
+vers le 2026-08-29). **Objectif fixé par le porteur du projet : dès que Google valide, on
+lance le build** qui embarque tout ce qui est listé dans ce document, pour que les deux
+plateformes proposent exactement les mêmes fonctionnalités.
+
+Ordre de sortie à respecter :
+1. Google valide la version déposée → récupérer l'empreinte de signature Google.
+2. Compléter `assetlinks.json` avec cette empreinte, mettre le site en ligne.
+3. Lancer le build **en interactif** (capability Apple), soumettre aux deux stores.

@@ -272,3 +272,57 @@ en activité :**
 
 ⚠️ La quantité est un compteur **annoncé**, décrémenté à la main : `create_order`
 n'a pas été touché, il n'y a donc aucune réservation atomique.
+
+## Emoji sur les filtres de l'accueil (2026-09-05)
+
+Les puces de type de plat affichent désormais 🍕 Pizza, 🌮 Tacos, 🥙 Kebab, 🍔 Burger,
+🌭 Américain, 🥪 Panini, 🥞 Crêpe, 🥤 Milkshake, 🍢 Tapas.
+
+- App uniquement : `FOOD_TYPE_ICON` dans `data/types.ts`, rendu dans `app/(tabs)/index.tsx`.
+  Rien en base.
+- Le vocabulaire reprend celui déjà utilisé dans `categories.icon`.
+
+✅ Vérifié sur simulateur.
+
+## Label « Contient du porc » (2026-09-05)
+
+Badge ambre sur la ligne produit. À Nosy Be une part importante de la clientèle ne
+mange pas de porc : la composition en toutes lettres ne suffit pas, il faut le voir
+sans ouvrir la fiche.
+
+- Base : `products.diet_tags` (tableau de libellés, extensible à « piquant » /
+  « végétarien » plus tard), RPC `set_product_diet_tags`. **Déjà actif** — seul le
+  badge attend le build.
+- App : `components/ProductRow.tsx`, `data/api.ts`, `data/types.ts`.
+
+⚠️ **Seul ce qui est explicite est tagué.** Les pizzas d'Angelo et de Taxi Be sont au
+jambon **de volaille** : les taguer porc par similarité de nom (« Reine »,
+« Pepperoni ») aurait été un contresens coûteux.
+
+⚠️ **Cinq plats restent NON tagués faute de certitude, à trancher avec les
+restaurateurs avant la mise en service :** croque-monsieur, croque-madame, cordon
+bleu, pâtes carbonara, terrine de campagne — la carte dit « jambon » sans préciser.
+Sur un label de confiance, ne rien afficher vaut mieux qu'une supposition.
+
+## Carte pizzas Chez Bidul & Truc + boîte automatique (2026-09-05)
+
+13 pizzas au feu de bois, avec visuels, compositions et prix.
+
+- Base : catégorie `Pizza`, 13 produits, un groupe d'options obligatoire
+  « Boîte de transport » (une seule option, +2 000 Ar), `food_types` complété.
+  **Tout est déjà actif.**
+- App : pré-sélection automatique de tout groupe obligatoire n'offrant qu'un seul
+  choix (`app/product/[id].tsx`).
+
+✅ Vérifié à l'écran : « Boîte pizza + 2 000 Ar » cochée d'office, bouton
+« Ajouter · 27 000 Ar » pour une Margherita à 25 000.
+
+⚠️ **Décalage à connaître :** les pizzas sont en base, donc **déjà visibles dans
+l'app installée**, alors que la pré-sélection attend le build. D'ici là le client
+devra taper une fois sur « Boîte pizza » avant de pouvoir ajouter — fonctionnel
+(le groupe est marqué OBLIGATOIRE), mais un tap de trop. Si c'est gênant, retirer
+le groupe de la base et le remettre au moment du build.
+
+⚠️ **Deux points tranchés faute de réponse, à confirmer :** « fromage montage » de la
+carte papier a été écrit « fromage de **montagne** » ; `cuisine_type` est resté
+« Bar & Tapas » alors qu'un four à bois justifierait « Restaurant, Bar & Pizzeria ».

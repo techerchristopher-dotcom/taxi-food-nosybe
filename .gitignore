@@ -40,3 +40,13 @@ motion design */
 image/
 *.zip
 .netlify/
+
+# Dossiers d'images sources deposes par le porteur du projet, hors depot comme
+# « motion design/ » et « image/ » plus haut. Les visuels qui comptent vivent
+# dans le Storage Supabase (buckets `produits`, `logo`, `MENU`), qui fait foi ;
+# ces dossiers ne sont que les originaux de travail.
+#   partenaire /sicilien /visuels/  -> 41 PNG, 64 Mo, deposes dans
+#                                      produits/les-siciliens/ le 2026-09-05
+#   partenaire /sicilien /*.JPG     -> photos de la CARTE PAPIER (pas du lieu)
+partenaire /
+carte de visite flyer 1/

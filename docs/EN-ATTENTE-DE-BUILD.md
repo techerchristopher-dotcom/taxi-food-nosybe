@@ -469,3 +469,35 @@ oubli :
    — seuls Taxi Be et La Cabane ont un compte aujourd'hui.
 
 3. **Le pitch « site web » à Chez Bidul & Truc** (second objectif commercial).
+
+
+## ✅ Les Siciliens — APPLIQUÉ EN BASE le 2026-09-05
+
+Le partenaire existe en production. **Créé FERMÉ**, donc pas commandable — mais
+⚠️ **sa fiche est visible sur l'accueil dès maintenant** : la policy
+`restaurants_select_public` est `using (true)`, ni `is_open` ni la présence d'un menu
+ne filtrent l'affichage. Pour le masquer complètement il faudrait désactiver ses 4
+catégories, ce qui n'a pas été fait.
+
+`aee1c612-5ee0-402b-a7b4-aec9c6825b0b` · Hell-Ville · Pizzeria & Pâtes italiennes ·
+`food_types = {Pizza, Pâtes, Burger}` · commission 0,05 · livraison 5 000 Ar.
+
+Contrôles passés après application : 46 produits · 17 boîtes à pizza (2 000 Ar) ·
+4 tagués porc · 2 sans visuel (assumé) · 14 groupes · 58 options dont 42 à 4 000 Ar ·
+**0 groupe anormal** · 44 photos sur 44 répondent en 200.
+
+**Reste à faire avant ouverture** : relire la carte à l'écran, puis
+`update public.restaurants set is_open = true where name = 'Les Siciliens';`
+
+### Le piège du dépôt de visuels, à ne pas revivre
+
+Les 41 dépôts ont échoué en bloc sur `403 Invalid Compact JWS`. Le message fait
+croire à un problème de DROITS ; c'est un problème de **format de clé**. Ce projet
+utilise les clés Supabase de nouvelle génération (`sb_secret_…`), qui ne sont pas des
+JWT : le Storage les refuse présentées en `Bearer` seul et exige **aussi** l'en-tête
+`apikey`. Avec les deux, 41 sur 41 du premier coup.
+
+La fenêtre de dépôt (`upload-visuel-partenaire`) a été rouverte puis **refermée**
+(410 vérifié), le jeton du Vault et `public.jeton_depot()` supprimés. La frontière
+avait été testée AVANT tout dépôt : sans jeton 403, hors du préfixe 400, `../` 400,
+extension autre que `.png` 400.

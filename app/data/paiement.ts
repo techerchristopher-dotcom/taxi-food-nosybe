@@ -82,11 +82,25 @@ export async function lireConfigPaiement(): Promise<ConfigPaiement> {
  * annoncé sur l'écran de validation soit exactement celui que le serveur
  * calculera ensuite. Un `Math.round` afficherait 1,00 € là où le serveur
  * facturerait 1,01 €, et un client qui voit deux chiffres différents conteste.
+ *
+ * ⚠️ L'ORDRE DES OPÉRATIONS FAIT PARTIE DE LA RÈGLE, pas seulement l'arrondi.
+ * Le SQL fait `ceil(total * 100 / taux)` : il multiplie AVANT de diviser, en
+ * `numeric` exact. Écrire `(total / taux) * 100` divise d'abord, en flottant
+ * binaire, et le résidu de cette division remonte au-dessus de l'entier juste
+ * avant que `ceil` ne passe — qui rend alors un centime de trop. Ce n'est pas
+ * théorique : sur 1 à 2 000 000 Ar au taux de 4 700, l'ancienne écriture
+ * divergeait du SQL sur 2 295 montants (5 123 Ar → 110 c annoncés contre 109 c
+ * débités ; 19 317 Ar → 412 contre 411). Le catalogue actuel n'a que des prix
+ * ronds — 219 produits, tous multiples de 100 — donc rien ne se voyait ; le
+ * premier prix en 500 Ar, ou la première remise en pourcentage sur le
+ * sous-total, l'aurait réveillé sur l'écran de validation.
+ * En multipliant d'abord (`totalAr * 100` est exact pour un entier), il ne reste
+ * qu'une division, et les deux calculs coïncident sur toute la plage testée.
  */
 export function apercuMontantMineur(totalAr: number, fxArParEur: number): number | null {
   if (!Number.isFinite(totalAr) || totalAr <= 0) return null;
   if (!Number.isFinite(fxArParEur) || fxArParEur <= 0) return null;
-  return Math.ceil((totalAr / fxArParEur) * 100);
+  return Math.ceil((totalAr * 100) / fxArParEur);
 }
 
 /** « 1207 » + « eur » → « 12,07 € ». Le séparateur suit la langue de l'app. */
@@ -106,9 +120,21 @@ export function formatMontantMineur(centimes: number, devise: string, langue?: s
   }
 }
 
-/** « 4700 » → « 4 700 » (même espacement que `formatAr`). */
+/**
+ * « 4700 » → « 4 700 » (même espacement que `formatAr`).
+ *
+ * ⚠️ Les décimales sont conservées. `payment_config.fx_ar_per_eur` est un
+ * `numeric(10,2)` : un taux de 4 750,50 s'affichait « 4 751 » avec un
+ * `Math.round`, et le client ne pouvait plus retrouver le montant annoncé à
+ * partir du taux annoncé. Le seul intérêt d'afficher le taux est justement
+ * qu'il réconcilie les deux chiffres — un taux arrondi ne réconcilie rien.
+ */
 export function formatTaux(fxArParEur: number): string {
-  return String(Math.round(fxArParEur)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  if (!Number.isFinite(fxArParEur)) return '—';
+  const entier = Math.trunc(fxArParEur);
+  const centiemes = Math.round(Math.abs(fxArParEur - entier) * 100);
+  const groupe = String(entier).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return centiemes === 0 ? groupe : `${groupe},${String(centiemes).padStart(2, '0')}`;
 }
 
 /**

@@ -376,10 +376,24 @@ Deno.serve(async (req: Request) => {
   // Quatre champs. Surtout pas la clé secrète, qui ne quitte jamais la fonction.
   // `client_secret` n'est pas un secret de compte : il n'autorise que la
   // confirmation de CE PaymentIntent, depuis l'appareil du client.
+  //
+  // ⚠️ LE MONTANT ET LE TAUX VIENNENT TOUS LES DEUX DE LA LIGNE, jamais l'un de
+  // la ligne et l'autre de `payment_config`. Ils sont affichés côte à côte sur
+  // l'écran de paiement (« 12,07 € · Taux appliqué : 1 EUR = 4 700 Ar ») : ce
+  // sont les deux chiffres qui doivent se répondre, c'est tout l'intérêt de les
+  // montrer. Renvoyer `fxRate` — le taux du moment — les désaccordait dès qu'un
+  // admin passait `admin_set_fx_rate` pendant qu'un paiement était en cours :
+  // la reprise (branche 23505, ligne déjà créée) rejoue le montant GELÉ, calculé
+  // à l'ancien taux, et l'écran l'aurait annoncé sous le nouveau. Sur une
+  // commande de 56 697 Ar après un passage de 4 700 à 5 200, le client aurait lu
+  // « 12,07 € au taux de 1 EUR = 5 200 Ar » là où ce taux donne 10,90 € — un
+  // écart de 1,17 € qu'il ne peut pas s'expliquer, et l'argument tout trouvé
+  // d'une contestation bancaire. `fx_rate` est un `numeric` : PostgREST le rend
+  // en chaîne, d'où le `Number`.
   return json(200, {
     client_secret: pi.client_secret ?? null,
     publishable_key: cfg.publishable_key,
     montant_eur_centimes: ligne.amount_minor,
-    fx_rate: fxRate,
+    fx_rate: Number(ligne.fx_rate),
   });
 });

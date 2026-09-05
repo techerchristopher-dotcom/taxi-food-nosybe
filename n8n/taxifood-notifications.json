@@ -1,0 +1,190 @@
+{
+  "name": "Taxi Food — notifications de commande",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "taxifood-commande",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Commande (webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "webhookId": "taxifood-commande"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/**\n * Taxi Food — mise en forme des notifications de commande.\n *\n * Recoit la charge utile envoyee par le trigger Postgres `notify_order_status`\n * a chaque evolution d'une commande, et prepare :\n *   - l'e-mail au CLIENT (tous les statuts) ;\n *   - le message Telegram au RESTAURANT (nouvelle commande et annulation).\n *\n * Aucun acces a la base : tout ce qui est necessaire est deja dans la charge.\n */\nconst c = $json.body ?? $json;\n\nconst cmd   = c.commande            || {};\nconst cli   = c.client              || {};\nconst resto = c.restaurant          || {};\nconst adr   = c.livraison_adresse   || {};\nconst items = Array.isArray(c.articles) ? c.articles : [];\n\nconst ar = (n) =>\n  (typeof n === 'number' ? n : 0).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' Ar';\n\n// L'evenement « recuperee » n'a PAS de statut propre : la commande reste\n// `en_livraison` du debut a la fin, seul picked_up_at se remplit. C'est\n// pourtant l'etape que le client attend le plus, d'ou sa cle a part.\nconst cle = c.recuperee ? 'recuperee'\n          : (c.evenement === 'nouvelle' ? 'recue' : (cmd.statut || 'recue'));\n\nconst T = {\n  recue: {\n    objet: `Commande ${cmd.numero} bien reçue`,\n    titre: 'On a bien reçu ta commande',\n    corps: `${resto.nom || 'Le restaurant'} vient de la recevoir. On te prévient dès qu’elle est acceptée.`,\n  },\n  confirmee: {\n    objet: `${resto.nom} a accepté ta commande ${cmd.numero}`,\n    titre: 'Ta commande est acceptée',\n    corps: `${resto.nom} prépare ta commande. On te tient au courant à chaque étape.`,\n  },\n  en_preparation: {\n    objet: `Ta commande ${cmd.numero} est en cuisine`,\n    titre: 'C’est en cuisine',\n    corps: `${resto.nom} a commencé la préparation. Plus très long.`,\n  },\n  en_livraison: {\n    objet: `Ta commande ${cmd.numero} est prête`,\n    titre: 'Ta commande est prête',\n    corps: 'Elle attend un livreur. Tu seras prévenu dès qu’il part avec.',\n  },\n  recuperee: {\n    objet: `Ton livreur est parti avec la commande ${cmd.numero}`,\n    titre: 'Le livreur est en route',\n    corps: 'Il a récupéré ta commande et se dirige vers toi. Garde ton téléphone à portée.',\n  },\n  livree: {\n    objet: `Bon appétit — commande ${cmd.numero} livrée`,\n    titre: 'Livrée. Bon appétit !',\n    corps: `Merci d’avoir commandé chez ${resto.nom} avec Taxi Food. À très vite.`,\n  },\n  annulee: {\n    objet: `Commande ${cmd.numero} annulée`,\n    titre: 'Ta commande a été annulée',\n    corps: cmd.motif_annulation\n      ? `Motif : ${cmd.motif_annulation}. Tu n’as rien à payer.`\n      : 'Tu n’as rien à payer. N’hésite pas à réessayer plus tard.',\n  },\n};\nconst t = T[cle] || T.recue;\n\nconst lignes = items.map((a) =>\n  `<tr><td style=\"padding:7px 0;color:#1A1A1A\">${a.quantite} × ${a.nom}</td>` +\n  `<td align=\"right\" style=\"padding:7px 0;color:#1A1A1A;white-space:nowrap\">${ar(a.prix * a.quantite)}</td></tr>`\n).join('');\n\nconst ligne = (l, v, gras) =>\n  `<tr><td style=\"padding:4px 0;color:${gras ? '#1A1A1A' : '#6B6662'};font-weight:${gras ? 700 : 400}\">${l}</td>` +\n  `<td align=\"right\" style=\"padding:4px 0;color:${gras ? '#DF3228' : '#6B6662'};font-weight:${gras ? 700 : 400};white-space:nowrap\">${v}</td></tr>`;\n\nconst html = `<!doctype html><html lang=\"fr\"><body style=\"margin:0;padding:24px;background:#F5F2EF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif\">\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\">\n<table role=\"presentation\" width=\"100%\" style=\"max-width:520px;background:#fff;border-radius:20px;padding:28px\" cellpadding=\"0\" cellspacing=\"0\">\n  <tr><td style=\"font:800 20px/1 Arial,sans-serif;color:#DF3228;letter-spacing:-.02em\">TAXI FOOD</td></tr>\n  <tr><td style=\"font:400 12px/1 Arial,sans-serif;color:#8A827A;padding-top:4px\">Livraison de repas à Nosy Be</td></tr>\n  <tr><td style=\"padding-top:22px;font:700 24px/1.2 Arial,sans-serif;color:#1A1A1A\">${t.titre}</td></tr>\n  <tr><td style=\"padding-top:10px;font:400 15px/1.6 Arial,sans-serif;color:#4A4744\">${t.corps}</td></tr>\n  <tr><td style=\"padding-top:20px;font:500 11px/1 Arial,sans-serif;color:#8A827A;letter-spacing:.14em\">COMMANDE ${cmd.numero || ''}</td></tr>\n  <tr><td style=\"padding-top:10px\">\n    <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"font:400 14px Arial,sans-serif\">\n      ${lignes}\n      <tr><td colspan=\"2\" style=\"border-top:1px solid #E9E5E0;padding-top:8px\"></td></tr>\n      ${cmd.emballage ? ligne('Emballage', ar(cmd.emballage)) : ''}\n      ${ligne('Livraison', ar(cmd.livraison))}\n      ${ligne('Total', ar(cmd.total), true)}\n    </table>\n  </td></tr>\n  <tr><td style=\"padding-top:22px\">\n    <a href=\"https://taxifood.distripro207.com/orders\" style=\"display:inline-block;background:#DF3228;color:#fff;text-decoration:none;font:700 15px Arial,sans-serif;padding:14px 24px;border-radius:999px\">Suivre ma commande</a>\n  </td></tr>\n  ${resto.telephone ? `<tr><td style=\"padding-top:16px;font:400 13px Arial,sans-serif;color:#6B6662\">Une question ? Appelle ${resto.nom} au <a href=\"tel:${resto.telephone}\" style=\"color:#DF3228\">${resto.telephone}</a>.</td></tr>` : ''}\n  <tr><td style=\"padding-top:24px;border-top:1px solid #E9E5E0;font:400 12px/1.5 Arial,sans-serif;color:#8A827A\">Tu reçois cet e-mail parce que tu as passé une commande sur Taxi Food.</td></tr>\n</table></td></tr></table></body></html>`;\n\nconst carte = (adr.latitude && adr.longitude)\n  ? `https://www.google.com/maps?q=${adr.latitude},${adr.longitude}` : '';\n\nconst telegram =\n  cle === 'annulee'\n    ? `❌ Commande ${cmd.numero} ANNULÉE\\n${cmd.motif_annulation ? 'Motif : ' + cmd.motif_annulation : ''}`\n    : `🛵 NOUVELLE COMMANDE ${cmd.numero}\\n\\n`\n      + items.map((a) => `• ${a.quantite} × ${a.nom}`).join('\\n')\n      + `\\n\\nTotal : ${ar(cmd.total)} (${cmd.paiement})`\n      + `\\nClient : ${cli.nom || '—'}${cli.telephone ? ' — ' + cli.telephone : ''}`\n      + `\\nLivraison : ${adr.zone || '—'}${adr.precisions ? ' (' + adr.precisions + ')' : ''}`\n      + (carte ? `\\n📍 ${carte}` : '');\n\n// `envoyer_telegram` : uniquement une nouvelle commande ou une annulation. Le\n// restaurant n'a pas besoin d'un message a chaque etape — c'est LUI qui les\n// declenche, le prevenir de ses propres actions serait du bruit.\nreturn [{\n  json: {\n    cle,\n    envoyer_email: Boolean(cli.email),\n    email_destinataire: cli.email || '',\n    email_objet: t.objet,\n    email_html: html,\n    envoyer_telegram: Boolean(resto.telegram_chat_id) && (c.evenement === 'nouvelle' || cle === 'annulee'),\n    telegram_chat_id: resto.telegram_chat_id || '',\n    telegram_texte: telegram,\n    numero: cmd.numero,\n    restaurant: resto.nom,\n  },\n}];\n"
+      },
+      "id": "prep",
+      "name": "Prepare le message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.envoyer_email }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ifmail",
+      "name": "Le client a-t-il un e-mail ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        280,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_destinataire }}",
+        "subject": "={{ $json.email_objet }}",
+        "message": "={{ $json.email_html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail",
+      "name": "E-mail au client",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        520,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.envoyer_telegram }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "iftg",
+      "name": "Le restaurant a-t-il Telegram ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        280,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.telegram_chat_id }}",
+        "text": "={{ $json.telegram_texte }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "tg",
+      "name": "Telegram au restaurant",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Commande (webhook)": {
+      "main": [
+        [
+          {
+            "node": "Prepare le message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare le message": {
+      "main": [
+        [
+          {
+            "node": "Le client a-t-il un e-mail ?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Le restaurant a-t-il Telegram ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Le client a-t-il un e-mail ?": {
+      "main": [
+        [
+          {
+            "node": "E-mail au client",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Le restaurant a-t-il Telegram ?": {
+      "main": [
+        [
+          {
+            "node": "Telegram au restaurant",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

@@ -50,3 +50,7 @@ image/
 #   partenaire /sicilien /*.JPG     -> photos de la CARTE PAPIER (pas du lieu)
 partenaire /
 carte de visite flyer 1/
+
+# Secrets de travail, hors depot par construction (cle d'API n8n, jetons de test).
+# Ne JAMAIS committer : voir docs/N8N-NOTIFICATIONS.md pour ce qui doit s'y trouver.
+.secrets.local

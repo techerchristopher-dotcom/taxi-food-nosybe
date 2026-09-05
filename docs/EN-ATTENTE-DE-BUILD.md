@@ -550,3 +550,31 @@ erreur en console.
 npm run build:web --prefix app
 netlify deploy --prod --dir app/dist --site 1e13c535-fd25-4027-9188-2b8c178c7f60
 ```
+
+## 🔜 Suivi de commande par e-mail sur le web (décidé le 2026-09-05, PAS ENCORE ÉCRIT)
+
+Les notifications push n'existent pas sur la version web : `app/login.tsx` sort tôt
+sur `Platform.OS === 'web'`, et un client qui commande depuis un navigateur ne serait
+donc prévenu de rien.
+
+**Décision du porteur du projet** : sur le web, remplacer la push par un **e-mail à
+chaque étape de livraison**, envoyé par un workflow n8n. **L'e-mail du client devient
+donc obligatoire pour commander depuis le web.**
+
+Ce qu'il faudra regarder au moment de l'écrire — ce sont des questions ouvertes, pas
+des décisions prises :
+
+- ⚠️ **Tous les clients n'ont pas d'e-mail aujourd'hui.** Un compte créé par
+  **WhatsApp OTP** n'en a aucun (`profiles` n'a que le téléphone), et une connexion
+  Apple peut ne fournir qu'une adresse *private relay*. Il faudra donc soit demander
+  l'e-mail au moment du paiement sur le web, soit bloquer la commande web pour les
+  comptes qui n'en ont pas — le second est plus simple mais renvoie un client qui
+  s'était déjà connecté.
+- **Le déclencheur** : le plus robuste est un webhook Postgres sur le changement de
+  `orders.status`, comme le fait déjà `notify_order_status`. Regarder ce trigger
+  avant d'en inventer un autre — les règles métier vivent dans les triggers, pas
+  dans le front.
+- **Ne pas envoyer un e-mail par étape à un client qui a l'app** : il recevrait la
+  push ET l'e-mail. Il faut savoir d'où vient la commande (une colonne
+  `orders.source` = `web` | `ios` | `android`, à ajouter).
+- Le workflow n8n est hors dépôt : consigner où il vit et qui peut le modifier.

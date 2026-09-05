@@ -81,6 +81,50 @@
       + bande + lien + '</div>';
   }
 
+
+  /**
+   * Bandeau de visuels plein ecran, sous le hero.
+   *
+   * Il montre ce que le service livre VRAIMENT : les photos viennent de la base,
+   * pas d'une banque d'images. C'est l'argument le plus court a faire passer sur
+   * une vitrine — on voit les plats avant de lire quoi que ce soit.
+   *
+   * ⚠️ Deux rangees defilant en SENS OPPOSES, et non une seule : une bande unique
+   * lit comme un carrousel publicitaire qu'on ignore, deux bandes croisees lisent
+   * comme une abondance. Chaque rangee est dupliquee pour que la boucle soit
+   * invisible (l'animation translate de -50 %).
+   *
+   * ⚠️ `prefers-reduced-motion` coupe l'animation : un defilement permanent est
+   * penible, voire douloureux, pour une partie des visiteurs.
+   */
+  function carrousel(photos) {
+    var hote = document.getElementById('carrousel');
+    if (!hote || photos.length < 6) return;
+
+    // Melange stable-ish : on alterne pour ne pas grouper un seul restaurant.
+    var a = photos.filter(function (_, i) { return i % 2 === 0; });
+    var b = photos.filter(function (_, i) { return i % 2 === 1; });
+
+    function rangee(liste, sens, taille) {
+      var items = liste.slice(0, 14);
+      if (!items.length) return '';
+      return '<div style="overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)">'
+        + '<div class="defile" style="display:flex;gap:12px;width:max-content;animation:menuScroll ' + (sens === 1 ? '58s' : '72s') + ' linear infinite' + (sens === -1 ? ' reverse' : '') + '">'
+        + items.concat(items).map(function (p) {
+            return '<figure style="margin:0;position:relative;flex:none;width:' + taille + 'px">'
+              + '<img src="' + echapper(p.url) + '" alt="' + echapper(p.nom) + '" loading="lazy" decoding="async" '
+              + 'style="width:' + taille + 'px;height:' + taille + 'px;border-radius:20px;object-fit:cover;background:#EAE5E0;display:block">'
+              + '<figcaption style="position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;border-radius:0 0 20px 20px;'
+              + 'background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font:700 12px/1.25 Archivo,sans-serif;'
+              + 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + echapper(p.nom) + '</figcaption>'
+              + '</figure>';
+          }).join('')
+        + '</div></div>';
+    }
+
+    hote.innerHTML = rangee(a, 1, 176) + '<div style="height:12px"></div>' + rangee(b, -1, 176);
+  }
+
   function api(chemin) {
     return fetch(URL_SB + '/rest/v1/' + chemin, {
       headers: { apikey: CLE, Authorization: 'Bearer ' + CLE },
@@ -100,6 +144,19 @@
           hote.innerHTML = restos.map(function (r) {
             return carte(r, (par[r.id] || []).slice(0, 8));
           }).join('');
+
+          // Bandeau plein ecran : on entrelace les restaurants pour ne pas
+          // afficher quatorze pizzas du meme etablissement a la suite.
+          var files = restos.map(function (r) { return (par[r.id] || []).slice(); });
+          var melange = [];
+          for (var i = 0; melange.length < 40; i++) {
+            var reste = false;
+            for (var k = 0; k < files.length; k++) {
+              if (files[k][i]) { melange.push(files[k][i]); reste = true; }
+            }
+            if (!reste) break;
+          }
+          carrousel(melange);
         });
     })
     .catch(function (e) {

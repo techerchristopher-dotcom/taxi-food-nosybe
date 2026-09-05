@@ -155,65 +155,63 @@ Les quatre colonnes doivent être vraies / renseignées.
 
 ---
 
-## Étape 4 — Telegram : un groupe par restaurant
+## Étape 4 — Telegram : le téléphone du patron
 
-Le restaurateur reçoit ses commandes sur Telegram, avec des boutons
-**Accepter / Refuser** qui mettent à jour la commande dans l'application sans
-qu'il ait besoin d'ouvrir quoi que ce soit. C'est ce qui lui fait gagner du temps,
-et c'est l'argument à mettre en avant.
+Le patron reçoit ses commandes sur Telegram, avec des boutons
+**Accepter / Refuser** qui mettent à jour la commande dans l'application. Il
+appuie, puis lance la commande à son chef. C'est ce qui lui fait gagner du
+temps, et c'est l'argument à mettre en avant.
 
 Le robot : **@Taxifood_commandes_bot** (« Taxi Food commandes »). Son jeton est
 dans `.secrets.local` (gitignored, `chmod 600`), jamais dans le dépôt.
 
-### ⚠️ Un groupe, pas une conversation privée
+**Une conversation directe entre le patron et le robot, pas un groupe.** C'est
+lui qui reçoit, sur son propre téléphone. Décision du porteur du projet le
+2026-09-05 : on ne fait pas installer un groupe à quelqu'un qui découvre
+Telegram le jour même.
 
-Le réflexe est de demander au restaurateur d'écrire au robot depuis son compte.
-Ça marche, mais ça attache les commandes à **une personne** : le jour où il
-change de téléphone, part en congé ou vend l'affaire, le canal meurt avec lui.
+### Sur son téléphone — trente secondes, c'est toi qui le fais
 
-Un groupe résout les trois : plusieurs employés y voient les commandes, on y
-reste soi-même pour dépanner, et l'identifiant survit aux changements d'équipe.
+1. **[lui, avant ta visite]** Installer Telegram avec **son numéro habituel**
+2. Tu prends son téléphone, tu ouvres Telegram
+3. Loupe en haut → taper `Taxifood_commandes`
+4. Ouvrir **Taxi Food commandes** → appuyer sur **DÉMARRER**
+5. Tu lui rends son téléphone
 
-### La marche à suivre
+### Sur ton ordinateur — une minute
 
-1. **[lui]** Installer Telegram avec **son numéro habituel**
-2. **[lui]** Créer un groupe « Taxi Food — Nom du restaurant » et nous y ajouter
-3. **[nous]** Ajouter `@Taxifood_commandes_bot` au groupe
-4. **[nous]** Envoyer `/start@Taxifood_commandes_bot` **dans le groupe**
-5. **[nous]** Lire l'identifiant :
-   ```bash
-   set -a; . ./.secrets.local; set +a
-   curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
-   ```
-6. **[nous]** `select public.set_restaurant_telegram('<uuid>', '<chat_id>');`
-7. **[nous]** Passer une **vraie commande de test** et regarder le groupe
+```bash
+set -a; . ./.secrets.local; set +a
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
+```
 
-⚠️ L'étape 7 n'est pas décorative : voir la ligne remplie en base ne prouve rien.
-La seule preuve est le message qui arrive avec ses deux boutons.
+La dernière ligne est la sienne : son prénom, et un nombre **positif**.
 
-### Les pièges
+```sql
+select public.set_restaurant_telegram('<uuid du restaurant>', '<identifiant>');
+```
 
-- ⚠️ **Le robot n'écoute pas tout.** `can_read_all_group_messages: false` : dans
-  un groupe il ne voit que ce qui lui est explicitement adressé. Sans le
-  `/start@Taxifood_commandes_bot` de l'étape 4, `getUpdates` ne renvoie rien et
-  tout semble cassé sans l'être.
-- ⚠️ **L'identifiant d'un groupe est négatif** — garder le signe moins.
-- ⚠️ **Il change si le groupe devient un supergroupe** (Telegram convertit dès
-  que le groupe grandit ou devient public) : `-987654321` devient
-  `-100987654321`. Les commandes s'arrêtent net, sans erreur. Première chose à
-  vérifier si un restaurant cesse de recevoir.
-- ⚠️ **Jamais le `@pseudo`**, toujours l'identifiant numérique : un pseudo peut
-  être changé par n'importe quel administrateur du groupe, et repris par un autre.
+Puis **passer une vraie commande de test**. Voir la ligne remplie en base ne
+prouve rien : la seule preuve est le message qui arrive sur son téléphone avec
+ses deux boutons.
+
+### Les trois pièges
+
+- ⚠️ **Un patron à la fois.** La liste ne donne que des prénoms. Si deux
+  patrons appuient sur Démarrer le même jour, plus moyen de savoir quel nombre
+  est à qui — et un restaurant reçoit les commandes d'un autre. En faire un,
+  l'enregistrer, puis passer au suivant.
+- ⚠️ **Nouveau téléphone ou nouveau numéro : à refaire.** L'identifiant est
+  attaché au compte Telegram. Les commandes s'arrêtent sans aucune erreur, ni
+  dans l'app ni en base. Trente secondes à refaire, mais il faut y penser.
 - ⚠️ **`getUpdates` répond `409 Conflict`** si un nœud *Telegram Trigger* tourne
-  dans n8n sur le même robot — Telegram réserve alors les mises à jour au
-  webhook. Aucun webhook n'est posé aujourd'hui.
+  dans n8n sur le même robot. Aucun webhook n'est posé aujourd'hui.
 
 ### ⚠️ État réel au 2026-09-05
 
 **Aucun restaurant n'a de vrai canal.** L'identifiant enregistré pour La Cabane,
-`7699975131`, est celui de la **conversation privée du porteur du projet** avec
-le robot — posé pendant les tests. Ses commandes arrivent donc chez lui, pas au
-restaurant. À refaire avec un vrai groupe.
+`7699975131`, est la **conversation privée du porteur du projet** avec le robot,
+posée pendant les tests. Ses commandes arrivent donc chez lui, pas au patron.
 
 Page d'accompagnement (générateur de requête + pièges) :
 https://claude.ai/code/artifact/5b98005a-012b-4c88-985c-e7d8a8f0d4e1
@@ -302,7 +300,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 - [ ] 2. Compte créé via la fenêtre Edge (`email_confirm: true`, mot de passe ≥ 6)
 - [ ] 3. Fenêtre refermée : Edge en 410 + secret du Vault supprimé + fonction SQL supprimée
 - [ ] 4. Rattachement vérifié en SQL (`user_roles`, `restaurant_staff`, `utilisee_le`)
-- [ ] 5. Telegram : **groupe dédié** créé, robot ajouté, `telegram_chat_id` et `phone` renseignés, **commande de test reçue avec ses boutons**
+- [ ] 5. Telegram : `DÉMARRER` appuyé sur son téléphone, `telegram_chat_id` et `phone` renseignés, **commande de test reçue avec ses boutons**
 - [ ] 6. **Message copier-coller remis au porteur du projet, avec lien + e-mail + mot de passe**
 
 ---

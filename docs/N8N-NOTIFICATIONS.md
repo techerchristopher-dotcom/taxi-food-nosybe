@@ -87,7 +87,8 @@ Apple ne vérifie pas l'adresse à l'envoi : il jette, sans rien signaler.
    - nœud « Telegram au restaurant » → un robot Telegram (créé via `@BotFather`).
 2. **Activer** le workflow (il est créé inactif).
 3. ~~Déclarer l'expéditeur chez Apple~~ — **fait le 2026-09-05** (voir ci-dessus).
-4. **Pour chaque restaurant**, brancher son canal Telegram — **un groupe par
-   restaurant**, procédure complète et pièges dans
+4. **Pour chaque restaurant**, brancher le téléphone du patron sur Telegram —
+   conversation directe avec le robot, trente secondes sur son appareil.
+   Procédure et pièges dans
    [ONBOARDING-RESTAURATEUR.md](ONBOARDING-RESTAURATEUR.md) § 4.
 5. Passer une vraie commande de test et vérifier les trois canaux.

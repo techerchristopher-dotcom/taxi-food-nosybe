@@ -315,10 +315,10 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 
 ## État des partenaires
 
-| Restaurant | E-mail | Mot de passe | Compte | Telegram |
-|---|---|---|---|---|
-| La Cabane | murechoco@gmail.com | `cabane207` | ✅ 2026-09-05 | ⚠️ à refaire — pointe sur une conversation privée |
-| Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | ✅ 2026-09-05 | ❌ à faire |
-| Les Siciliens | — | — | ❌ | ❌ |
-| Taxi Be | — | — | ❌ | ❌ |
-| Angelo | — | — | ❌ (masqué) | ❌ |
+| Restaurant | E-mail | Mot de passe | Téléphone | Compte | Telegram |
+|---|---|---|---|---|---|
+| La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ⚠️ à refaire — pointe sur le téléphone du porteur du projet |
+| Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ❌ à faire |
+| Les Siciliens | — | — | — | ❌ | ❌ |
+| Taxi Be | — | — | — | ❌ | ❌ |
+| Angelo | — | — | — | ❌ (masqué) | ❌ |

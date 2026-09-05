@@ -42,8 +42,15 @@
         box-shadow:0 18px 44px rgba(0,0,0,.28);flex:0 1 auto;min-height:0}
  .phone img{display:block;border-radius:22px;height:min(40svh,320px);width:auto;max-width:74vw}
 
- /* Le halo guide l'oeil. Il bat lentement — attirer sans stresser — et il est
-    place en POURCENTAGE, donc juste quelle que soit la taille d'ecran. */
+ /* ⚠️ Le repere se positionne contre .ecran, qui epouse EXACTEMENT l'image —
+    pas contre .phone, dont les 7px de padding fixes decalaient tout, et d'un
+    montant qui variait avec la taille d'ecran puisque l'image, elle, se
+    redimensionne. Les pourcentages ci-dessous se lisent donc directement sur
+    la capture, ce qui les rend verifiables. */
+ .ecran{position:relative;display:block;line-height:0}
+
+ /* Le halo guide l'oeil. Il bat lentement — attirer sans stresser — et il
+    ENTOURE la cible sans la couvrir : contour fin, jamais de fond. */
  .halo{position:absolute;border:2.5px solid #DF3228;border-radius:999px;pointer-events:none;
        background:none;animation:bat 1.7s ease-in-out infinite}
  @keyframes bat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.72}}
@@ -122,9 +129,11 @@
   <h1 data-t="h3"></h1>
   <p class="sub" data-t="s3"></p>
   <div class="phone">
-    <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
-    <div class="halo" style="left:9%;right:9%;top:63.5%;height:7.4%"></div>
-    <div class="doigt" style="left:78%;top:71.5%">👆</div>
+    <div class="ecran">
+      <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
+      <div class="halo" style="left:5%;right:5%;top:62.3%;height:9.1%"></div>
+      <div class="doigt" style="left:80%;top:72%">👆</div>
+    </div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i></div>
   <button class="btn" data-go="4" data-t="suivant"></button>
@@ -150,8 +159,10 @@
   <h1 data-t="h5"></h1>
   <p class="sub" data-t="s5"></p>
   <div class="phone">
-    <img src="/img/guide/2-espace-480.webp" alt="" width="480" height="944">
-    <div class="halo" style="left:11%;right:11%;top:57.3%;height:6.6%"></div>
+    <div class="ecran">
+      <img src="/img/guide/2-espace-480.webp" alt="" width="480" height="944">
+      <div class="halo" style="left:11%;right:11%;top:57.6%;height:6.9%"></div>
+    </div>
   </div>
   <a class="btn" href="https://taxifood.distripro207.com/login" data-t="cta"></a>
   <button class="btn ghost" data-go="0" data-t="revoir"></button>
@@ -162,9 +173,11 @@
   <h1 data-t="h6"></h1>
   <p class="sub" data-t="s6"></p>
   <div class="phone">
-    <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
-    <div class="halo" style="left:20%;right:8%;top:87.6%;height:5.2%"></div>
-    <div class="doigt" style="left:82%;top:93.4%">👆</div>
+    <div class="ecran">
+      <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
+      <div class="halo" style="left:44%;right:9.5%;top:88.3%;height:4.3%"></div>
+      <div class="doigt" style="left:64%;top:92.3%">👆</div>
+    </div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i><i class="pt"></i></div>
   <button class="btn" data-go="7" data-t="suivant"></button>
@@ -190,8 +203,10 @@
   <h1 data-t="h5"></h1>
   <p class="sub" data-t="s5"></p>
   <div class="phone">
-    <img src="/img/guide/2-espace-480.webp" alt="" width="480" height="944">
-    <div class="halo" style="left:11%;right:11%;top:57.3%;height:6.6%"></div>
+    <div class="ecran">
+      <img src="/img/guide/2-espace-480.webp" alt="" width="480" height="944">
+      <div class="halo" style="left:11%;right:11%;top:57.6%;height:6.9%"></div>
+    </div>
   </div>
   <a class="btn" href="https://taxifood.distripro207.com/login" data-t="cta"></a>
   <button class="btn ghost" data-go="0" data-t="revoir"></button>

@@ -185,7 +185,8 @@
     "saveFailed": "Impossibile salvare l'indirizzo. Riprova.",
     "gpsDenied": "Hai rifiutato la condivisione della posizione. Autorizzala nelle impostazioni del browser, poi riprova.",
     "gpsTimeout": "La posizione impiega troppo tempo. Riprova, o avvicinati a una finestra se sei al chiuso.",
-    "gpsUnavailable": "Posizione non disponibile su questo dispositivo. Verifica che la localizzazione sia attiva."
+    "gpsUnavailable": "Posizione non disponibile su questo dispositivo. Verifica che la localizzazione sia attiva.",
+    "gpsWebHowTo": "Nel browser: tocca l'icona a sinistra dell'indirizzo del sito, poi Posizione → Consenti. Torna qui e tocca Riprova."
   },
   "checkout": {
     "title": "Conferma il mio ordine",

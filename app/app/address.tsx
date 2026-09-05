@@ -332,11 +332,23 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
                     ? t('address.gpsUnavailable')
                     : t('address.gpsError')}
             </Text>
+            {/* ⚠️ Sur le web, `Linking.openSettings()` ne fait RIEN — il n'existe que
+                sur mobile, et son echec etait avale en silence : un bouton mort, ce
+                qui est pire que pas de bouton du tout. Un navigateur ne laisse
+                d'ailleurs aucune page ouvrir ses reglages de permission, par
+                conception. On donne donc le chemin exact a la place.
+                Et quand la permission a ete REFUSEE, « Réessayer » seul ne sert a
+                rien : le navigateur ne redemande plus, il faut d'abord debloquer. */}
+            {Platform.OS === 'web' && gpsCause === 'refus' ? (
+              <Text style={styles.mapHint}>{t('address.gpsWebHowTo')}</Text>
+            ) : null}
             <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
               <Pressable onPress={captureLocation} hitSlop={6}><Text style={styles.gpsLink}>{t('common.retry')}</Text></Pressable>
-              <Pressable onPress={() => { try { void Linking.openSettings(); } catch { /* web */ } }} hitSlop={6}>
-                <Text style={styles.gpsLink}>{t('common.openSettings')}</Text>
-              </Pressable>
+              {Platform.OS !== 'web' ? (
+                <Pressable onPress={() => { void Linking.openSettings(); }} hitSlop={6}>
+                  <Text style={styles.gpsLink}>{t('common.openSettings')}</Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
         ) : null}

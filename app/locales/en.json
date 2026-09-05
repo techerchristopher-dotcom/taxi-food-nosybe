@@ -185,7 +185,8 @@
     "saveFailed": "Could not save the address. Please try again.",
     "gpsDenied": "You declined location sharing. Allow it in your browser settings, then try again.",
     "gpsTimeout": "Your location is taking too long. Try again, or move near a window if you are indoors.",
-    "gpsUnavailable": "Location unavailable on this device. Check that location services are on."
+    "gpsUnavailable": "Location unavailable on this device. Check that location services are on.",
+    "gpsWebHowTo": "In your browser: tap the icon to the left of the site address, then Location → Allow. Come back here and tap Retry."
   },
   "checkout": {
     "title": "Confirm my order",

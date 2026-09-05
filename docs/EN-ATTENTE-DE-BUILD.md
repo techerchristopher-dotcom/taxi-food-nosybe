@@ -501,3 +501,52 @@ La fenêtre de dépôt (`upload-visuel-partenaire`) a été rouverte puis **refe
 (410 vérifié), le jeton du Vault et `public.jeton_depot()` supprimés. La frontière
 avait été testée AVANT tout dépôt : sans jeton 403, hors du préfixe 400, `../` 400,
 extension autre que `.png` 400.
+
+## ✅ Version WEB de l'application — EN LIGNE le 2026-09-05
+
+**https://taxi-food-commander.netlify.app**
+
+Objectif : permettre aux clients de commander pendant l'attente des stores (iOS
+validée, Android en revue). Ce n'est **pas un site séparé** : c'est le même code
+que les apps, compilé pour le navigateur (`expo export --platform web`). Une
+correction dans l'app corrige donc aussi le site, et les deux ne peuvent pas
+diverger.
+
+Découvert en le testant : **le projet compilait déjà pour le web sans aucune
+modification** (11 Mo, un seul bundle), et `lib/auth.ts` gérait déjà le cas —
+`googleNativeAvailable()` est faux hors iOS/Android, et `signInWithOAuth` a une
+branche web qui fait la redirection navigateur pleine page. Rien n'a eu à être
+réécrit côté connexion.
+
+Vérifié en ligne : accueil, filtres (dont la nouvelle puce « 🍝 Pâtes »), fiche
+restaurant avec photos et prix, `/login`, et le routage profond `/p/<id>` — zéro
+erreur en console.
+
+### ⚠️ Deux actions restent, et sans elles quelque chose casse en silence
+
+1. **Supabase → Authentication → URL Configuration → Redirect URLs** : y ajouter
+   `https://taxi-food-commander.netlify.app` (et le domaine définitif ensuite).
+   `signInWithOAuth` passe `redirectTo: window.location.origin` ; une origine
+   absente de la liste fait revenir Google **sur l'accueil sans session, sans le
+   moindre message d'erreur** — le symptôme le plus déroutant possible : « je me
+   connecte et il ne se passe rien ».
+2. **DNS** : `commander.taxifood.rentanoo.com` → CNAME vers
+   `taxi-food-commander.netlify.app`, puis déclarer le domaine dans Netlify. Le
+   badge « Powered by Netlify » visible en bas d'écran disparaît avec le domaine
+   personnalisé.
+
+### Ce qui ne marche pas sur le web, et c'est normal
+
+- **Connexion Apple** : absente (iOS uniquement, par conception).
+- **Google et Facebook** : passent par la redirection navigateur, pas le
+  sélecteur natif — d'où le point 1 ci-dessus.
+- **Notifications push** : `app/login.tsx` sort tôt sur `Platform.OS === 'web'`.
+  Le client ne sera donc pas prévenu du changement de statut de sa commande
+  autrement qu'en rouvrant l'écran. À évaluer si le web prend de l'ampleur.
+
+### À redéployer après chaque changement d'écran
+
+```
+npm run build:web --prefix app
+netlify deploy --prod --dir app/dist --site 1e13c535-fd25-4027-9188-2b8c178c7f60
+```

@@ -1,13 +1,62 @@
-# Déploiement Netlify de l'app cliente en PWA (export web Expo, SPA).
-# Créer un site Netlify pointant sur ce dossier (base directory = "app").
-# Variables d'env à définir dans Netlify (Site settings → Environment variables) :
-#   EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
-[build]
-  command = "npx expo export -p web"
-  publish = "dist"
+# Taxi Food — version WEB de l'application mobile.
+#
+# Ce n'est PAS un site separe : c'est le meme code que l'app iOS et Android,
+# compile pour le navigateur (`expo export --platform web`). Une correction dans
+# l'app corrige donc aussi le site, et les deux ne peuvent pas diverger.
+#
+# Objectif : permettre aux clients de commander en attendant la validation des
+# stores (iOS validee, Android en revue).
+#
+# ⚠️ Netlify > Site configuration > Environment variables doit porter les MEMES
+# variables que app/.env, sinon le bundle est compile sans backend :
+#     EXPO_PUBLIC_SUPABASE_URL
+#     EXPO_PUBLIC_SUPABASE_ANON_KEY
+#     EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+# La cle anon est publique par conception (la RLS protege) ; la cle service_role
+# n'a rien a faire ici.
+#
+# ⚠️ L'origine de ce site doit etre ajoutee dans Supabase > Authentication >
+# URL Configuration > Redirect URLs. `signInWithOAuth` passe
+# `redirectTo: window.location.origin` : une origine absente de la liste fait
+# revenir Google sur l'accueil SANS session, sans message d'erreur.
 
-# SPA : toutes les routes servies par le même index.html (routing côté client).
+[build]
+  base    = "app"
+  command = "npm ci && npx expo export --platform web --output-dir dist"
+  publish = "app/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# --- Repli SPA -------------------------------------------------------------
+# expo-router utilise de VRAIES URL (/restaurant/<id>, /product/<id>, /p/<id>).
+# L'export ne produit qu'un index.html : sans cette regle, ouvrir un lien
+# partage directement repond 404. Elle doit rester la DERNIERE.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# --- En-tetes --------------------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Les bundles portent leur empreinte dans le nom : cache long sans risque.
+[[headers]]
+  for = "/_expo/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# L'index doit etre revalide, sinon un deploiement reste invisible.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

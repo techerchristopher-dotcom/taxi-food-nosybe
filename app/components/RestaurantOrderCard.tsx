@@ -55,6 +55,12 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
 
       {/* Position du client : bloc GPS + contact. Pas d'adressage postal à Nosy Be. */}
       <View style={styles.addrBlock}>
+        {order.clientName ? (
+          <View style={styles.addrRow}>
+            <Icon name="person" size={18} color={colors.primary} />
+            <Text style={styles.clientName}>{order.clientName}</Text>
+          </View>
+        ) : null}
         <View style={styles.addrRow}>
           <Icon name="location_on" size={18} color={colors.primary} />
           <Text style={styles.addrText}>
@@ -146,6 +152,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.ink },
+  clientName: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink, flex: 1 },
   noGps: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText },
   reason: {
     flexDirection: 'row',

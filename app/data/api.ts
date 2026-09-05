@@ -43,6 +43,7 @@ type RestaurantRow = {
   logo_url: string | null;
   cover_url: string | null;
   is_open: boolean;
+  phone?: string | null;
   ouvert_maintenant?: boolean | null;
   auto_open?: boolean | null;
   // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
@@ -143,6 +144,7 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     // calcule PAS ici : l'horloge du telephone n'est pas une reference.
     isOpen: r.ouvert_maintenant ?? r.is_open,
     autoOpen: r.auto_open ?? false,
+    phone: r.phone ?? null,
     todayHours: mapDayHours(r.horaires_du_jour),
     etaLabel: DEFAULT_ETA,
     deliveryFee: r.delivery_fee,
@@ -224,7 +226,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .order('created_at', { ascending: true });
   if (error) throw error;
   const rows = data as unknown as RestaurantRow[];
@@ -253,7 +255,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -435,7 +437,8 @@ type OrderJoinRow = {
   courier_id: string | null;
   picked_up_at: string | null;
   created_at: string;
-  restaurants: { name: string; logo_url: string | null } | null;
+  restaurants: { name: string; logo_url: string | null; phone: string | null } | null;
+  profiles: { full_name: string | null; phone: string | null } | null;
   addresses: {
     label: string | null;
     zone: string;
@@ -460,7 +463,8 @@ type OrderJoinRow = {
 
 const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
-  'restaurants ( name, logo_url ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
+  'restaurants ( name, logo_url, phone ), profiles ( full_name, phone ), ' +
+  'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
@@ -475,6 +479,8 @@ function mapOrder(o: OrderJoinRow): Order {
     restaurantName,
     restaurantInitials: initialsFromName(restaurantName),
     restaurantLogoUrl: o.restaurants?.logo_url ?? null,
+    restaurantPhone: o.restaurants?.phone ?? null,
+    clientName: o.profiles?.full_name ?? null,
     items: (o.order_items ?? []).map((it) => ({
       productId: it.product_id ?? '',
       name: it.product_name_snapshot,
@@ -502,7 +508,9 @@ function mapOrder(o: OrderJoinRow): Order {
       addr?.latitude != null && addr?.longitude != null
         ? getMapsNavigationUrl(addr.latitude, addr.longitude)
         : null,
-    clientPhone: addr?.phone ?? null,
+    // Le telephone saisi sur l'adresse de livraison prime : c'est celui que le
+    // client a donne POUR cette commande. Le profil sert de repli.
+    clientPhone: addr?.phone ?? o.profiles?.phone ?? null,
     courierId: o.courier_id,
     pickedUp: o.picked_up_at != null,
   };
@@ -816,6 +824,12 @@ export async function setProductAvailable(productId: string, available: boolean)
   if (error) throw error;
 }
 
+/** Telephone public du restaurant, affiche au client sur ses commandes. */
+export async function setRestaurantPhone(phone: string | null): Promise<void> {
+  const { error } = await supabase.rpc('set_restaurant_phone', { p_phone: phone });
+  if (error) throw error;
+}
+
 /** Depose le logo ou la couverture (deja uploade cote client dans le bucket `partenaires`) et met a jour la fiche. */
 export async function setRestaurantPhoto(kind: 'logo' | 'cover', url: string): Promise<void> {
   const { error } = await supabase.rpc('set_restaurant_photo', { p_kind: kind, p_url: url });
@@ -885,7 +899,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   DimensionValue,
@@ -26,6 +26,7 @@ import {
   setProductFeatured,
   setRestaurantAutoOpen,
   setRestaurantOpen,
+  setRestaurantPhone,
   setRestaurantPhoto,
   setRestaurantWeekHours,
 } from '../../data/api';
@@ -161,6 +162,40 @@ function PhotoEditable({
   );
 }
 
+/**
+ * Ne garde d'un tableau de valeurs anticipées que celles dont l'aller-retour
+ * serveur n'est pas terminé. Renvoie l'objet d'origine s'il n'y a rien à
+ * retirer, pour ne pas déclencher de rendu inutile.
+ */
+function purger(
+  valeurs: Record<string, boolean>,
+  enVol: Record<string, boolean>,
+  prefixe: string,
+): Record<string, boolean> {
+  const gardees = Object.keys(valeurs).filter((k) => enVol[prefixe + k]);
+  if (gardees.length === Object.keys(valeurs).length) return valeurs;
+  const suite: Record<string, boolean> = {};
+  for (const k of gardees) suite[k] = valeurs[k];
+  return suite;
+}
+
+/**
+ * Fabrique la fonction qui pose (ou retire, avec `undefined`) la valeur
+ * anticipée d'un produit. Retirer = revenir à ce que dit le serveur.
+ */
+function poseur(set: Dispatch<SetStateAction<Record<string, boolean>>>, id: string) {
+  return (v: boolean | undefined) =>
+    set((o) => {
+      if (v === undefined) {
+        if (!(id in o)) return o;
+        const suite = { ...o };
+        delete suite[id];
+        return suite;
+      }
+      return { ...o, [id]: v };
+    });
+}
+
 /** Espace restaurant — Réglages : ouverture, horaires, visuels, ruptures de stock. */
 export default function RestaurantSettingsScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
@@ -174,8 +209,41 @@ export default function RestaurantSettingsScreen() {
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Bascules en cours d'envoi, par clé. On ne fige QUE l'interrupteur concerné :
+  // le restaurateur enchaîne souvent plusieurs ruptures d'affilée, figer toute
+  // la page à chaque tap lui coûte une seconde d'attente par produit.
+  const [enVol, setEnVol] = useState<Record<string, boolean>>({});
+  // Valeurs affichées en avance sur le serveur. Sur la liaison de Nosy Be,
+  // l'aller-retour prend parfois plusieurs secondes : sans cette avance,
+  // l'interrupteur paraît mort, l'utilisateur retape, et son deuxième tap
+  // annule sa propre action.
+  const [optDispo, setOptDispo] = useState<Record<string, boolean>>({});
+  const [optVedette, setOptVedette] = useState<Record<string, boolean>>({});
+  const [optResto, setOptResto] = useState<{ autoOpen?: boolean; isOpen?: boolean }>({});
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
+  // null = le champ suit la base ; une chaîne = saisie en cours, pas encore enregistrée.
+  const [telSaisi, setTelSaisi] = useState<string | null>(null);
   const [fiche, setFiche] = useState<FicheAffiche | null>(null);
+
+  // Lu pendant la purge : on veut l'état courant sans faire dépendre l'effet
+  // de `enVol`, sinon la purge se rejouerait à chaque tap.
+  const enVolRef = useRef(enVol);
+  enVolRef.current = enVol;
+
+  // Une réponse fraîche du serveur fait autorité : elle efface les valeurs
+  // anticipées, sauf celles dont l'envoi est encore en cours.
+  useEffect(() => {
+    if (!data) return;
+    setOptDispo((o) => purger(o, enVolRef.current, 'dispo-'));
+    setOptVedette((o) => purger(o, enVolRef.current, 'star-'));
+    setOptResto((o) => {
+      const suite: typeof o = {};
+      if (enVolRef.current.auto && o.autoOpen !== undefined) suite.autoOpen = o.autoOpen;
+      if (enVolRef.current.ouvert && o.isOpen !== undefined) suite.isOpen = o.isOpen;
+      return Object.keys(suite).length === Object.keys(o).length ? o : suite;
+    });
+  }, [data]);
 
   const resto = data?.resto ?? null;
   const menu = data?.menu ?? null;
@@ -184,6 +252,10 @@ export default function RestaurantSettingsScreen() {
   // Créations dormantes : déjà prêtes (photo, prix, description), il suffit d'un
   // tap pour les remettre à l'affiche.
   const dormantes = bibliotheque.filter((p) => !p.isFeatured);
+
+  // Ouverture affichée : la valeur anticipée d'abord, celle de la base ensuite.
+  const autoOuverture = optResto.autoOpen ?? resto?.autoOpen ?? false;
+  const ouvert = optResto.isOpen ?? resto?.isOpen ?? false;
 
   // Les champs suivent la base tant que le restaurateur n'a rien tapé.
   const jours = brouillon ?? (resto ? versBrouillon(resto.weekHours) : {});
@@ -199,6 +271,42 @@ export default function RestaurantSettingsScreen() {
       await reload();
     } finally {
       setBusy(null);
+    }
+  }
+
+  /**
+   * Bascule immédiate : l'interrupteur bouge au tap, l'appel part derrière.
+   * Si le serveur refuse, on remet l'interrupteur dans sa position d'origine
+   * et on affiche l'erreur — l'utilisateur voit que ça n'a pas pris, au lieu
+   * de croire l'avoir fait.
+   * On ne recharge JAMAIS l'écran entier pour un simple booléen ; `rafraichir`
+   * n'est là que pour les bascules qui changent aussi d'autres blocs (état
+   * ouvert/fermé recalculé par la base, liste « À l'affiche »), et le
+   * rechargement se fait alors en tâche de fond, sans bloquer quoi que ce soit.
+   */
+  async function bascule(
+    key: string,
+    poser: (v: boolean | undefined) => void,
+    valeur: boolean,
+    fn: () => Promise<void>,
+    msg: string,
+    rafraichir = false,
+  ) {
+    setError(null);
+    poser(valeur);
+    setEnVol((e) => ({ ...e, [key]: true }));
+    try {
+      await fn();
+      if (rafraichir) reload();
+    } catch (e) {
+      poser(undefined);
+      setError((e as { message?: string })?.message || msg);
+    } finally {
+      setEnVol((e) => {
+        const suite = { ...e };
+        delete suite[key];
+        return suite;
+      });
     }
   }
 
@@ -380,18 +488,60 @@ export default function RestaurantSettingsScreen() {
           <Text style={styles.section}>Votre restaurant</Text>
 
           <View style={styles.carte}>
+            {/* Téléphone public : c'est ce numéro que le client voit sur sa
+                commande pour vous appeler. Sans lui, aucun bouton d'appel ne
+                s'affiche de son côté. */}
+            <Text style={styles.champLabelTel}>Téléphone affiché aux clients</Text>
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+              <TextInput
+                value={telSaisi ?? resto?.phone ?? ''}
+                onChangeText={setTelSaisi}
+                placeholder="032 12 345 67"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="phone-pad"
+                style={[styles.champ, { flex: 1 }]}
+              />
+              <Pressable
+                onPress={() =>
+                  run(
+                    'tel',
+                    async () => {
+                      await setRestaurantPhone((telSaisi ?? '').trim() || null);
+                      setTelSaisi(null);
+                    },
+                    'Enregistrement du numéro impossible.',
+                  )
+                }
+                disabled={busy !== null || telSaisi === null}
+                style={[
+                  styles.miniBouton,
+                  { height: 44, paddingHorizontal: 16 },
+                  (busy !== null || telSaisi === null) && { opacity: 0.4 },
+                ]}
+              >
+                <Text style={styles.miniBoutonTexte}>
+                  {busy === 'tel' ? '…' : 'Enregistrer'}
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={styles.aide}>
+              Le client pourra vous appeler d'un tap depuis sa commande, en cas de rupture
+              ou de question.
+            </Text>
+
+            <View style={styles.separateur} />
             <View style={styles.ligne}>
               <Icon
-                name={resto?.isOpen ? 'storefront' : 'pause_circle'}
+                name={ouvert ? 'storefront' : 'pause_circle'}
                 size={24}
-                color={resto?.isOpen ? colors.success : colors.textMuted}
+                color={ouvert ? colors.success : colors.textMuted}
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.ligneTitre}>
-                  {resto?.isOpen ? 'Ouvert en ce moment' : 'Fermé en ce moment'}
+                  {ouvert ? 'Ouvert en ce moment' : 'Fermé en ce moment'}
                 </Text>
                 <Text style={styles.ligneSous}>
-                  {resto?.autoOpen
+                  {autoOuverture
                     ? 'Suit vos horaires automatiquement.'
                     : 'Vous ouvrez et fermez à la main.'}
                 </Text>
@@ -408,9 +558,26 @@ export default function RestaurantSettingsScreen() {
                 </Text>
               </View>
               <Switch
-                value={resto?.autoOpen ?? false}
-                disabled={busy !== null}
-                onValueChange={(v) => run('auto', () => setRestaurantAutoOpen(v), 'Bascule impossible.')}
+                value={autoOuverture}
+                disabled={!!enVol.auto}
+                onValueChange={(v) =>
+                  bascule(
+                    'auto',
+                    (x) =>
+                      setOptResto((o) => {
+                        const suite = { ...o };
+                        if (x === undefined) delete suite.autoOpen;
+                        else suite.autoOpen = x;
+                        return suite;
+                      }),
+                    v,
+                    () => setRestaurantAutoOpen(v),
+                    'Bascule impossible.',
+                    // Repasser en automatique fait recalculer l'ouverture par la
+                    // base : seul un rechargement donne la bonne réponse.
+                    true,
+                  )
+                }
                 trackColor={{ true: colors.success, false: colors.borderStrong }}
                 thumbColor={colors.white}
               />
@@ -418,7 +585,7 @@ export default function RestaurantSettingsScreen() {
 
             {/* La bascule manuelle n'a de sens qu'en mode manuel : en
                 automatique, elle serait écrasée à la minute suivante. */}
-            {!resto?.autoOpen ? (
+            {!autoOuverture ? (
               <>
                 <View style={styles.separateur} />
                 <View style={styles.ligne}>
@@ -429,9 +596,23 @@ export default function RestaurantSettingsScreen() {
                     </Text>
                   </View>
                   <Switch
-                    value={resto?.isOpen ?? false}
-                    disabled={busy !== null}
-                    onValueChange={(v) => run('ouvert', () => setRestaurantOpen(v), 'Bascule impossible.')}
+                    value={ouvert}
+                    disabled={!!enVol.ouvert}
+                    onValueChange={(v) =>
+                      bascule(
+                        'ouvert',
+                        (x) =>
+                          setOptResto((o) => {
+                            const suite = { ...o };
+                            if (x === undefined) delete suite.isOpen;
+                            else suite.isOpen = x;
+                            return suite;
+                          }),
+                        v,
+                        () => setRestaurantOpen(v),
+                        'Bascule impossible.',
+                      )
+                    }
                     trackColor={{ true: colors.success, false: colors.borderStrong }}
                     thumbColor={colors.white}
                   />
@@ -457,9 +638,11 @@ export default function RestaurantSettingsScreen() {
                       <Text style={styles.jourLabel}>{label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text style={styles.fermeLabel}>Fermé</Text>
+                        {/* Purement local : rien n'est envoyé avant « Enregistrer »,
+                            seul cet enregistrement a une raison de figer la case. */}
                         <Switch
                           value={j.isClosed}
-                          disabled={busy !== null}
+                          disabled={busy === 'horaires'}
                           onValueChange={(v) => majJour(weekday, { isClosed: v })}
                           trackColor={{ true: colors.textMuted, false: colors.borderStrong }}
                           thumbColor={colors.white}
@@ -706,52 +889,67 @@ export default function RestaurantSettingsScreen() {
                   {cat.icon ? `${cat.icon}  ` : ''}
                   {cat.name}
                 </Text>
-                {produits.map((p: Product, i: number) => (
-                  <View key={p.id}>
-                    {i ? <View style={styles.separateur} /> : null}
-                    <View style={styles.ligne}>
-                      <ProductThumb uri={p.photoUrl} size={44} radius={12} muted={!p.isAvailable} />
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.produitNom, !p.isAvailable && styles.produitCoupe]}>
-                          {p.name}
-                        </Text>
-                        <Text style={styles.produitPrix}>
-                          {formatAr(p.price)}
-                          {p.isAvailable ? '' : '  ·  Bientôt de retour'}
-                        </Text>
-                      </View>
-                      {/* Mise en avant d'un plat de la carte permanente : il reste
-                          dans sa catégorie ET remonte en tête de page. */}
-                      <Pressable
-                        onPress={() =>
-                          run(
-                            `star-${p.id}`,
-                            () => setProductFeatured(p.id, !p.isFeatured, cat.name),
-                            'Mise en avant impossible.',
-                          )
-                        }
-                        disabled={busy !== null}
-                        style={styles.etoile}
-                        hitSlop={6}
-                      >
-                        <Icon
-                          name={p.isFeatured ? 'star' : 'star_outline'}
-                          size={22}
-                          color={p.isFeatured ? colors.accent : colors.textFaint}
+                {produits.map((p: Product, i: number) => {
+                  const dispo = optDispo[p.id] ?? p.isAvailable;
+                  const vedette = optVedette[p.id] ?? p.isFeatured;
+                  return (
+                    <View key={p.id}>
+                      {i ? <View style={styles.separateur} /> : null}
+                      <View style={styles.ligne}>
+                        <ProductThumb uri={p.photoUrl} size={44} radius={12} muted={!dispo} />
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.produitNom, !dispo && styles.produitCoupe]}>
+                            {p.name}
+                          </Text>
+                          <Text style={styles.produitPrix}>
+                            {formatAr(p.price)}
+                            {dispo ? '' : '  ·  Bientôt de retour'}
+                          </Text>
+                        </View>
+                        {/* Mise en avant d'un plat de la carte permanente : il reste
+                            dans sa catégorie ET remonte en tête de page. */}
+                        <Pressable
+                          onPress={() =>
+                            bascule(
+                              `star-${p.id}`,
+                              poseur(setOptVedette, p.id),
+                              !vedette,
+                              () => setProductFeatured(p.id, !vedette, cat.name),
+                              'Mise en avant impossible.',
+                              // L'étoile déplace aussi le plat dans « À l'affiche »,
+                              // plus haut dans l'écran : celui-là doit se remettre à jour.
+                              true,
+                            )
+                          }
+                          disabled={!!enVol[`star-${p.id}`]}
+                          style={styles.etoile}
+                          hitSlop={6}
+                        >
+                          <Icon
+                            name={vedette ? 'star' : 'star_outline'}
+                            size={22}
+                            color={vedette ? colors.accent : colors.textFaint}
+                          />
+                        </Pressable>
+                        <Switch
+                          value={dispo}
+                          disabled={!!enVol[`dispo-${p.id}`]}
+                          onValueChange={(v) =>
+                            bascule(
+                              `dispo-${p.id}`,
+                              poseur(setOptDispo, p.id),
+                              v,
+                              () => setProductAvailable(p.id, v),
+                              'Modification impossible.',
+                            )
+                          }
+                          trackColor={{ true: colors.success, false: colors.borderStrong }}
+                          thumbColor={colors.white}
                         />
-                      </Pressable>
-                      <Switch
-                        value={p.isAvailable}
-                        disabled={busy !== null}
-                        onValueChange={(v) =>
-                          run(p.id, () => setProductAvailable(p.id, v), 'Modification impossible.')
-                        }
-                        trackColor={{ true: colors.success, false: colors.borderStrong }}
-                        thumbColor={colors.white}
-                      />
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             );
           })}
@@ -801,6 +999,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textDark,
     backgroundColor: colors.bg,
+  },
+  champLabelTel: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   aide: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 10 },
   bouton: {

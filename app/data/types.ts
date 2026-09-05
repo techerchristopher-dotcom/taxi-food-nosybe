@@ -179,6 +179,8 @@ export type Restaurant = {
   cuisineType: string;
   zone: string; // = zone_served
   isOpen: boolean;
+  /** Téléphone public, saisi par le partenaire dans ses réglages. */
+  phone?: string | null;
   /** Horaire du jour courant (dérivé de `restaurant_hours` via `horaires_du_jour`) — null si aucun horaire renseigné pour aujourd'hui. */
   todayHours: DayHours | null;
   /** true : l'ouverture se déduit des horaires du jour ; false : bascule manuelle. */
@@ -257,6 +259,10 @@ export type Order = {
   restaurantName: string;
   restaurantInitials: string;
   restaurantLogoUrl?: string | null;
+  /** Téléphone public du restaurant — permet au client de l'appeler depuis ses commandes. */
+  restaurantPhone?: string | null;
+  /** Nom du client, visible du restaurant et du livreur (jamais des autres clients). */
+  clientName?: string | null;
   items: OrderItemSnapshot[];
   subtotal: number;
   /** Frais d'emballage total (boîtes à pizza…). 0 si la commande n'en contient pas. */

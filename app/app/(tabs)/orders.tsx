@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
@@ -142,10 +142,24 @@ export default function OrdersScreen() {
             <Text style={styles.summary}>{itemsSummary(o)}</Text>
             <View style={styles.foot}>
               <Text style={styles.total}>{formatAr(o.total)}</Text>
-              <Pressable style={styles.trackBtn} onPress={() => router.push(`/order/${o.id}`)}>
-                <Icon name="local_shipping" size={17} color={colors.accent} />
-                <Text style={styles.trackText}>{t('orders.track')}</Text>
-              </Pressable>
+              <View style={styles.footActions}>
+                {/* Appeler le restaurant : en cas de rupture ou de question sur
+                    la commande, c'est plus rapide qu'un message. N'apparaît que
+                    si le partenaire a renseigné son numéro dans ses réglages. */}
+                {o.restaurantPhone ? (
+                  <Pressable
+                    style={styles.callBtn}
+                    onPress={() => Linking.openURL(`tel:${o.restaurantPhone}`)}
+                  >
+                    <Icon name="call" size={17} color={colors.ink} />
+                    <Text style={styles.callText}>Appeler</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable style={styles.trackBtn} onPress={() => router.push(`/order/${o.id}`)}>
+                  <Icon name="local_shipping" size={17} color={colors.accent} />
+                  <Text style={styles.trackText}>{t('orders.track')}</Text>
+                </Pressable>
+              </View>
             </View>
           </Card>
         ))}
@@ -220,6 +234,19 @@ const styles = StyleSheet.create({
   summary: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.textMuted, marginTop: 10 },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },
   total: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink },
+  footActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  callBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.fieldBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  callText: { fontFamily: fonts.bold, fontSize: 12, color: colors.ink },
   trackBtn: {
     height: 38,
     paddingHorizontal: 16,

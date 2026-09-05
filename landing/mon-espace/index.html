@@ -54,7 +54,12 @@
  .halo{position:absolute;border:2.5px solid #DF3228;border-radius:999px;pointer-events:none;
        background:none;animation:bat 1.7s ease-in-out infinite}
  @keyframes bat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.72}}
- .doigt{position:absolute;font-size:27px;pointer-events:none;animation:tape 1.6s ease-in-out infinite;
+ /* ⚠️ line-height:1 explicite. .ecran porte line-height:0 pour epouser l'image
+    au pixel pres ; sans cette ligne le doigt en herite, sa boite s'effondre a
+    zero et le glyphe se dessine A CHEVAL sur la cible — exactement ce qu'on
+    cherche a eviter. Le doigt se place TOUJOURS sous le halo, jamais dessus. */
+ .doigt{position:absolute;font-size:27px;line-height:1;pointer-events:none;
+        animation:tape 1.6s ease-in-out infinite;
         filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
  @keyframes tape{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
 
@@ -132,7 +137,7 @@
     <div class="ecran">
       <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
       <div class="halo" style="left:5%;right:5%;top:62.3%;height:9.1%"></div>
-      <div class="doigt" style="left:80%;top:72%">👆</div>
+      <div class="doigt" style="left:80%;top:72.2%">👆</div>
     </div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i></div>
@@ -176,7 +181,7 @@
     <div class="ecran">
       <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
       <div class="halo" style="left:44%;right:9.5%;top:88.3%;height:4.3%"></div>
-      <div class="doigt" style="left:64%;top:92.3%">👆</div>
+      <div class="doigt" style="left:64%;top:93.2%">👆</div>
     </div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i><i class="pt"></i></div>

@@ -155,63 +155,64 @@ Les quatre colonnes doivent être vraies / renseignées.
 
 ---
 
-## Étape 4 — Telegram : le téléphone du patron
+## Étape 4 — Telegram : un canal par restaurant
 
-Le patron reçoit ses commandes sur Telegram, avec des boutons
-**Accepter / Refuser** qui mettent à jour la commande dans l'application. Il
-appuie, puis lance la commande à son chef. C'est ce qui lui fait gagner du
-temps, et c'est l'argument à mettre en avant.
+Le patron reçoit ses commandes sur **son** téléphone, avec les boutons
+**Accepter / Refuser**, et c'est lui qui lance ensuite son chef. C'est ce qui lui
+fait gagner du temps, et c'est l'argument à mettre en avant.
 
-Le robot : **@Taxifood_commandes_bot** (« Taxi Food commandes »). Son jeton est
-dans `.secrets.local` (gitignored, `chmod 600`), jamais dans le dépôt.
+Robot : **@Taxifood_commandes_bot** (« Taxi Food commandes »), le même pour tous
+les restaurants. Son jeton est dans `.secrets.local` (gitignored, `chmod 600`),
+jamais dans le dépôt.
 
-**Une conversation directe entre le patron et le robot, pas un groupe.** C'est
-lui qui reçoit, sur son propre téléphone. Décision du porteur du projet le
-2026-09-05 : on ne fait pas installer un groupe à quelqu'un qui découvre
-Telegram le jour même.
+### Le principe : c'est nous qui configurons
 
-### Sur son téléphone — trente secondes, c'est toi qui le fais
+On ne demande rien au restaurateur au-delà de l'installation. Il télécharge
+Telegram, **on prend son téléphone**, et c'est réglé en trois gestes. Pas de
+groupe à créer, pas de notion à comprendre.
 
-1. **[lui, avant ta visite]** Installer Telegram avec **son numéro habituel**
-2. Tu prends son téléphone, tu ouvres Telegram
-3. Loupe en haut → taper `Taxifood_commandes`
-4. Ouvrir **Taxi Food commandes** → appuyer sur **DÉMARRER**
-5. Tu lui rends son téléphone
+### Sur son téléphone — une trentaine de secondes
 
-### Sur ton ordinateur — une minute
+1. **[lui]** Installer Telegram, avec **son numéro habituel**
+2. **[nous]** Ouvrir Telegram, loupe en haut, taper `Taxifood_commandes`
+3. **[nous]** Ouvrir « Taxi Food commandes » et appuyer sur **DÉMARRER**
 
-```bash
-set -a; . ./.secrets.local; set +a
-curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
-```
+### De notre côté
 
-La dernière ligne est la sienne : son prénom, et un nombre **positif**.
+4. Lire l'identifiant que cet appui vient de créer :
+   ```bash
+   set -a; . ./.secrets.local; set +a
+   curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
+   ```
+   La dernière ligne est la sienne — son prénom le confirme, et le nombre est
+   **positif** (un canal privé, pas un groupe).
+5. `select public.set_restaurant_telegram('<uuid>', '<chat_id>');`
+6. Passer une **vraie commande de test** et regarder son téléphone sonner.
 
-```sql
-select public.set_restaurant_telegram('<uuid du restaurant>', '<identifiant>');
-```
+⚠️ L'étape 6 n'est pas décorative : voir la ligne remplie en base ne prouve rien.
+La seule preuve est le message qui arrive avec ses deux boutons.
 
-Puis **passer une vraie commande de test**. Voir la ligne remplie en base ne
-prouve rien : la seule preuve est le message qui arrive sur son téléphone avec
-ses deux boutons.
+⚠️ **Lire l'identifiant pendant qu'on est encore chez lui**, pas le soir même :
+c'est le seul moment où on peut vérifier que le nombre vient bien de son téléphone.
 
-### Les trois pièges
+### Les pièges
 
-- ⚠️ **Un patron à la fois.** La liste ne donne que des prénoms. Si deux
-  patrons appuient sur Démarrer le même jour, plus moyen de savoir quel nombre
-  est à qui — et un restaurant reçoit les commandes d'un autre. En faire un,
-  l'enregistrer, puis passer au suivant.
+- ⚠️ **Un patron à la fois.** `getUpdates` ne donne que des prénoms. Si deux
+  patrons appuient sur Démarrer le même jour, on ne sait plus quel nombre
+  appartient à qui — et un restaurant reçoit les commandes d'un autre. En faire
+  un, l'enregistrer, puis passer au suivant.
 - ⚠️ **Nouveau téléphone ou nouveau numéro : à refaire.** L'identifiant est
-  attaché au compte Telegram. Les commandes s'arrêtent sans aucune erreur, ni
-  dans l'app ni en base. Trente secondes à refaire, mais il faut y penser.
+  attaché à son compte Telegram, pas à son restaurant. S'il change, les commandes
+  s'arrêtent sans aucune erreur, ni dans l'app ni en base.
+- ⚠️ **Jamais le `@pseudo`**, toujours l'identifiant numérique.
 - ⚠️ **`getUpdates` répond `409 Conflict`** si un nœud *Telegram Trigger* tourne
   dans n8n sur le même robot. Aucun webhook n'est posé aujourd'hui.
 
 ### ⚠️ État réel au 2026-09-05
 
 **Aucun restaurant n'a de vrai canal.** L'identifiant enregistré pour La Cabane,
-`7699975131`, est la **conversation privée du porteur du projet** avec le robot,
-posée pendant les tests. Ses commandes arrivent donc chez lui, pas au patron.
+`7699975131`, est celui du **téléphone du porteur du projet** — posé pendant les
+tests. Ses commandes arrivent donc chez lui, pas au restaurant. À refaire.
 
 Page d'accompagnement (générateur de requête + pièges) :
 https://claude.ai/code/artifact/5b98005a-012b-4c88-985c-e7d8a8f0d4e1

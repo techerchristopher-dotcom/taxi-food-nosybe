@@ -19,3 +19,24 @@
 -- une entree — un journal qu'on peut ecrire a la main ne prouve rien.
 --
 -- Contenu : table admin_actions + admin_set_order_status + admin_set_restaurant_open.
+
+-- ---------------------------------------------------------------------------
+-- Assignation manuelle d'un livreur (`admin_assign_courier`).
+--
+-- En fonctionnement normal, un livreur prend lui-meme une commande passee en
+-- `en_livraison`. Il manquait le rattrapage : livreur qui accepte puis ne part
+-- pas, telephone eteint, ou commande que personne ne prend un dimanche soir.
+-- Sans ce geste, la seule issue etait d'annuler une commande valide.
+--
+-- ⚠️ On NE verifie PAS que le livreur est marque disponible — c'est deliberе :
+-- l'usage principal de cette fonction est justement de rattraper une situation
+-- ou l'etat declare ne correspond plus a la realite du terrain. Verifier la
+-- disponibilite reviendrait a interdire l'outil au moment ou il sert.
+--
+-- On verifie en revanche que la personne est bien un livreur : assigner a un
+-- uuid quelconque produirait une commande qui n'apparait sur l'ecran d'aucun
+-- livreur, sans la moindre erreur visible.
+--
+-- p_courier_id a NULL = retirer l'assignation et remettre la commande dans la
+-- file. Cela efface aussi `picked_up_at`, sinon la commande resterait marquee
+-- « recuperee » par personne.

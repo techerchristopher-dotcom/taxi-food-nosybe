@@ -53,7 +53,7 @@ type OrderRow = {
   addresses: { zone: string | null; landmark: string | null; phone: string | null; latitude: number | null; longitude: number | null } | null;
 };
 
-type CourierRow = { user_id: string; zone: string | null };
+type CourierRow = { user_id: string; zone: string | null; is_available: boolean };
 type RestoRow = { id: string; name: string; is_open: boolean; listing_status: string };
 
 /** PostgREST renvoie un embed to-one comme objet, mais son typage suppose un tableau. */
@@ -118,7 +118,9 @@ export function Realtime() {
         .select('id, order_number, status, total, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
-      supabase.from('couriers').select('user_id, zone').eq('is_available', true),
+      // Tous les livreurs, pas seulement les disponibles : l'assignation
+      // manuelle sert justement quand l'etat declare ne colle plus au terrain.
+      supabase.from('couriers').select('user_id, zone, is_available'),
       supabase.from('restaurants').select('id, name, is_open, listing_status').order('name'),
       supabase.from('orders').select('total, status').gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);
@@ -181,6 +183,16 @@ export function Realtime() {
     await load();
   }
 
+  async function assigner(o: OrderRow, courierId: string) {
+    setBusy(o.id);
+    const { error } = await supabase.rpc('admin_assign_courier', {
+      p_order_id: o.id, p_courier_id: courierId || null,
+    });
+    setBusy(null);
+    if (error) { setErr(error.message); return; }
+    await load();
+  }
+
   async function basculerResto(r: RestoRow) {
     if (!window.confirm(`${r.is_open ? 'Fermer' : 'Ouvrir'} « ${r.name} » ?`)) return;
     setBusy(r.id);
@@ -192,6 +204,7 @@ export function Realtime() {
     await load();
   }
 
+  const dispos = couriers.filter((c) => c.is_available);
   const byStatus = (s: string) => orders.filter((o) => o.status === s).length;
   const activeCourier = (uid: string) =>
     orders.find((o) => o.courier_id === uid && o.status === 'en_livraison') ?? null;
@@ -209,7 +222,7 @@ export function Realtime() {
         <div className="stat"><div className="label">Reçues</div><div className="value">{byStatus('recue')}</div></div>
         <div className="stat"><div className="label">En préparation</div><div className="value">{byStatus('confirmee') + byStatus('en_preparation')}</div></div>
         <div className="stat"><div className="label">En livraison</div><div className="value">{byStatus('en_livraison')}</div></div>
-        <div className="stat"><div className="label">Livreurs dispo</div><div className="value">{couriers.length}</div></div>
+        <div className="stat"><div className="label">Livreurs dispo</div><div className="value">{dispos.length}</div></div>
         <div className="stat"><div className="label">Aujourd&apos;hui</div><div className="value">{jour?.n ?? '—'}</div></div>
         <div className="stat"><div className="label">CA du jour</div><div className="value" style={{ fontSize: 18 }}>{jour ? formatAr(jour.ca) : '—'}</div></div>
       </div>
@@ -284,11 +297,28 @@ export function Realtime() {
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
                     </td>
                     <td>
-                      {o.status === 'en_livraison'
-                        ? o.courier_id
-                          ? `${names[o.courier_id] ?? '—'}${o.picked_up_at ? ' (récupérée)' : ''}`
-                          : <span className="muted">à prendre</span>
-                        : <span className="muted">—</span>}
+                      {/* Assignable des que la commande est prete a partir. Avant, le
+                          plat n'est pas fait : assigner n'aurait aucun sens. */}
+                      {o.status === 'en_livraison' ? (
+                        <>
+                          <select
+                            value={o.courier_id ?? ''}
+                            disabled={busy === o.id}
+                            onChange={(e) => void assigner(o, e.target.value)}
+                            style={{ ...fInp, fontSize: 12, padding: '3px 6px', maxWidth: 150 }}
+                          >
+                            <option value="">— à prendre —</option>
+                            {couriers.map((c) => (
+                              <option key={c.user_id} value={c.user_id}>
+                                {names[c.user_id] ?? c.user_id.slice(0, 8)}{c.is_available ? '' : ' (indispo.)'}
+                              </option>
+                            ))}
+                          </select>
+                          {o.picked_up_at ? <div className="muted" style={{ fontSize: 11 }}>récupérée</div> : null}
+                        </>
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td>{timeLabel(o.created_at)}</td>
                     <td className="num">{formatAr(o.total)}</td>
@@ -341,13 +371,13 @@ export function Realtime() {
 
         <div className="card">
           <h2>Livreurs disponibles</h2>
-          {couriers.length === 0 ? (
+          {dispos.length === 0 ? (
             <div className="empty">Aucun livreur disponible.</div>
           ) : (
             <table>
               <thead><tr><th>Livreur</th><th>Course en cours</th></tr></thead>
               <tbody>
-                {couriers.map((c) => {
+                {dispos.map((c) => {
                   const cur = activeCourier(c.user_id);
                   return (
                     <tr key={c.user_id}>
@@ -361,7 +391,9 @@ export function Realtime() {
           )}
           <p className="muted" style={{ fontSize: 12, marginTop: 12 }}>
             Paiement : {Object.values(PAYMENT_LABEL).join(' · ')}. Toute action passée depuis cet
-            écran est journalisée (qui, quoi, quand).
+            écran est journalisée (qui, quoi, quand). Un livreur peut être assigné à la main
+            depuis la colonne « Livreur » d&apos;une commande en livraison, même s&apos;il s&apos;est
+            déclaré indisponible — c&apos;est précisément à ça que sert le rattrapage.
           </p>
         </div>
       </div>

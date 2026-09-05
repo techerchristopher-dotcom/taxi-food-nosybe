@@ -186,7 +186,7 @@
     "gpsDenied": "You declined location sharing. Allow it in your browser settings, then try again.",
     "gpsTimeout": "Your location is taking too long. Try again, or move near a window if you are indoors.",
     "gpsUnavailable": "Location unavailable on this device. Check that location services are on.",
-    "gpsWebHowTo": "In your browser: tap the icon to the left of the site address, then Location → Allow. Come back here and tap Retry."
+    "gpsWebHowTo": "On iPhone there are TWO permissions. 1) Settings → Privacy & Security → Location Services → Safari: set it to “While Using the App”. 2) In Safari, tap “aA” left of the address → Website Settings → Location → Allow. Then come back and tap Retry."
   },
   "checkout": {
     "title": "Confirm my order",

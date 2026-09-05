@@ -186,7 +186,7 @@
     "gpsDenied": "Tu as refusé le partage de position. Autorise-la dans les réglages de ton navigateur, puis réessaie.",
     "gpsTimeout": "La position met trop de temps à arriver. Réessaie, ou approche-toi d'une fenêtre si tu es à l'intérieur.",
     "gpsUnavailable": "Position indisponible sur cet appareil. Vérifie que la localisation est activée.",
-    "gpsWebHowTo": "Dans ton navigateur : touche l'icône à gauche de l'adresse du site, puis Localisation → Autoriser. Reviens ensuite ici et touche Réessayer."
+    "gpsWebHowTo": "Sur iPhone il y a DEUX autorisations. 1) Réglages → Confidentialité et sécurité → Service de localisation → Safari : mets « Lorsque l'app est active ». 2) Dans Safari, touche « aA » à gauche de l'adresse → Réglages du site → Localisation → Autoriser. Reviens ensuite ici et touche Réessayer."
   },
   "checkout": {
     "title": "Valider ma commande",

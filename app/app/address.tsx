@@ -339,6 +339,11 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
                 conception. On donne donc le chemin exact a la place.
                 Et quand la permission a ete REFUSEE, « Réessayer » seul ne sert a
                 rien : le navigateur ne redemande plus, il faut d'abord debloquer. */}
+            {/* ⚠️ Sur iPhone il y a DEUX autorisations, et c'est le piege : le
+                systeme demande d'abord si SAFARI peut vous localiser, puis Safari
+                demande pour CE site. Si la premiere a ete refusee, autoriser le
+                site ne sert a rien — et rien a l'ecran ne le dit. Le message
+                couvre donc les deux niveaux. Constate sur simulateur iOS 26.4. */}
             {Platform.OS === 'web' && gpsCause === 'refus' ? (
               <Text style={styles.mapHint}>{t('address.gpsWebHowTo')}</Text>
             ) : null}

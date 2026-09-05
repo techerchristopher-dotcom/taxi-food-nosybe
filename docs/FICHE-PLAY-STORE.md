@@ -115,9 +115,60 @@ plus qu'Apple, sur lesquelles il ne faut pas se tromper :
 **Finalité, pour toutes** : « Fonctionnalité de l'application ». Jamais « Publicité »,
 jamais « Analyses ».
 
-**À ne PAS déclarer** : Informations financières (paiement en **espèces**, aucune donnée
-bancaire ne transite), Santé, Messages, Photos et vidéos, Fichiers, Contacts, Activité dans
+**À ne PAS déclarer** : Santé, Messages, Photos et vidéos, Fichiers, Contacts, Activité dans
 l'application, Informations sur les performances (aucun outil de crash reporting).
+
+### ⚠️ Le paiement par carte : Google demande L'INVERSE d'Apple
+
+C'est le piège de ce dossier. **Apple veut qu'on déclare « Payment Info » ; Google veut qu'on
+ne le déclare pas.** Ce n'est pas une contradiction, ce sont deux exceptions écrites
+différemment — et appliquer la réponse d'un magasin à l'autre est faux dans les deux sens.
+
+L'exception de Google tient en deux conditions **cumulatives** :
+
+> *« If your app uses a payment service such as PayPal, Google Pay, Google Play's billing
+> system, or similar services to complete payment transactions, you **don't need to declare
+> collection** of the data that the payment service collects in connection with its processing
+> of financial transactions, such as a credit card number, if the following conditions are met:
+> **Your app never accesses this information**; and **the payment service collects this
+> information directly from the user**, and collection is governed by that service's terms. »*
+> — [Provide information for Google Play's Data safety section](https://support.google.com/googleplay/android-developer/answer/10787469)
+
+Les deux sont remplies :
+
+1. **Notre app n'accède jamais au numéro de carte.** Il est saisi dans le composant de Stripe
+   et part directement chez Stripe. Notre Edge Function `creer-paiement` n'envoie que le
+   montant, la devise et des références de commande — vérifié dans le code, pas supposé.
+2. **Stripe collecte la donnée directement auprès de l'utilisateur**, sous ses propres
+   conditions.
+
+→ **« Informations financières › Informations de paiement de l'utilisateur » reste NON déclarée.**
+
+Là où Apple diverge : son exception exige en plus que la saisie ait lieu **hors de l'app**, ce
+que le PaymentSheet ne fait pas. Le raisonnement complet est dans
+[FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 2.
+
+#### Ce qui ne bouge pas non plus
+
+- **« Informations financières › Historique des achats »** — **déjà déclarée**, et elle le
+  reste. C'est là que vit l'historique de commandes (§ « Data safety — terminé » plus bas).
+- **« Aucune donnée partagée avec des tiers »** — **reste vrai**. Google exclut explicitement
+  de la notion de « partage » les transferts vers un **prestataire** qui traite pour le compte
+  du développeur (*« Transferring data to entities processing it on your behalf per your
+  instructions »*). Stripe est exactement cela pour les données de commande qu'on lui envoie.
+  ⚠️ Cette réponse deviendrait fausse le jour où l'on transmettrait des données personnelles à
+  Stripe pour son propre usage (un `Customer`, un `receipt_email`, un profil marketing) —
+  aujourd'hui on ne lui envoie **aucune donnée personnelle**.
+- **« Chiffrées en transit »** et **« suppression possible »** — inchangées.
+
+#### Ce qu'il faut vérifier avant de cocher quoi que ce soit
+
+Google rappelle que la déclaration couvre **aussi les SDK tiers** (*« This includes data
+collected and handled through any third-party libraries or SDKs used in their apps »*). Il faut
+donc s'assurer que le SDK Stripe Android ne collecte rien **au-delà** du traitement du
+paiement. Si une future version se mettait à faire de l'analytics d'usage rattachée à
+l'utilisateur, il faudrait déclarer « Activité dans l'application ». **À revérifier au moment
+d'installer la dépendance**, sur la fiche de confidentialité du SDK.
 
 ---
 
@@ -238,11 +289,23 @@ que les cases cochées à la création de l'application :
 | Politique de confidentialité | `https://taxifood.rentanoo.com/confidentialite/` |
 | **Identifiants de connexion** | les **trois** comptes (client, restaurant, livreur), chacun avec une note en anglais |
 | Publicité | aucune |
-| Fonctionnalités financières | aucune |
+| Fonctionnalités financières | **aucune** — inchangé, voir la note ci-dessous |
 | Apps gouvernementales | non |
 | Santé | aucune |
 | Public cible | **18 ans et plus** |
 | **Classement de contenu (IARC)** | catégorie *All Other App Types*, **alcool déclaré** |
+
+⚠️ **« Fonctionnalités financières : aucune » reste la bonne réponse après Stripe.** Cette
+déclaration vise les apps qui *fournissent* un produit ou service financier. Les cinq
+catégories du formulaire sont : banque et prêts · paiements et transferts · accords d'achat
+(fidélité, paiement fractionné) · trading et fonds · services de support (score de crédit,
+conseil, assurance)
+([Financial features declaration](https://support.google.com/googleplay/android-developer/answer/13849271)).
+Encaisser le prix de ses propres repas n'entre dans aucune : *« apps that receive payments do
+not automatically need to select "Money transfer and wire services" — those are intended for
+banking apps »*. **Ne pas cocher « paiements et transferts » par excès de prudence** : cela
+déclencherait des exigences documentaires (licences, agréments) qu'on ne peut pas satisfaire,
+et bloquerait la fiche.
 
 #### Ce qui a été répondu au questionnaire IARC
 
@@ -255,7 +318,7 @@ que les cases cochées à la création de l'application :
 | Substances contrôlées (drogues illégales) | non | l'alcool relève de la section suivante |
 | Produits à limite d'âge | **oui**, dont **alcool** | 19 références de bière au catalogue |
 | **Partage de la position précise avec d'autres utilisateurs** | **oui** | le livreur reçoit les coordonnées GPS du client — c'est le cœur du produit |
-| Achat de biens numériques | non | paiement en espèces, biens physiques |
+| Achat de biens numériques | non | **biens physiques préparés et livrés**, jamais de contenu numérique — la réponse ne dépend pas du moyen de paiement |
 | Récompenses / crypto / NFT, navigateur, actualités | non | |
 
 ⚠️ **Le formulaire IARC n'offre que trois catégories** — Jeu, Social, *All Other App Types*.
@@ -276,6 +339,11 @@ types » :
 | Personal info | Name, Email address, User IDs, Address, Phone number | oui (les 5) |
 | Financial info | Purchase history | oui |
 | Device or other IDs | Device or other IDs (jeton push) | **non** — l'utilisateur choisit |
+
+⚠️ **Ces huit types restent les bons après l'arrivée du paiement par carte.** Aucun type ne
+s'ajoute côté Google : *User payment info* tombe sous l'exception « prestataire de paiement »
+détaillée au § 3. Le formulaire n'a donc **rien à rouvrir** pour ce chantier — c'est la
+principale différence de charge avec le dossier Apple.
 
 Pour chaque type, à l'étape « Data usage and handling » : **Collected** (jamais Shared),
 **non éphémère** (stocké en base), finalité **App functionality** uniquement. Aperçu final

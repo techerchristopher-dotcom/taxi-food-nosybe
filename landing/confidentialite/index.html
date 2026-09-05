@@ -80,7 +80,7 @@
 <section lang="fr" id="fr">
 
 <h1>Politique de confidentialité</h1>
-<p class="maj">Taxi Food — Nosy Be, Madagascar. Dernière mise à jour : 22 août 2026.</p>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Dernière mise à jour : 6 septembre 2026.</p>
 
 <p>Taxi Food met en relation des clients, des restaurants et des livreurs à Nosy Be. Cette
 page décrit précisément les données que l'application collecte, pourquoi, et ce que vous
@@ -133,8 +133,34 @@ et ne pratique aucun profilage.</p>
 
 <h2>Paiement</h2>
 
-<p>Le paiement se fait <strong>en espèces, à la livraison</strong>. Aucune donnée bancaire
-n'est saisie, transmise ni conservée par l'application.</p>
+<p>Deux moyens de paiement coexistent : <strong>les espèces, à la livraison</strong>, qui
+restent le mode par défaut, et la <strong>carte bancaire</strong>, en cours de déploiement
+dans l'application.</p>
+
+<p>Quand vous payez par carte, <strong>votre numéro de carte ne passe jamais par Taxi
+Food</strong>. Il est saisi dans un écran fourni par <strong>Stripe</strong>, notre
+prestataire de paiement, et transmis directement à ses serveurs. Nous ne le voyons pas, ne le
+recevons pas et ne le conservons pas — pas plus que la date d'expiration ou le cryptogramme.
+Nous conservons uniquement, rattachés à votre commande : le <strong>montant</strong>, la
+<strong>date</strong>, l'<strong>état du paiement</strong> (accepté, refusé, remboursé), les
+<strong>quatre derniers chiffres</strong> et la marque de la carte lorsque Stripe nous les
+renvoie, et la <strong>référence de la transaction</strong> chez Stripe.</p>
+
+<p>Stripe (<em>Stripe Payments Europe, Ltd.</em>, Irlande) est certifié PCI-DSS. Il agit comme
+<strong>sous-traitant</strong> pour les données de commande que nous lui transmettons, et
+comme <strong>responsable de traitement autonome</strong> pour les données de carte et la
+lutte contre la fraude, régies par sa propre
+<a href="https://stripe.com/fr/privacy" rel="noopener noreferrer" target="_blank">politique de
+confidentialité</a>. Ce que nous lui transmettons se limite au montant à encaisser, à la
+devise et à une référence interne de commande.</p>
+
+<p><strong>La carte est débitée en euros, pas en ariary.</strong> Les prix de l'application
+sont affichés en ariary ; le montant en euros est calculé à un <strong>taux fixe de
+1 € = 4 700 Ar</strong>, propre à Taxi Food. Ce n'est pas le cours du jour : il est fixé à
+l'avance et couvre les frais du paiement en ligne. <strong>Le montant exact en euros et ce
+taux vous sont affichés dans l'application avant que vous validiez le paiement</strong> ;
+vous n'êtes jamais débité d'une somme que vous n'avez pas vue. Votre banque peut y ajouter
+ses propres frais, sur lesquels nous n'avons pas la main.</p>
 
 <h2>Où vont ces données</h2>
 
@@ -142,10 +168,12 @@ n'est saisie, transmise ni conservée par l'application.</p>
 <strong>Europe du Nord (Stockholm, Suède)</strong>. Elles ne sont ni vendues, ni louées, ni
 transmises à des tiers à des fins commerciales.</p>
 
-<p>Trois prestataires interviennent, strictement pour faire fonctionner le service :</p>
+<p>Quatre prestataires interviennent, strictement pour faire fonctionner le service :</p>
 
 <ul>
   <li><strong>Supabase</strong> — hébergement de la base de données et des comptes.</li>
+  <li><strong>Stripe</strong> — encaissement des paiements par carte, si vous choisissez ce
+      moyen de paiement. Voir la section « Paiement » ci-dessus.</li>
   <li><strong>Expo et Apple</strong> — acheminement des notifications. Seul un identifiant
       d'appareil et le texte de la notification transitent.</li>
   <li><strong>Meta (WhatsApp)</strong> — envoi du code de vérification à l'inscription par
@@ -195,7 +223,7 @@ anonymisées</strong> — elles ne portent plus aucun lien vers vous. Elles rest
 <section lang="en" id="en">
 
 <h1>Privacy policy</h1>
-<p class="maj">Taxi Food — Nosy Be, Madagascar. Last updated: 22 August 2026.</p>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Last updated: 6 September 2026.</p>
 
 <p>Taxi Food connects customers, restaurants and couriers in Nosy Be. This page
 describes exactly what the app collects, why, and what you can do about it. It also covers
@@ -239,14 +267,40 @@ and to settle payments owed to restaurants), and a device identifier for notific
 if you allow them).</p>
 
 <p>We do <strong>not</strong> collect your contacts, photos or background
-location. There are no advertising trackers and no profiling. Payment is
-<strong>in cash on delivery</strong> — no banking details are ever entered or stored.</p>
+location. There are no advertising trackers and no profiling.</p>
+
+<h2>Payment</h2>
+<p>Two payment methods coexist: <strong>cash on delivery</strong>, still the default, and
+<strong>card payment</strong>, currently being rolled out in the app.</p>
+
+<p>When you pay by card, <strong>your card number never passes through Taxi Food</strong>. It
+is entered in a screen provided by <strong>Stripe</strong>, our payment provider, and sent
+straight to Stripe's servers. We never see it, receive it or store it — and the same goes for
+the expiry date and the security code. Attached to your order we keep only: the <strong>amount</strong>, the
+<strong>date</strong>, the <strong>payment status</strong> (accepted, declined, refunded), the
+<strong>last four digits</strong> and card brand when Stripe returns them, and the
+<strong>transaction reference</strong> at Stripe.</p>
+
+<p>Stripe (<em>Stripe Payments Europe, Ltd.</em>, Ireland) is PCI-DSS certified. It acts as a
+<strong>processor</strong> for the order data we send it, and as an <strong>independent
+controller</strong> for card and fraud-prevention data, governed by its own
+<a href="https://stripe.com/privacy" rel="noopener noreferrer" target="_blank">privacy
+policy</a>. What we send it is limited to the amount to charge, the currency and an internal
+order reference.</p>
+
+<p><strong>The card is charged in euros, not in ariary.</strong> Prices in the app are shown in
+ariary; the euro amount is worked out at a <strong>fixed rate of €1 = 4,700 Ar</strong>, set by
+Taxi Food. It is not the market rate of the day: it is fixed in advance and covers the cost of
+online payment. <strong>The exact euro amount and that rate are shown in the app before you
+confirm the payment</strong> — you are never charged a sum you have not seen. Your bank may add
+its own fees, which are outside our control.</p>
 
 <h2>Where the data goes</h2>
 <p>Data is hosted with <strong>Supabase</strong> on servers in
 <strong>Northern Europe (Stockholm, Sweden)</strong>. It is never sold, rented or shared for
-commercial purposes. Three providers are involved, solely to run the service: Supabase
-(database and accounts), Expo and Apple (delivering notifications — only a device identifier
+commercial purposes. Four providers are involved, solely to run the service: Supabase
+(database and accounts), Stripe (taking card payments, if you choose that method — see
+“Payment” above), Expo and Apple (delivering notifications — only a device identifier
 and the notification text pass through), and Meta/WhatsApp (sending the sign-up verification
 code if you choose phone sign-in; only your number and the code pass through, and the code is
 never written to our logs).</p>
@@ -274,7 +328,7 @@ within 30 days.</p>
 <section lang="it" id="it">
 
 <h1>Informativa sulla privacy</h1>
-<p class="maj">Taxi Food — Nosy Be, Madagascar. Ultimo aggiornamento: 22 agosto 2026.</p>
+<p class="maj">Taxi Food — Nosy Be, Madagascar. Ultimo aggiornamento: 6 settembre 2026.</p>
 
 <p>Taxi Food mette in contatto clienti, ristoranti e fattorini a Nosy Be. Questa pagina
 descrive con precisione quali dati raccoglie l'applicazione, perché, e cosa potete farne.
@@ -320,14 +374,45 @@ identificativo del dispositivo per le notifiche (registrato solo se le accettate
 
 <p>L'applicazione <strong>non raccoglie</strong> i vostri contatti, le vostre foto, né la
 vostra posizione in secondo piano. Non contiene alcun tracciatore pubblicitario e non
-pratica alcuna profilazione. Il pagamento avviene <strong>in contanti alla consegna</strong>:
-nessun dato bancario viene mai inserito, trasmesso o conservato.</p>
+pratica alcuna profilazione.</p>
+
+<h2>Pagamento</h2>
+<p>Coesistono due modalità di pagamento: i <strong>contanti alla consegna</strong>, che
+restano la modalità predefinita, e la <strong>carta di credito</strong>, in fase di
+attivazione nell'applicazione.</p>
+
+<p>Quando pagate con carta, <strong>il numero della vostra carta non passa mai da Taxi
+Food</strong>. Viene inserito in una schermata fornita da <strong>Stripe</strong>, il nostro
+fornitore di pagamento, e trasmesso direttamente ai suoi server. Non lo vediamo, non lo
+riceviamo e non lo conserviamo — e lo stesso vale per la data di scadenza e per il codice di
+sicurezza.
+Collegati al vostro ordine conserviamo soltanto: l'<strong>importo</strong>, la
+<strong>data</strong>, lo <strong>stato del pagamento</strong> (accettato, rifiutato,
+rimborsato), le <strong>ultime quattro cifre</strong> e il circuito della carta quando Stripe
+ce li restituisce, e il <strong>riferimento della transazione</strong> presso Stripe.</p>
+
+<p>Stripe (<em>Stripe Payments Europe, Ltd.</em>, Irlanda) è certificato PCI-DSS. Agisce come
+<strong>responsabile del trattamento</strong> per i dati d'ordine che gli trasmettiamo, e come
+<strong>titolare autonomo</strong> per i dati della carta e la prevenzione delle frodi,
+disciplinati dalla sua
+<a href="https://stripe.com/privacy" rel="noopener noreferrer" target="_blank">informativa
+sulla privacy</a>. Ciò che gli trasmettiamo si limita all'importo da incassare, alla valuta e a
+un riferimento interno dell'ordine.</p>
+
+<p><strong>La carta viene addebitata in euro, non in ariary.</strong> I prezzi
+dell'applicazione sono indicati in ariary; l'importo in euro è calcolato a un <strong>tasso
+fisso di 1 € = 4 700 Ar</strong>, stabilito da Taxi Food. Non è il cambio del giorno: è fissato
+in anticipo e copre i costi del pagamento online. <strong>L'importo esatto in euro e questo
+tasso vi vengono mostrati nell'applicazione prima che confermiate il pagamento</strong>: non vi
+viene mai addebitata una somma che non avete visto. La vostra banca può aggiungere le proprie
+commissioni, sulle quali non abbiamo alcun controllo.</p>
 
 <h2>Dove finiscono questi dati</h2>
 <p>Sono ospitati presso <strong>Supabase</strong>, su server situati nell'<strong>Europa
 del Nord (Stoccolma, Svezia)</strong>. Non vengono né venduti, né affittati, né trasmessi a
-terzi per scopi commerciali. Intervengono tre fornitori, unicamente per far funzionare il
-servizio: Supabase (database e account), Expo e Apple (instradamento delle notifiche —
+terzi per scopi commerciali. Intervengono quattro fornitori, unicamente per far funzionare il
+servizio: Supabase (database e account), Stripe (incasso dei pagamenti con carta, se scegliete
+questa modalità — vedi «Pagamento» qui sopra), Expo e Apple (instradamento delle notifiche —
 transitano solo un identificativo del dispositivo e il testo della notifica), e Meta/WhatsApp
 (invio del codice di verifica all'iscrizione tramite numero, se scegliete questa modalità di
 accesso; transitano solo il vostro numero e il codice, che non viene mai conservato nei

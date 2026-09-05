@@ -586,3 +586,91 @@ des décisions prises :
   push ET l'e-mail. Il faut savoir d'où vient la commande (une colonne
   `orders.source` = `web` | `ios` | `android`, à ajouter).
 - Le workflow n8n est hors dépôt : consigner où il vit et qui peut le modifier.
+
+---
+
+## 💳 Paiement par carte Stripe (2026-09-06) — EXIGE UN BUILD NATIF
+
+Document de référence : **[PAIEMENT-STRIPE.md](PAIEMENT-STRIPE.md)**.
+
+Le socle base de données est appliqué (migrations `20260905213821` et `20260905214324`) et
+l'Edge Function `creer-paiement` est en cours d'écriture. **Rien de tout cela n'exige de
+build** : ce sont des changements serveur, effectifs immédiatement, y compris pour les
+versions déjà installées sur les magasins.
+
+⚠️ **Ce qui exige un build, en revanche : `@stripe/stripe-react-native`.** C'est un **module
+natif**. Les mises à jour OTA activées le 2026-09-05 ne peuvent pas le livrer — elles ne
+transportent que du JavaScript. Tant que ce build n'est pas sorti et validé par les deux
+magasins, **aucun client ne peut payer par carte**, quel que soit l'état du serveur.
+
+### Le garde-fou est déjà posé, et il faut s'en servir
+
+`payment_config.carte_active` vaut **`false`**, et aucun secret Stripe n'est dans le Vault.
+Le code doit rester **inerte et le dire** dans ce cas, jamais planter. **Ne pas passer
+`carte_active` à `true` avant que le build soit disponible sur les deux magasins** : sinon
+l'écran de validation proposerait la carte à des versions installées qui n'embarquent pas le
+SDK.
+
+```sql
+select public.admin_set_carte_active(true);   -- le jour J, et pas avant
+select public.admin_set_carte_active(false);  -- coupure d'urgence, sans déploiement
+```
+
+### À faire dans le build
+
+- [ ] Installer `@stripe/stripe-react-native`. ⚠️ Piège maison déjà payé deux fois :
+      **`npx expo install` ajoute le plugin natif SANS ses options** et route vers une branche
+      de configuration qui peut faire échouer la compilation. Lire `node_modules/<pkg>/plugin/`
+      avant de laisser l'entrée telle quelle dans `app.json`.
+- [ ] `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` pour le `expo run:ios` qui suivra — un nouveau
+      module natif relance `pod install`, qui plante sinon sur
+      `Unicode Normalization not appropriate for ASCII-8BIT`.
+- [ ] PaymentSheet dans `app/app/checkout.tsx`, **entre `createOrder` et `clear()`** : sur
+      échec ou annulation, le panier ne doit **pas** être vidé et on ne va **pas** sur
+      `/confirmation`.
+- [ ] Montant en euros **et** taux affichés avant validation (obligation légale — voir
+      PAIEMENT-STRIPE.md § 6).
+- [ ] Orange Money non sélectionnable, badge « Bientôt disponible ».
+- [ ] Conditionner `checkout.noCharge` (« aucun débit maintenant »), `confirmation.paymentValue`
+      (« — à la livraison »), `tracking.payToCourier`, `tracking.steps.deliveredSub` et
+      `tracking.refusedHint` (« Aucun montant ne te sera débité » devient faux dès qu'une carte
+      est débitée). **Cinq clés × trois langues**, parité à revérifier.
+- [ ] `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` dans les variables Netlify — sinon le bundle **web**
+      sort sans configuration de paiement. Décider au passage du sort de la carte sur le web :
+      le PaymentSheet natif n'y existe pas.
+
+### À faire dans les consoles, AU MÊME MOMENT que l'envoi
+
+⚠️ Une fiche App Privacy ou Data safety qui décrit un binaire différent de celui qu'on envoie
+est un motif de rejet **à part entière**. Le détail et les citations sont dans les deux fiches ;
+en résumé :
+
+| Console | Ce qui change |
+|---|---|
+| **App Store Connect** → App Privacy | **ajouter deux lignes** : *Finances › Informations de paiement* et *Données d'utilisation › Interaction avec le produit*. Voir [FICHE-APP-STORE.md](FICHE-APP-STORE.md) § 2 |
+| **App Store Connect** → App Review Information | remplacer les blocs `PAYMENT` et `EXTERNAL SERVICES` (Stripe nommé) — § 4 de la même fiche |
+| **App Store Connect** → Description | basculer la section « PAIEMENT EN ESPÈCES OU PAR CARTE ». Champ modifiable **seulement** en soumettant une version : il tombe donc pile avec ce build |
+| **App Store Connect** → Texte promotionnel | modifiable **sans** version : à basculer dès l'activation de la carte |
+| **Play Console** → Data safety | ⚠️ **rien à changer.** L'exception « prestataire de paiement » de Google s'applique — [FICHE-PLAY-STORE.md](FICHE-PLAY-STORE.md) § 3 |
+| **Play Console** → App content → Fonctionnalités financières | ⚠️ **reste « aucune »**. Ne pas cocher « paiements et transferts » par prudence : cela déclenche des exigences de licences impossibles à fournir |
+| **Play Console** → IARC | inchangé. « Achat de biens numériques : non » — la réponse tient aux biens physiques, pas au moyen de paiement |
+
+### Site public — déjà à jour, une phrase à retirer le jour J
+
+`landing/confidentialite/`, `landing/suppression-compte/`, `landing/restaurants-partenaires/`
+et `landing/devenir-livreur/` décrivent déjà le paiement par carte, dans les trois langues,
+avec la mention **« en cours de déploiement »**. Le jour où `carte_active` passe à `true`,
+c'est cette formule qu'il faut retirer — et elle seule.
+
+⚠️ **`landing/tools/build-i18n.py` ne tourne plus** (29 clés `client.*` / `stores.*` absentes
+des pages sources, cassé **avant** ce chantier — vérifié en le lançant sur l'arbre propre). Les
+quatre pages EN/IT ont dû être modifiées à la main. Tant qu'il n'est pas réparé, plus rien ne
+garantit que les trois langues restent alignées.
+
+### Le point à trancher avant la mise en service
+
+Le restaurant est notifié (push + e-mail + Telegram, avec un lien « Accepter ») **dès la
+création de la commande**, donc **avant** le paiement. Un client qui abandonne le PaymentSheet
+laisse un restaurateur prêt à cuisiner un repas que personne n'a payé. La correction demande de
+toucher `notify_order_status()` — pas `create_order`. Détail et piège de la clause `OF` du
+trigger : PAIEMENT-STRIPE.md § 9.

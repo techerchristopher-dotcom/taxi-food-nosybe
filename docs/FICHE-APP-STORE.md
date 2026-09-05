@@ -24,8 +24,18 @@ Livraison de repas à Nosy Be
 
 ### Texte promotionnel (170 max) — modifiable sans nouvelle version
 
+**Version en ligne aujourd'hui**, exacte tant que la carte n'est pas active :
+
 ```
 Pizzas, burgers, tacos et sandwichs livrés chauds à Hell-Ville et dans tout Nosy Be. Commandez en quelques taps, payez en espèces à la livraison.
+```
+
+**À basculer le jour où `payment_config.carte_active` passe à `true`** — 143 caractères. Ce
+champ est le seul du § 1 modifiable **sans** nouvelle version : c'est donc le premier à
+corriger, et il peut l'être en quelques minutes.
+
+```
+Pizzas, burgers, tacos et sandwichs livrés chauds à Hell-Ville et dans tout Nosy Be. Commandez en quelques taps, payez en espèces ou par carte.
 ```
 
 ### Mots-clés (100 caractères max) — 92 caractères
@@ -38,6 +48,14 @@ nosy be,madagascar,hell-ville,pizza,burger,tacos,sandwich,crêpe,milkshake,resta
 indexe. Les répéter gaspille des caractères sans rien gagner.
 
 ### Description (4 000 caractères max)
+
+⚠️ **La description ci-dessous contient déjà le paiement par carte** (section « PAIEMENT EN
+ESPÈCES OU PAR CARTE »). Elle ne doit **pas** être envoyée avant que la fonctionnalité soit
+réellement dans le binaire soumis : annoncer un moyen de paiement absent est un motif de rejet
+en soi (guideline 2.3.1, « ne pas décrire des fonctions que l'app ne contient pas »).
+
+Contrairement au texte promotionnel, ce champ **n'est modifiable qu'en soumettant une nouvelle
+version**. Il se corrige donc naturellement au même moment que le build qui apporte Stripe.
 
 ```
 Taxi Food, c'est la livraison de repas à Nosy Be.
@@ -58,9 +76,9 @@ SUIVEZ VOTRE COMMANDE EN DIRECT
 
 Vous êtes prévenu à chaque étape : commande confirmée par le restaurant, préparation en cours, livreur en route, commande livrée. Plus besoin d'appeler pour savoir où en est votre repas.
 
-PAIEMENT EN ESPÈCES
+PAIEMENT EN ESPÈCES OU PAR CARTE
 
-Payez votre livreur à la livraison, en ariary. Aucune carte bancaire à saisir, aucune donnée de paiement enregistrée dans l'application.
+Payez votre livreur à la livraison, en ariary. Vous pouvez aussi régler par carte bancaire directement dans l'application : la saisie se fait dans un écran sécurisé fourni par notre prestataire de paiement, et aucune donnée de carte n'est enregistrée par Taxi Food. Le paiement par carte est débité en euros, au taux qui vous est affiché avant validation.
 
 EN FRANÇAIS, EN ANGLAIS, EN ITALIEN
 
@@ -80,6 +98,12 @@ Taxi Food est un service local, conçu à Nosy Be, pour Nosy Be.
 Déduit du code réel. Une déclaration incomplète est un motif de rejet **à part entière**,
 indépendamment du reste : Apple compare ce que tu déclares à ce que le binaire fait.
 
+⚠️ **Deux versions de ce questionnaire coexistent.** Le tableau ci-dessous décrit le binaire
+**tel qu'il est aujourd'hui sur l'App Store** (build 22, sans Stripe). Les deux lignes à
+ajouter **le jour où le SDK Stripe entre dans le binaire** sont juste en dessous, avec leur
+justification. Une App Privacy qui décrit un binaire différent de celui qui est envoyé est un
+motif de rejet à part entière.
+
 Pour **chaque** donnée ci-dessous, les réponses sont les mêmes :
 - **Utilisée pour le suivi publicitaire ?** → **NON** (aucun traceur : vérifié, zéro
   bibliothèque d'analytics dans les dépendances, et le SDK Facebook est configuré avec
@@ -98,9 +122,82 @@ Pour **chaque** donnée ci-dessous, les réponses sont les mêmes :
 | Identifiants | **Identifiant utilisateur** | `auth.users.id` (Supabase) |
 | Identifiants | **Identifiant d'appareil** | `push_tokens.token` — jeton Expo/APNs, uniquement si les notifications sont acceptées |
 
-**À ne PAS cocher** : Santé, Finances (aucune donnée bancaire — paiement en espèces),
-Contacts, Photos, Historique de navigation, Données d'utilisation, Diagnostics (aucun outil
-de crash reporting), Contenu audio/vidéo.
+**À ne PAS cocher** : Santé, Finances (aucune donnée bancaire tant que la carte n'est pas
+dans le binaire — voir ci-dessous), Contacts, Photos, Historique de navigation, Données
+d'utilisation, Diagnostics (aucun outil de crash reporting), Contenu audio/vidéo.
+
+### ⚠️ Ce qui change avec le SDK Stripe — à cocher au build qui l'embarque
+
+Deux lignes s'ajoutent. **Ni plus, ni moins** : sur-déclarer est aussi faux que sous-déclarer,
+et l'un comme l'autre se vérifie en analysant le binaire.
+
+| Catégorie Apple | Donnée | Lié à l'identité | Suivi | Finalité |
+|---|---|---|---|---|
+| **Finances** | **Informations de paiement** | **Oui** | Non | Fonctionnement de l'app |
+| **Données d'utilisation** | **Interaction avec le produit** | **Oui** | Non | Fonctionnement de l'app **+ Analyses** |
+
+#### Pourquoi « Informations de paiement » doit être coché, alors que la carte ne passe pas chez nous
+
+C'est le point contre-intuitif du dossier, et celui sur lequel il ne faut pas se tromper.
+
+Apple prévoit bien une exception, mais elle est **cumulative** :
+
+> *« Payment Info: […] If your app uses a payment service, **the payment information is
+> entered outside your app**, and you as the developer **never have access** to the payment
+> information, it is not collected and does not need to be disclosed. »*
+> — [App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/)
+
+La seconde condition est remplie : notre backend ne voit jamais le numéro de carte (vérifié
+dans `supabase/functions/creer-paiement/index.ts` — on n'envoie à Stripe que le montant, la
+devise et des références de commande). **La première ne l'est pas** : le PaymentSheet est
+présenté **dans** l'app, pas dans un navigateur externe. L'exception ne s'applique donc pas.
+
+S'y ajoute la règle générale sur les SDK :
+
+> *« You need to identify all of the data **you or your third-party partners** collect […]
+> "Third-party partners" refers to analytics tools, advertising networks, **third-party SDKs**,
+> or other external vendors whose code you've added to your app. »*
+
+Stripe conserve la donnée de carte — ce n'est pas un traitement éphémère au sens d'Apple. Elle
+est donc **collectée**, par un partenaire dont on a ajouté le code.
+
+Stripe le dit lui-même dans sa fiche destinée aux développeurs iOS
+([Stripe Mobile SDK Privacy Details](https://support.stripe.com/questions/stripe-ios-sdk-privacy-details)) :
+elle liste **Payment Info**, **Contact Info**, **User ID** et **Product Interaction**, et
+répond « No. Stripe does not use this data for tracking purposes. » à la question du suivi.
+
+**« Lié à l'identité » = Oui** : la ligne `payment_intents` porte `user_id`, et le PaymentIntent
+Stripe porte `metadata.order_id`. Le paiement est donc rattachable à la personne.
+
+#### Pourquoi « Interaction avec le produit », et pourquoi la finalité « Analyses » apparaît
+
+Le SDK Stripe émet sa propre télémétrie d'usage. Stripe la déclare avec les finalités *App
+Functionality* **et** *Analytics*. C'est la seule entorse à la règle « Fonctionnement de l'app
+uniquement » qui tenait jusqu'ici, et l'oublier est typiquement ce qu'une analyse de binaire
+rattrape. La réponse au **suivi publicitaire reste NON** : ces analyses sont celles de Stripe
+sur son propre SDK, pas du pistage inter-apps.
+
+#### Ce qu'il ne faut PAS ajouter
+
+- **Coordonnées** — déjà déclarées (nom, e-mail, téléphone, adresse). Notre code n'envoie **ni
+  `receipt_email`, ni objet `Customer`, ni coordonnées** à Stripe : aucune case nouvelle.
+- **Identifiant utilisateur** — déjà déclaré.
+- **Historique d'achat** — déjà déclaré.
+- ⚠️ **Ne pas cocher « Informations financières › Informations de solvabilité »** ni quoi que
+  ce soit qui suggère un service financier : on vend des repas, on n'octroie rien.
+
+#### Manifeste de confidentialité (privacy manifest)
+
+Stripe livre un `PrivacyInfo.xcprivacy` dans son SDK iOS, comme Apple l'exige depuis mai 2024
+pour les SDK de sa liste. ⚠️ Piège connu de l'écosystème : Apple n'agrège pas toujours
+correctement les manifestes des dépendances **CocoaPods statiques**. Si l'envoi est refusé avec
+un avertissement de « required reason API » non déclarée, la parade est de reprendre les
+raisons concernées dans le manifeste de l'app elle-même — voir la
+[documentation Expo](https://docs.expo.dev/guides/apple-privacy/).
+
+💡 **Réduire la surface, si on le souhaite** : `setAdvancedFraudSignalsEnabled(false)` désactive
+la signature d'appareil anti-fraude de Stripe. Elle protège contre la fraude — la couper est un
+arbitrage, pas une simple hygiène.
 
 ---
 
@@ -188,6 +285,11 @@ relecteur n'en a pas besoin.
 
 ### Notes à coller dans « App Review Information »
 
+⚠️ **Les blocs PAYMENT et EXTERNAL SERVICES ci-dessous décrivent le paiement par carte.** Ils
+ne valent que pour un build qui l'embarque réellement. Pour une soumission **sans** Stripe,
+reprendre la version d'avant : *« Payment is cash on delivery, to the courier. No banking
+details are entered or stored »*, et retirer Stripe de la liste des services externes.
+
 ⚠️ Réécrites le 2026-08-23 après le second rejet. Deux changements de fond : les **trois**
 comptes sont donnés (et non le seul compte client), et la phrase qui disait que les espaces
 pro « ne font pas partie du parcours à tester » a disparu — c'est précisément elle qui a
@@ -244,9 +346,17 @@ customer. Location is never captured in the background or while the app is close
 customer demo account already has an address saved, so this step can be skipped.
 
 PAYMENT
-Payment is cash on delivery, to the courier. No banking details are entered or stored, and
-the app offers no in-app purchase: it sells physical goods that are delivered (guideline
-3.1.1).
+The app sells physical goods that are prepared and delivered in the real world, so it uses
+external payment rather than in-app purchase (guideline 3.1.5(a) "Goods and Services Outside
+of the App"). There is no in-app purchase of digital content anywhere in the app.
+
+Two payment methods are offered:
+  - Cash on delivery, paid to the courier. This is the default.
+  - Card payment, handled by Stripe. The card details are entered in Stripe's own
+    PaymentSheet; they are sent straight to Stripe and never reach our servers. We store only
+    the amount, the status and Stripe's transaction reference.
+Prices are shown in Malagasy ariary. Card payments are charged in euros at a fixed rate that
+is displayed to the customer, together with the exact euro amount, before they confirm.
 
 ACCOUNT DELETION
 In the app: Profile tab, at the bottom, "Delete my account".
@@ -254,8 +364,8 @@ In the app: Profile tab, at the bottom, "Delete my account".
 EXTERNAL SERVICES
 Supabase (database, authentication, storage), Sign in with Apple / Google Sign-In / Facebook
 Login for authentication, Expo Push Notifications (relaying to APNs) for order updates,
-Apple MapKit for the address map. No AI services, no payment processor, no analytics or
-advertising SDK.
+Apple MapKit for the address map, and Stripe for card payments. No AI services, no analytics
+or advertising SDK.
 ```
 
 ⚠️ **Pendant toute la durée de la revue**, quelqu'un doit pouvoir traiter une commande qui

@@ -1,4 +1,20 @@
-# Paiement en ligne (PayPal) — étudié le 2026-09-01, mis en attente
+# Paiement en ligne (PayPal) — étudié le 2026-09-01, écarté
+
+> ## 📁 DOCUMENT HISTORIQUE — dépassé le 2026-09-06
+>
+> Le paiement en ligne **existe désormais**, avec **Stripe** et non PayPal. Le document de
+> référence est **[PAIEMENT-STRIPE.md](PAIEMENT-STRIPE.md)** : c'est lui qu'il faut lire et
+> tenir à jour.
+>
+> Ce fichier est conservé pour deux raisons, et deux seulement :
+> 1. il explique **pourquoi PayPal a été écarté** (§ 1 à 3), pour ne pas refaire la recherche ;
+> 2. sa **simulation économique** (§ 4) reste valable et fonde la décision du taux de change.
+>    Elle montre que les **frais fixes par transaction** écrasent la marge sur un panier moyen,
+>    quel que soit le prestataire. C'est exactement ce que l'écart de taux 4 700 / ~5 008 vient
+>    couvrir — la réponse à l'objection soulevée ici. Le calcul refait avec les tarifs Stripe,
+>    et les seuils de rentabilité par type de carte, sont dans PAIEMENT-STRIPE.md § 4.
+>
+> ⚠️ **La conclusion du § « État du code » ci-dessous est FAUSSE depuis le 2026-09-06.**
 
 Demande initiale : intégrer PayPal via son API pour payer une commande depuis l'app.
 **Décision du porteur du projet : on verra plus tard.** Ce document capture pourquoi,
@@ -67,6 +83,11 @@ d'architecture plus lourd qu'un bouton de paiement — nécessite son propre chi
 s'y engager.
 
 ## État du code
+
+> ⚠️ **Périmé.** Le socle base de données du paiement carte est appliqué depuis le 2026-09-06
+> (migrations `20260905213821` et `20260905214324`), l'Edge Function `creer-paiement` est en
+> cours d'écriture, et les déclarations aux magasins ont été revues. Voir PAIEMENT-STRIPE.md.
+> Ce qui suit décrit l'état au 2026-09-01.
 
 **Rien n'a été touché.** Aucune migration, aucune Edge Function, aucun changement dans
 l'app. `checkout.tsx` propose toujours les trois méthodes existantes (`cb`, `especes`,

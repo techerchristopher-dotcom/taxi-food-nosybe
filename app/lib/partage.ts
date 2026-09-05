@@ -37,15 +37,20 @@ export function lienRestaurant(restaurantId: string) {
 /**
  * Ouvre la feuille de partage du système.
  *
- * ⚠️ L'URL est répétée dans `message` ET passée dans `url`. Ce n'est pas une
- * maladresse : sur iOS, les applications de messagerie ne lisent que `message`
- * et ignorent `url` (elles ne savent pas composer les deux), tandis que les
- * partages « natifs » (AirDrop, Notes) préfèrent `url`. Ne mettre que `url`
- * enverrait un message vide dans WhatsApp — le cas d'usage principal ici.
+ * ⚠️ L'URL est mise DANS `message`, et `url` n'est volontairement pas rempli.
+ * C'est contre-intuitif, et c'est délibéré : quand les deux sont fournis, iOS
+ * publie deux éléments distincts et la plupart des applications de destination
+ * n'en retiennent qu'un — l'URL. Le texte (« Margherita chez Les Siciliens »)
+ * disparaît alors purement et simplement, et le destinataire reçoit un lien nu.
+ * Vérifié sur simulateur le 2026-09-05 : avec `url` rempli, la feuille de
+ * partage n'affichait que « taxifood.rentanoo.com », sans le nom du plat.
+ *
+ * On perd un peu côté AirDrop et Notes, qui auraient préféré `url`. C'est le
+ * bon arbitrage : l'usage visé ici, c'est WhatsApp.
  */
 async function partager(titre: string, texte: string, url: string) {
   try {
-    await Share.share({ title: titre, message: `${texte}\n${url}`, url }, { subject: titre });
+    await Share.share({ title: titre, message: `${texte}\n${url}` }, { subject: titre });
   } catch (e) {
     // L'utilisateur a fermé la feuille, ou aucune cible n'est disponible.
     // Rien à signaler : ce n'est pas une erreur de l'app.

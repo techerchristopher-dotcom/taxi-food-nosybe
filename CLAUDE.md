@@ -22,32 +22,42 @@ accès à App Store Connect pour le confirmer moi-même). Le build 1.0.0 (22) es
 ⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
 
 **Android — ⏳ DÉPOSÉE SUR LE PLAY STORE, EN ATTENTE DE REVUE** (annoncé par le porteur du
-projet le 2026-09-05 : dépôt fait, environ une semaine d'attente à cette date ; je n'ai pas
-accès à la Play Console pour le confirmer moi-même).
+projet le 2026-09-05 : dépôt fait, environ une semaine d'attente à cette date). Vérifié
+moi-même en Play Console le 2026-09-05 : l'app **Taxi Food** existe bien, Play App Signing
+est actif, et sa clé de signature est marquée *In use* — donc au moins un bundle a été
+déposé. **Objectif fixé : dès que Google valide, on lance le build groupé**, pour que les
+deux plateformes offrent exactement les mêmes fonctionnalités.
 
 Toute la chaîne technique était prête et testée en conditions réelles le 2026-08-19 (Google
 natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé,
 **identité vérifiée**, appareil Android physique disponible depuis le 2026-08-24.
 
-⚠️ **Conséquence utile et peu connue** : dès le PREMIER dépôt d'un bundle, Google génère la
-**clé de signature d'application** (Play App Signing). Son empreinte SHA-256 est donc
-**déjà disponible**, sans attendre la validation — Play Console → *Release* → *Setup* →
-*App integrity* → *App signing key certificate*. C'est cette empreinte-là, et **pas** la clé
-de dépôt d'EAS, que vérifient les liens Android (App Links). Les confondre fait tomber tous
-les liens partagés dans le navigateur au lieu de l'app, et le symptôme est pénible à
-diagnostiquer.
+### Les deux empreintes Android — ne jamais les confondre
 
-⚠️ **Le vrai obstacle Android n'est pas technique, c'est une règle de Google** : tout compte
-**personnel** créé après le 13 novembre 2023 — le nôtre date du 2026-08-19 — doit faire
-tourner un **test fermé avec 12 testeurs pendant 14 jours continus** avant de pouvoir
-demander l'accès à la production.
+| | SHA-256 | À quoi ça sert |
+|---|---|---|
+| **Clé de signature Google** (Play App Signing) | `9E:83:EC:47:51:33:B9:01:63:15:63:25:6D:E0:AD:55:DE:EF:FE:81:00:1D:F3:5C:7D:94:7B:AE:BB:CA:8C:74` | **C'est celle-ci** qu'il faut dans `assetlinks.json` |
+| **Clé de dépôt** (EAS, keystore `Default`) | `02:05:17:F9:C3:DD:6E:15:1F:20:08:EC:C6:9E:85:9A:41:77:68:1A:DA:20:26:6A:FB:D4:10:9E:93:95:03:D4` | Signe l'AAB envoyé à Google, rien d'autre |
 
-**La voie retenue est d'y échapper en convertissant le compte en « organisation »**, exempt
-de cette règle. La SAS Rentanoo a déjà son numéro **D-U-N-S**, qui était le seul vrai péage.
-La conversion ne demande ni nouveau compte, ni nouveaux 25 $, ni transfert d'app — seulement
-un **nouveau profil de paiement** et la **validation du site de l'organisation**
-(`rentanoo.com`). Compter une semaine, dont 72 h d'attente imposées après la bascule.
-Procédure pas à pas : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
+Google **re-signe** l'app avec sa propre clé après le dépôt : c'est donc la sienne que le
+téléphone vérifie quand il décide d'ouvrir un lien `https://` dans l'app plutôt que dans le
+navigateur. Mettre l'empreinte EAS ferait silencieusement tomber **tous** les liens partagés
+dans le navigateur, et le symptôme est pénible à diagnostiquer (rien n'échoue, ça marche
+« presque »). `assetlinks.json` acceptant plusieurs empreintes, on met **les deux**.
+
+⚠️ **Utile à savoir** : la clé de signature Google est générée dès le **premier** dépôt d'un
+bundle, pas à la validation — son empreinte est donc récupérable sans rien attendre.
+Où la retrouver : **Play Console → Protected with Play → App signing**. La page affiche
+même le `assetlinks.json` déjà rempli, prêt à copier. Package Android :
+`com.chris97416.taxifoodnosybe`, identifiant d'app Play `4972795001003481903`.
+
+⚠️ **Règle Google des 12 testeurs — statut réel inconnu de moi.** Tout compte **personnel**
+créé après le 13 novembre 2023 (le nôtre date du 2026-08-19) doit faire tourner un test
+fermé avec **12 testeurs pendant 14 jours continus** avant de pouvoir demander l'accès à la
+production. La voie envisagée était d'y échapper en convertissant le compte en
+« organisation » (la SAS Rentanoo a déjà son numéro **D-U-N-S**). **Le porteur du projet n'a
+pas dit comment ce point a été levé** — ne pas supposer qu'il l'est, le lui demander avant
+de raisonner dessus. Procédure : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ⚠️ **Quatre documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
 

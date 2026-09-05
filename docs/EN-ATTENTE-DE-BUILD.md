@@ -364,15 +364,35 @@ ligne sur Netlify.
 | Bundle iOS | `com.chris97416.taxi-food-nosybe` |
 | Package Android | `com.chris97416.taxifoodnosybe` |
 | Empreinte SHA-256 **de dépôt** (EAS, `Default`) | `02:05:17:F9:C3:DD:6E:15:1F:20:08:EC:C6:9E:85:9A:41:77:68:1A:DA:20:26:6A:FB:D4:10:9E:93:95:03:D4` |
-| Empreinte SHA-256 **de signature Google** | ⏳ à récupérer en Play Console |
+| Empreinte SHA-256 **de signature Google** (Play App Signing) | `9E:83:EC:47:51:33:B9:01:63:15:63:25:6D:E0:AD:55:DE:EF:FE:81:00:1D:F3:5C:7D:94:7B:AE:BB:CA:8C:74` |
 
 ⚠️ **Ne pas confondre les deux empreintes Android.** Google re-signe l'app avec SA clé
 (Play App Signing). C'est **son** empreinte que vérifient les App Links, pas celle d'EAS.
 Ne mettre que celle d'EAS ferait tomber tous les liens partagés dans le navigateur au lieu
 de l'app — symptôme pénible à diagnostiquer. `assetlinks.json` accepte **plusieurs**
-empreintes : on met les deux. Elle est disponible **dès maintenant** (l'app est déposée),
-sans attendre la validation : Play Console → *Release* → *Setup* → *App integrity* →
-*App signing key certificate*.
+empreintes : on met les deux.
+
+✅ **Récupérée le 2026-09-05** en Play Console (*Protected with Play → App signing*) : elle
+existait déjà, puisqu'elle est générée dès le premier dépôt du bundle et non à la validation.
+Le fichier est donc écrivable dès maintenant, sans attendre le retour de Google :
+
+```json
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.chris97416.taxifoodnosybe",
+    "sha256_cert_fingerprints": [
+      "9E:83:EC:47:51:33:B9:01:63:15:63:25:6D:E0:AD:55:DE:EF:FE:81:00:1D:F3:5C:7D:94:7B:AE:BB:CA:8C:74",
+      "02:05:17:F9:C3:DD:6E:15:1F:20:08:EC:C6:9E:85:9A:41:77:68:1A:DA:20:26:6A:FB:D4:10:9E:93:95:03:D4"
+    ]
+  }
+}]
+```
+
+⚠️ À servir sur `https://taxifood.rentanoo.com/.well-known/assetlinks.json`, en
+`Content-Type: application/json`, **sans redirection** — Android refuse de suivre une
+redirection sur ce fichier, et l'échec est silencieux.
 
 **À faire :**
 1. Page produit + page restaurant sur le site, avec balises Open Graph **rendues côté
@@ -399,6 +419,13 @@ lance le build** qui embarque tout ce qui est listé dans ce document, pour que 
 plateformes proposent exactement les mêmes fonctionnalités.
 
 Ordre de sortie à respecter :
-1. Google valide la version déposée → récupérer l'empreinte de signature Google.
-2. Compléter `assetlinks.json` avec cette empreinte, mettre le site en ligne.
-3. Lancer le build **en interactif** (capability Apple), soumettre aux deux stores.
+1. ~~Récupérer l'empreinte de signature Google~~ ✅ fait le 2026-09-05, sans attendre.
+2. Écrire le partage social + `assetlinks.json` + `apple-app-site-association`, mettre le
+   site en ligne. **Rien n'empêche de le faire dès maintenant.**
+3. Google valide la version déposée.
+4. Lancer le build **en interactif** (capability Apple), soumettre aux deux stores.
+
+⚠️ **La version actuellement en revue chez Google ne contient AUCUN chantier de ce document**
+— elle date d'environ une semaine. L'alignement des deux plateformes se fera donc au build
+**suivant**. Si Google valide vite, l'Android sera brièvement en retard sur l'iOS : c'est
+attendu, ce n'est pas une régression.

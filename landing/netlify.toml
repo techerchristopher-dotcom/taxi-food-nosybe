@@ -14,6 +14,22 @@
   publish = "."
   command = ""
 
+# --- Fonctions --------------------------------------------------------------
+# Pages de partage /p/<id> et /r/<id> (apercu WhatsApp + renvoi vers le store).
+# Le chemin est declare dans la fonction elle-meme (`export const config`), pas
+# ici : c'est la convention des Netlify Functions v2.
+#
+# ⚠️ La fonction a besoin de DEUX variables d'environnement, a poser dans
+# Netlify > Site configuration > Environment variables :
+#     SUPABASE_URL       = https://bmdveawomizjpiebgtkj.supabase.co
+#     SUPABASE_ANON_KEY  = la cle anon/publishable (celle de app/.env)
+# Sans elles la fonction renvoie sur l'accueil du site au lieu d'une fiche.
+# La cle anon est publique par conception (la RLS protege) ; la cle service_role
+# n'a rien a faire ici.
+
+[functions]
+  directory = "netlify/functions"
+
 # --- En-tetes ---------------------------------------------------------------
 # Cache long sur les images, la video et les polices : leur nom encode la
 # largeur, donc un remplacement passe par un nouveau nom de fichier.

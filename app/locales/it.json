@@ -124,7 +124,8 @@
     "minOrder": "Min. {{amount}}",
     "productCount_one": "· {{count}} prodotto",
     "productCount_other": "· {{count}} prodotti",
-    "viewCart": "Vedi il carrello · {{count}} art."
+    "viewCart": "Vedi il carrello · {{count}} art.",
+    "share": "Condividi questo ristorante"
   },
   "conflict": {
     "title": "Cambiare ristorante?",
@@ -141,7 +142,8 @@
     "optional": "Facoltativo",
     "upTo": "Fino a {{count}} a scelta",
     "addWithPrice": "Aggiungi · {{price}}",
-    "chooseOptions": "Scegli le opzioni"
+    "chooseOptions": "Scegli le opzioni",
+    "share": "Condividi questo piatto"
   },
   "cart": {
     "title": "Il mio carrello",

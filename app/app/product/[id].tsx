@@ -24,6 +24,7 @@ const CHIP_THUMB = 34;
 import { getProductDetail } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { RestaurantContext, useCart } from '../../store/cart';
+import { partagerProduit } from '../../lib/partage';
 
 /** Écran 04 — Détail d'un produit + configuration des options (choix guidés). */
 export default function ProductDetailScreen() {
@@ -127,9 +128,22 @@ export default function ProductDetailScreen() {
             onError={({ error }) => console.warn('[product] échec photo', product.photoUrl, error)}
           />
         ) : null}
-        <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
-          <Icon name="close" size={22} color={colors.ink} />
-        </Pressable>
+        <View style={styles.photoActions}>
+          <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
+            <Icon name="close" size={22} color={colors.ink} />
+          </Pressable>
+          {/* Partage : envoie un lien https ouvrant cette fiche dans l'app, ou le
+              store si le destinataire ne l'a pas. Voir `lib/partage.ts`. */}
+          <Pressable
+            onPress={() => partagerProduit({ id: product.id, name: product.name, restaurantName: restaurant?.name })}
+            style={styles.closeBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('product.share')}
+          >
+            <Icon name="ios_share" size={20} color={colors.ink} />
+          </Pressable>
+        </View>
         {!product.photoUrl ? <Text style={styles.photoHint}>{t('product.photoHint')}</Text> : null}
       </View>
 
@@ -246,6 +260,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
   photo: { height: 150, paddingHorizontal: spacing.screen },
+  photoActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeBtn: {
     width: 40,
     height: 40,

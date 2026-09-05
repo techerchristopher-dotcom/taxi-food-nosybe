@@ -6,7 +6,7 @@ Trois livrables distincts, à ne pas confondre :
 
 | | Quoi | Où |
 |---|---|---|
-| **`app/`** | l'application mobile (Expo, iOS + Android) | soumise à l'App Store |
+| **`app/`** | l'application mobile (Expo, iOS + Android) | **en ligne sur l'App Store**, déposée sur le Play Store |
 | **`admin/`** | le tableau de bord de gestion (Next.js, web) | `taxi-food-admin-nosybe.netlify.app` |
 | **`landing/`** | le site de **pré-lancement**, trilingue | `taxifood-nosybe-landing.netlify.app` |
 
@@ -285,7 +285,7 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 - Bundle ids : iOS `com.chris97416.taxi-food-nosybe`, Android `com.chris97416.taxifoodnosybe` (Android interdit les tirets). Soumission App Store Connect : `submit.production.ios.ascAppId = "6802418114"`.
 - **iOS build 1.0.0 (22) — dernier sorti, envoyé à App Store Connect le 2026-08-23.** Répond aux deux rejets du build 17 : catalogue libre sans compte (5.1.1(v)), trois comptes de démonstration à rôles actifs (2.1(a)), entrée directe dans l'espace pro pour un compte à rôle unique, et le correctif de l'écran blanc à la déconnexion. Le build 17 apportait l'authentification native (Apple/Google/Facebook), la suppression de compte et les correctifs des captures App Store. Historique complet des builds 5 à 22 : [docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md) et [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md).
 - ⚠️ **Un build touchant les capabilities Apple (Push, Sign In with Apple) doit être lancé par Christopher lui-même, dans son propre terminal, en interactif** (`eas build -p ios --profile production`, **sans** `--non-interactive`). Lancé depuis un outil sans TTY réel, EAS bascule silencieusement en mode non-interactif et réutilise un profil de provisioning obsolète sans jamais contacter Apple — cause exacte de l'échec des builds 7, 8 et 11. Google et Facebook natifs n'ont besoin d'aucune capability côté portail Apple (juste des schémas d'URL dans Info.plist) : un build non-interactif suffirait pour ces deux-là, mais autant garder le même réflexe partout.
-- **Android** : builds `development` testés avec succès le 2026-08-19 (émulateur Pixel 8 local, `eas build --profile development --platform android`) — connexion Google native, Facebook (flux web) et position GPS tous confirmés fonctionnels en conditions réelles. **Jamais buildé en profil `production` à ce jour** : bloqué sur la vérification d'identité du compte développeur Google Play (en cours chez Google). Voir [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
+- **Android** : builds `development` testés avec succès le 2026-08-19 (émulateur Pixel 8 local, `eas build --profile development --platform android`) — connexion Google native, Facebook (flux web) et position GPS tous confirmés fonctionnels en conditions réelles. **Un bundle de production a depuis été déposé sur le Play Store** (vers le 2026-08-29, en attente de revue au 2026-09-05) — la vérification d'identité du compte n'est donc plus un obstacle. Voir [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ## Ce qui est vérifié vs pas encore
 
@@ -295,7 +295,7 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 - ✅ Vérifié en production sur le site : écriture réelle en `waitlist`, refus du `INSERT` direct, limitation de débit non falsifiable, badges chargés et inertes.
 - ✅ Vérifié sur appareil réel (iOS, TestFlight) : connexion native Apple/Google/Facebook, suppression de compte, écrans multilingues.
 - ✅ Vérifié sur appareil réel (Android, émulateur Pixel 8, 2026-08-19) : connexion Google native, connexion Facebook (flux web), position GPS — testé en conditions réelles, parcours client complet, par le porteur du projet.
-- ⏳ **Non testé** : build `production` Android (bloqué sur la vérification de l'appareil physique, voir plus haut) ; parcours restaurant et livreur sur appareil réel, toutes plateformes. **Recette du build 22 sur appareil** : liste dans [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md) — notamment un compte SMS neuf (sans nom ni numéro) qui part de « Commander » et doit arriver sur `/address`, et le bouton Retour après connexion qui doit fermer l'app, pas révéler une seconde barre d'onglets.
+- ⏳ **Non testé** : parcours restaurant et livreur sur appareil réel, toutes plateformes. Le build `production` Android est déposé mais **je n'ai pas de retour d'usage dessus** (ni revue Google, ni test terrain). **Recette du build 22 sur appareil** : liste dans [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md) — notamment un compte SMS neuf (sans nom ni numéro) qui part de « Commander » et doit arriver sur `/address`, et le bouton Retour après connexion qui doit fermer l'app, pas révéler une seconde barre d'onglets.
 
 ## Le site de pré-lancement (`landing/`)
 

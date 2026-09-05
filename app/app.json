@@ -22,7 +22,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:taxifood.rentanoo.com"
+      ]
     },
     "android": {
       "package": "com.chris97416.taxifoodnosybe",
@@ -42,7 +45,29 @@
         "googleMaps": {
           "apiKey": "AIzaSyA8ZnyLO0mOb2lLfJu5_4sdXpjVB4HyEvg"
         }
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "taxifood.rentanoo.com",
+              "pathPrefix": "/p/"
+            },
+            {
+              "scheme": "https",
+              "host": "taxifood.rentanoo.com",
+              "pathPrefix": "/r/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

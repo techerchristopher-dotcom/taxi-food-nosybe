@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { partagerRestaurant } from '../../lib/partage';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -111,6 +112,16 @@ export default function RestaurantMenuScreen() {
         <View style={styles.bannerActions}>
           <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
             <Icon name="arrow_back" size={22} color={colors.ink} />
+          </Pressable>
+          {/* Partage du restaurant — même mécanique que sur une fiche produit. */}
+          <Pressable
+            onPress={() => partagerRestaurant({ id: restaurant.id, name: restaurant.name })}
+            style={styles.roundBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('restaurant.share')}
+          >
+            <Icon name="ios_share" size={20} color={colors.ink} />
           </Pressable>
         </View>
         {!restaurant.coverUrl ? <Text style={styles.bannerHint}>{t('restaurant.coverHint')}</Text> : null}

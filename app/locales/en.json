@@ -124,7 +124,8 @@
     "minOrder": "Min. {{amount}}",
     "productCount_one": "· {{count}} item",
     "productCount_other": "· {{count}} items",
-    "viewCart": "View cart · {{count}} item(s)"
+    "viewCart": "View cart · {{count}} item(s)",
+    "share": "Share this restaurant"
   },
   "conflict": {
     "title": "Switch restaurant?",
@@ -141,7 +142,8 @@
     "optional": "Optional",
     "upTo": "Up to {{count}} to choose",
     "addWithPrice": "Add · {{price}}",
-    "chooseOptions": "Choose the options"
+    "chooseOptions": "Choose the options",
+    "share": "Share this dish"
   },
   "cart": {
     "title": "My cart",

@@ -24,3 +24,17 @@
 
 /
   Cache-Control: public, max-age=0, must-revalidate
+
+# Fichiers de validation des liens universels (iOS / Android).
+# ⚠️ Android ET iOS exigent le type JSON et REFUSENT toute redirection sur ces
+# deux URL. L'echec est silencieux : les liens partages s'ouvrent simplement
+# dans le navigateur au lieu de l'app, sans le moindre message d'erreur.
+# Le fichier Apple n'a volontairement PAS d'extension .json : c'est la
+# convention Apple, et c'est pour cela qu'il faut forcer son Content-Type ici.
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Cache-Control: public, max-age=3600

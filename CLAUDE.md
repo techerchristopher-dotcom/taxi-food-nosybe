@@ -59,12 +59,13 @@ production. La voie envisagée était d'y échapper en convertissant le compte e
 pas dit comment ce point a été levé** — ne pas supposer qu'il l'est, le lui demander avant
 de raisonner dessus. Procédure : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
-⚠️ **Quatre documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
+⚠️ **Cinq documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
 
 - **[docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md)** — ce qui est écrit mais pas encore compilé, et la recette à passer sur appareil avant l'envoi. Décision du 2026-08-18 : on empile les chantiers et on ne fait **qu'un seul gros build**, la liaison de Nosy Be rendant chaque envoi coûteux. À vider après chaque build.
 - **[docs/SOUMISSION-APPLE.md](docs/SOUMISSION-APPLE.md)** — audit de conformité iOS, bloquant par bloquant.
 - **[docs/FICHE-APP-STORE.md](docs/FICHE-APP-STORE.md)** — textes de la fiche, questionnaire App Privacy, classement d'âge, **et les notes de revue à coller** (§ 4, rédigées en anglais).
 - **[docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md)** — état des lieux Android : ce qui est fait, ce qui est bloqué par du code, et ce qui l'est par un compte externe que seul le porteur du projet peut créer.
+- **[docs/ONBOARDING-RESTAURATEUR.md](docs/ONBOARDING-RESTAURATEUR.md)** — **la procédure à rejouer telle quelle à chaque nouveau restaurant** : pré-autoriser l'adresse, créer le compte à la place du restaurateur (impossible en SQL — sas Edge temporaire, refermé aussitôt), vérifier le rattachement, brancher Telegram, et **finir par le message copier-coller à lui envoyer, avec le lien, l'adresse e-mail et le mot de passe**. ⚠️ Cette dernière étape est le livrable : un compte créé et non communiqué ne sert à rien. La création de la carte et des visuels, elle, est dans [docs/PARTENAIRES.md](docs/PARTENAIRES.md).
 
 ## Lancer l'app en local
 

@@ -380,8 +380,22 @@ export default function PaiementScreen() {
           </View>
         ) : null}
 
-        {/* Note contextuelle (annulation, bascule ratée) hors des blocs d'état. */}
-        {note && etape === 'formulaire' ? <Text style={styles.note}>{note}</Text> : null}
+        {/* Note contextuelle (annulation, bascule ratée) hors des blocs d'état.
+            ⚠️ Elle doit sortir sur les blocs d'ÉCHEC et d'INDISPONIBILITÉ aussi,
+            pas seulement sur le formulaire. C'est là que se trouve l'autre bouton
+            « Payer en espèces » : quand cette bascule échouait depuis un canal
+            fermé ou un refus de carte, `note` était posée mais jamais affichée
+            (`messageMotif` ne la lit que dans son cas `default`). Le bouton
+            cessait simplement de tourner, et le client restait devant une
+            invitation à payer en espèces qui venait de rater sans rien dire —
+            le seul endroit du tunnel où l'app ne répondait pas. On ne la répète
+            pas quand `messageMotif` l'a déjà rendue telle quelle. */}
+        {note &&
+        (etape === 'formulaire' ||
+          ((etape === 'echec' || etape === 'indisponible') &&
+            messageMotif(t, motif, note, detailServeur) !== note)) ? (
+          <Text style={styles.note}>{note}</Text>
+        ) : null}
 
         {/* Sortie toujours disponible tant que rien n'est payé : personne ne doit
             se sentir enfermé dans un écran de paiement. */}

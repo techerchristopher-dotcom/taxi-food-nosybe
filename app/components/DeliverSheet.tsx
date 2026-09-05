@@ -10,6 +10,15 @@ import { Order, paymentLabel } from '../data/types';
  * Confirmation de livraison. Si le paiement est en espèces, le livreur doit cocher qu'il a
  * bien encaissé le montant exact (trace en cas de litige) avant de valider. Sinon, simple
  * confirmation.
+ *
+ * ⚠️ `paymentStatus` L'EMPORTE SUR `paymentMethod`. Une commande peut porter
+ * « espèces » ET avoir été réellement encaissée par carte : le repli espèces
+ * (`basculer_en_especes`) repasse la commande en espèces sans pouvoir annuler le
+ * PaymentIntent chez Stripe, et une authentification bancaire qui aboutit après
+ * la bascule laisse `payment_method = 'especes'` avec `payment_status = 'paye'`.
+ * Demander au livreur d'encaisser dans ce cas ferait payer le client DEUX FOIS,
+ * la totalité de la commande. On se fie donc à ce qui a été encaissé, pas au
+ * mode annoncé.
  */
 export function DeliverSheet({
   order,
@@ -25,7 +34,10 @@ export function DeliverSheet({
   const insets = useSafeAreaInsets();
   const [checked, setChecked] = useState(false);
 
-  const isCash = order?.paymentMethod === 'especes';
+  // Déjà encaissé en ligne : plus rien à prendre au client, quel que soit le
+  // mode affiché sur la commande.
+  const dejaPayeEnLigne = order?.paymentStatus === 'paye';
+  const isCash = order?.paymentMethod === 'especes' && !dejaPayeEnLigne;
   const canConfirm = !isCash || checked;
 
   function close() {
@@ -53,7 +65,11 @@ export function DeliverSheet({
             <Text style={styles.checkText}>J'ai bien encaissé {order ? formatAr(order.total) : ''} en espèces.</Text>
           </Pressable>
         ) : (
-          <Text style={styles.noCash}>Paiement {order ? paymentLabel(order.paymentMethod) : ''} — rien à encaisser en espèces.</Text>
+          <Text style={styles.noCash}>
+            {dejaPayeEnLigne
+              ? 'Déjà payé par carte en ligne — ne rien encaisser.'
+              : `Paiement ${order ? paymentLabel(order.paymentMethod) : ''} — rien à encaisser en espèces.`}
+          </Text>
         )}
 
         <View style={styles.actions}>

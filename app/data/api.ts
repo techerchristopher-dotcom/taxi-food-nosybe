@@ -752,6 +752,23 @@ export async function createOrder(input: CreateOrderInput): Promise<{
  * (staff OU propriétaire) qui se cumulent en OR — sans ce filtre, ses commandes passées
  * en tant que client (y compris chez d'autres restaurants) fuiteraient dans la liste, et
  * toute action dessus serait refusée par `set_order_status`. Les plus récentes d'abord.
+ *
+ * ⚠️ UNE COMMANDE CARTE NON ENCAISSÉE N'EXISTE PAS POUR LE RESTAURANT.
+ * `create_order` insère en `status = 'recue'` AVANT que le client n'ait vu le
+ * PaymentSheet. Sans ce filtre, la commande d'un client qui abandonne son
+ * paiement s'affiche sur la tablette avec son bouton « Accepter » : le
+ * restaurant cuisine, personne ne paie, et la marchandise est perdue. On la
+ * masque tant que l'encaissement n'a pas abouti — elle réapparaît d'elle-même
+ * dès que `payment_status` passe à `paye`, ou dès que le client bascule en
+ * espèces (`basculer_en_especes` repasse `payment_method` à `especes`).
+ * `rembourse` n'est PAS masqué : il ne s'atteint qu'après un `paye`, donc le
+ * restaurant connaît déjà la commande et doit continuer à la voir.
+ *
+ * ⚠️ CE FILTRE NE SUFFIT PAS SEUL. Il ferme la porte de la tablette ; celle du
+ * push, de l'e-mail et du Telegram (avec leur lien « Accepter ») se ferme dans
+ * `notify_order_status`, migration `20260906020000_annonce_restaurant_apres_
+ * encaissement_carte.sql` — écrite mais PAS ENCORE APPLIQUÉE en base. Les deux
+ * doivent être en place avant de passer `admin_set_carte_active(true)`.
  */
 export async function listRestaurantOrders(
   statuses: OrderStatus[],
@@ -765,7 +782,13 @@ export async function listRestaurantOrders(
     .in('status', statuses)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return attachCourierProfiles((data as unknown as OrderJoinRow[]).map(mapOrder));
+  const visibles = (data as unknown as OrderJoinRow[]).filter(
+    (o) =>
+      o.payment_method !== 'cb' ||
+      (o.payment_status ?? 'non_requis') === 'paye' ||
+      (o.payment_status ?? 'non_requis') === 'rembourse',
+  );
+  return attachCourierProfiles(visibles.map(mapOrder));
 }
 
 /**

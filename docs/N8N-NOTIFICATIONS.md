@@ -80,6 +80,39 @@ explique que la vérification Apple soit passée immédiatement.
 ⚠️ **Si l'adresse expéditrice change un jour, il faut revenir la déclarer ici.**
 Apple ne vérifie pas l'adresse à l'envoi : il jette, sans rien signaler.
 
+## Alerte de première connexion
+
+⚠️ **Le trou que ça bouche.** Depuis qu'on crée les comptes partenaires
+nous-mêmes, l'alerte d'inscription tire au moment où **nous** créons le compte,
+pas au moment où le patron s'en sert. On envoie ses identifiants, puis plus
+rien : impossible de savoir s'il a réussi à entrer, perdu le message, ou jamais
+essayé. Et donc impossible d'enchaîner sur « maintenant, installez Telegram ».
+
+Le signal est `auth.users.last_sign_in_at`, qui passe de `NULL` à une date
+**exactement une fois** dans la vie d'un compte. GoTrue le met à jour lui-même :
+rien à instrumenter côté application.
+
+Trigger `on_auth_user_first_signin` → même webhook n8n que l'inscription, avec
+`evenement: 'premiere_connexion'`. Le workflow, renommé **« Taxi Food —
+inscription et première connexion »**, distingue les deux : objet
+`✅ <Restaurant> s'est connecté`, et un encadré « Prochaine étape : Telegram ».
+
+⚠️ **Réservé au personnel de restaurant, délibérément.** Pour un client
+ordinaire, l'inscription et la première connexion sont le même instant :
+alerter sur les deux doublerait chaque client sans rien apprendre. Le décalage
+n'existe que pour les comptes créés à l'avance.
+
+Le code du nœud est versionné dans
+[`n8n/alerte-inscription-et-premiere-connexion.js`](../n8n/alerte-inscription-et-premiere-connexion.js) —
+l'API n8n accepte uniquement `name`, `nodes`, `connections` et `settings` sur un
+`PUT`, tout autre champ produit un 400.
+
+**Vérifié pour de vrai le 2026-09-05**, pas supposé : `last_sign_in_at` remis à
+`NULL` sur `demo.resto@taxifood.mg`, vraie connexion par l'API
+d'authentification, puis `net._http_response` → `200 {"message":"Workflow was
+started"}` et exécution n8n `success` avec l'objet
+`✅ Taxi Be s'est connecté` accepté par le SMTP.
+
 ## Ce qu'il reste à faire
 
 1. **Dans n8n**, ouvrir le workflow et choisir les identifiants :

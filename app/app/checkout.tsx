@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
@@ -11,7 +11,7 @@ import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
 import { formatAddressLine, PaymentMethod, paymentShort } from '../data/types';
 import { createOrder, listAddresses } from '../data/api';
 import { useLoad } from '../lib/useLoad';
-import { lineUnitPrice, useCart } from '../store/cart';
+import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
 import { useAuthIntent } from '../store/authIntent';
@@ -71,6 +71,7 @@ function CheckoutForm() {
   const restaurantInitials = useCart((s) => s.restaurantInitials);
   const subtotal = useCart((s) => s.subtotal());
   const deliveryFee = useCart((s) => s.deliveryFee());
+  const packaging = useMemo(() => packagingLines(lines), [lines]);
   const total = useCart((s) => s.total());
   const clear = useCart((s) => s.clear);
 
@@ -210,6 +211,12 @@ function CheckoutForm() {
           <Text style={styles.detailLabel}>{t('cart.subtotal')}</Text>
           <Text style={styles.detailValue}>{formatAr(subtotal)}</Text>
         </View>
+        {packaging.map((p) => (
+          <View key={p.label} style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{p.label}</Text>
+            <Text style={styles.detailValue}>{formatAr(p.amount)}</Text>
+          </View>
+        ))}
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>{t('common.deliveryFee')}</Text>
           <Text style={styles.detailValue}>{formatAr(deliveryFee)}</Text>

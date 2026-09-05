@@ -182,6 +182,12 @@ export default function OrderTrackingScreen() {
               <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
             </View>
           ))}
+          {order.packagingFee > 0 ? (
+            <View style={styles.itemRow}>
+              <Text style={styles.itemName}>Emballage</Text>
+              <Text style={styles.itemPrice}>{formatAr(order.packagingFee)}</Text>
+            </View>
+          ) : null}
           <View style={styles.itemRow}>
             <Text style={styles.itemName}>{t('common.deliveryFee')}</Text>
             <Text style={styles.itemPrice}>{formatAr(order.deliveryFee)}</Text>

@@ -68,6 +68,14 @@ export type Product = {
    * ⚠️ Ne jamais déduire d'un nom de plat — seul le restaurant sait sa recette.
    */
   dietTags?: string[];
+  /**
+   * Frais d'emballage facturé en plus, par exemplaire (ex. 2 000 Ar la boîte à
+   * pizza). Ce n'est PAS une option : le client ne choisit rien, la ligne apparaît
+   * d'elle-même dans le panier, au-dessus des frais de livraison.
+   */
+  packagingFee?: number;
+  /** Libellé de la ligne d'emballage, ex. « Boîte à pizza ». */
+  packagingLabel?: string | null;
 };
 
 /** Une option d'un groupe (ex. « Poulet », « + Fromage »). */
@@ -176,7 +184,8 @@ export type Restaurant = {
   /** true : l'ouverture se déduit des horaires du jour ; false : bascule manuelle. */
   autoOpen: boolean;
   etaLabel: string; // cosmétique (non stocké) — placeholder
-  deliveryFee: number; // ariary
+  deliveryFee: number;
+  /** Frais d'emballage total de la commande (boîtes à pizza…). 0 si aucun. */
   minOrder: number; // ariary
   foodTypes: string[]; // types de plats proposés (ex. ['Tacos','Kebab','Burger']) — filtre accueil
   categoryTags: CategoryTag[]; // catégories ACTIVES du resto (emoji + nom) — tags de la carte
@@ -250,6 +259,8 @@ export type Order = {
   restaurantLogoUrl?: string | null;
   items: OrderItemSnapshot[];
   subtotal: number;
+  /** Frais d'emballage total (boîtes à pizza…). 0 si la commande n'en contient pas. */
+  packagingFee: number;
   deliveryFee: number;
   total: number;
   paymentMethod: PaymentMethod;

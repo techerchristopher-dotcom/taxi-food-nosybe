@@ -38,6 +38,12 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
         </View>
       ))}
 
+      {order.packagingFee > 0 ? (
+        <View style={[styles.itemRow, { marginTop: 2 }]}>
+          <Text style={styles.subLabel}>Emballage</Text>
+          <Text style={styles.subValue}>{formatAr(order.packagingFee)}</Text>
+        </View>
+      ) : null}
       <View style={[styles.itemRow, { marginTop: 2 }]}>
         <Text style={styles.subLabel}>Frais de livraison</Text>
         <Text style={styles.subValue}>{formatAr(order.deliveryFee)}</Text>

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +10,7 @@ import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { lineUnitPrice, RestaurantContext, useCart } from '../../store/cart';
+import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../../store/cart';
 import { useLoad } from '../../lib/useLoad';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { Product } from '../../data/types';
@@ -31,6 +32,8 @@ export default function CartScreen() {
   const deliveryFeeValue = useCart((s) => s.deliveryFeeValue);
   const subtotal = useCart((s) => s.subtotal());
   const deliveryFee = useCart((s) => s.deliveryFee());
+  const cartLines = useCart((s) => s.lines);
+  const packaging = useMemo(() => packagingLines(cartLines), [cartLines]);
   const total = useCart((s) => s.total());
 
   // Suggestions d'upsell (« faire gonfler le panier ») du restaurant courant.
@@ -182,6 +185,14 @@ export default function CartScreen() {
             <Text style={styles.sumLabel}>{t('cart.subtotal')}</Text>
             <Text style={styles.sumValue}>{formatAr(subtotal)}</Text>
           </View>
+          {/* Emballage : frais porté par le produit (boîte à pizza), pas une
+              option choisie. Affiché juste au-dessus de la livraison. */}
+          {packaging.map((p) => (
+            <View key={p.label} style={[styles.sumRow, { marginTop: 10 }]}>
+              <Text style={styles.sumLabel}>{p.label}</Text>
+              <Text style={styles.sumValue}>{formatAr(p.amount)}</Text>
+            </View>
+          ))}
           <View style={[styles.sumRow, { marginTop: 10 }]}>
             <Text style={styles.sumLabel}>{t('common.deliveryFee')}</Text>
             <Text style={styles.sumValue}>{formatAr(deliveryFee)}</Text>

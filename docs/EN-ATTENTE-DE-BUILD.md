@@ -305,25 +305,41 @@ répartis sur trois restaurants. Le porteur du projet fait le point avec chaque
 restaurateur, puis répond produit par produit ; rien n'est tagué avant.
 Sur un label de confiance, ne rien afficher vaut mieux qu'une supposition.
 
-## Carte pizzas Chez Bidul & Truc + boîte automatique (2026-09-05)
+## Carte pizzas Chez Bidul & Truc + frais d'emballage (2026-09-05)
 
 13 pizzas au feu de bois, avec visuels, compositions et prix.
 
-- Base : catégorie `Pizza`, 13 produits, un groupe d'options obligatoire
-  « Boîte de transport » (une seule option, +2 000 Ar), `food_types` complété.
-  **Tout est déjà actif.**
-- App : pré-sélection automatique de tout groupe obligatoire n'offrant qu'un seul
-  choix (`app/product/[id].tsx`).
+- Base : catégorie `Pizza`, 13 produits, `food_types` complété. **Déjà actif.**
+- Base : `products.packaging_fee` / `packaging_label`, `orders.packaging_fee`, et
+  `create_order` qui ajoute l'emballage au total. **Déjà actif.**
+- App : ligne « Boîte à pizza » dans le panier, le récapitulatif de commande, le
+  détail d'une commande passée et la carte commande côté restaurant.
 
-✅ Vérifié à l'écran : « Boîte pizza + 2 000 Ar » cochée d'office, bouton
-« Ajouter · 27 000 Ar » pour une Margherita à 25 000.
+✅ Vérifié : calcul serveur en transaction annulée (2 pizzas + 1 dessert →
+marchandise 62 000, emballage 4 000, livraison 5 000, total 71 000, commission sur
+la marchandise seule) **et** affichage réel dans le panier du simulateur.
 
-⚠️ **Décalage à connaître :** les pizzas sont en base, donc **déjà visibles dans
-l'app installée**, alors que la pré-sélection attend le build. D'ici là le client
-devra taper une fois sur « Boîte pizza » avant de pouvoir ajouter — fonctionnel
-(le groupe est marqué OBLIGATOIRE), mais un tap de trop. Si c'est gênant, retirer
-le groupe de la base et le remettre au moment du build.
+⚠️ **La boîte n'est PAS une option que le client coche.** Une première version la
+modélisait en groupe d'options obligatoire : complication inutile, corrigée. C'est
+un frais porté par le produit, comme la livraison est portée par le restaurant.
+Une boîte par pizza — deux pizzas, deux boîtes.
+
+⚠️ **Décalage à connaître :** les colonnes et `create_order` sont déjà actives, donc
+**l'app installée facture déjà l'emballage** ; mais elle ne sait pas encore
+l'AFFICHER (la ligne attend le build). Le client verrait donc un total supérieur à
+la somme qu'il calcule de tête. **Si le build tarde, remettre `packaging_fee` à 0
+sur les 13 pizzas** et le repositionner au moment de la sortie.
 
 ⚠️ **Deux points tranchés faute de réponse, à confirmer :** « fromage montage » de la
 carte papier a été écrit « fromage de **montagne** » ; `cuisine_type` est resté
 « Bar & Tapas » alors qu'un four à bois justifierait « Restaurant, Bar & Pizzeria ».
+
+## Deux pièges rencontrés le 2026-09-05, à ne pas refaire
+
+1. **Sélecteur Zustand renvoyant un nouveau tableau** → « Maximum update depth
+   exceeded », écran panier en boucle infinie. Une fonction qui construit un tableau
+   se consomme avec `useMemo` dans l'écran, jamais dans `useCart((s) => ...)`.
+2. **Liste de colonnes écrite à la main** dans `getProductDetail` au lieu de
+   `PRODUCT_COLS` : le produit arrivait sans `packaging_fee`, donc la ligne
+   n'apparaissait pas au panier alors que la base était juste. Toute requête sur
+   `products` passe par `PRODUCT_COLS`.

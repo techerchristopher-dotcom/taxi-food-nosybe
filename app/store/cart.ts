@@ -35,6 +35,30 @@ export function lineUnitPrice(line: CartLine): number {
   return line.product.price + optionsTotal(line.options);
 }
 
+/**
+ * Frais d'emballage du panier, regroupés par libellé (« Boîte à pizza »…).
+ *
+ * Ce n'est PAS une option que le client choisit : c'est un frais porté par le
+ * produit, comme la livraison est portée par le restaurant. Une boîte par
+ * exemplaire — deux pizzas, deux boîtes.
+ */
+/**
+ * ⚠️ Fonction PURE, à consommer via `useMemo` dans les écrans — jamais via un
+ * sélecteur Zustand. Elle renvoie un nouveau tableau à chaque appel : passée en
+ * sélecteur, elle provoque une boucle de rendu infinie (« Maximum update depth
+ * exceeded »). Erreur commise puis corrigée le 2026-09-05.
+ */
+export function packagingLines(lines: CartLine[]): { label: string; amount: number }[] {
+  const parLibelle = new Map<string, number>();
+  for (const l of lines) {
+    const fee = l.product.packagingFee ?? 0;
+    if (fee <= 0) continue;
+    const label = l.product.packagingLabel || 'Emballage';
+    parLibelle.set(label, (parLibelle.get(label) ?? 0) + fee * l.quantity);
+  }
+  return [...parLibelle].map(([label, amount]) => ({ label, amount }));
+}
+
 /** Contexte restaurant fourni à l'ajout (l'écran qui ajoute connaît déjà le restaurant). */
 export type RestaurantContext = {
   id: string;
@@ -73,6 +97,7 @@ type CartState = Persisted & {
   count: () => number;
   subtotal: () => number;
   deliveryFee: () => number;
+  packagingFee: () => number;
   total: () => number;
 };
 
@@ -184,7 +209,11 @@ export const useCart = create<CartState>((set, get) => ({
   count: () => get().lines.reduce((n, l) => n + l.quantity, 0),
   subtotal: () => get().lines.reduce((n, l) => n + lineUnitPrice(l) * l.quantity, 0),
   deliveryFee: () => get().deliveryFeeValue,
-  total: () => get().subtotal() + get().deliveryFeeValue,
+  packagingFee: () => packagingLines(get().lines).reduce((n, p) => n + p.amount, 0),
+  total: () =>
+    get().subtotal() +
+    packagingLines(get().lines).reduce((n, p) => n + p.amount, 0) +
+    get().deliveryFeeValue,
 }));
 
 function toPersisted(s: CartState): Persisted {

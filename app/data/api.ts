@@ -87,11 +87,13 @@ type ProductRow = {
   in_menu?: boolean | null;
   is_archived?: boolean | null;
   diet_tags?: string[] | null;
+  packaging_fee?: number | null;
+  packaging_label?: string | null;
 };
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags';
+  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label';
 
 type CategoryRow = { id: string; restaurant_id: string; name: string; icon: string | null; sort_order: number };
 
@@ -172,6 +174,8 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     featuredLabel: p.featured_label ?? null,
     inMenu: p.in_menu ?? true,
     dietTags: p.diet_tags ?? [],
+    packagingFee: p.packaging_fee ?? 0,
+    packagingLabel: p.packaging_label ?? null,
   };
 }
 
@@ -336,7 +340,9 @@ export async function getProductDetail(id: string): Promise<{
 } | null> {
   const { data, error } = await supabase
     .from('products')
-    .select('id, restaurant_id, category_id, name, description, price, is_available, photo_url')
+    // PRODUCT_COLS et pas une liste ecrite a la main : c'est exactement l'oubli
+    // qui a fait disparaitre les frais d'emballage du panier le 2026-09-05.
+    .select(PRODUCT_COLS)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -421,6 +427,7 @@ type OrderJoinRow = {
   restaurant_id: string;
   subtotal: number;
   delivery_fee: number;
+  packaging_fee?: number | null;
   total: number;
   payment_method: PaymentMethod;
   status: OrderStatus;
@@ -452,7 +459,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
   'restaurants ( name, logo_url ), addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
@@ -482,6 +489,7 @@ function mapOrder(o: OrderJoinRow): Order {
     })),
     subtotal: o.subtotal,
     deliveryFee: o.delivery_fee,
+    packagingFee: o.packaging_fee ?? 0,
     total: o.total,
     paymentMethod: o.payment_method,
     status: o.status,
@@ -589,6 +597,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   orderNumber: string;
   subtotal: number;
   deliveryFee: number;
+  packagingFee: number;
   total: number;
 }> {
   const { data, error } = await supabase.rpc('create_order', {
@@ -607,7 +616,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   // échoue bruyamment si l'id manque — plutôt que de laisser l'écran suivant naviguer
   // vers `/order/undefined` (page « introuvable ») avec un montant à 0.
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { id: string; order_number: string; subtotal: number; delivery_fee: number; total: number }
+    | { id: string; order_number: string; subtotal: number; delivery_fee: number; packaging_fee?: number | null; total: number }
     | null
     | undefined;
   if (!row?.id) {
@@ -618,6 +627,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     orderNumber: row.order_number,
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,
+    packagingFee: row.packaging_fee ?? 0,
     total: row.total,
   };
 }

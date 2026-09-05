@@ -299,9 +299,10 @@ sans ouvrir la fiche.
 jambon **de volaille** : les taguer porc par similarité de nom (« Reine »,
 « Pepperoni ») aurait été un contresens coûteux.
 
-⚠️ **Cinq plats restent NON tagués faute de certitude, à trancher avec les
-restaurateurs avant la mise en service :** croque-monsieur, croque-madame, cordon
-bleu, pâtes carbonara, terrine de campagne — la carte dit « jambon » sans préciser.
+⚠️ **La liste complète de ce qui reste à confirmer est dans
+[docs/LABELS-ALIMENTAIRES.md](LABELS-ALIMENTAIRES.md)** — 5 produits et 2 suppléments,
+répartis sur trois restaurants. Le porteur du projet fait le point avec chaque
+restaurateur, puis répond produit par produit ; rien n'est tagué avant.
 Sur un label de confiance, ne rien afficher vaut mieux qu'une supposition.
 
 ## Carte pizzas Chez Bidul & Truc + boîte automatique (2026-09-05)

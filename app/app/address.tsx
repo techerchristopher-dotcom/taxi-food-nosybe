@@ -23,20 +23,6 @@ import { useAuthIntent } from '../store/authIntent';
  * automatiquement de la position (repli « Nosy Be » si indisponible). Un seul champ libre
  * facultatif pour les précisions au livreur.
  */
-/**
- * Ligne d'adresse la plus PRÉCISE que sait donner le géocodage inverse : numéro + rue,
- * sinon le nom du lieu/POI, complété du quartier s'il n'y figure pas déjà.
- * On n'utilise jamais `region` (« Province d'Antsiranana ») : trop large pour livrer.
- */
-function preciseLine(g?: Location.LocationGeocodedAddress): string {
-  if (!g) return '';
-  const streetPart = [g.streetNumber, g.street].filter(Boolean).join(' ').trim();
-  const head = streetPart || g.name?.trim() || '';
-  const area = (g.district || g.subregion || g.city || '').trim();
-  if (!head) return area;
-  if (area && !head.toLowerCase().includes(area.toLowerCase())) return `${head}, ${area}`;
-  return head;
-}
 
 /**
  * GARDE UNIQUE DU TUNNEL DE COMMANDE.
@@ -97,8 +83,6 @@ function AddressForm() {
   const [autoZone, setAutoZone] = useState('Nosy Be'); // quartier, déduit du GPS
   // Adresse précise (rue / repère). Pré-remplie par le géocodage inverse mais TOUJOURS
   // éditable : le géocodage est souvent approximatif à Nosy Be, le client corrige.
-  const [street, setStreet] = useState('');
-  const [streetTouched, setStreetTouched] = useState(false);
   const [save, setSave] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +185,9 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
 
       setCoords({ latitude, longitude, capturedAt: new Date(horodatage).toISOString() });
       setGpsStatus('ok');
-      // Quartier + rue déduits automatiquement (reverse geocoding — natif uniquement).
+      // Quartier deduit automatiquement (reverse geocoding — natif uniquement).
+      // On ne deduit plus de « rue » : le champ a ete retire, Nosy Be n'ayant pas
+      // d'adressage postal.
       if (Platform.OS !== 'web') {
         try {
           const [g] = await Location.reverseGeocodeAsync({ latitude, longitude });
@@ -209,13 +195,8 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
           // une zone administrative inutilisable pour un livreur — c'était le bug signalé.
           const z = g?.district || g?.subregion || g?.city;
           if (z) setAutoZone(z);
-          // Ne jamais écraser ce que le client a déjà tapé.
-          if (!streetTouched) {
-            const s = preciseLine(g);
-            if (s) setStreet(s);
-          }
         } catch {
-          /* repli : on garde « Nosy Be » et le champ rue vide, à saisir à la main */
+          /* repli : on garde « Nosy Be » comme quartier */
         }
       }
     } catch (e) {
@@ -237,9 +218,12 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
 
   const selectedSaved = newMode ? null : saved?.find((a) => a.id === selectedId) ?? null;
   const savedHasGps = selectedSaved ? selectedSaved.latitude != null && selectedSaved.longitude != null : false;
-  // L'adresse précise est exigée : c'est elle que lit le livreur, la position GPS seule
-  // ne suffisait pas à écrire une ligne d'adresse lisible.
-  const newFormReady = !!coords && phone.trim().length >= 6 && street.trim().length >= 3;
+  // ⚠️ L'adresse precise n'est PLUS exigee. Nosy Be n'a pas d'adressage postal :
+  // demander « 12 rue de la Plage » obligeait les clients a inventer quelque chose
+  // pour passer l'ecran, ce qui produisait des lignes fausses que le livreur ne
+  // pouvait pas utiliser. La position GPS est la verite ; le champ libre n'est
+  // qu'une aide facultative pour le livreur (« portail bleu, apres l'epicerie »).
+  const newFormReady = !!coords && phone.trim().length >= 6;
   const canContinue = selectedSaved ? savedHasGps : newFormReady;
 
   async function confirm() {
@@ -256,7 +240,10 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
         // `label` = l'adresse précise, `zone` = le quartier. Les deux valaient auparavant
         // la même zone administrative, d'où le « Province d'Antsiranana — Province
         // d'Antsiranana » affiché à la validation de commande.
-        label: street.trim() || autoZone,
+        // `label` = ce qui s'affiche en tete de l'adresse, `zone` = le quartier.
+        // Sans champ rue, on prend le quartier deduit du GPS — jamais la
+        // precision livreur, qui est une consigne, pas un nom de lieu.
+        label: autoZone,
         zone: autoZone,
         landmark: note.trim(), // précisions → visibles par le livreur
         phone: phone.trim(),
@@ -360,19 +347,6 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
 
         {/* ===== Champs secondaires ===== */}
         <View style={styles.fields}>
-          {/* Adresse précise — pré-remplie par le GPS, mais toujours modifiable :
-              le géocodage inverse est approximatif à Nosy Be. */}
-          <Field label={t('address.streetLabel')}>
-            <TextInput
-              value={street}
-              onChangeText={(t) => { setStreet(t); setStreetTouched(true); setNewMode(true); }}
-              placeholder={t('address.streetPlaceholder')}
-              placeholderTextColor={colors.textFaint}
-              style={styles.input}
-            />
-            <Text style={styles.fieldHint}>{t('address.streetHint')}</Text>
-          </Field>
-
           <Field label={t('address.phoneLabel')}>
             <TextInput
               value={phone}
@@ -382,6 +356,7 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
             />
           </Field>
 
+          {/* Seule aide libre de l'ecran, et volontairement FACULTATIVE. */}
           <Field label={t('address.noteLabel')}>
             <TextInput
               value={note}
@@ -391,6 +366,7 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
               multiline
               style={[styles.input, styles.textarea]}
             />
+            <Text style={styles.fieldHint}>{t('address.noteHint')}</Text>
           </Field>
 
           <Pressable style={styles.saveRow} onPress={() => setSave((v) => !v)}>
@@ -447,9 +423,7 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
               ? t('address.blockSavedNoGps')
               : !coords
                 ? t('address.blockNoGps')
-                : street.trim().length < 3
-                  ? t('address.blockNoStreet')
-                  : t('address.blockNoPhone')}
+                : t('address.blockNoPhone')}
           </Text>
         ) : null}
         <Button label={t('address.confirm')} onPress={confirm} loading={saving} disabled={!canContinue} />

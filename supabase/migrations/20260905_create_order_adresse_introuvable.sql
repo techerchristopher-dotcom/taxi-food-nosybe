@@ -1,0 +1,19 @@
+-- create_order : distinguer « adresse introuvable » de « adresse sans position ».
+-- (Applique en base le 2026-09-05.)
+--
+-- Le controle etait :
+--   select latitude, longitude into v_lat, v_lng from addresses
+--    where id = p_address_id and user_id = auth.uid();
+--   if v_lat is null or v_lng is null then raise 'Position GPS manquante...'
+--
+-- Quand la ligne n'existe PAS — adresse supprimee, ou appartenant a un autre
+-- compte — le SELECT INTO laisse les variables a NULL et on tombe dans la MEME
+-- branche. Le client lit alors « reviens capter ta position », capture une
+-- position parfaitement valide, revient, et echoue a l'identique : une boucle
+-- sans issue, avec un message qui accuse la mauvaise cause.
+--
+-- Signale par le porteur du projet le 2026-09-05 : l'ecran refusait sa commande
+-- alors que TOUTES ses adresses avaient bien une position en base (verifie).
+--
+-- La fonction complete est dans la migration d'origine ; seul le bloc de
+-- controle d'adresse change ici (v_address %rowtype au lieu de deux variables).

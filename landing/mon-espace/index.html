@@ -44,12 +44,12 @@
 
  /* Le halo guide l'oeil. Il bat lentement — attirer sans stresser — et il est
     place en POURCENTAGE, donc juste quelle que soit la taille d'ecran. */
- .halo{position:absolute;border:3px solid #DF3228;border-radius:999px;pointer-events:none;
-       box-shadow:0 0 0 5px rgba(223,50,40,.18);animation:bat 1.7s ease-in-out infinite}
+ .halo{position:absolute;border:2.5px solid #DF3228;border-radius:999px;pointer-events:none;
+       background:none;animation:bat 1.7s ease-in-out infinite}
  @keyframes bat{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.72}}
- .doigt{position:absolute;font-size:30px;pointer-events:none;animation:tape 1.7s ease-in-out infinite;
-        filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
- @keyframes tape{0%,100%{transform:translate(0,0)}50%{transform:translate(-5px,-9px)}}
+ .doigt{position:absolute;font-size:27px;pointer-events:none;animation:tape 1.6s ease-in-out infinite;
+        filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+ @keyframes tape{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
 
  .barre{display:flex;gap:7px;margin-top:20px}
  .pt{width:8px;height:8px;border-radius:999px;background:#DCD8D3;transition:.3s}
@@ -124,7 +124,7 @@
   <div class="phone">
     <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
     <div class="halo" style="left:9%;right:9%;top:63.5%;height:7.4%"></div>
-    <div class="doigt" style="left:64%;top:69%">👆</div>
+    <div class="doigt" style="left:78%;top:71.5%">👆</div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i></div>
   <button class="btn" data-go="4" data-t="suivant"></button>
@@ -163,8 +163,8 @@
   <p class="sub" data-t="s6"></p>
   <div class="phone">
     <img src="/img/guide/1-connexion-480.webp" alt="" width="480" height="944">
-    <div class="halo" style="left:12%;right:12%;top:88.2%;height:4.4%"></div>
-    <div class="doigt" style="left:66%;top:92%">👆</div>
+    <div class="halo" style="left:20%;right:8%;top:87.6%;height:5.2%"></div>
+    <div class="doigt" style="left:82%;top:93.4%">👆</div>
   </div>
   <div class="barre"><i class="pt on"></i><i class="pt"></i><i class="pt"></i></div>
   <button class="btn" data-go="7" data-t="suivant"></button>

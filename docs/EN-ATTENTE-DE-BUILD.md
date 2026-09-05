@@ -33,6 +33,7 @@ interactif (capability Sign In with Apple) ; n°12 réussi sans conséquence ; n
 
 | Chantier | Vérifié |
 |---|---|
+| **Type de plat « Pâtes » ajouté aux deux constantes en dur** (`app/data/types.ts`) — `FOOD_TYPE_ORDER` et `FOOD_TYPE_ICON` (🍝), juste après `Pizza`. Nécessaire pour le nouveau partenaire **Les Siciliens** (Hell-Ville), dont `food_types` vaut `{Pizza, Pâtes, Burger}`. Sans cet ajout la puce « Pâtes » apparaît quand même sur l'accueil (les filtres sont l'union des `food_types` réellement en base) mais **sans emoji et reléguée en dernier**, après tous les types connus — `FOOD_TYPE_ORDER.indexOf` renvoie -1, poids 999. `Pizza` et `Burger` étaient déjà présents, rien à faire pour eux. | à vérifier au build : la puce « 🍝 Pâtes » se place bien en 2ᵉ position de la barre de filtres, après « Pizza » |
 | **Navigation libre du catalogue — réponse au rejet Apple 5.1.1(v) du 2026-08-23.** L'app s'ouvrait sur l'écran de connexion ; elle s'ouvre désormais sur la liste des restaurants. Parcourir les restaurants, un menu, une fiche produit et remplir son panier ne demande plus de compte. Le compte n'est exigé qu'à l'entrée du tunnel de commande (`/address`), qui porte l'unique garde de l'app. Écran de connexion doté d'une croix de sortie (il n'en avait aucune), onglets Commandes et Profil dotés d'un état visiteur explicite, espaces pro (`(restaurant)`, `(livreur)`) dotés de leur propre garde de rôle — `app/index.tsx` était jusque-là leur seule protection. | `tsc --noEmit` ✅ · parité des 3 fichiers de langue ✅ (272 clés) · **parcours anonyme complet vérifié dans un navigateur** : accueil → menu → fiche produit → panier (36 000 Ar) → « Commander » → connexion → croix → retour au panier intact ; onglets Commandes et Profil visiteur ; liens profonds `/(restaurant)`, `/(livreur)`, `/role-select`, `/address` tous refermés. ⚠️ **Les parcours CONNECTÉS restent à vérifier sur appareil** (compte SMS neuf sans nom ni téléphone, compte multi-rôle, espaces pro) — voir la recette ci-dessous |
 | **Revue adversariale du chantier ci-dessus (2026-08-23), six défauts corrigés.** (1) **Boucle sur `/role-select`** : le Profil visiteur y envoyait via « Devenir partenaire », mais l'intention n'était jamais consommée — « Continuer comme client » repassait par `/`, qui relisait la même intention et y renvoyait aussitôt. L'écran n'ayant ni onglets ni retour, la seule sortie était la déconnexion. (2) **Second `(tabs)` empilé à chaque connexion** : depuis que la connexion est *posée par-dessus* le catalogue, `replace('/(tabs)')` créait un `(tabs)` NEUF et laissait l'original dessous — le retour Android / le glissé iOS dévoilaient un deuxième navigateur d'onglets (et, si l'inscription avait été empilée, rouvraient la connexion). (3) **Fausse barre de recherche** sur l'écran d'atterrissage : `<View>` + `<Text>` déguisés en champ de saisie — remplacée par une **vraie recherche** (nom, cuisine, zone, types de plats ; insensible aux accents ; filtrage local, aucune requête de plus). (4) **Trois `<Pressable>` sans gestionnaire** : cœur « favori » de la fiche restaurant retiré (pas de favoris au MVP), lignes « Aide & contact » des deux Profils branchées sur la page d'assistance en ligne. (5) **`/login-phone` court-circuitait l'écran du NOM** : `session.phone` retombe sur le numéro d'authentification, donc toujours renseigné pour un compte WhatsApp — le compte entrait sans nom et restait « Client » sur la commande. (6) **`/checkout` sans garde** : `taxifood:///checkout` ouvrait le paiement à un visiteur ; second verrou posé. Plus deux durcissements : hydratations session/panier en `try/finally` + délai maximal de 8 s sur le splash (une app figée au lancement = rejet 2.1), et liste **fermée et typée** des retours possibles (`RETOURS` dans `store/authIntent.ts`) — renommer une route casse désormais le build au lieu du parcours. | `tsc --noEmit` ✅ · `expo export -p web` ✅ · parité des 3 fichiers de langue ✅ (274 clés) · **navigateur** : recherche « crepe » → La Cabane (accents ignorés), croix d'effacement, compteur cohérent ; fiche menu sans cœur mort ; Profil visiteur « Aide & contact » exposé en lien ; `taxifood:///checkout` → connexion puis croix → catalogue · **preuves hors interface** (parcours connectés impossibles à piloter sans identifiants) : la boucle `/role-select` est reproduite puis résolue en rejouant la vraie fonction `destination()` extraite de `app/index.tsx` sur six scénarios ; la duplication de `(tabs)` est reproduite puis résolue contre le réducteur `StackRouter` d'expo-router 57 lui-même |
 
@@ -447,3 +448,24 @@ Ordre de sortie à respecter :
 — elle date d'environ une semaine. L'alignement des deux plateformes se fera donc au build
 **suivant**. Si Google valide vite, l'Android sera brièvement en retard sur l'iOS : c'est
 attendu, ce n'est pas une régression.
+
+## 🕓 Reporté après la validation Google — décidé le 2026-09-05
+
+Trois sujets sont volontairement mis de côté jusqu'à ce que Google valide la version
+déposée. **Ne pas les relancer avant**, c'est une décision du porteur du projet, pas un
+oubli :
+
+1. **Horaires hebdomadaires et numéro de téléphone des Siciliens.** Le restaurant est donc
+   créé en `auto_open = false`, sans aucune ligne dans `restaurant_hours`, et `phone` à
+   `null`. ⚠️ Ne jamais basculer `auto_open` à `true` sans avoir inséré les 7 jours :
+   `ouvert_maintenant()` renvoie `false` en l'absence de ligne, et le restaurant se
+   retrouve fermé en permanence, sans le moindre message d'erreur.
+
+2. **Comptes partenaires.** Sans compte, un restaurateur ne peut ni gérer ses horaires, ni
+   changer son logo ou sa couverture, ni mettre un plat à l'affiche : `current_restaurant_id()`
+   exige une ligne `restaurant_staff` **et** un rôle `restaurant` en statut `active`. Il faut
+   une adresse e-mail ou un numéro pour qu'il s'inscrive lui-même dans l'app, puis
+   `approve_role(...)` côté admin. Concerne **Les Siciliens, Angelo et Chez Bidul & Truc**
+   — seuls Taxi Be et La Cabane ont un compte aujourd'hui.
+
+3. **Le pitch « site web » à Chez Bidul & Truc** (second objectif commercial).

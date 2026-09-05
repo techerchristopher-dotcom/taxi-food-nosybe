@@ -48,7 +48,7 @@ export function FeaturedRestaurantCard({
   return (
     <Pressable onPress={onPress} style={styles.featured}>
       <View style={styles.banner}>
-        <OpenBadge open={r.isOpen} />
+        <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
         {r.popular ? (
           <View style={styles.popular}>
             <Text style={styles.popularText}>{t('restaurantCard.popular')}</Text>
@@ -85,7 +85,7 @@ export function RestaurantRow({
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowHead}>
           <Text style={styles.rowName}>{r.name}</Text>
-          <OpenBadge open={r.isOpen} />
+          <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
         </View>
         <Text style={styles.sub}>
           {r.cuisineType} — {r.zone}

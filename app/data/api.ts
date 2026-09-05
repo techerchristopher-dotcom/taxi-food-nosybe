@@ -43,6 +43,7 @@ type RestaurantRow = {
   logo_url: string | null;
   cover_url: string | null;
   is_open: boolean;
+  listing_status?: string | null;
   phone?: string | null;
   ouvert_maintenant?: boolean | null;
   auto_open?: boolean | null;
@@ -142,7 +143,10 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     // L'ouverture EFFECTIVE, calculee par la base : deduite des horaires si
     // le restaurant est en automatique, sinon la bascule manuelle. On ne la
     // calcule PAS ici : l'horloge du telephone n'est pas une reference.
-    isOpen: r.ouvert_maintenant ?? r.is_open,
+    listingStatus: (r.listing_status as Restaurant['listingStatus']) ?? 'visible',
+    // Un restaurant « bientôt disponible » n'est jamais commandable, quel que
+    // soit son is_open : le badge et le grisé découlent de ce seul champ.
+    isOpen: r.listing_status === 'coming_soon' ? false : (r.ouvert_maintenant ?? r.is_open),
     autoOpen: r.auto_open ?? false,
     phone: r.phone ?? null,
     todayHours: mapDayHours(r.horaires_du_jour),
@@ -226,7 +230,12 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
+    // publique, parce que l'historique d'un client doit continuer d'afficher le
+    // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
+    // supprime rien.
+    .neq('listing_status', 'hidden')
     .order('created_at', { ascending: true });
   if (error) throw error;
   const rows = data as unknown as RestaurantRow[];
@@ -255,7 +264,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -899,7 +908,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

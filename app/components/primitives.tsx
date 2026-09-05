@@ -89,8 +89,26 @@ export function RestaurantLogo({
 }
 
 /** Pastille « Ouvert » / « Fermé » à point coloré. */
-export function OpenBadge({ open }: { open: boolean }) {
+/**
+ * Badge d'etat d'un restaurant.
+ *
+ * Trois cas, pas deux : « bientot disponible » n'est PAS un restaurant ferme.
+ * Un client qui lit « Fermé » revient plus tard dans la journee et repart decu ;
+ * « Bientôt disponible » dit que le partenaire n'est pas encore en service. La
+ * distinction vient de `listingStatus`, pas de `isOpen`.
+ */
+export function OpenBadge({ open, comingSoon }: { open: boolean; comingSoon?: boolean }) {
   const { t } = useTranslation();
+  if (comingSoon) {
+    return (
+      <View style={[styles.openBadge, { backgroundColor: colors.warnBg }]}>
+        <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
+        <Text style={[styles.openText, { color: colors.warnTextAlt }]}>
+          {t('restaurantCard.comingSoon')}
+        </Text>
+      </View>
+    );
+  }
   return (
     <View style={[styles.openBadge, { backgroundColor: open ? colors.successBg : colors.divider }]}>
       <View style={[styles.dot, { backgroundColor: open ? colors.success : colors.textFaint }]} />

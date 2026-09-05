@@ -116,7 +116,8 @@
     "closed": "Fermé",
     "open": "Ouvert",
     "unavailable": "Bientôt de retour",
-    "opensAt": "Ouvre à {{time}}"
+    "opensAt": "Ouvre à {{time}}",
+    "comingSoon": "Bientôt disponible"
   },
   "restaurant": {
     "notFound": "Restaurant introuvable.",
@@ -181,7 +182,10 @@
     "blockNoStreet": "Complète l'adresse précise (rue, quartier ou repère).",
     "blockNoPhone": "Renseigne un téléphone de contact.",
     "confirm": "Confirmer l'adresse",
-    "saveFailed": "Impossible d'enregistrer l'adresse. Réessaie."
+    "saveFailed": "Impossible d'enregistrer l'adresse. Réessaie.",
+    "gpsDenied": "Tu as refusé le partage de position. Autorise-la dans les réglages de ton navigateur, puis réessaie.",
+    "gpsTimeout": "La position met trop de temps à arriver. Réessaie, ou approche-toi d'une fenêtre si tu es à l'intérieur.",
+    "gpsUnavailable": "Position indisponible sur cet appareil. Vérifie que la localisation est activée."
   },
   "checkout": {
     "title": "Valider ma commande",

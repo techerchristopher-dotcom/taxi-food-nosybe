@@ -179,6 +179,14 @@ export type Restaurant = {
   cuisineType: string;
   zone: string; // = zone_served
   isOpen: boolean;
+  /**
+   * Visibilité au catalogue, distincte de `isOpen` :
+   *  - `visible`     : normal
+   *  - `coming_soon` : affiché grisé avec le badge « Bientôt disponible », jamais commandable
+   *  - `hidden`      : absent de la liste d'accueil (mais toujours lisible depuis
+   *                    l'historique d'une commande déjà passée)
+   */
+  listingStatus: 'visible' | 'coming_soon' | 'hidden';
   /** Téléphone public, saisi par le partenaire dans ses réglages. */
   phone?: string | null;
   /** Horaire du jour courant (dérivé de `restaurant_hours` via `horaires_du_jour`) — null si aucun horaire renseigné pour aujourd'hui. */

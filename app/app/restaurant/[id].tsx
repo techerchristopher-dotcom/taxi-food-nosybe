@@ -261,7 +261,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
             {r.cuisineType} — {r.zone}
           </Text>
         </View>
-        <OpenBadge open={r.isOpen} />
+        <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
       </View>
       <View style={styles.rMeta}>
         {/* Masqué tant que les horaires du jour ne sont pas renseignés : voir `todayHoursLabel`. */}

@@ -106,6 +106,8 @@ function AddressForm() {
   // Position GPS — OBLIGATOIRE pour valider.
   const [coords, setCoords] = useState<{ latitude: number; longitude: number; capturedAt: string } | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  // Cause de l'echec, pour dire au client quoi faire plutot qu'un message fourre-tout.
+  const [gpsCause, setGpsCause] = useState<EchecPosition | null>(null);
   const [newMode, setNewMode] = useState(false);
 
   // Pulsation du bouton « Partager ma position » tant qu'aucune position n'est captée,
@@ -126,21 +128,78 @@ function AddressForm() {
     return () => loop.stop();
   }, [coords, gpsStatus, pulse]);
 
+
+/**
+ * Position sur le WEB — pourquoi on n'utilise pas `expo-location` ici.
+ *
+ * Deux défauts rendaient la localisation inutilisable dans un navigateur, et les
+ * deux se présentaient de la même façon : le bouton tournait indéfiniment.
+ *
+ * 1. `getCurrentPositionAsync` n'expose AUCUN délai maximum. Sur le web il tombe
+ *    sur `navigator.geolocation.getCurrentPosition`, qui, sans `timeout`, peut
+ *    attendre pour toujours — cas courant sur un ordinateur de bureau sans GPS,
+ *    où le navigateur interroge un service de géolocalisation qui ne répond pas.
+ * 2. `Accuracy.High` demande `enableHighAccuracy`, qui sur un ordinateur force le
+ *    navigateur à chercher une précision qu'il ne peut pas atteindre. On demande
+ *    donc la précision réseau, largement suffisante pour livrer.
+ *
+ * On distingue aussi les trois causes d'échec : refus, délai dépassé, position
+ * indisponible. Un message unique « refusée ou indisponible » envoyait le client
+ * vérifier ses permissions alors que le problème était souvent le délai.
+ */
+type EchecPosition = 'refus' | 'delai' | 'indisponible';
+
+function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp: number }> {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      reject('indisponible' as EchecPosition);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, timestamp: pos.timestamp }),
+      (err) => {
+        // 1 = refus, 2 = position indisponible, 3 = delai depasse
+        reject((err.code === 1 ? 'refus' : err.code === 3 ? 'delai' : 'indisponible') as EchecPosition);
+      },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 },
+    );
+  });
+}
+
   async function captureLocation() {
     setNewMode(true);
     setGpsStatus('loading');
     setError(null);
+    setGpsCause(null);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setCoords(null);
-        setGpsStatus('error');
-        return;
+      let latitude: number;
+      let longitude: number;
+      let horodatage: number;
+
+      if (Platform.OS === 'web') {
+        // Pas de demande de permission séparée : c'est l'appel lui-même qui fait
+        // apparaître la demande du navigateur. Passer par
+        // `requestForegroundPermissionsAsync` d'abord renvoyait « granted » sans
+        // rien demander, puis l'appel échouait — d'où un refus invisible.
+        const p = await positionWeb();
+        latitude = p.latitude;
+        longitude = p.longitude;
+        horodatage = p.timestamp;
+      } else {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setCoords(null);
+          setGpsCause('refus');
+          setGpsStatus('error');
+          return;
+        }
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        latitude = pos.coords.latitude;
+        longitude = pos.coords.longitude;
+        horodatage = pos.timestamp;
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const latitude = pos.coords.latitude;
-      const longitude = pos.coords.longitude;
-      setCoords({ latitude, longitude, capturedAt: new Date(pos.timestamp).toISOString() });
+
+      setCoords({ latitude, longitude, capturedAt: new Date(horodatage).toISOString() });
       setGpsStatus('ok');
       // Quartier + rue déduits automatiquement (reverse geocoding — natif uniquement).
       if (Platform.OS !== 'web') {
@@ -159,8 +218,11 @@ function AddressForm() {
           /* repli : on garde « Nosy Be » et le champ rue vide, à saisir à la main */
         }
       }
-    } catch {
+    } catch (e) {
       setCoords(null);
+      setGpsCause(
+        e === 'refus' || e === 'delai' || e === 'indisponible' ? (e as EchecPosition) : null,
+      );
       setGpsStatus('error');
     }
   }
@@ -261,7 +323,15 @@ function AddressForm() {
 
         {gpsStatus === 'error' ? (
           <View style={styles.gpsErrorBox}>
-            <Text style={styles.gpsErrorText}>{t('address.gpsError')}</Text>
+            <Text style={styles.gpsErrorText}>
+              {gpsCause === 'refus'
+                ? t('address.gpsDenied')
+                : gpsCause === 'delai'
+                  ? t('address.gpsTimeout')
+                  : gpsCause === 'indisponible'
+                    ? t('address.gpsUnavailable')
+                    : t('address.gpsError')}
+            </Text>
             <View style={{ flexDirection: 'row', gap: 18, marginTop: 6 }}>
               <Pressable onPress={captureLocation} hitSlop={6}><Text style={styles.gpsLink}>{t('common.retry')}</Text></Pressable>
               <Pressable onPress={() => { try { void Linking.openSettings(); } catch { /* web */ } }} hitSlop={6}>

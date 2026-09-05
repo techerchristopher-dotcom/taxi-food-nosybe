@@ -116,7 +116,8 @@
     "closed": "Closed",
     "open": "Open",
     "unavailable": "Back soon",
-    "opensAt": "Opens at {{time}}"
+    "opensAt": "Opens at {{time}}",
+    "comingSoon": "Coming soon"
   },
   "restaurant": {
     "notFound": "Restaurant not found.",
@@ -181,7 +182,10 @@
     "blockNoStreet": "Complete the precise address (street, neighbourhood or landmark).",
     "blockNoPhone": "Enter a contact phone number.",
     "confirm": "Confirm the address",
-    "saveFailed": "Could not save the address. Please try again."
+    "saveFailed": "Could not save the address. Please try again.",
+    "gpsDenied": "You declined location sharing. Allow it in your browser settings, then try again.",
+    "gpsTimeout": "Your location is taking too long. Try again, or move near a window if you are indoors.",
+    "gpsUnavailable": "Location unavailable on this device. Check that location services are on."
   },
   "checkout": {
     "title": "Confirm my order",

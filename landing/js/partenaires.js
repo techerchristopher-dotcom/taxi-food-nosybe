@@ -54,6 +54,33 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+
+  /**
+   * Redimensionnement a la volee par Supabase.
+   *
+   * ⚠️ Sans cela, la page servait les PNG D'ORIGINE : 1,9 Mo par plat, et
+   * jusqu'a une centaine d'images sur l'accueil. Les cases restaient grises
+   * plusieurs secondes — signale par le porteur du projet, et c'etait bien plus
+   * grave qu'un defaut d'affichage : personne n'attend un carrousel qui charge.
+   *
+   * `render/image` sert la meme image redimensionnee et compressee : la meme
+   * pizza passe de 1 918 092 a 16 072 octets a 256 px de large. Facteur 120.
+   *
+   * `resize=cover` garde le cadrage carre ; le navigateur recoit du WebP quand
+   * il l'accepte, sans qu'on ait a le demander.
+   */
+  function visuel(url, largeur) {
+    if (!url) return url;
+    var m = '/storage/v1/object/public/';
+    var i = url.indexOf(m);
+    if (i < 0) return url;
+    // x2 pour les ecrans a haute densite ; au-dela l'oeil ne voit plus la
+    // difference et le poids repart a la hausse.
+    var w = largeur * 2;
+    return url.slice(0, i) + '/storage/v1/render/image/public/' + url.slice(i + m.length)
+      + '?width=' + w + '&height=' + w + '&resize=cover&quality=60';
+  }
+
   function api(chemin) {
     return fetch(URL_SB + '/rest/v1/' + chemin, { headers: { apikey: CLE, Authorization: 'Bearer ' + CLE } })
       .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); });
@@ -103,7 +130,7 @@
   function peindre() {
     var p = vue.liste[vue.i];
     if (!p) return;
-    vue.img.src = p.url;
+    vue.img.src = visuel(p.url, 720);
     vue.img.alt = p.nom;
     vue.leg.textContent = p.nom + (p.resto ? ' — ' + p.resto : '') + '  ·  ' + (vue.i + 1) + '/' + vue.liste.length;
   }
@@ -126,7 +153,7 @@
       + photos.concat(photos).map(function (p, k) {
           return '<button type="button" data-i="' + (k % photos.length) + '" title="' + esc(p.nom) + '" '
             + 'style="border:0;padding:0;background:none;cursor:zoom-in;flex:none;line-height:0;border-radius:18px;overflow:hidden">'
-            + '<img src="' + esc(p.url) + '" alt="' + esc(p.nom) + '" loading="lazy" decoding="async" '
+            + '<img src="' + esc(visuel(p.url, 128)) + '" alt="' + esc(p.nom) + '" loading="lazy" decoding="async" '
             + 'style="width:128px;height:128px;object-fit:cover;background:#EAE5E0;display:block"></button>';
         }).join('')
       + '</div></div>';
@@ -135,7 +162,7 @@
   function carte(r, photos, idx) {
     var bientot = r.listing_status === 'coming_soon';
     var logo = r.logo_url
-      ? '<img src="' + esc(r.logo_url) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
+      ? '<img src="' + esc(visuel(r.logo_url, 56)) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
       : '<div style="width:56px;height:56px;border-radius:15px;flex:none;background:#1A1A1A;color:#FFC72C;display:flex;align-items:center;justify-content:center;font:800 19px/1 Archivo,sans-serif">' + esc(initiales(r.name)) + '</div>';
     var pastille = bientot
       ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + t.bientot + '</div>'
@@ -168,7 +195,7 @@
         + '<div class="defile" data-galerie="' + cle + '" style="display:flex;gap:12px;width:max-content;animation:menuScroll ' + (inv ? '74s' : '60s') + ' linear infinite' + (inv ? ' reverse' : '') + '">'
         + items.concat(items).map(function (p, k) {
             return '<button type="button" data-i="' + (k % items.length) + '" style="border:0;padding:0;background:none;cursor:zoom-in;flex:none;line-height:0;position:relative;border-radius:20px;overflow:hidden">'
-              + '<img src="' + esc(p.url) + '" alt="' + esc(p.nom) + '" loading="lazy" decoding="async" style="width:176px;height:176px;object-fit:cover;background:#EAE5E0;display:block">'
+              + '<img src="' + esc(visuel(p.url, 176)) + '" alt="' + esc(p.nom) + '" loading="lazy" decoding="async" style="width:176px;height:176px;object-fit:cover;background:#EAE5E0;display:block">'
               + '<span style="position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font:700 12px/1.25 Archivo,sans-serif;text-align:left;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.nom) + '</span>'
               + '</button>';
           }).join('')

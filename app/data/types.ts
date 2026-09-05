@@ -198,6 +198,7 @@ export type Restaurant = {
 /** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */
 export const FOOD_TYPE_ORDER = [
   'Pizza',
+  'Pâtes',
   'Tacos',
   'Kebab',
   'Burger',
@@ -211,6 +212,7 @@ export const FOOD_TYPE_ORDER = [
 /** Emoji par type de plat sur les puces de filtre accueil — reprend le vocabulaire déjà utilisé dans categories.icon (🍕 🍔 🥞 🥤 🍢) et complète pour les types sans catégorie dédiée. */
 export const FOOD_TYPE_ICON: Record<string, string> = {
   Pizza: '🍕',
+  'Pâtes': '🍝',
   Tacos: '🌮',
   Kebab: '🥙',
   Burger: '🍔',

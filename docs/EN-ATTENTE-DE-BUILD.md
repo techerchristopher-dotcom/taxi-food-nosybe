@@ -524,12 +524,18 @@ erreur en console.
 
 ### ⚠️ Deux actions restent, et sans elles quelque chose casse en silence
 
-1. **Supabase → Authentication → URL Configuration → Redirect URLs** : y ajouter
-   `https://taxi-food-commander.netlify.app` (et le domaine définitif ensuite).
-   `signInWithOAuth` passe `redirectTo: window.location.origin` ; une origine
-   absente de la liste fait revenir Google **sur l'accueil sans session, sans le
-   moindre message d'erreur** — le symptôme le plus déroutant possible : « je me
-   connecte et il ne se passe rien ».
+1. ~~**Supabase → Redirect URLs**~~ ✅ **FAIT le 2026-09-05.**
+   `https://taxi-food-commander.netlify.app` est dans la liste (7 entrées au total,
+   relues sur la page). `signInWithOAuth` passe `redirectTo: window.location.origin`
+   et l'entrée correspond exactement à cette origine — pas de joker, comme les
+   autres entrées `.netlify.app` déjà en place.
+   ⚠️ **Il faudra ajouter le domaine définitif** quand le sous-domaine sera posé :
+   une origine absente de la liste fait revenir Google **sur l'accueil sans session
+   et sans le moindre message d'erreur**.
+   ⚠️ **Non vérifié de bout en bout** : Supabase ne contrôle l'origine qu'au RETOUR
+   de Google, pas au départ — une requête de test ne permet donc pas de le prouver,
+   et aller au bout demanderait de saisir de vrais identifiants Google. À confirmer
+   par une vraie connexion.
 2. **DNS** : `commander.taxifood.rentanoo.com` → CNAME vers
    `taxi-food-commander.netlify.app`, puis déclarer le domaine dans Netlify. Le
    badge « Powered by Netlify » visible en bas d'écran disparaît avec le domaine

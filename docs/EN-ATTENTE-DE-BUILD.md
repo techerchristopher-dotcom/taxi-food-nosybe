@@ -344,7 +344,7 @@ carte papier a été écrit « fromage de **montagne** » ; `cuisine_type` est r
    n'apparaissait pas au panier alors que la base était juste. Toute requête sur
    `products` passe par `PRODUCT_COLS`.
 
-## 🔜 Partage social des produits et restaurants (cadré le 2026-09-05, PAS ENCORE ÉCRIT)
+## ✅ Partage social des produits et restaurants (écrit et DÉPLOYÉ le 2026-09-05)
 
 Bouton de partage sur une fiche produit et sur une fiche restaurant : le destinataire
 reçoit un lien WhatsApp avec aperçu (photo, nom, prix). S'il a l'app, elle s'ouvre
@@ -394,13 +394,31 @@ Le fichier est donc écrivable dès maintenant, sans attendre le retour de Googl
 `Content-Type: application/json`, **sans redirection** — Android refuse de suivre une
 redirection sur ce fichier, et l'échec est silencieux.
 
-**À faire :**
-1. Page produit + page restaurant sur le site, avec balises Open Graph **rendues côté
-   serveur** (fonction Netlify lisant Supabase). WhatsApp et Facebook n'exécutent pas le
-   JavaScript : un aperçu généré en JS ne s'afficherait jamais.
-2. `/.well-known/apple-app-site-association` et `/.well-known/assetlinks.json`.
-3. `ios.associatedDomains` + `android.intentFilters` dans `app.json`.
-4. Bouton de partage sur les deux fiches, et bascule vers le store côté web.
+**✅ Fait et vérifié en production le 2026-09-05 :**
+
+| | État |
+|---|---|
+| `landing/netlify/functions/partage.mjs` — pages `/p/<id>` et `/r/<id>` | ✅ en ligne, 200 avec les balises `og:` |
+| `/.well-known/apple-app-site-association` | ✅ 200, `content-type: application/json` |
+| `/.well-known/assetlinks.json` | ✅ 200, les **deux** empreintes |
+| Variables `SUPABASE_URL` / `SUPABASE_ANON_KEY` sur Netlify | ✅ posées (contexte `production`) |
+| `ios.associatedDomains` + `android.intentFilters` (`app/app.json`) | ✅ écrit — **actif seulement au prochain build** |
+| Bouton de partage sur les deux fiches (`app/lib/partage.ts`) | ✅ écrit — **actif seulement au prochain build** |
+| Routes d'arrivée `app/app/p/[id].tsx` et `app/app/r/[id].tsx` | ✅ écrit — **actif seulement au prochain build** |
+
+⚠️ **Le site est en avance sur l'app, volontairement.** Aujourd'hui, un lien
+`taxifood.rentanoo.com/p/<id>` partagé sur WhatsApp affiche déjà un bel aperçu et renvoie
+vers le store — mais il s'ouvre dans le NAVIGATEUR même chez quelqu'un qui a l'app, parce
+que la version installée ne déclare pas encore le domaine. Ce n'est pas une régression :
+c'était un lien qui n'existait pas du tout avant. Le comportement « ça s'ouvre dans l'app »
+n'arrive qu'avec le build groupé.
+
+⚠️ **Deux pièges rencontrés pendant le déploiement, à ne pas revivre :**
+- `netlify env:set --scope functions` **échoue en silence** (code de sortie 0, aucune
+  variable posée). Sans `--scope`, la même commande fonctionne. Le symptôme est trompeur :
+  la fonction se déploie, répond, et redirige simplement sur l'accueil.
+- `netlify deploy` **réutilise un cache de fonctions** et peut publier une version vide
+  (404 sur `/.netlify/functions/partage`). Utiliser `--skip-functions-cache`.
 
 ⚠️ **Limite assumée** : après INSTALLATION, l'app s'ouvre sur l'accueil, pas sur le produit
 partagé. Le *deferred deep linking* n'est fourni ni par iOS ni par Android ; il demande un

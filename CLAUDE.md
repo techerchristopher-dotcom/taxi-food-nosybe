@@ -126,7 +126,8 @@ Colonnes/tables ajoutées au fil de l'eau (migrations appliquées via MCP) :
 - `products` : `photo_url`.
 - **Options/suppléments** : `product_option_groups` (name, min_select, max_select, required, sort_order) + `product_options` (name, price_delta, is_available, sort_order) ; snapshot commande `order_item_options`.
 - `addresses` : `latitude`, `longitude`, `location_captured_at` (**GPS obligatoire**, voir plus bas).
-- RPC **`create_order`** (**SECURITY DEFINER**) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon). La fonction fixe elle-même `user_id = auth.uid()` et exige que l'adresse appartienne à l'appelant → elle n'écrit jamais pour autrui, DEFINER est sûr.
+- RPC **`create_order`** (**SECURITY DEFINER**) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), lit **elle-même** `restaurants.delivery_fee`, applique le code promo éventuel, génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon). La fonction fixe elle-même `user_id = auth.uid()` et exige que l'adresse appartienne à l'appelant → elle n'écrit jamais pour autrui, DEFINER est sûr.
+  - ⚠️ **Elle existe en DEUX signatures, et pas une de plus** : l'implémentation à **5 arguments** (`…, p_code_promo text`) et une **enveloppe à 4 arguments** typée `payment_method`, que les versions déjà installées sur les magasins appellent. **Ne jamais recréer `create_order` en changeant le type d'un paramètre** : `create or replace` n'écrase pas, il *ajoute* une surcharge, et PostgREST répond alors `PGRST203 « Could not choose the best candidate function »` — plus aucune commande ne passe. C'est exactement ce qui s'est produit le 2026-09-05 (migration « adresse introuvable », `payment_method` → `text`) et qui est resté invisible jusqu'au 2026-09-06 faute de commande passée entre-temps.
   - ⚠️ **Pourquoi DEFINER et pas INVOKER** : la fonction fait un `UPDATE orders SET subtotal/total` après avoir inséré les lignes. `orders` n'a **volontairement aucune politique RLS UPDATE** (un client ne doit pas pouvoir modifier ses commandes via l'API REST). En INVOKER, cet UPDATE touchait **0 ligne** sous RLS → `returning into v_order` = NULL → la fonction renvoyait NULL et laissait `total = frais de livraison` (bug corrigé le 2026-08-14 : montant 0 en confirmation, « commande introuvable », total faux). DEFINER exécute les écritures hors RLS. **Ne pas repasser en INVOKER sans supprimer l'UPDATE final.**
 
 ## Multi-rôle & espace restaurant
@@ -152,10 +153,38 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 - **Écrans (4 onglets)** : Temps réel (commandes actives tous restos + livreurs dispo, polling 10 s, badge RETARD) · Rapport de clôture (période, net à reverser/resto, totaux, export CSV, « marquer reversé » + historique) · Demandes de rôle (valider/refuser, lier `restaurant_staff`) · Restaurants & menus (créer/éditer un restaurant ; gérer catégories/produits — prix, description, dispo, **photo par URL en V1**, upload direct = P1). Écritures via RPC admin (`admin_create_restaurant`, `admin_update_restaurant`, `admin_upsert_category`, `admin_upsert_product`), gardées par `is_admin()`.
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes, mode admin mobile allégé.
 
+## Codes promo (2026-09-06)
+
+**Le code donne une remise sur la LIVRAISON seulement.** La commission prélevée sur les
+plats n'est pas touchée : la remise sort de notre marge de livraison, jamais de la poche du
+restaurant. Le code de lancement est **`LALIE`** — 50 %, soit 10 000 → 5 000 Ar.
+
+- **Tables** : `promo_codes` (code, `code_normalise` **générée** via `normaliser_code_promo()`
+  — majuscules, sans espaces —, type/valeur de remise, `porte_sur` ∈ {livraison, sous_total},
+  `actif`, `commence_le`, `expire_le`, `max_utilisations` global) et `promo_redemptions`
+  (qui, quel code, quelle commande, quand). RLS active, **aucune policy client** : lecture
+  réservée à `is_admin()`, écriture uniquement par les fonctions SECURITY DEFINER.
+- ⚠️ **L'unicité par client est la contrainte `unique (code_id, user_id)`, pas un `select`
+  suivi d'un `insert`.** Deux commandes envoyées en même temps depuis deux appareils
+  passeraient toutes les deux une vérification préalable. `create_order` insère et **traduit
+  la violation** (`unique_violation`) en `code_promo:deja_utilise`.
+- ⚠️ **La consommation est dans `create_order`, pas dans un appel séparé.** Même
+  transaction : un code ne peut pas être consommé pour une commande qui échoue, ni l'inverse.
+- **`verifier_code_promo(code, restaurant, sous_total)`** ne consomme rien : elle sert
+  l'aperçu au panier. Le montant qui fait foi reste celui que `create_order` recalcule.
+- **Le client n'envoie que le CODE.** Barème, frais de livraison et total sont relus en base.
+  `orders.promo_code` / `orders.promo_discount` sont des **instantanés** : la commande reste
+  lisible si le code est désactivé plus tard.
+- **Verrou de plafond global** : `select … from promo_codes … for update` sérialise les
+  commandes portant le même code. L'unicité par client, elle, ne dépend jamais de ce comptage.
+- ⚠️ **Le rapport de clôture compte les frais de livraison NETS de remise** (`admin/`), et le
+  net à reverser au restaurant est inchangé.
+
 ## Règles produit importantes (déjà implémentées)
 
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
 - **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
+- **Frais de livraison : 10 000 Ar depuis le 2026-09-06** (5 000 auparavant). Le montant vit **uniquement** dans `restaurants.delivery_fee` — il n'est écrit en dur nulle part dans le code ; l'app et le site l'affichent tels qu'ils le lisent. Le seul reliquat était la valeur **par défaut du formulaire** de création de restaurant (`admin/components/Restaurants.tsx`), mise à jour elle aussi.
 - **Filtre accueil** = `restaurants.food_types` (Pizza, Tacos, Kebab, Burger, Américain, Panini, Crêpe, Milkshake, Tapas) ; un resto multi-types ressort dans chaque filtre. **Les tags sur la carte resto = les CATÉGORIES actives** (emoji + nom), différent des food types.
 - **Photos** : `products.photo_url` via `ProductThumb`, logos resto via `RestaurantLogo` (image + repli initiales) ; repli propre si `null`/échec, jamais le nom en texte.
 - **GPS OBLIGATOIRE** pour valider une commande (pas d'adressage postal à Nosy Be) : l'écran adresse bloque « Confirmer » tant qu'aucune position n'est captée (`expo-location`) ; refus → réessayer/Réglages, aucun contournement. Adresses enregistrées sans GPS = signalées et bloquées. Utilitaire `getMapsNavigationUrl(lat,lng)` prêt pour un futur back-office livreur. Depuis le 2026-08-17, un **aperçu carte cliquable** (`MapPreview`, voir plus bas) permet de vérifier visuellement la position captée.

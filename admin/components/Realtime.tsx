@@ -42,6 +42,9 @@ type OrderRow = {
   order_number: string;
   status: string;
   total: number;
+  /** Code promo applique et remise deja deduite du total (0 si aucun). */
+  promo_code: string | null;
+  promo_discount: number | null;
   created_at: string;
   courier_id: string | null;
   user_id: string | null;
@@ -115,7 +118,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -321,7 +324,16 @@ export function Realtime() {
                       )}
                     </td>
                     <td>{timeLabel(o.created_at)}</td>
-                    <td className="num">{formatAr(o.total)}</td>
+                    <td className="num">
+                      {formatAr(o.total)}
+                      {/* Le total est deja net de remise : sans ce rappel, une
+                          commande remisee ressemble a une erreur de caisse. */}
+                      {(o.promo_discount ?? 0) > 0 ? (
+                        <div className="muted" style={{ fontSize: 11 }}>
+                          {o.promo_code ?? 'promo'} −{formatAr(o.promo_discount ?? 0)}
+                        </div>
+                      ) : null}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                         {(SUITE[o.status] ?? []).map((s) => (

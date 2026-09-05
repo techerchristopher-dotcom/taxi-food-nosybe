@@ -199,6 +199,27 @@
     "needGps": "Position GPS manquante sur cette adresse. Reviens à l'étape adresse et capte ta position.",
     "failed": "La commande n'a pas pu être créée. Réessaie."
   },
+  "promo": {
+    "section": "Code promo",
+    "placeholder": "Ex. LALIE",
+    "appliquer": "Appliquer",
+    "retirer": "Retirer",
+    "applique": "Code {{code}} appliqué",
+    "economie": "Tu économises {{amount}} sur la livraison.",
+    "ligne": "Code {{code}}",
+    "rejeteALaValidation": "Le code n'a pas pu être appliqué. Ta commande n'a pas été envoyée : vérifie le message ci-dessus, puis valide à nouveau.",
+    "erreur": {
+      "inconnu": "Ce code n'existe pas. Vérifie l'orthographe, puis réessaie.",
+      "inactif": "Ce code n'est plus actif. Retire-le pour valider ta commande.",
+      "pas_encore": "Ce code n'est pas encore utilisable. Reviens à l'ouverture de l'offre.",
+      "expire": "Ce code a expiré. Retire-le pour valider ta commande.",
+      "epuise": "Ce code a atteint son nombre maximum d'utilisations.",
+      "deja_utilise": "Tu as déjà utilisé ce code. Il n'est valable qu'une fois par client.",
+      "non_connecte": "Connecte-toi pour utiliser un code promo.",
+      "restaurant_inconnu": "Ce code ne s'applique pas à ce restaurant.",
+      "reseau": "Vérification impossible pour l'instant. Vérifie ta connexion et réessaie."
+    }
+  },
   "confirmation": {
     "title": "Commande\nenvoyée !",
     "subtitle": "{{restaurant}} a reçu ta commande. Tu seras notifié à chaque étape.",

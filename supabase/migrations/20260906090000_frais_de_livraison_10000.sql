@@ -1,0 +1,12 @@
+-- Frais de livraison : 5 000 -> 10 000 Ar (decision du porteur du projet, 2026-09-06).
+--
+-- POURQUOI UN SIMPLE UPDATE SUFFIT : le montant n'est ecrit en dur NULLE PART
+-- dans le code applicatif. Il vit dans `restaurants.delivery_fee`, et c'est
+-- `create_order` (SECURITY DEFINER) qui le lit elle-meme pour construire la
+-- commande. Le client n'envoie jamais de frais ni de total : l'app se contente
+-- d'afficher `restaurants.delivery_fee` lu en base. Changer la colonne change
+-- donc l'affichage ET la facturation d'un seul geste.
+--
+-- Les commandes DEJA passees ne sont pas retouchees : leurs montants sont figes
+-- (c'est ce que le client a paye) et le rapport de cloture s'appuie dessus.
+update public.restaurants set delivery_fee = 10000 where delivery_fee = 5000;

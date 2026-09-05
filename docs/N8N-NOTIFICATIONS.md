@@ -43,6 +43,14 @@ de service dans un outil tiers serait une clé de tout le système, pour
 `n8n/taxifood-notifications.json` — créé sur l'instance sous l'identifiant
 **`T7uXG7Lwwjro6Ds8`**, webhook `POST /webhook/taxifood-commande`.
 
+⚠️ **À RÉIMPORTER SUR L'INSTANCE (2026-09-06).** Le fichier versionné a été mis à jour pour
+afficher la ligne de remise (`Code LALIE −5 000 Ar`) dans l'e-mail client et dans le message
+Telegram du restaurant ; la charge utile du trigger transporte désormais `code_promo` et
+`remise`. Tant que le workflow en ligne n'est pas remplacé, un e-mail de commande remisée
+listera « Livraison 10 000 Ar » puis un total inférieur de 5 000 : le client qui additionne
+ne tombera pas juste. **Volontairement non déployé** — la mise en ligne est laissée au
+porteur du projet, qui relit avant.
+
 Un seul nœud « Code » construit l'e-mail HTML et le texte Telegram pour les sept
 états (reçue, confirmée, en préparation, prête, récupérée, livrée, annulée).
 Sept branches auraient été sept endroits à corriger.

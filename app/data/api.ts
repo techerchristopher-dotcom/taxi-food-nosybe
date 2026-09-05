@@ -439,6 +439,8 @@ type OrderJoinRow = {
   subtotal: number;
   delivery_fee: number;
   packaging_fee?: number | null;
+  promo_code?: string | null;
+  promo_discount?: number | null;
   total: number;
   payment_method: PaymentMethod;
   status: OrderStatus;
@@ -471,7 +473,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
   'restaurants ( name, logo_url, phone ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
@@ -505,6 +507,8 @@ function mapOrder(o: OrderJoinRow): Order {
     subtotal: o.subtotal,
     deliveryFee: o.delivery_fee,
     packagingFee: o.packaging_fee ?? 0,
+    promoCode: o.promo_code ?? null,
+    promoDiscount: o.promo_discount ?? 0,
     total: o.total,
     paymentMethod: o.payment_method,
     status: o.status,
@@ -603,7 +607,75 @@ export type CreateOrderInput = {
   addressId: string;
   paymentMethod: PaymentMethod;
   items: CreateOrderItem[];
+  /** Code promo saisi tel quel. La base normalise, valide et calcule la remise. */
+  codePromo?: string | null;
 };
+
+/**
+ * Raisons de refus d'un code promo, telles que la base les renvoie.
+ * Chaîne fermée : ajouter une raison en base sans l'ajouter ici casse le build
+ * plutôt que d'afficher un message vide au client.
+ */
+export type RaisonPromo =
+  | 'inconnu'
+  | 'inactif'
+  | 'pas_encore'
+  | 'expire'
+  | 'epuise'
+  | 'deja_utilise'
+  | 'non_connecte'
+  | 'restaurant_inconnu';
+
+export type VerificationPromo =
+  | { valide: true; code: string; remise: number; porteSur: 'livraison' | 'sous_total'; description: string | null }
+  | { valide: false; raison: RaisonPromo };
+
+/**
+ * Vérifie un code promo AVANT de valider le panier, sans rien consommer.
+ *
+ * ⚠️ Le montant renvoyé est un APERÇU. Le montant qui compte est celui que
+ * `create_order` recalcule au moment de la commande : c'est elle qui relit le
+ * barème et les frais de livraison en base. Si les deux divergeaient, c'est la
+ * commande qui aurait raison.
+ */
+export async function verifierCodePromo(
+  code: string,
+  restaurantId: string,
+  sousTotal: number,
+): Promise<VerificationPromo> {
+  const { data, error } = await supabase.rpc('verifier_code_promo', {
+    p_code: code,
+    p_restaurant_id: restaurantId,
+    p_sous_total: sousTotal,
+  });
+  if (error) throw error;
+  const r = data as {
+    valide: boolean;
+    raison?: RaisonPromo;
+    code?: string;
+    remise?: number;
+    porte_sur?: 'livraison' | 'sous_total';
+    description?: string | null;
+  };
+  if (!r?.valide) return { valide: false, raison: r?.raison ?? 'inconnu' };
+  return {
+    valide: true,
+    code: r.code ?? code.trim().toUpperCase(),
+    remise: r.remise ?? 0,
+    porteSur: r.porte_sur ?? 'livraison',
+    description: r.description ?? null,
+  };
+}
+
+/**
+ * Traduit l'échec d'un `create_order` portant sur le code promo en raison
+ * exploitable. La base lève `code_promo:<raison>` : un préfixe stable, choisi
+ * pour que l'app n'ait jamais à reconnaître une phrase française.
+ */
+export function raisonPromoDepuisErreur(message: string): RaisonPromo | null {
+  const m = /code_promo:([a-z_]+)/i.exec(message ?? '');
+  return m ? (m[1] as RaisonPromo) : null;
+}
 
 /**
  * Crée une commande via la RPC `create_order` (atomique, options validées et prix
@@ -615,8 +687,14 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   subtotal: number;
   deliveryFee: number;
   packagingFee: number;
+  promoCode: string | null;
+  promoDiscount: number;
   total: number;
 }> {
+  // ⚠️ `p_code_promo` est TOUJOURS transmis, même à null. La RPC existe en deux
+  // formes — quatre paramètres (les versions déjà installées sur les magasins)
+  // et cinq — et c'est le nombre de clés envoyées qui départage. Omettre la clé
+  // ferait retomber l'app sur l'ancienne forme, qui ignore les codes promo.
   const { data, error } = await supabase.rpc('create_order', {
     p_restaurant_id: input.restaurantId,
     p_address_id: input.addressId,
@@ -626,6 +704,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
       quantity: i.quantity,
       options: i.options.map((o) => ({ option_id: o.optionId, quantity: o.quantity })),
     })),
+    p_code_promo: input.codePromo ?? null,
   });
   if (error) throw error;
   // La RPC `RETURNS orders` : selon PostgREST/supabase-js, `data` peut arriver soit
@@ -633,7 +712,16 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   // échoue bruyamment si l'id manque — plutôt que de laisser l'écran suivant naviguer
   // vers `/order/undefined` (page « introuvable ») avec un montant à 0.
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { id: string; order_number: string; subtotal: number; delivery_fee: number; packaging_fee?: number | null; total: number }
+    | {
+        id: string;
+        order_number: string;
+        subtotal: number;
+        delivery_fee: number;
+        packaging_fee?: number | null;
+        promo_code?: string | null;
+        promo_discount?: number | null;
+        total: number;
+      }
     | null
     | undefined;
   if (!row?.id) {
@@ -645,6 +733,8 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,
     packagingFee: row.packaging_fee ?? 0,
+    promoCode: row.promo_code ?? null,
+    promoDiscount: row.promo_discount ?? 0,
     total: row.total,
   };
 }

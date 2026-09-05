@@ -48,6 +48,15 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
         <Text style={styles.subLabel}>Frais de livraison</Text>
         <Text style={styles.subValue}>{formatAr(order.deliveryFee)}</Text>
       </View>
+      {/* Le total est net de remise. Sans cette ligne, le restaurant additionne
+          ce qu'il lit, ne tombe pas sur le total, et croit a une erreur — alors
+          que la remise est offerte par Taxi Food, pas par lui. */}
+      {order.promoDiscount > 0 ? (
+        <View style={[styles.itemRow, { marginTop: 2 }]}>
+          <Text style={styles.subLabel}>Code {order.promoCode ?? 'promo'} (offert par Taxi Food)</Text>
+          <Text style={styles.subValue}>−{formatAr(order.promoDiscount)}</Text>
+        </View>
+      ) : null}
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total · {paymentLabel(order.paymentMethod)}</Text>
         <Text style={styles.totalValue}>{formatAr(order.total)}</Text>

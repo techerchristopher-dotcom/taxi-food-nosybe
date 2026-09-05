@@ -8,6 +8,8 @@ type DeliveredRow = {
   restaurant_id: string;
   subtotal: number;
   delivery_fee: number;
+  /** Remise deja deduite du total. Elle sort de NOTRE marge, pas de celle du resto. */
+  promo_discount: number | null;
   total: number;
   payment_method: string;
   courier_id: string | null;
@@ -33,6 +35,8 @@ type Line = {
   commission: number;
   net: number;
   deliveryFees: number;
+  /** Total des remises promo accordees sur la periode (pour memoire). */
+  remises: number;
   settled: boolean;
 };
 
@@ -55,7 +59,7 @@ export function Report() {
     const [o, r, s] = await Promise.all([
       supabase
         .from('orders')
-        .select('restaurant_id, subtotal, delivery_fee, total, payment_method, courier_id, commission_amount, commission_rate')
+        .select('restaurant_id, subtotal, delivery_fee, promo_discount, total, payment_method, courier_id, commission_amount, commission_rate')
         .eq('status', 'livree')
         .gte('delivered_at', startISO)
         .lte('delivered_at', endISO),
@@ -99,14 +103,18 @@ export function Report() {
       const cur = map.get(row.restaurant_id) ?? {
         restaurantId: row.restaurant_id,
         name: restos.find((x) => x.id === row.restaurant_id)?.name ?? '—',
-        count: 0, caPlats: 0, commission: 0, net: 0, deliveryFees: 0,
+        count: 0, caPlats: 0, commission: 0, net: 0, deliveryFees: 0, remises: 0,
         settled: settlements.some((st) => st.restaurant_id === row.restaurant_id && st.period_start === start && st.period_end === end),
       };
       cur.count += 1;
       cur.caPlats += row.subtotal;
       cur.commission += commission;
       cur.net += row.subtotal - commission;
-      cur.deliveryFees += row.delivery_fee;
+      // NET de remise : c'est ce qu'on encaisse reellement sur la livraison.
+      // Le net a reverser au restaurant, lui, ne bouge pas d'un Ariary — un code
+      // promo sur la livraison est offert par nous, jamais par le restaurant.
+      cur.deliveryFees += row.delivery_fee - (row.promo_discount ?? 0);
+      cur.remises += row.promo_discount ?? 0;
       map.set(row.restaurant_id, cur);
     }
     return Array.from(map.values()).sort((a, b) => b.net - a.net);
@@ -114,8 +122,8 @@ export function Report() {
 
   const totals = useMemo(
     () => lines.reduce(
-      (t, l) => ({ count: t.count + l.count, caPlats: t.caPlats + l.caPlats, commission: t.commission + l.commission, net: t.net + l.net, deliveryFees: t.deliveryFees + l.deliveryFees }),
-      { count: 0, caPlats: 0, commission: 0, net: 0, deliveryFees: 0 },
+      (t, l) => ({ count: t.count + l.count, caPlats: t.caPlats + l.caPlats, commission: t.commission + l.commission, net: t.net + l.net, deliveryFees: t.deliveryFees + l.deliveryFees, remises: t.remises + l.remises }),
+      { count: 0, caPlats: 0, commission: 0, net: 0, deliveryFees: 0, remises: 0 },
     ),
     [lines],
   );
@@ -154,9 +162,9 @@ export function Report() {
   }
 
   function exportCsv() {
-    const header = ['Restaurant', 'Nb livrees', 'CA plats', 'Commission', 'Net a reverser', 'Frais livraison'];
-    const body = lines.map((l) => [l.name, l.count, l.caPlats, l.commission, l.net, l.deliveryFees].join(';'));
-    const totalRow = ['TOTAL', totals.count, totals.caPlats, totals.commission, totals.net, totals.deliveryFees].join(';');
+    const header = ['Restaurant', 'Nb livrees', 'CA plats', 'Commission', 'Net a reverser', 'Frais livraison nets', 'Remises promo'];
+    const body = lines.map((l) => [l.name, l.count, l.caPlats, l.commission, l.net, l.deliveryFees, l.remises].join(';'));
+    const totalRow = ['TOTAL', totals.count, totals.caPlats, totals.commission, totals.net, totals.deliveryFees, totals.remises].join(';');
     const csv = [`Periode;${start};${end}`, '', header.join(';'), ...body, '', totalRow].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -185,7 +193,8 @@ export function Report() {
         <div className="stat"><div className="label">Livraisons</div><div className="value">{totals.count}</div></div>
         <div className="stat"><div className="label">CA plats</div><div className="value">{formatAr(totals.caPlats)}</div></div>
         <div className="stat"><div className="label">Ma commission</div><div className="value">{formatAr(totals.commission)}</div></div>
-        <div className="stat"><div className="label">Frais de livraison</div><div className="value">{formatAr(totals.deliveryFees)}</div></div>
+        <div className="stat"><div className="label">Frais de livraison (nets)</div><div className="value">{formatAr(totals.deliveryFees)}</div></div>
+        <div className="stat"><div className="label">Remises promo</div><div className="value">−{formatAr(totals.remises)}</div></div>
         <div className="stat"><div className="label">À reverser (net)</div><div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div></div>
         <div className="stat"><div className="label">Ma marge (comm. + livraison)</div><div className="value" style={{ color: 'var(--green)' }}>{formatAr(margin)}</div></div>
       </div>

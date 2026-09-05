@@ -192,6 +192,18 @@ export default function OrderTrackingScreen() {
             <Text style={styles.itemName}>{t('common.deliveryFee')}</Text>
             <Text style={styles.itemPrice}>{formatAr(order.deliveryFee)}</Text>
           </View>
+          {/* La remise est lue sur la COMMANDE, pas recalculee : elle doit rester
+              affichable a l'identique meme si le code a ete retire depuis. */}
+          {order.promoDiscount > 0 ? (
+            <View style={styles.itemRow}>
+              <Text style={[styles.itemName, styles.remiseTexte]}>
+                {t('promo.ligne', { code: order.promoCode ?? '' })}
+              </Text>
+              <Text style={[styles.itemPrice, styles.remiseTexte]}>
+                −{formatAr(order.promoDiscount)}
+              </Text>
+            </View>
+          ) : null}
           <Divider style={{ marginVertical: 12 }} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t('tracking.totalWith', { method: paymentShort(order.paymentMethod) })}</Text>
@@ -211,6 +223,7 @@ export default function OrderTrackingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  remiseTexte: { color: colors.primary },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
   cancelledCard: { alignItems: 'center', gap: 6, paddingVertical: 22 },

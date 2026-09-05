@@ -199,6 +199,27 @@
     "needGps": "GPS location missing on this address. Go back to the address step and capture your location.",
     "failed": "The order could not be created. Please try again."
   },
+  "promo": {
+    "section": "Promo code",
+    "placeholder": "e.g. LALIE",
+    "appliquer": "Apply",
+    "retirer": "Remove",
+    "applique": "Code {{code}} applied",
+    "economie": "You save {{amount}} on delivery.",
+    "ligne": "Code {{code}}",
+    "rejeteALaValidation": "The code could not be applied. Your order was not sent: check the message above, then confirm again.",
+    "erreur": {
+      "inconnu": "This code does not exist. Check the spelling and try again.",
+      "inactif": "This code is no longer active. Remove it to place your order.",
+      "pas_encore": "This code is not usable yet. Come back when the offer starts.",
+      "expire": "This code has expired. Remove it to place your order.",
+      "epuise": "This code has reached its maximum number of uses.",
+      "deja_utilise": "You have already used this code. It is valid once per customer.",
+      "non_connecte": "Sign in to use a promo code.",
+      "restaurant_inconnu": "This code does not apply to this restaurant.",
+      "reseau": "We could not check the code right now. Check your connection and try again."
+    }
+  },
   "confirmation": {
     "title": "Order\nsent!",
     "subtitle": "{{restaurant}} received your order. You'll be notified at every step.",

@@ -278,6 +278,13 @@ export type Order = {
   /** Frais d'emballage total (boîtes à pizza…). 0 si la commande n'en contient pas. */
   packagingFee: number;
   deliveryFee: number;
+  /**
+   * Code promo appliqué et remise DÉJÀ déduite de `total`, recopiés sur la
+   * commande à sa création. Ce sont des instantanés : le code peut être
+   * désactivé ou supprimé ensuite sans rendre la commande illisible.
+   */
+  promoCode?: string | null;
+  promoDiscount: number;
   total: number;
   paymentMethod: PaymentMethod;
   status: OrderStatus;

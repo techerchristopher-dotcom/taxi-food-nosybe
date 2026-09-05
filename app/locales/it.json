@@ -199,6 +199,27 @@
     "needGps": "Posizione GPS mancante su questo indirizzo. Torna al passaggio indirizzo e registra la tua posizione.",
     "failed": "Non è stato possibile creare l'ordine. Riprova."
   },
+  "promo": {
+    "section": "Codice promo",
+    "placeholder": "Es. LALIE",
+    "appliquer": "Applica",
+    "retirer": "Rimuovi",
+    "applique": "Codice {{code}} applicato",
+    "economie": "Risparmi {{amount}} sulla consegna.",
+    "ligne": "Codice {{code}}",
+    "rejeteALaValidation": "Non è stato possibile applicare il codice. Il tuo ordine non è stato inviato: controlla il messaggio qui sopra, poi conferma di nuovo.",
+    "erreur": {
+      "inconnu": "Questo codice non esiste. Controlla come l'hai scritto e riprova.",
+      "inactif": "Questo codice non è più attivo. Rimuovilo per confermare l'ordine.",
+      "pas_encore": "Questo codice non è ancora utilizzabile. Torna all'inizio dell'offerta.",
+      "expire": "Questo codice è scaduto. Rimuovilo per confermare l'ordine.",
+      "epuise": "Questo codice ha raggiunto il numero massimo di utilizzi.",
+      "deja_utilise": "Hai già usato questo codice. È valido una sola volta per cliente.",
+      "non_connecte": "Accedi per usare un codice promo.",
+      "restaurant_inconnu": "Questo codice non si applica a questo ristorante.",
+      "reseau": "Per ora non è possibile verificare il codice. Controlla la connessione e riprova."
+    }
+  },
   "confirmation": {
     "title": "Ordine\ninviato!",
     "subtitle": "{{restaurant}} ha ricevuto il tuo ordine. Sarai avvisato a ogni passaggio.",

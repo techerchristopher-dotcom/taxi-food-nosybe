@@ -113,6 +113,36 @@ d'authentification, puis `net._http_response` → `200 {"message":"Workflow was
 started"}` et exécution n8n `success` avec l'objet
 `✅ Taxi Be s'est connecté` accepté par le SMTP.
 
+### Le mail de bienvenue au restaurateur
+
+À la première connexion, **deux messages partent** : l'alerte au porteur du
+projet, et un mail de bienvenue **au patron**, qui l'emmène installer Telegram.
+
+⚠️ **Le nœud Code renvoie deux items**, et n8n exécute alors le nœud e-mail une
+fois par item — c'est ce qui évite une branche parallèle et un second nœud à
+maintenir. Le champ `destinataire` porte l'adresse, donc le nœud e-mail doit
+avoir `toEmail = {{ $json.destinataire }}` et **non une adresse en dur**, sinon
+le mail de bienvenue part chez nous. L'adresse était en dur : c'est corrigé.
+
+⚠️ **Un e-mail n'exécute pas de JavaScript.** Le bouton ne peut donc pas savoir
+si le lecteur est sur iPhone ou Android. Il pointe sur
+[`/telegram/`](../landing/telegram/index.html) du site vitrine, qui détecte
+après le clic et renvoie sur le bon magasin — vérifié sur les quatre cas, y
+compris l'iPad qui se déclare « Macintosh ».
+
+⚠️ **Pas d'échappement HTML dans une ligne d'objet.** « Chez Bidul & Truc » y
+devenait « Chez Bidul &amp;amp; Truc », lisible tel quel dans la boîte de
+réception. Corrigé.
+
+Visuels du mail, déposés dans `marketing/guide/` :
+
+| Fichier | Rôle |
+|---|---|
+| `telegram-logo.png` | logo Telegram, fond transparent, 240 px |
+| `telegram-commande.jpg` | à quoi ressemble une commande reçue, avec ses deux boutons |
+
+Copies dans le dépôt : [`assets/guide/`](../assets/guide/).
+
 ## Ce qu'il reste à faire
 
 1. **Dans n8n**, ouvrir le workflow et choisir les identifiants :

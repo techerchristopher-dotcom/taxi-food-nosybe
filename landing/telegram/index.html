@@ -50,11 +50,16 @@
     font:700 16px/1 inherit; letter-spacing:-.01em;
   }
   .btn.second{background:#fff; color:var(--encre); border:1.5px solid #E3DDD6; margin-top:12px}
+  .capture{display:block; width:100%; height:auto; margin:22px 0 0;
+           border-radius:14px; border:1px solid #E9E3DC}
+  .sous{font-size:14px; color:var(--encre); margin-top:12px}
+  .sous strong{font-weight:700}
   .note{margin-top:22px; padding-top:18px; border-top:1px solid #EDE8E2;
         font-size:13px; color:var(--gris)}
   @media (prefers-color-scheme: dark){
     :root{--fond:#141210; --carte:#1E1B19; --encre:#F2EEEA; --gris:#A29A92; --rouge:#FF6B5E}
     .btn.second{background:transparent; border-color:#332E2A}
+    .capture{border-color:#332E2A}
     .note{border-top-color:#332E2A}
   }
 </style>
@@ -62,11 +67,19 @@
 <body>
   <main class="carte">
     <div class="marque">TAXI FOOD</div>
-    <img class="icone" src="/assets/icon-192.png" width="76" height="76"
-         alt="Taxi Food">
+    <img class="icone" src="https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/marketing/guide/telegram-logo.png"
+         width="76" height="76" alt="Telegram">
     <h1>Installez Telegram</h1>
-    <p>C'est là que vous recevrez vos commandes, avec les boutons Accepter et
-    Refuser.</p>
+    <p>Gratuit, comme WhatsApp. C'est là que chaque commande arrivera —
+    avec la photo du plat, le choix du client, le montant et son numéro.</p>
+
+    <!-- La preuve en image : ce qu'il verra vraiment sur son telephone. -->
+    <img class="capture"
+         src="https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/marketing/guide/telegram-commande.jpg"
+         width="936" height="1062" loading="lazy"
+         alt="Une commande reçue sur Telegram, avec les boutons J'accepte et Je refuse">
+    <p class="sous">Un appui sur <strong>J'accepte</strong>, et vous lancez
+    votre chef.</p>
 
     <!-- Ces deux liens sont la verite de secours : ils fonctionnent sans
          JavaScript, et restent affiches sur ordinateur. -->

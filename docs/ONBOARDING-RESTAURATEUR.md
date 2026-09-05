@@ -155,6 +155,20 @@ Les quatre colonnes doivent être vraies / renseignées.
 
 ---
 
+## Étape 3 bis — L'alerte de première connexion
+
+Rien à faire : c'est automatique. Dès que le patron se connecte pour la
+**première fois** avec les identifiants qu'on lui a envoyés, un e-mail part —
+objet `✅ <Restaurant> s'est connecté`, avec le moyen utilisé pour entrer
+(mot de passe, Google, Facebook) et le temps qu'il a mis.
+
+⚠️ **C'est le signal qui manquait.** L'alerte d'inscription tire quand *nous*
+créons le compte, pas quand il s'en sert : sans celle-ci, on envoie des
+identifiants et on n'apprend plus rien. Elle sert à enchaîner sur l'étape 4 au
+bon moment, et à savoir quand relancer.
+
+Détail technique dans [N8N-NOTIFICATIONS.md](N8N-NOTIFICATIONS.md).
+
 ## Étape 4 — Telegram : un canal par restaurant
 
 Le patron reçoit ses commandes sur **son** téléphone, avec les boutons
@@ -301,6 +315,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 - [ ] 2. Compte créé via la fenêtre Edge (`email_confirm: true`, mot de passe ≥ 6)
 - [ ] 3. Fenêtre refermée : Edge en 410 + secret du Vault supprimé + fonction SQL supprimée
 - [ ] 4. Rattachement vérifié en SQL (`user_roles`, `restaurant_staff`, `utilisee_le`)
+- [ ] 4 bis. Attendre l'e-mail `✅ … s'est connecté` avant d'enchaîner sur Telegram
 - [ ] 5. Telegram : `DÉMARRER` appuyé sur son téléphone, `telegram_chat_id` et `phone` renseignés, **commande de test reçue avec ses boutons**
 - [ ] 6. **Message copier-coller remis au porteur du projet, avec lien + e-mail + mot de passe**
 

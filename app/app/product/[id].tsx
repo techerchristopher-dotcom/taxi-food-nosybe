@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -49,6 +49,30 @@ export default function ProductDetailScreen() {
   const [conflict, setConflict] = useState(false);
   // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
+
+  /**
+   * Pré-sélection des groupes obligatoires qui n'offrent qu'un seul choix.
+   *
+   * C'est le cas de la boîte pizza : elle est imposée par la livraison, le client
+   * n'a rien à décider. Lui demander de cocher l'unique case serait un clic pour
+   * rien — et un plat non ajoutable tant qu'il ne l'a pas trouvée. La ligne
+   * apparaît donc d'elle-même dans le panier, à son prix, sans surprise à la fin.
+   */
+  useEffect(() => {
+    const impose = groups.filter((g) => g.required && g.options.length === 1);
+    if (!impose.length) return;
+    setSel((prev) => {
+      const suite = { ...prev };
+      let change = false;
+      for (const g of impose) {
+        if (!suite[g.id]?.length) {
+          suite[g.id] = [g.options[0].id];
+          change = true;
+        }
+      }
+      return change ? suite : prev;
+    });
+  }, [groups]);
 
   if (loading && !product) {
     return (

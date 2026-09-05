@@ -155,29 +155,68 @@ Les quatre colonnes doivent être vraies / renseignées.
 
 ---
 
-## Étape 4 — Telegram
+## Étape 4 — Telegram : un groupe par restaurant
 
 Le restaurateur reçoit ses commandes sur Telegram, avec des boutons
 **Accepter / Refuser** qui mettent à jour la commande dans l'application sans
 qu'il ait besoin d'ouvrir quoi que ce soit. C'est ce qui lui fait gagner du temps,
 et c'est l'argument à mettre en avant.
 
-1. Lui faire installer Telegram et démarrer une conversation avec notre bot
-2. Récupérer son `chat_id` et le poser :
-   ```sql
-   update public.restaurants set telegram_chat_id = '<chat_id>' where id = '<uuid>';
+Le robot : **@Taxifood_commandes_bot** (« Taxi Food commandes »). Son jeton est
+dans `.secrets.local` (gitignored, `chmod 600`), jamais dans le dépôt.
+
+### ⚠️ Un groupe, pas une conversation privée
+
+Le réflexe est de demander au restaurateur d'écrire au robot depuis son compte.
+Ça marche, mais ça attache les commandes à **une personne** : le jour où il
+change de téléphone, part en congé ou vend l'affaire, le canal meurt avec lui.
+
+Un groupe résout les trois : plusieurs employés y voient les commandes, on y
+reste soi-même pour dépanner, et l'identifiant survit aux changements d'équipe.
+
+### La marche à suivre
+
+1. **[lui]** Installer Telegram avec **son numéro habituel**
+2. **[lui]** Créer un groupe « Taxi Food — Nom du restaurant » et nous y ajouter
+3. **[nous]** Ajouter `@Taxifood_commandes_bot` au groupe
+4. **[nous]** Envoyer `/start@Taxifood_commandes_bot` **dans le groupe**
+5. **[nous]** Lire l'identifiant :
+   ```bash
+   set -a; . ./.secrets.local; set +a
+   curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
    ```
-3. Renseigner aussi son téléphone : `update public.restaurants set phone = '+261…'`
+6. **[nous]** `select public.set_restaurant_telegram('<uuid>', '<chat_id>');`
+7. **[nous]** Passer une **vraie commande de test** et regarder le groupe
 
-Le jeton du bot est dans `.secrets.local` (gitignored, `chmod 600`), jamais dans
-le dépôt.
+⚠️ L'étape 7 n'est pas décorative : voir la ligne remplie en base ne prouve rien.
+La seule preuve est le message qui arrive avec ses deux boutons.
 
-⚠️ `sendPhoto` accepte `reply_markup` (donc les boutons) ; **`sendMediaGroup` ne
-l'accepte pas**. D'où le choix d'une seule photo + légende + boutons.
+### Les pièges
 
-État actuel : seule **La Cabane** a un `telegram_chat_id` (`7699975131`).
+- ⚠️ **Le robot n'écoute pas tout.** `can_read_all_group_messages: false` : dans
+  un groupe il ne voit que ce qui lui est explicitement adressé. Sans le
+  `/start@Taxifood_commandes_bot` de l'étape 4, `getUpdates` ne renvoie rien et
+  tout semble cassé sans l'être.
+- ⚠️ **L'identifiant d'un groupe est négatif** — garder le signe moins.
+- ⚠️ **Il change si le groupe devient un supergroupe** (Telegram convertit dès
+  que le groupe grandit ou devient public) : `-987654321` devient
+  `-100987654321`. Les commandes s'arrêtent net, sans erreur. Première chose à
+  vérifier si un restaurant cesse de recevoir.
+- ⚠️ **Jamais le `@pseudo`**, toujours l'identifiant numérique : un pseudo peut
+  être changé par n'importe quel administrateur du groupe, et repris par un autre.
+- ⚠️ **`getUpdates` répond `409 Conflict`** si un nœud *Telegram Trigger* tourne
+  dans n8n sur le même robot — Telegram réserve alors les mises à jour au
+  webhook. Aucun webhook n'est posé aujourd'hui.
 
----
+### ⚠️ État réel au 2026-09-05
+
+**Aucun restaurant n'a de vrai canal.** L'identifiant enregistré pour La Cabane,
+`7699975131`, est celui de la **conversation privée du porteur du projet** avec
+le robot — posé pendant les tests. Ses commandes arrivent donc chez lui, pas au
+restaurant. À refaire avec un vrai groupe.
+
+Page d'accompagnement (générateur de requête + pièges) :
+https://claude.ai/code/artifact/5b98005a-012b-4c88-985c-e7d8a8f0d4e1
 
 ## Étape 5 — Le guide interactif
 
@@ -245,11 +284,11 @@ Refuser — pas besoin d'ouvrir l'application pour répondre.
 - **WhatsApp plutôt que l'e-mail** : c'est le canal réellement lu à Nosy Be, et
   ça évite le problème ci-dessous
 
-⚠️ **Ne pas compter sur l'e-mail pour transmettre ces informations.** Les
-adresses en `@privaterelay.appleid.com` (3 comptes sur 10 aujourd'hui) **jettent
-silencieusement** nos messages tant que `distripro207.com` n'est pas déclaré dans
-le portail développeur Apple. Aucune erreur, aucun retour : le message n'arrive
-simplement jamais.
+✅ **Le relais privé Apple ne bloque plus.** `distripro207.com` et
+`christopher@distripro207.com` sont déclarés dans le portail développeur depuis le
+2026-09-05, vérifiés SPF. Les adresses en `@privaterelay.appleid.com` (3 comptes
+sur 10) reçoivent désormais nos messages. ⚠️ Si l'adresse expéditrice change, il
+faut revenir la déclarer : Apple jette sans rien signaler.
 
 ⚠️ **Ne pas promettre que le lien ouvre l'application installée.** Les liens
 universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déjà
@@ -263,7 +302,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 - [ ] 2. Compte créé via la fenêtre Edge (`email_confirm: true`, mot de passe ≥ 6)
 - [ ] 3. Fenêtre refermée : Edge en 410 + secret du Vault supprimé + fonction SQL supprimée
 - [ ] 4. Rattachement vérifié en SQL (`user_roles`, `restaurant_staff`, `utilisee_le`)
-- [ ] 5. Telegram : `telegram_chat_id` et `phone` renseignés
+- [ ] 5. Telegram : **groupe dédié** créé, robot ajouté, `telegram_chat_id` et `phone` renseignés, **commande de test reçue avec ses boutons**
 - [ ] 6. **Message copier-coller remis au porteur du projet, avec lien + e-mail + mot de passe**
 
 ---
@@ -280,7 +319,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 
 | Restaurant | E-mail | Mot de passe | Compte | Telegram |
 |---|---|---|---|---|
-| La Cabane | murechoco@gmail.com | `cabane207` | ✅ 2026-09-05 | ✅ `7699975131` |
+| La Cabane | murechoco@gmail.com | `cabane207` | ✅ 2026-09-05 | ⚠️ à refaire — pointe sur une conversation privée |
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | ✅ 2026-09-05 | ❌ à faire |
 | Les Siciliens | — | — | ❌ | ❌ |
 | Taxi Be | — | — | ❌ | ❌ |

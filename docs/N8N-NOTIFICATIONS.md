@@ -60,10 +60,25 @@ Ces adresses fonctionnent, **mais Apple ne relaie que si le domaine expéditeur
 est déclaré** dans le portail développeur : *Certificates, Identifiers & Profiles
 → Services → Sign in with Apple for Email Communication → Configure*. Sinon le
 message est **jeté en silence** : n8n dira « envoyé », et le client ne recevra
-jamais rien.
+jamais rien. C'est le genre de panne qu'on ne découvre qu'en interrogeant un client.
 
-À faire avant de compter sur l'e-mail : y déclarer l'adresse expéditrice Gmail
-retenue. C'est le genre de panne qu'on ne découvre qu'en interrogeant un client.
+### ✅ Réglé le 2026-09-05
+
+Déclarés dans le portail, tous deux **vérifiés SPF (pastille verte)** :
+
+| Type | Valeur |
+|---|---|
+| Domaine | `distripro207.com` |
+| Adresse | `christopher@distripro207.com` |
+
+⚠️ **L'expéditeur n'est pas Gmail** — ce document l'a affirmé à tort. Le nœud
+« E-mail au client » envoie par le **SMTP Hostinger**, depuis
+`Taxi Food <christopher@distripro207.com>`. Le domaine porte déjà SPF
+(`include:_spf.mail.hostinger.com`), DKIM (`hostingermail-a`) et DMARC, ce qui
+explique que la vérification Apple soit passée immédiatement.
+
+⚠️ **Si l'adresse expéditrice change un jour, il faut revenir la déclarer ici.**
+Apple ne vérifie pas l'adresse à l'envoi : il jette, sans rien signaler.
 
 ## Ce qu'il reste à faire
 
@@ -71,8 +86,8 @@ retenue. C'est le genre de panne qu'on ne découvre qu'en interrogeant un client
    - nœud « E-mail au client » → un compte Gmail ;
    - nœud « Telegram au restaurant » → un robot Telegram (créé via `@BotFather`).
 2. **Activer** le workflow (il est créé inactif).
-3. **Déclarer l'expéditeur Gmail** chez Apple (voir ci-dessus).
-4. **Pour chaque restaurant**, récupérer l'identifiant de son canal Telegram et
-   le poser : `select public.set_restaurant_telegram('<uuid>', '<chat_id>');`
-   ⚠️ L'identifiant **numérique**, pas le `@pseudo` : un pseudo peut changer.
+3. ~~Déclarer l'expéditeur chez Apple~~ — **fait le 2026-09-05** (voir ci-dessus).
+4. **Pour chaque restaurant**, brancher son canal Telegram — **un groupe par
+   restaurant**, procédure complète et pièges dans
+   [ONBOARDING-RESTAURATEUR.md](ONBOARDING-RESTAURATEUR.md) § 4.
 5. Passer une vraie commande de test et vérifier les trois canaux.

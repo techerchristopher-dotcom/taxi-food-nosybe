@@ -7,8 +7,9 @@ import { Avatar, Card, Divider, InfoBanner, SectionLabel } from '../components/p
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
 import { BottomBar } from '../components/BottomBar';
+import { ChoixModePaiement } from '../components/paiement/ChoixModePaiement';
 import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
-import { formatAddressLine, PaymentMethod, paymentShort } from '../data/types';
+import { formatAddressLine, paymentShort } from '../data/types';
 import {
   createOrder,
   listAddresses,
@@ -16,17 +17,19 @@ import {
   RaisonPromo,
   verifierCodePromo,
 } from '../data/api';
+import {
+  apercuMontantMineur,
+  ConfigPaiement,
+  CONFIG_PAIEMENT_ETEINTE,
+  formatMontantMineur,
+  formatTaux,
+  lireConfigPaiement,
+} from '../data/paiement';
 import { useLoad } from '../lib/useLoad';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
 import { useAuthIntent } from '../store/authIntent';
-
-const METHODS: { key: PaymentMethod; icon: string; iconColor: string; subKey: string }[] = [
-  { key: 'cb', icon: 'credit_card', iconColor: colors.textDark, subKey: 'checkout.cbSub' },
-  { key: 'especes', icon: 'payments', iconColor: colors.textDark, subKey: 'checkout.especesSub' },
-  { key: 'orange_money', icon: 'smartphone', iconColor: colors.secondary, subKey: 'checkout.orangeSub' },
-];
 
 /**
  * GARDE DU TUNNEL DE COMMANDE, second verrou.
@@ -69,7 +72,7 @@ export default function CheckoutScreen() {
 /** Écran 07 — Validation de la commande (récap + choix du paiement). */
 function CheckoutForm() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const lines = useCart((s) => s.lines);
   const restaurantId = useCart((s) => s.restaurantId);
@@ -100,6 +103,47 @@ function CheckoutForm() {
 
   const remise = promo?.remise ?? 0;
   const totalAPayer = Math.max(0, total - remise);
+
+  // ------------------------------------------------------------ PAIEMENT CARTE
+  // Réglages lus en base (`payment_config`), jamais devinés : le taux, la devise
+  // et l'interrupteur général y vivent. Tant qu'on n'a pas répondu, on part de
+  // « carte éteinte » — mieux vaut proposer les espèces à quelqu'un qui aurait pu
+  // payer par carte que d'ouvrir un tunnel qu'on ne sait pas configurer.
+  const [configPaiement, setConfigPaiement] = useState<ConfigPaiement>(CONFIG_PAIEMENT_ETEINTE);
+  useEffect(() => {
+    let vivant = true;
+    lireConfigPaiement()
+      .then((c) => {
+        if (vivant) setConfigPaiement(c);
+      })
+      .catch(() => {
+        /* repli déjà en place : carte éteinte */
+      });
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
+  // Aperçu du montant en euros. Même règle d'arrondi que `montant_eur_centimes`
+  // en base (au SUPÉRIEUR) pour que le chiffre annoncé ici soit exactement celui
+  // que le serveur calculera à l'étape suivante.
+  const apercuEur = apercuMontantMineur(totalAPayer, configPaiement.fxArParEur);
+  const montantTropFaible = apercuEur != null && apercuEur < configPaiement.montantMinimumMinor;
+  /**
+   * La carte n'apparaît QUE si la base l'autorise. `carte_active = false` est
+   * l'arrêt d'urgence : l'option ne doit pas être grisée, elle ne doit pas
+   * exister. Un montant sous le minimum Stripe la retire aussi — le paiement
+   * échouerait de toute façon côté serveur, autant ne pas le proposer.
+   */
+  const carteProposable = configPaiement.carteActive && apercuEur != null && !montantTropFaible;
+
+  // Si la carte disparaît sous les pieds du client (interrupteur coupé pendant
+  // qu'il compose son panier, code promo qui fait passer le total sous le
+  // minimum), on le ramène sur le mode par défaut plutôt que de laisser une
+  // sélection invisible.
+  useEffect(() => {
+    if (paymentMethod === 'cb' && !carteProposable) setPayment('especes');
+  }, [paymentMethod, carteProposable, setPayment]);
 
   async function appliquerCode() {
     const saisi = codeSaisi.trim();
@@ -149,19 +193,28 @@ function CheckoutForm() {
         // On envoie le CODE, jamais le montant : la base recalcule la remise.
         codePromo: promo?.code ?? null,
       });
+      // Le panier est vidé dès que la commande existe, y compris pour une carte
+      // non encore payée : la commande est créée quoi qu'il arrive, et garder le
+      // panier inviterait à la passer une seconde fois. Le repli espèces et la
+      // reprise de paiement travaillent sur la commande, plus sur le panier.
       clear();
       // On transmet le total et le numéro renvoyés par la RPC (source autoritative,
       // déjà recalculée côté serveur) : la confirmation affiche le bon montant tout de
       // suite, sans dépendre du refetch (évite le « 0 Ar » transitoire).
-      router.replace({
-        pathname: '/confirmation',
-        params: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          total: String(order.total),
-          payment: paymentMethod,
-        },
-      });
+      const params = {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        total: String(order.total),
+        payment: paymentMethod,
+      };
+      // ⚠️ La carte s'encaisse AVANT la confirmation. On ne va sur
+      // `/confirmation` que quand il n'y a rien à débiter, sinon on afficherait
+      // « commande envoyée ! » à quelqu'un qui n'a pas encore payé.
+      router.replace(
+        paymentMethod === 'cb'
+          ? { pathname: '/paiement', params }
+          : { pathname: '/confirmation', params },
+      );
     } catch (e) {
       const msg = (e as { message?: string })?.message ?? '';
       // Le code promo peut être refusé à la validation alors qu'il était bon
@@ -280,33 +333,43 @@ function CheckoutForm() {
         </Card>
 
         <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('checkout.paymentSection')}</SectionLabel>
-        <View style={{ gap: 10 }}>
-          {METHODS.map((m) => {
-            const active = m.key === paymentMethod;
-            return (
-              <Pressable
-                key={m.key}
-                onPress={() => setPayment(m.key)}
-                style={[styles.payRow, { borderColor: active ? colors.primary : colors.border }]}
-              >
-                <Icon name={m.icon} size={24} color={m.iconColor} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.payTitle}>{t(`payment.${m.key}`)}</Text>
-                  <Text style={styles.paySub}>{t(m.subKey)}</Text>
-                </View>
-                <Icon
-                  name={active ? 'radio_button_checked' : 'radio_button_unchecked'}
-                  size={22}
-                  color={active ? colors.primary : colors.borderStrong}
-                />
-              </Pressable>
-            );
-          })}
+        <ChoixModePaiement
+          valeur={paymentMethod}
+          onChange={setPayment}
+          carteProposable={carteProposable}
+        />
+
+        {/* ⚠️ « aucun débit maintenant » devient FAUX dès qu'une carte est
+            prélevée en ligne. Le bandeau suit donc le mode choisi, et la carte
+            annonce le montant exact en euros AVANT le paiement — c'est ce qui
+            protège d'une contestation bancaire et d'un rejet en revue Apple. */}
+        <View style={{ marginTop: 14 }}>
+          {paymentMethod === 'cb' && apercuEur != null ? (
+            <InfoBanner icon="credit_card">
+              {t('checkout.cbDebit', {
+                montant: formatMontantMineur(apercuEur, configPaiement.devise, i18n.language),
+                taux: formatTaux(configPaiement.fxArParEur),
+              })}
+            </InfoBanner>
+          ) : (
+            <InfoBanner>{t('checkout.noCharge')}</InfoBanner>
+          )}
         </View>
 
-        <View style={{ marginTop: 14 }}>
-          <InfoBanner>{t('checkout.noCharge')}</InfoBanner>
-        </View>
+        {/* Le taux est PROPRE A TAXI FOOD, il ne suit pas le cours du jour, et la
+            banque du client peut ajouter ses frais. Le taire serait la meilleure
+            facon de recolter une contestation bancaire. */}
+        {paymentMethod === 'cb' && apercuEur != null ? (
+          <Text style={styles.infoCarte}>{t('paiement.mentionDevise')}</Text>
+        ) : null}
+
+        {/* Le minimum Stripe (50 centimes) n'est jamais atteint par une vraie
+            commande, mais un code promo peut faire tomber le total très bas. On
+            explique pourquoi la carte a disparu plutôt que de la faire
+            disparaître en silence. */}
+        {configPaiement.carteActive && montantTropFaible ? (
+          <Text style={styles.infoCarte}>{t('checkout.cbMinimum')}</Text>
+        ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
@@ -361,17 +424,13 @@ const styles = StyleSheet.create({
   addrLabel: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   addrDetail: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.textMuted, marginTop: 3 },
   modify: { fontFamily: fonts.bold, fontSize: 12, color: colors.primary },
-  payRow: {
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  infoCarte: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+    marginTop: 10,
   },
-  payTitle: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
-  paySub: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
   promoLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   promoInput: {

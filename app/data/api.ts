@@ -22,6 +22,7 @@ import {
   Order,
   OrderStatus,
   PaymentMethod,
+  StatutPaiement,
   Product,
   ProductOption,
   Restaurant,
@@ -443,6 +444,7 @@ type OrderJoinRow = {
   promo_discount?: number | null;
   total: number;
   payment_method: PaymentMethod;
+  payment_status?: StatutPaiement | null;
   status: OrderStatus;
   cancellation_reason: string | null;
   courier_id: string | null;
@@ -473,7 +475,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
   'restaurants ( name, logo_url, phone ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
@@ -511,6 +513,9 @@ function mapOrder(o: OrderJoinRow): Order {
     promoDiscount: o.promo_discount ?? 0,
     total: o.total,
     paymentMethod: o.payment_method,
+    // Verdict du webhook Stripe, deduit de `payment_intents` par un trigger.
+    // `non_requis` pour tout ce qui se regle a la livraison.
+    paymentStatus: o.payment_status ?? 'non_requis',
     status: o.status,
     addressLabel,
     addressDetail: addr?.landmark ?? '',

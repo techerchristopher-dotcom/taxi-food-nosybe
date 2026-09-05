@@ -13,6 +13,14 @@ import i18n from '../lib/i18n';
 
 export type PaymentMethod = 'cb' | 'especes' | 'orange_money';
 
+/**
+ * Etat de paiement en ligne d'une commande (enum `order_payment_status`).
+ * DEDUIT de `payment_intents` par un trigger : ni le front, ni une RPC, ni une
+ * Edge Function ne l'ecrivent. `non_requis` couvre tout ce qui se regle a la
+ * livraison, donc l'immense majorite des commandes.
+ */
+export type StatutPaiement = 'non_requis' | 'en_attente' | 'paye' | 'echoue' | 'rembourse';
+
 /** Rôles applicatifs (multi-rôle : un compte peut être client ET restaurant, etc.). */
 export type AppRole = 'client' | 'restaurant' | 'livreur';
 export type RoleStatus = 'pending' | 'active' | 'revoked';
@@ -287,6 +295,8 @@ export type Order = {
   promoDiscount: number;
   total: number;
   paymentMethod: PaymentMethod;
+  /** Verdict du webhook Stripe. `non_requis` pour un reglement a la livraison. */
+  paymentStatus: StatutPaiement;
   status: OrderStatus;
   addressLabel: string;
   addressDetail: string;

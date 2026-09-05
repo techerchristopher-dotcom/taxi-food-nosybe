@@ -15,6 +15,13 @@
 # La cle anon est publique par conception (la RLS protege) ; la cle service_role
 # n'a rien a faire ici.
 #
+# ⚠️ PAS DE VARIABLE STRIPE ICI. La cle publiable vient du Vault Supabase, servie
+# par l'Edge Function `creer-paiement` : le site web et les applications mobiles
+# lisent donc la meme, et changer de compte Stripe ne demande aucun redeploiement.
+# `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` existe en secours (voir app/.env.example)
+# et doit rester vide tant que le Vault repond. La cle SECRETE sk_... n'a jamais
+# rien a faire dans un bundle navigateur.
+#
 # ⚠️ L'origine de ce site doit etre ajoutee dans Supabase > Authentication >
 # URL Configuration > Redirect URLs. `signInWithOAuth` passe
 # `redirectTo: window.location.origin` : une origine absente de la liste fait

@@ -153,6 +153,39 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 - **Écrans (4 onglets)** : Temps réel (commandes actives tous restos + livreurs dispo, polling 10 s, badge RETARD) · Rapport de clôture (période, net à reverser/resto, totaux, export CSV, « marquer reversé » + historique) · Demandes de rôle (valider/refuser, lier `restaurant_staff`) · Restaurants & menus (créer/éditer un restaurant ; gérer catégories/produits — prix, description, dispo, **photo par URL en V1**, upload direct = P1). Écritures via RPC admin (`admin_create_restaurant`, `admin_update_restaurant`, `admin_upsert_category`, `admin_upsert_product`), gardées par `is_admin()`.
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes, mode admin mobile allégé.
 
+## Paiement par carte (Stripe) — 2026-09-06
+
+**Document de référence complet : [docs/PAIEMENT-STRIPE.md](docs/PAIEMENT-STRIPE.md).**
+Ce qu'il faut savoir sans l'ouvrir :
+
+- **Rien n'est encaissable tant que `payment_config.carte_active` vaut `false`** — c'est le cas
+  aujourd'hui. Tant qu'il est faux, l'option carte **n'apparaît pas** sur l'écran de validation
+  (elle n'est pas grisée : elle est absente), et `creer-paiement` refuse avant tout appel à
+  Stripe. Pour ouvrir : `select public.admin_set_carte_active(true);` en tant qu'admin.
+  ⚠️ **Le compte Stripe est en mode RÉEL** : ouvrir, c'est encaisser de vrais euros.
+- **Les prix restent en ariary, le débit se fait en euros** à un taux **fixe** lu dans
+  `payment_config.fx_ar_per_eur` (4 700 Ar = 1 EUR). Jamais une constante dans le code.
+  L'écran de validation ET l'écran de paiement affichent le total en ariary, le montant exact
+  en euros et le taux — c'est une exigence de revue Apple, pas une politesse.
+- ⚠️ **L'app ne décide JAMAIS qu'une commande est payée.** `presentPaymentSheet()` sans erreur
+  veut dire « le client a confirmé sur son appareil », rien de plus. Le verdict est
+  `orders.payment_status`, écrit par un trigger à partir des lignes que seul le webhook Stripe
+  (signature vérifiée côté serveur) modifie.
+- ⚠️ **`components/paiement/FormulaireCarte.web.tsx` n'est pas cosmétique.** Stripe ne supporte
+  pas le web avec le SDK React Native. Sans ce jumeau, `expo export --platform web` embarquerait
+  le module natif et casserait taxifood.distripro207.com. Le SDK natif n'est importé qu'à **un**
+  endroit du dépôt ; l'y importer ailleurs sans jumeau casse le site.
+- **Le PaymentSheet natif exige un nouveau build** (`@stripe/stripe-react-native` est un module
+  natif) : il n'existe pas dans les binaires 1.1.0 en ligne. Le web, lui, part au prochain
+  déploiement Netlify.
+- **Orange Money est non sélectionnable** (badge « Bientôt ») à la SAISIE seulement. Trois
+  commandes en base le portent : `admin/lib/util.ts` et `components/DeliverSheet.tsx` doivent
+  continuer à les afficher — ne pas les toucher.
+- ⚠️ **Problème connu, non résolu** : `create_order` insère en `status = 'recue'`, ce qui notifie
+  le restaurant (push + e-mail + Telegram avec lien « Accepter ») **avant tout paiement**. Un
+  client qui abandonne laisse un restaurant qui a pu commencer à cuisiner. Correctif dans
+  `notify_order_status()`, détaillé au § 9 du document de référence.
+
 ## Codes promo (2026-09-06)
 
 **Le code donne une remise sur la LIVRAISON seulement.** La commission prélevée sur les

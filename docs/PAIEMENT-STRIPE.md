@@ -15,15 +15,27 @@ valable et sert de base au raisonnement sur le taux, plus bas.
 |---|---|
 | Socle base de données (`payment_config`, `payment_intents`, `orders.payment_status`, verrous) | ✅ appliqué — migrations `20260905213821` et `20260905214324` |
 | Fonction SQL de lecture des secrets `stripe_config()` | ✅ créée, réservée à `service_role` |
-| Edge Function `creer-paiement` | 🚧 en cours d'écriture (agent parallèle) |
-| Edge Function `stripe-webhook` | 🚧 en cours d'écriture (agent parallèle) |
-| `@stripe/stripe-react-native` dans l'app | ⏳ pas installé |
-| Secrets dans le Vault Supabase | ⛔ **aucun posé** |
-| `payment_config.carte_active` | **`false`** |
+| RPC de repli espèces `basculer_en_especes()` | ✅ appliquée — migration `20260905221246` |
+| Edge Function `creer-paiement` | ✅ déployée (`verify_jwt: true`) |
+| Edge Function `stripe-webhook` | ✅ déployée (`verify_jwt: false`), endpoint Stripe `we_1UCRd0…` |
+| `@stripe/stripe-react-native` **0.64.0** (version épinglée par Expo SDK 57) | ✅ installé + plugin dans `app.json` |
+| `@stripe/stripe-js` **9.x** + `@stripe/react-stripe-js` **6.x** (web) | ✅ installés |
+| Écran `app/app/paiement.tsx` + `components/paiement/` | ✅ écrits |
+| Secrets dans le Vault Supabase | ✅ **les trois posés** (`stripe_secret_key`, `stripe_publishable_key`, `stripe_webhook_secret`) |
+| `payment_config.carte_active` | **`false`** ← le seul verrou restant |
 
-⚠️ **Rien n'est encaissable aujourd'hui.** `carte_active` vaut `false` et aucun secret n'est
-posé : `stripe_config()` renvoie `configure = false`, et tout appelant doit rester **inerte et
-le dire**, jamais planter. C'est ce qui permet de déployer le code avant les secrets.
+⚠️ **Rien n'est encaissable aujourd'hui, et une seule ligne le décide.** Les secrets sont posés,
+donc `stripe_config()` renvoie `configure = true` : ce qui bloque désormais, c'est uniquement
+`carte_active`. Tant qu'il vaut `false`, l'option carte **n'apparaît même pas** sur l'écran de
+validation, et `creer-paiement` refuse en `503 carte_inactive` avant tout appel à Stripe.
+
+Pour ouvrir le canal, connecté avec un compte admin :
+
+```sql
+select public.admin_set_carte_active(true);
+```
+
+⚠️ **Le compte Stripe est en mode RÉEL.** Ouvrir le canal, c'est encaisser de vrais euros.
 
 **Compte Stripe** : `acct_1SNuSk53bhPYA4IF`, nom « Rentanoo », réglé en **EUR**.
 
@@ -380,20 +392,132 @@ Le socle fournit déjà ce qu'il faut pour le faire (`orders.payment_status`). *
 
 ## 10. Ce qui reste à faire, dans l'ordre
 
-- [ ] Terminer et déployer **`stripe-webhook`** (`verify_jwt: false`, signature vérifiée sur
-      le **corps brut** — modèle `send-otp-whatsapp/index.ts:118-122`, jamais sur le JSON
-      reparsé), puis **déclarer l'endpoint dans le tableau de bord Stripe** et poser le
-      `whsec_...` obtenu dans le Vault
-- [ ] Installer `@stripe/stripe-react-native` et brancher le PaymentSheet dans
-      `app/app/checkout.tsx`, **entre `createOrder` et `clear()`** : si le paiement échoue ou
-      est annulé, le panier ne doit pas être vidé
-- [ ] Afficher montant en euros + taux avant validation (§ 6)
-- [ ] Rendre Orange Money non sélectionnable, avec badge « Bientôt disponible »
-- [ ] Décider du sort de la carte sur le **web** (masquer, ou Payment Element)
+- [x] Déployer **`stripe-webhook`**, déclarer l'endpoint Stripe, poser le `whsec_...`
+- [x] Installer `@stripe/stripe-react-native` (0.64.0) et brancher le PaymentSheet
+- [x] Afficher montant en euros + taux avant validation (§ 6 et § 11)
+- [x] Rendre Orange Money non sélectionnable, avec badge
+- [x] Trancher le sort de la carte sur le **web** : Payment Element (§ 11)
 - [ ] Corriger la notification prématurée au restaurant (§ 9)
-- [ ] Expiration des `payment_intents` restés en `requiert_action` — sans elle, une commande
-      abandonnée reste verrouillée par l'index unique partiel et **ne peut plus être repayée**
-- [ ] Poser les secrets dans le Vault (§ 3), d'abord en **test**
+- [x] Expiration des `payment_intents` restés en `requiert_action` — **le blocage n'a pas lieu** :
+      `creer-paiement` REPREND la ligne vivante et relit le PaymentIntent chez Stripe au lieu
+      d'en créer un second, et `basculer_en_especes()` la passe à `annule`, ce qui libère
+      l'index unique partiel. Une purge périodique reste souhaitable pour l'hygiène, elle n'est
+      plus nécessaire pour débloquer un client
+- [x] Poser les secrets dans le Vault (§ 3)
 - [ ] Passer la recette du § 5, puis `select public.admin_set_carte_active(true);`
+- [ ] **Construire un build natif** (`eas build`) : `@stripe/stripe-react-native` est un module
+      natif, il n'existe pas dans les binaires 1.1.0 déjà en ligne sur les magasins. Le web,
+      lui, part au prochain déploiement Netlify sans rien de plus
 - [ ] Retirer « en cours de déploiement » des textes publics (§ 7)
 - [ ] Mettre à jour les déclarations dans les deux consoles (§ 7)
+
+---
+
+## 11. Le parcours côté application
+
+### Le choix qui structure tout : un écran, pas une modale
+
+Le plan initial disait « brancher le PaymentSheet dans `checkout.tsx`, entre `createOrder` et
+`clear()` ». Ce n'est pas ce qui a été fait, et voici pourquoi.
+
+Un écran porte une **URL**. Sur le web, le client qui recharge la page pendant le paiement, qui
+revient d'une authentification 3-D Secure, ou qui perd son réseau, retombe sur `/paiement` et
+l'écran **relit l'état réel en base**. Une modale lancée depuis la validation n'aurait survécu à
+aucun de ces trois cas — or « réseau coupé pendant le paiement, l'écran doit dire la vérité »
+était une exigence explicite.
+
+Conséquence sur le panier : `clear()` est appelé **dès que la commande existe**, y compris pour
+une carte non payée. La commande est créée quoi qu'il arrive ; garder le panier inviterait à la
+passer une seconde fois. Le repli espèces et la reprise de paiement travaillent désormais sur la
+**commande**, plus jamais sur le panier — c'est ce qui permet de ne rien recréer.
+
+```
+checkout.tsx ──createOrder()──▶ commande TF-xx existe
+     │
+     ├── especes / orange_money ──────────────────────▶ /confirmation   (inchangé)
+     │
+     └── cb ──▶ /paiement?orderId=…&orderNumber=…&total=…
+                   │
+                   ├─ lireStatutPaiement()      déjà payé ? → /confirmation
+                   ├─ creer-paiement            → client_secret + publishable_key + montant + taux
+                   ├─ <FormulaireCarte>         natif : PaymentSheet · web : Payment Element
+                   ├─ attendreVerdictPaiement() interroge orders.payment_status
+                   └─ payé → /confirmation      refusé → réessayer OU basculer_en_especes()
+```
+
+### Les fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `app/data/paiement.ts` | Couche données : `lireConfigPaiement`, `preparerPaiementCarte`, `attendreVerdictPaiement`, `basculerEnEspeces`, formatage euro |
+| `app/app/paiement.tsx` | L'écran : les six états (préparation, formulaire, attente, payé, échec, indisponible) |
+| `app/components/paiement/contrat.ts` | Le contrat commun aux deux plateformes |
+| `app/components/paiement/FormulaireCarte.tsx` | **Natif** — PaymentSheet |
+| `app/components/paiement/FormulaireCarte.web.tsx` | **Web** — Payment Element |
+| `app/components/paiement/ChoixModePaiement.tsx` | Les trois lignes de l'écran de validation |
+
+### ⚠️ Le fichier `.web.tsx` n'est pas cosmétique
+
+Stripe a fermé la question : « we do not plan on supporting the web with this SDK. Please use
+Stripe.js » ([stripe-react-native#1556](https://github.com/stripe/stripe-react-native/issues/1556)).
+Sans le jumeau `.web.tsx`, `expo export --platform web` embarquerait le module natif et **casserait
+taxifood.distripro207.com**.
+
+**Vérifié, pas supposé** : après `expo export --platform web`, le bundle contient `js.stripe.com`
+et **zéro** occurrence de `stripe-react-native`. Le SDK natif n'est importé qu'à un seul endroit du
+dépôt — `FormulaireCarte.tsx` — et ce fichier a un jumeau. Le jour où quelqu'un l'importe ailleurs
+sans jumeau, l'export web tombe.
+
+Le composant vit **hors de `app/`** exprès : dans `app/`, expo-router traiterait chaque fichier
+comme une route et exigerait en plus une version sans suffixe.
+
+### La clé publiable ne vit pas dans une variable d'environnement
+
+Elle est dans le **Vault**, et voyage jusqu'à l'app dans la réponse de `creer-paiement`. Une seule
+source de vérité : changer de compte Stripe ne demande **aucun** redéploiement de l'app ni du site.
+`EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` existe en secours (`app/.env.example`) et doit rester vide.
+
+### Les états gérés, et ce qu'ils disent
+
+| Situation | Ce que voit le client |
+|---|---|
+| `carte_active = false` | **L'option carte n'existe pas** sur l'écran de validation. Pas grisée : absente |
+| Montant sous le minimum Stripe | Idem, plus une phrase qui explique pourquoi |
+| Feuille de paiement fermée | « Paiement annulé — rien n'a été débité », retour au formulaire |
+| Refus bancaire | Le motif, puis **deux** boutons : réessayer, ou payer en espèces |
+| 3-D Secure en cours | « Vérification du paiement », puis au bout de 25 s « ta banque n'a pas encore répondu » — jamais « échec » |
+| Réseau coupé, app rouverte | L'écran de suivi affiche l'état réel (`payment_status`) et propose « Reprendre le paiement » |
+| Canal fermé côté serveur | « Ta commande est enregistrée : règle-la en espèces à la livraison » |
+
+⚠️ **Aucun de ces états ne marque une commande payée.** `presentPaymentSheet()` sans erreur
+signifie « le client a confirmé sur son appareil », rien de plus. Le verdict est lu dans
+`orders.payment_status`, que seul un trigger écrit, à partir des lignes que seul le webhook
+(signature vérifiée côté serveur) modifie.
+
+### Le repli espèces — pourquoi une RPC
+
+`basculer_en_especes(p_order_id)` (SECURITY DEFINER, `authenticated` seulement) change
+`payment_method` **sur place**. Recréer la commande aurait perdu le numéro TF-xx déjà annoncé au
+restaurant et reconsommé le code promo (`code_promo:deja_utilise`). `orders` n'a aucune policy
+UPDATE — c'est voulu — donc l'écriture ne pouvait passer que par une fonction.
+
+⚠️ **Limite assumée** : la ligne `payment_intents` est marquée `annule` en base, mais le
+PaymentIntent chez Stripe n'est pas annulable depuis du SQL. Si le client confirmait quand même
+après avoir basculé, le webhook remettrait `payment_status = 'paye'` sur une commande « espèces ».
+Le sens de la divergence est le bon (l'argent réellement encaissé est enregistré), et dans le
+parcours réel la feuille est fermée avant que le repli ne soit proposé.
+
+### Interrogation, pas temps réel
+
+`attendreVerdictPaiement` interroge `orders.payment_status` toutes les 1,2 s puis s'espace.
+**Aucune table de ce projet n'est publiée dans `supabase_realtime`** (vérifié en base) : l'écran de
+suivi interroge déjà toutes les 15 s, et introduire le temps réel ici aurait demandé une migration
+de publication pour une seule fonctionnalité.
+
+### Ce qui n'est pas vérifié
+
+- **Le PaymentSheet natif n'a jamais tourné.** Il exige un build natif, qui n'existe pas encore.
+- **Aucun vrai PaymentIntent n'a été créé** : `carte_active` est resté à `false`, le compte est en
+  mode réel, et il n'y a aucune commande `cb` en base.
+- **Le tunnel complet en tant que client connecté** n'a pas été parcouru : il demande de saisir un
+  mot de passe. Ce qui a été vérifié à la place est listé dans le rapport de session.

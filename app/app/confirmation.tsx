@@ -99,9 +99,15 @@ export default function ConfirmationScreen() {
 
           <View style={styles.cardDivider} />
           <Detail label={t('confirmation.amount')} value={formatAr(displayTotal)} valueColor={colors.primary} />
+          {/* ⚠️ « à la livraison » devient faux dès qu'une carte est prélevée en
+              ligne. On distingue les deux — un client qui vient d'être débité et
+              qui lit « à la livraison » croit qu'on va lui redemander l'argent. */}
           <Detail
             label={t('confirmation.payment')}
-            value={t('confirmation.paymentValue', { method: paymentLabel(displayPayment) })}
+            value={t(
+              displayPayment === 'cb' ? 'confirmation.paymentValueCarte' : 'confirmation.paymentValue',
+              { method: paymentLabel(displayPayment) },
+            )}
           />
           {order?.etaLabel ? <Detail label={t('confirmation.eta')} value={order.etaLabel} /> : null}
         </View>

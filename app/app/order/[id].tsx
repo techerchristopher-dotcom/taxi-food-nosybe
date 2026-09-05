@@ -4,9 +4,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
 import { Card, Divider, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
-import { paymentShort, statusStep } from '../../data/types';
+import { Order, paymentShort, statusStep } from '../../data/types';
 import { getOrderById } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 
@@ -72,6 +73,12 @@ export default function OrderTrackingScreen() {
   const cancelled = order.status === 'annulee';
   const step = statusStep(order.status);
   const head = STEPS[step];
+  // Carte payee en ligne : l'ecran doit dire la verite meme quand le client
+  // revient apres avoir perdu le reseau en plein paiement. `paymentStatus` est
+  // ecrit par un trigger a partir du verdict du webhook Stripe : c'est la seule
+  // source qui ne depend pas de ce que l'appareil du client a cru voir.
+  const carte = order.paymentMethod === 'cb';
+  const carteReglee = carte && order.paymentStatus === 'paye';
 
   // Sous-états de "en_livraison" : en attente d'un livreur vs récupérée, en route.
   const enLivraison = order.status === 'en_livraison';
@@ -125,7 +132,11 @@ export default function OrderTrackingScreen() {
             {order.cancellationReason ? (
               <Text style={styles.cancelledReason}>{t('tracking.refusedReason', { reason: order.cancellationReason })}</Text>
             ) : null}
-            <Text style={styles.cancelledHint}>{t('tracking.refusedHint')}</Text>
+            {/* « Aucun montant ne te sera debite » devient faux des qu'une
+                carte a ete prelevee : dans ce cas c'est un remboursement. */}
+            <Text style={styles.cancelledHint}>
+              {t(carteReglee ? 'tracking.refusedHintCarte' : 'tracking.refusedHint')}
+            </Text>
           </Card>
         ) : (
         <Card style={{ paddingBottom: 6 }}>
@@ -135,7 +146,9 @@ export default function OrderTrackingScreen() {
             const isLast = i === STEPS.length - 1;
             const sub =
               i === 4
-                ? t('tracking.payToCourier', { method: paymentShort(order.paymentMethod) })
+                ? carteReglee
+                  ? t('tracking.payToCourierCarte')
+                  : t('tracking.payToCourier', { method: paymentShort(order.paymentMethod) })
                 : i === 3 && enLivraison
                   ? order.pickedUp
                     ? t('tracking.step4Picked')
@@ -166,6 +179,11 @@ export default function OrderTrackingScreen() {
           })}
         </Card>
         )}
+
+        <EtatPaiement order={order} onReprendre={() => router.push({
+          pathname: '/paiement',
+          params: { orderId: order.id, orderNumber: order.orderNumber, total: String(order.total) },
+        })} />
 
         <Card style={{ marginTop: 14 }}>
           <SectionLabel style={{ marginBottom: 12 }}>{t('tracking.summary')}</SectionLabel>
@@ -221,8 +239,57 @@ export default function OrderTrackingScreen() {
   );
 }
 
+/**
+ * Etat du paiement carte, affiche UNIQUEMENT pour les commandes « cb ».
+ *
+ * C'est la reponse au scenario « reseau coupe pendant le paiement » : le client
+ * rouvre l'app et doit lire ce qui s'est reellement passe, pas une supposition.
+ * Rien ici n'est deduit du parcours precedent — tout vient de `payment_status`,
+ * ecrit par un trigger a partir du verdict du webhook Stripe.
+ */
+function EtatPaiement({ order, onReprendre }: { order: Order; onReprendre: () => void }) {
+  const { t } = useTranslation();
+  if (order.paymentMethod !== 'cb') return null;
+
+  // `non_requis` sur une commande carte = aucun paiement n'a jamais ete engage.
+  // C'est le cas de l'abandon pur et simple : a traiter comme un echec, sinon
+  // la commande resterait a payer sans que rien ne le dise.
+  const aRegler = order.paymentStatus === 'echoue' || order.paymentStatus === 'non_requis';
+  const terminee = order.status === 'livree' || order.status === 'annulee';
+
+  const contenu =
+    order.paymentStatus === 'paye'
+      ? { icone: 'check_circle', couleur: colors.success, texte: t('tracking.payToCourierCarte') }
+      : order.paymentStatus === 'rembourse'
+        ? { icone: 'undo', couleur: colors.textMuted, texte: t('tracking.paiementRembourse') }
+        : order.paymentStatus === 'en_attente'
+          ? { icone: 'schedule', couleur: colors.secondary, texte: t('tracking.paiementEnAttente') }
+          : { icone: 'error', couleur: colors.dangerText, texte: t('tracking.paiementEchoue') };
+
+  return (
+    <Card style={[styles.paiementCarte, { marginTop: 14 }]}>
+      <View style={styles.paiementLigne}>
+        <Icon name={contenu.icone} size={22} color={contenu.couleur} />
+        <Text style={styles.paiementTexte}>{contenu.texte}</Text>
+      </View>
+      {(aRegler || order.paymentStatus === 'en_attente') && !terminee ? (
+        <Button
+          label={t('tracking.reprendrePaiement')}
+          variant="outline"
+          icon="credit_card"
+          onPress={onReprendre}
+          style={{ marginTop: 12 }}
+        />
+      ) : null}
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  paiementCarte: { gap: 0 },
+  paiementLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  paiementTexte: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, lineHeight: 19, color: colors.ink },
   remiseTexte: { color: colors.primary },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },

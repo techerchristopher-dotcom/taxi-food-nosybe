@@ -42,6 +42,14 @@ export function ProductRow({
       />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.name, !available && { color: colors.textDark }]}>{product.name}</Text>
+        {/* Repère alimentaire : à Nosy Be une part importante de la clientèle ne
+            mange pas de porc. La composition en toutes lettres ne suffit pas, il
+            faut le voir sans avoir à ouvrir la fiche. */}
+        {product.dietTags?.includes('porc') ? (
+          <View style={styles.dietBadge}>
+            <Text style={styles.dietText}>Contient du porc</Text>
+          </View>
+        ) : null}
         <Text style={styles.desc}>{product.description}</Text>
         {available ? (
           <Text style={styles.price}>{formatAr(product.price)}</Text>
@@ -94,6 +102,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   unavailText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.dangerText },
+  dietBadge: {
+    alignSelf: 'flex-start',
+    height: 20,
+    paddingHorizontal: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warnBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 3,
+    marginBottom: 1,
+  },
+  dietText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.warnText },
   addBtn: {
     width: 38,
     height: 38,

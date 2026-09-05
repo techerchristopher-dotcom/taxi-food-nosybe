@@ -86,11 +86,12 @@ type ProductRow = {
   featured_label?: string | null;
   in_menu?: boolean | null;
   is_archived?: boolean | null;
+  diet_tags?: string[] | null;
 };
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived';
+  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags';
 
 type CategoryRow = { id: string; restaurant_id: string; name: string; icon: string | null; sort_order: number };
 
@@ -170,6 +171,7 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     isFeatured: p.is_featured ?? false,
     featuredLabel: p.featured_label ?? null,
     inMenu: p.in_menu ?? true,
+    dietTags: p.diet_tags ?? [],
   };
 }
 

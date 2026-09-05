@@ -61,6 +61,13 @@ export type Product = {
    * telle quelle. true = plat de la carte permanente.
    */
   inMenu?: boolean;
+  /**
+   * Repères alimentaires affichés au client, ex. `['porc']`. À Nosy Be une part
+   * importante de la clientèle ne mange pas de porc : la composition en toutes
+   * lettres ne suffit pas, il faut un repère visible sans ouvrir la fiche.
+   * ⚠️ Ne jamais déduire d'un nom de plat — seul le restaurant sait sa recette.
+   */
+  dietTags?: string[];
 };
 
 /** Une option d'un groupe (ex. « Poulet », « + Fromage »). */

@@ -181,10 +181,27 @@ Ce qu'il faut savoir sans l'ouvrir :
 - **Orange Money est non sélectionnable** (badge « Bientôt ») à la SAISIE seulement. Trois
   commandes en base le portent : `admin/lib/util.ts` et `components/DeliverSheet.tsx` doivent
   continuer à les afficher — ne pas les toucher.
-- ⚠️ **Problème connu, non résolu** : `create_order` insère en `status = 'recue'`, ce qui notifie
-  le restaurant (push + e-mail + Telegram avec lien « Accepter ») **avant tout paiement**. Un
-  client qui abandonne laisse un restaurant qui a pu commencer à cuisiner. Correctif dans
-  `notify_order_status()`, détaillé au § 9 du document de référence.
+- ✅ **Le restaurant n'est plus prévenu d'une commande carte non payée** (migration
+  `20260905231109`). `notify_order_status()` se tait sur une commande `cb` dont le paiement
+  n'est pas capturé, et **rattrape l'annonce** à l'encaissement (ou au repli espèces).
+  ⚠️ Le trigger `orders_notify_status` est passé à
+  `after update of status, picked_up_at, payment_status, payment_method` : **ne jamais retirer
+  les deux dernières colonnes**. Sans `payment_status`, la capture ne réveille pas le trigger
+  et le restaurant ne serait *jamais* prévenu ; sans `payment_method`, le repli espèces non
+  plus. Toute la garde est conditionnée à `carte_active` : elle est donc **inerte tant que
+  l'interrupteur est à `false`**, et « cb » continue d'y désigner le terminal du livreur.
+  ⚠️ **Vérifiée par lecture, jamais exécutée** — à rejouer au premier vrai paiement.
+- ✅ **Double encaissement fermé des deux côtés** : `mark_order_delivered` fait primer
+  `payment_status = 'paye'` sur `payment_method` et n'enregistre alors aucun cash, même si
+  l'appelant coche la case. `app/components/DeliverSheet.tsx` porte la même règle à l'écran —
+  la garde app seule ne suffisait pas.
+- ⚠️ **Reste ouvert** : le repli espèces n'annule toujours pas le PaymentIntent chez Stripe
+  (il faudrait une Edge Function). La colonne `carte_non_encaissee` du rapport rend le cas
+  visible — **elle doit rester à zéro**.
+- ⚠️ **`creer-paiement` déployée est la version 1**, antérieure au correctif de taux du dépôt
+  (commit `436414a`). Le dépôt fait foi, la production non : redéployer avec
+  **`verify_jwt = true`** avant d'ouvrir le canal. `supabase/config.toml` fige désormais ce
+  réglage pour toutes les fonctions.
 
 ## Codes promo (2026-09-06)
 

@@ -1,22 +1,13 @@
--- ############################################################################
--- ⚠️⚠️  MIGRATION NON APPLIQUEE — A PASSER A LA MAIN  ⚠️⚠️
+-- Appliquee en base le 2026-09-06 sous la version 20260905230635.
+-- (L'horodatage est attribue par le SERVEUR Supabase en UTC, jamais par la
+--  machine qui ecrit le fichier : c'est pour cela que le nom du fichier a ete
+--  renomme apres coup. Meme piege que 20260905213821 et 20260905210851.)
 --
--- L'application par MCP a ete refusee par le systeme de permissions de la
--- session qui a ecrit ce fichier. Le SQL ci-dessous n'a donc JAMAIS tourne :
--- la base porte encore l'ancienne vue, celle qui compte les commandes
--- orange_money et carte comme du cash livreur.
---
--- A PASSER depuis le tableau de bord Supabase (SQL Editor), puis renommer ce
--- fichier avec la version que `supabase_migrations.schema_migrations`
--- attribuera reellement — l'horodatage vient du SERVEUR (UTC), pas de la
--- machine qui ecrit le fichier. Meme piege que 20260905213821 et 20260906090000.
---
--- CONTROLE APRES APPLICATION (doit rendre 227000 / 0 / 0 / 140000 / 0 / 367000) :
+-- CONTROLE PASSE APRES APPLICATION (rend bien 227000 / 0 / 0 / 140000 / 0 / 367000) :
 --   select sum(encaisse_par_les_livreurs), sum(encaisse_par_stripe),
 --          sum(carte_non_encaissee),       sum(encaisse_hors_app),
 --          sum(emballage_a_arbitrer),      sum(facture_aux_clients)
 --     from public.rapport_journalier;
--- ############################################################################
 
 -- ============================================================================
 -- Rapport du soir : separer l'argent SELON QUI L'A ENCAISSE

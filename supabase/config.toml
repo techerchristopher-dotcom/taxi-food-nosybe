@@ -1,0 +1,53 @@
+# Configuration Supabase CLI — ne sert QU'A une chose ici : figer `verify_jwt`.
+#
+# ⚠️ POURQUOI CE FICHIER EXISTE.
+# Jusqu'au 2026-09-06 il n'y avait aucun config.toml dans le depot. Les reglages
+# `verify_jwt` ne vivaient donc NULLE PART en versionne : ils etaient poses a la
+# main au moment du deploiement. Consequence, deja identifiee comme piege :
+# quelqu'un qui redeploie `stripe-webhook` sans le savoir repart sur le defaut
+# `true`, et **Stripe recoit des 401 en boucle** — les paiements sont encaisses
+# chez Stripe mais plus aucune commande n'est marquee payee en base. La panne est
+# silencieuse cote client : le PaymentSheet reussit, la commande reste impayee.
+#
+# Avec ce fichier, `supabase functions deploy <nom>` reprend la bonne valeur tout
+# seul, sans que personne ait a s'en souvenir.
+
+project_id = "bmdveawomizjpiebgtkj"
+
+# --- Appelees par un utilisateur connecte -----------------------------------
+[functions.creer-paiement]
+# ⚠️ `true` ne suffit pas a lui seul : la cle `anon` du projet est un JWT valide
+# et franchit cette barriere. La fonction revere elle-meme qu'il y a un VRAI
+# utilisateur derriere (voir son en-tete de fichier). Les deux, pas l'un ou
+# l'autre.
+verify_jwt = true
+
+[functions.import-marketing-asset]
+verify_jwt = true
+
+# --- Appelees par un tiers qui n'a pas de jeton Supabase --------------------
+# Chacune verifie elle-meme l'appelant ; `verify_jwt = false` est OBLIGATOIRE,
+# pas une facilite.
+
+[functions.stripe-webhook]
+# L'appelant est Stripe. Sa seule barriere est la verification de signature
+# HMAC du corps brut. Voir l'en-tete de supabase/functions/stripe-webhook/index.ts.
+verify_jwt = false
+
+[functions.notify-order]
+# L'appelant est la BASE (trigger -> pg_net). Elle verifie l'en-tete
+# `x-hook-secret`, compare au secret du Vault `push_hook_secret`.
+verify_jwt = false
+
+[functions.send-otp-whatsapp]
+# Auth Hook Supabase : verifie sa propre signature `v1,whsec_...`.
+verify_jwt = false
+
+[functions.upload-visuel-partenaire]
+verify_jwt = false
+
+[functions.creer-compte-partenaire]
+verify_jwt = false
+
+[functions.deposer-visuel-guide]
+verify_jwt = false

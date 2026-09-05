@@ -1,0 +1,21 @@
+-- PILOTAGE ADMIN — pouvoir AGIR pendant le service, pas seulement regarder.
+-- (Applique en base le 2026-09-05 sous le nom `pilotage_admin_actions_et_journal`.)
+--
+-- Le tableau de bord affichait deja les commandes actives, mais l'administrateur
+-- ne pouvait rien faire : `set_order_status` est reservee au PERSONNEL du
+-- restaurant (`is_active_restaurant_staff_of`), et l'administrateur n'en fait
+-- pas partie. Une commande bloquee un dimanche soir n'avait aucun recours.
+--
+-- Deux differences volontaires avec la version restaurant :
+--   - l'administrateur peut forcer N'IMPORTE QUELLE transition, y compris en
+--     arriere. C'est un outil de rattrapage : si la regle metier pouvait couvrir
+--     le cas, le restaurant s'en serait deja charge ;
+--   - toute action est JOURNALISEE dans `admin_actions`. Sur un litige avec un
+--     restaurateur, savoir qui a change quoi et quand vaut plus cher que la
+--     fonctionnalite elle-meme.
+--
+-- ⚠️ `admin_actions` n'a AUCUNE policy INSERT : le journal ne s'ecrit que par
+-- les RPC, en SECURITY DEFINER. Un administrateur ne doit pas pouvoir fabriquer
+-- une entree — un journal qu'on peut ecrire a la main ne prouve rien.
+--
+-- Contenu : table admin_actions + admin_set_order_status + admin_set_restaurant_open.

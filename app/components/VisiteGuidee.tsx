@@ -47,12 +47,28 @@ import { NomZone, useVisiteGuidee } from '../store/visiteGuidee';
  *     commande polluerait le rapport journalier et les commissions, et
  *     declencherait e-mail + Telegram + push chez un vrai restaurant.
  *
- *  3. ⚠️ ON N'ANNONCE QUE CE QUI EXISTE. Une promesse fausse dans une visite est
- *     pire que pas de visite : le restaurateur cherchera un bouton absent. En
- *     particulier, l'app NE PERMET PAS d'ajouter un plat a la carte permanente,
- *     ni d'en changer le prix — seulement de mettre un plat en avant, d'ajouter
- *     un plat du jour et de signaler une rupture. Les textes de l'etape
- *     « Reglages » s'y tiennent, mot pour mot.
+ *  3. ⚠️ ON N'ANNONCE QUE CE QUI EXISTE, AVEC LES MOTS DE L'ECRAN. Une promesse
+ *     fausse dans une visite est pire que pas de visite : le restaurateur
+ *     cherchera un bouton absent. Trois ecueils deja payes ici :
+ *
+ *     - Le VOCABULAIRE. L'ecran Reglages ecrit « Couverture » et « A l'affiche »,
+ *       jamais « devanture » ni « plat du jour ». La visite reprend donc ses
+ *       mots. Sur le fond : `save_featured_product` cree bien un plat AVEC son
+ *       prix, mais en `in_menu = false` — il vit « a l'affiche », pas dans la
+ *       carte permanente ; et le prix d'un plat DE LA CARTE devient modifiable
+ *       des qu'il est etoile, puisqu'il rejoint « A l'affiche » et son bouton
+ *       « Modifier ». Ne pas repeter que « l'app ne sait pas changer un prix ».
+ *
+ *     - Les LIBELLES CITES entre guillemets, interpoles depuis la cle reellement
+ *       rendue et jamais recopies : les versions anglaise et italienne
+ *       renvoyaient vers « My partner space » / « Il mio spazio partner » quand
+ *       le Profil affiche « My partner area » / « La mia area partner ».
+ *
+ *     - Ce qui n'est VRAI QU'ENSUITE. Une commande entre dans l'onglet
+ *       « En livraison » des qu'elle est marquee prete, donc AVANT qu'un livreur
+ *       l'ait prise : 5 des 6 commandes en livraison de la base n'ont pas encore
+ *       de livreur. La visite dit « des qu'un livreur la prend », pas « vous y
+ *       voyez le livreur ».
  */
 
 // ---------------------------------------------------------------------------
@@ -123,6 +139,18 @@ export function VisiteGuidee({
   const { height: hauteurEcran } = useWindowDimensions();
   const reduit = useMouvementReduit();
   const zones = useVisiteGuidee((s) => s.zones);
+
+  /**
+   * Libelle EXACT de la ligne de retour, dans le Profil. Cite par la derniere
+   * etape, il doit venir de la cle que le Profil rend vraiment : recopie a la
+   * main, il s'etait deja desynchronise en anglais et en italien. Et le Profil
+   * ne montre « Mon espace partenaire » qu'a un restaurateur SEUL — avec un role
+   * livreur actif en plus, la ligne devient « Mes espaces professionnels ».
+   */
+  const roles = useSession((s) => s.session?.roles);
+  const cleLienProfil = roles?.some((r) => r.role === 'livreur' && r.status === 'active')
+    ? 'profile.proChooseLabel'
+    : 'profile.proRestaurantLabel';
 
   const [index, setIndex] = useState(0);
   const [memoriser, setMemoriser] = useState(true);
@@ -285,7 +313,9 @@ export function VisiteGuidee({
             </View>
 
             <Text style={styles.titre}>{t(`visitePro.${etape.cle}Titre`)}</Text>
-            <Text style={styles.texte}>{t(`visitePro.${etape.cle}Texte`)}</Text>
+            <Text style={styles.texte}>
+              {t(`visitePro.${etape.cle}Texte`, { lien: t(cleLienProfil) })}
+            </Text>
 
             {derniere ? (
               <Pressable
@@ -360,17 +390,35 @@ function CommandeExemple({ margeHaute }: { margeHaute: number }) {
   const { t } = useTranslation();
   const session = useSession((s) => s.session);
   const [fraisLivraison, setFraisLivraison] = useState<number | null>(null);
+  /**
+   * ⚠️ Sans cet etat, un reseau coupe faisait tourner l'indicateur INDEFINIMENT :
+   * `fraisLivraison` restait null et la premiere etape n'affichait qu'une roue.
+   * A Nosy Be la liaison tombe ; on renonce alors a l'exemple et on laisse la
+   * bulle seule, qui explique deja l'etape. Mieux vaut pas d'exemple qu'un
+   * chargement qui n'aboutit jamais.
+   */
+  const [echec, setEchec] = useState(false);
 
   useEffect(() => {
     let vivant = true;
-    if (!session?.restaurantId) return;
+    if (!session?.restaurantId) {
+      setEchec(true);
+      return;
+    }
+    setEchec(false);
     getMyRestaurant(session.restaurantId)
-      .then((r) => vivant && setFraisLivraison(r?.deliveryFee ?? null))
-      .catch(() => undefined);
+      .then((r) => {
+        if (!vivant) return;
+        if (r) setFraisLivraison(r.deliveryFee);
+        else setEchec(true);
+      })
+      .catch(() => vivant && setEchec(true));
     return () => {
       vivant = false;
     };
   }, [session?.restaurantId]);
+
+  if (echec) return null;
 
   if (fraisLivraison === null) {
     return (

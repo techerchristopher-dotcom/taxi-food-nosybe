@@ -773,11 +773,24 @@ Commandes (avec une commande d'exemple) · En livraison · Historique · Réglag
    journalier et les commissions, et déclencherait e-mail + Telegram + push chez un vrai
    restaurant. Ses **frais de livraison sont lus en base** (`restaurants.delivery_fee`) et
    non écrits en dur, pour que la démonstration ne mente pas le jour où le tarif bougera.
-3. ⚠️ **On n'annonce que ce qui existe.** L'app **ne permet pas** d'ajouter un plat à la
-   carte permanente, ni d'en changer le prix ou la catégorie — seulement de mettre un plat en
-   avant, d'ajouter un plat du jour et de signaler une rupture. Le texte de l'étape
-   « Réglages » s'y tient mot pour mot. Une promesse fausse dans une visite guidée est pire
-   que pas de visite : le restaurateur cherchera un bouton absent.
+3. ⚠️ **On n'annonce que ce qui existe, avec les MOTS DE L'ÉCRAN.** Une promesse fausse dans
+   une visite guidée est pire que pas de visite : le restaurateur cherchera un bouton absent.
+   Ce qu'a corrigé la revue de vérité du 2026-09-06 :
+   - **Le vocabulaire.** L'écran Réglages écrit « Couverture » et « À l'affiche », jamais
+     « devanture » ni « plat du jour » ; la visite reprend désormais ses mots. Sur le fond,
+     `save_featured_product` **crée bien un plat avec son prix**, mais en `in_menu = false`
+     — il vit « à l'affiche », pas dans la carte permanente ; et le **prix d'un plat de la
+     carte devient modifiable** dès qu'il est étoilé, puisqu'il rejoint « À l'affiche » et
+     son bouton « Modifier ». Ne plus répéter que « l'app ne sait pas changer un prix ».
+   - **Les libellés cités entre guillemets** sont interpolés depuis la clé réellement rendue
+     (`{{lien}}` ← `profile.proRestaurantLabel`, ou `proChooseLabel` si le compte est aussi
+     livreur actif), jamais recopiés : l'anglais et l'italien renvoyaient vers « My partner
+     space » / « Il mio spazio partner » quand le Profil affiche « My partner area » /
+     « La mia area partner » — le restaurateur cherchait une ligne qui n'existe pas.
+   - **Ce qui n'est vrai qu'ENSUITE.** Une commande entre dans « En livraison » dès qu'elle
+     est marquée prête, donc **avant** qu'un livreur l'ait prise (5 des 6 commandes
+     `en_livraison` de la base n'ont aucun `courier_id`). La visite dit « dès qu'un livreur
+     la prend », plus « vous y voyez quel livreur l'a prise ».
 4. ⚠️ **La préférence est en BASE, pas en AsyncStorage** : elle suit la personne, pas
    l'appareil. Se reprendre la visite après un changement de téléphone, un soir de service,
    est exactement ce qu'il ne faut pas. L'écriture passe par une RPC `SECURITY DEFINER` qui
@@ -796,6 +809,32 @@ et la même case décochée l'a bien remis à `null` ; rediffusion par Réglages
 l'onglet Commandes et rouvre à l'étape 1 ; rendu italien contrôlé, aucun débordement.
 Compte de démonstration remis à `null` après les essais — aucun compte ne porte de date.
 
+**Revue de vérité du 2026-09-06, contrôlée en SQL et non sur parole.** Chaque affirmation des
+cinq étapes a été confrontée à l'écran qu'elle décrit et aux fonctions de la base :
+
+| Affirmation | Verdict |
+|---|---|
+| « chaque nouvelle commande s'affiche toute seule, sans rien rafraîchir » | vrai — `setInterval(reload, 12 000)` tant que l'écran est monté ; le délai peut atteindre 12 s |
+| « vous la refusez avec un motif » | vrai — `RefuseSheet` exige un motif ou une précision, `set_order_status` refuse `annulee` sans motif |
+| « en préparation », puis « prête » | vrai — « Démarrer la préparation » (`en_preparation`), « Marquer comme prête » (`en_livraison`) |
+| « vous y voyez quel livreur l'a prise et son numéro » | **faux tant qu'aucun livreur n'a pris la commande** — 5 des 6 commandes `en_livraison` de la base n'ont pas de `courier_id`. **Corrigé** : « dès qu'un livreur la prend… » |
+| historique « livrées comme refusées » | vrai — `['livree','annulee']`, et l'enum `order_status` n'a pas d'autre état terminal |
+| logo · couverture · téléphone · horaires · ouverture · à l'affiche · étoile · rupture | vrai — les 8 RPC existent bien en base (`set_restaurant_photo`, `set_restaurant_week_hours`, `set_restaurant_phone`, `set_restaurant_open`, `set_restaurant_auto_open`, `save_featured_product`, `set_product_featured`, `set_product_available`) ; **mots corrigés** (« couverture », « à l'affiche ») |
+| « Profil, puis “Mon espace partenaire” » | vrai en français, **faux en anglais et en italien** (libellés recopiés, désynchronisés). **Corrigé** par interpolation |
+| « cette double flèche » | périmé — le bouton porte son intitulé « App client » depuis `12f3bd3`. **Corrigé** |
+
+Preuve en base de la préférence, jouée avec le JWT de `demo.resto` et pas en lisant le code :
+`marquer_visite_pro_vue(true)` → `visite_pro_vue_le = 2026-09-06 06:47:12+00`, relu tel quel
+sous RLS par `select … where id = auth.uid()` ; `marquer_visite_pro_vue(false)` → `null`,
+relu `null`. **Aucune vraie commande créée** : `orders` compte 33 lignes, la dernière du
+2026-09-05 13:52 UTC — **zéro** ligne depuis le 6 septembre, et aucun produit nommé
+« Pizza margherita ». La commande d'exemple n'a jamais touché la base.
+
+Deux défauts corrigés au passage : l'indicateur de chargement de la carte d'exemple tournait
+**indéfiniment** si `getMyRestaurant` échouait (réseau coupé à Nosy Be) — on renonce
+désormais à l'exemple et la bulle reste seule ; et le libellé cité par la dernière étape est
+interpolé, il ne peut plus se désynchroniser du Profil.
+
 À passer sur appareil réel :
 
 1. **Premier lancement d'un vrai partenaire** (Marc-Antoine, Chez Bidul & Truc) : la visite
@@ -812,3 +851,7 @@ Compte de démonstration remis à `null` après les essais — aucun compte ne p
    contour qui respire. Code relu, **jamais exécuté dans cet état**.
 6. Fermer en cours de route, tuer l'app, la rouvrir → la visite **ne revient pas**, et
    Réglages → « Découvrir votre espace » la rejoue.
+7. **Textes réécrits le 2026-09-06 (revue de vérité), non revus en navigateur** : l'étape
+   « Réglages » a gagné une ligne environ. Vérifier que la bulle ne déborde pas sur un petit
+   écran, dans les trois langues — c'est l'étape dont la cible est en bas, donc celle qui a le
+   moins de place au-dessus d'elle.

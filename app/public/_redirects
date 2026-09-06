@@ -1,0 +1,15 @@
+# ⚠️ L'app web est une application a page unique (app.json : web.output = "single").
+# Une seule page existe reellement — index.html — et c'est le routeur qui affiche
+# /login, /cart, /paiement, etc. Sans cette regle, Netlify cherche un fichier a
+# chaque chemin et repond 404 partout sauf sur l'accueil : l'app parait cassee
+# des qu'on ouvre un lien direct, qu'on recharge une page, ou qu'on revient d'un
+# paiement Stripe.
+#
+# ⚠️ Ce fichier vit dans public/ et NON dans dist/ : `expo export` recree dist a
+# chaque construction, et un fichier depose a la main y disparait sans bruit.
+# Piege deja paye sur ce projet.
+#
+# Les pages statiques reelles (confidentialite.html, support.html) ne sont pas
+# concernees : Netlify ne applique une reecriture que si aucun fichier ne
+# correspond au chemin demande.
+/*    /index.html   200

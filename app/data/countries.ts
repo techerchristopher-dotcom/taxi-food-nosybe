@@ -66,3 +66,27 @@ export function isValidNumber(country: Country, input: string): boolean {
   const n = nationalDigits(input).length;
   return n >= country.minDigits && n <= country.maxDigits;
 }
+
+/**
+ * L'opération inverse de `toE164` : retrouver le pays et le numéro national à
+ * partir d'un numéro stocké (`+261322664143` → Madagascar + `322664143`).
+ *
+ * Sert à PRÉ-REMPLIR un champ avec un numéro déjà connu. Sans elle, on ne
+ * pourrait que réafficher la chaîne brute, et le sélecteur de pays repartirait
+ * sur Madagascar même pour un numéro français.
+ *
+ * ⚠️ Les indicatifs les plus longs sont essayés d'abord : sinon `+1` raflerait
+ * `+230` (Maurice) et `+248` (Seychelles) au premier caractère. À indicatif égal
+ * (`+262` partagé par La Réunion et Mayotte), on garde le premier de la liste —
+ * les deux ont la même règle de validation, le choix est sans conséquence et
+ * l'utilisateur peut le changer.
+ */
+export function depuisE164(e164: string | null | undefined): { country: Country; digits: string } | null {
+  const brut = String(e164 ?? '').trim();
+  if (!brut.startsWith('+')) return null;
+  const parIndicatifDecroissant = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  const trouve = parIndicatifDecroissant.find((c) => brut.startsWith(c.dial));
+  if (!trouve) return null;
+  const digits = brut.slice(trouve.dial.length).replace(/\D/g, '');
+  return digits ? { country: findCountry(trouve.code), digits } : null;
+}

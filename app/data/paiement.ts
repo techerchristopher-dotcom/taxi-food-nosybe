@@ -140,6 +140,16 @@ export function formatTaux(fxArParEur: number): string {
 /**
  * Motifs d'échec renvoyés par `creer-paiement`. Chaîne fermée : chaque motif a
  * un message d'écran qui dit QUOI FAIRE, pas seulement que ça a raté.
+ *
+ * ⚠️ TROIS FAMILLES, QUI N'APPELLENT PAS LA MÊME CONDUITE :
+ *   — `refus_banque` : la banque a dit non. Rejouer la même carte ne sert à
+ *     rien — il faut une autre carte, ou les espèces.
+ *   — `erreur_serveur` / `stripe_indisponible` : la panne est de NOTRE côté.
+ *     Réessayer dans un instant est exactement le bon geste, et le client doit
+ *     savoir que ce n'est pas sa carte.
+ *   — `reseau` : la requête n'est jamais partie de l'appareil.
+ * Les confondre — tout tombait dans `inconnu` — fait reprocher au client une
+ * panne qui est la nôtre, ou l'inverse.
  */
 export type MotifEchecPreparation =
   | 'authentification_requise'
@@ -151,6 +161,8 @@ export type MotifEchecPreparation =
   | 'commande_non_payable'
   | 'montant_invalide'
   | 'stripe_indisponible'
+  | 'erreur_serveur'
+  | 'refus_banque'
   | 'reseau'
   | 'inconnu';
 
@@ -158,11 +170,19 @@ export class ErreurPreparationPaiement extends Error {
   motif: MotifEchecPreparation;
   /** Message écrit par le serveur, montrable tel quel quand on n'a rien de mieux. */
   detailServeur?: string;
-  constructor(motif: MotifEchecPreparation, detailServeur?: string) {
+  /**
+   * `payment_intents.id` de la tentative, quand le serveur en a créé une.
+   * Affichée à l'écran, elle permet au client de la citer et au porteur du
+   * projet de retrouver la cause EN BASE sans aucun journal :
+   * `select status, erreur, raw_event from payment_intents where id = '…'`.
+   */
+  reference?: string;
+  constructor(motif: MotifEchecPreparation, detailServeur?: string, reference?: string) {
     super(motif);
     this.name = 'ErreurPreparationPaiement';
     this.motif = motif;
     this.detailServeur = detailServeur;
+    this.reference = reference;
   }
 }
 
@@ -177,6 +197,12 @@ export type PreparationPaiement = {
   fxRate: number;
 };
 
+/**
+ * ⚠️ CE `Set` ET LA CHAÎNE `MotifEchecPreparation` DOIVENT RESTER JUMEAUX.
+ * Un motif ajouté au type mais oublié ici retombe silencieusement en
+ * `'inconnu'` — c'est-à-dire dans le message passe-partout que tout ce
+ * chantier vise à supprimer.
+ */
 const MOTIFS_CONNUS = new Set<string>([
   'authentification_requise',
   'commande_introuvable',
@@ -187,6 +213,7 @@ const MOTIFS_CONNUS = new Set<string>([
   'commande_non_payable',
   'montant_invalide',
   'stripe_indisponible',
+  'erreur_serveur',
 ]);
 
 /**
@@ -218,18 +245,33 @@ export async function preparerPaiementCarte(
     // que dans `error.context`. Sans ça, on perdrait le motif précis et on
     // afficherait « erreur inconnue » sur un cas parfaitement identifié.
     const contexte = (error as { context?: Response }).context;
-    let corps: { erreur?: string; message?: string } | null = null;
+    let corps: { erreur?: string; message?: string; reference?: string } | null = null;
     try {
       corps = contexte ? await contexte.clone().json() : null;
     } catch {
       corps = null;
     }
+
+    // ⚠️ `context` n'est une `Response` que sur un `FunctionsHttpError`. Sur un
+    // `FunctionsFetchError` supabase-js y range l'erreur attrapée — un objet
+    // sans `status`. Tester sa présence ne suffit donc pas : sans code HTTP, la
+    // requête n'a pas eu de réponse du tout, et c'est le réseau de l'appareil.
+    const statut = typeof contexte?.status === 'number' ? contexte.status : 0;
+    if (!statut) throw new ErreurPreparationPaiement('reseau');
+
     const brut = corps?.erreur ?? '';
-    const motif = (MOTIFS_CONNUS.has(brut) ? brut : 'inconnu') as MotifEchecPreparation;
-    throw new ErreurPreparationPaiement(
-      contexte ? motif : 'reseau',
-      corps?.message,
-    );
+    let motif = (MOTIFS_CONNUS.has(brut) ? brut : 'inconnu') as MotifEchecPreparation;
+
+    // ⚠️ UNE RÉPONSE 5xx SANS CODE LISIBLE EST NOTRE PANNE, PAS UN MYSTÈRE.
+    // C'est le cas du runtime Edge qui rend « Internal Server Error » en texte
+    // brut sur une exception non attrapée : `corps` est alors `null` et on
+    // affichait le message passe-partout — ou, sur le web, « Connexion perdue »
+    // (la réponse du runtime ne porte pas les en-têtes CORS). Le nouveau
+    // `try/catch` des fonctions Edge rend du JSON, mais un ancien déploiement
+    // ou une panne de la plateforme peuvent encore produire ce cas.
+    if (motif === 'inconnu' && statut >= 500) motif = 'erreur_serveur';
+
+    throw new ErreurPreparationPaiement(motif, corps?.message, corps?.reference);
   }
 
   const r = data as {
@@ -242,7 +284,10 @@ export async function preparerPaiementCarte(
   if (!r?.client_secret) {
     // Réponse 200 sans secret : Stripe a répondu, mais on n'a rien à confirmer.
     // Mieux vaut le dire que d'ouvrir un formulaire de paiement inerte.
-    throw new ErreurPreparationPaiement('inconnu');
+    // ⚠️ `erreur_serveur` et pas `inconnu` : la faute est de notre côté, rien
+    // n'a été débité, et le client doit s'entendre dire ça — pas « le paiement
+    // n'a pas pu aboutir », qui laisse croire que sa carte est en cause.
+    throw new ErreurPreparationPaiement('erreur_serveur');
   }
 
   return {

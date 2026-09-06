@@ -72,6 +72,23 @@ const MOTIFS_CANAL_FERME: MotifEchecPreparation[] = [
   'montant_invalide',
 ];
 
+/**
+ * Motifs où la panne est de NOTRE côté : rien n'a été débité, et réessayer dans
+ * un instant est le bon geste. On garde alors « Réessayer » en action
+ * principale.
+ *
+ * ⚠️ Sur tous les AUTRES échecs — c'est-à-dire un refus de la banque — c'est
+ * l'inverse : rejouer la même carte ne sert à rien, et mettre « Réessayer » en
+ * avant enferme le client dans une boucle. L'action principale devient alors
+ * « Payer en espèces ». Les deux boutons restent présents dans les deux cas ;
+ * seule leur hiérarchie change, parce que la conduite à tenir, elle, change.
+ */
+const MOTIFS_DE_NOTRE_COTE: MotifEchecPreparation[] = [
+  'erreur_serveur',
+  'stripe_indisponible',
+  'reseau',
+];
+
 export default function PaiementScreen() {
   const params = useLocalSearchParams<{
     orderId: string;
@@ -89,6 +106,8 @@ export default function PaiementScreen() {
   const [motif, setMotif] = useState<MotifEchecPreparation | null>(null);
   const [detailServeur, setDetailServeur] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  /** `payment_intents.id` de la tentative ratée, quand le serveur en a une. */
+  const [reference, setReference] = useState<string | null>(null);
   const [verdictLent, setVerdictLent] = useState(false);
   const [bascule, setBascule] = useState(false);
 
@@ -123,6 +142,13 @@ export default function PaiementScreen() {
     setEtape('preparation');
     setMotif(null);
     setDetailServeur(null);
+    setReference(null);
+    // ⚠️ `note` AUSSI. Elle ne l'était pas, et elle survivait à la tentative
+    // suivante : après un refus de banque, un appui sur « Réessayer » qui
+    // retombait sur une panne serveur affichait « Ta banque a refusé le
+    // paiement » — une accusation fausse, pour une panne qui n'a jamais
+    // atteint la banque.
+    setNote(null);
     try {
       // Le paiement a pu aboutir pendant qu'on avait le dos tourné (réseau coupé
       // juste après la confirmation, app fermée). On lit l'état AVANT de
@@ -151,6 +177,7 @@ export default function PaiementScreen() {
       const m = (err?.motif ?? 'inconnu') as MotifEchecPreparation;
       setMotif(m);
       setDetailServeur(err?.detailServeur ?? null);
+      setReference(err?.reference ?? null);
       if (m === 'deja_payee') {
         setEtape('paye');
         return;
@@ -172,7 +199,12 @@ export default function PaiementScreen() {
       return;
     }
     if (verdict === 'echoue') {
-      setMotif('inconnu');
+      // ⚠️ `refus_banque`, pas `inconnu`. Le verdict vient du webhook Stripe :
+      // c'est bien la banque qui a dit non, et c'est la seule chose que le
+      // client a besoin de savoir pour choisir la suite (autre carte, ou
+      // espèces). Le motif porte désormais cette information à lui seul, au
+      // lieu de dépendre d'une `note` posée à côté.
+      setMotif('refus_banque');
       setNote(t('paiement.refusBanque'));
       setEtape('echec');
       return;
@@ -221,7 +253,8 @@ export default function PaiementScreen() {
         setEtape('formulaire');
         return;
       case 'echoue':
-        setMotif('inconnu');
+        // Refus rendu par le SDK Stripe sur l'appareil : la banque, là encore.
+        setMotif('refus_banque');
         setNote(r.message || t('paiement.refusBanque'));
         setEtape('echec');
         return;
@@ -255,6 +288,19 @@ export default function PaiementScreen() {
   const montantLisible = prep
     ? formatMontantMineur(prep.montantMineur, 'eur', i18n.language)
     : null;
+
+  // ------------------------------------------------ QUOI FAIRE, SELON LA CAUSE
+  // Une commande qui n'existe plus, ou qui n'est plus payable, n'a AUCUNE des
+  // deux issues : ni réessayer, ni basculer en espèces. Elle n'a qu'une sortie
+  // vers le suivi.
+  const sansIssue = motif === 'commande_introuvable' || motif === 'commande_non_payable';
+  // La panne est de notre côté (ou on ne sait pas encore) : réessayer est le
+  // bon geste, et il passe donc en premier, en plein.
+  const reessayerEnTete =
+    etape === 'echec' && !sansIssue && (!motif || MOTIFS_DE_NOTRE_COTE.includes(motif));
+  // Sinon — refus de la banque, canal fermé — le repli espèces est la seule
+  // action utile : il prend la place principale.
+  const especesEnTete = !sansIssue && !reessayerEnTete;
 
   return (
     <View style={styles.container}>
@@ -357,14 +403,28 @@ export default function PaiementScreen() {
             {/* Un message d'erreur dit QUOI FAIRE. Le motif serveur passe en
                 second, pour le cas où il apporterait une précision utile. */}
             <Text style={styles.blocTexte}>{messageMotif(t, motif, note, detailServeur)}</Text>
+            {/* La référence de la tentative. Sans libellé traduit — un
+                identifiant se lit dans toutes les langues — et préfixée `#`
+                comme le numéro de commande juste au-dessus. Le client peut la
+                citer ; le porteur du projet retrouve la cause en base d'une
+                seule requête, sans dépendre des journaux Supabase (déjà
+                indisponibles le jour de la panne). */}
+            {reference ? <Text style={styles.reference}>#{reference.slice(0, 8)}</Text> : null}
             <View style={{ width: '100%', gap: 10, marginTop: 8 }}>
-              {etape === 'echec' && motif !== 'commande_introuvable' && motif !== 'commande_non_payable' ? (
+              {/* ⚠️ L'ORDRE ET LA COULEUR DES DEUX BOUTONS SUIVENT LA CAUSE.
+                  Sur une panne de notre côté, réessayer est le bon geste : il
+                  passe en tête, en plein. Sur un refus de la banque, rejouer la
+                  même carte ne mène nulle part — le repli espèces prend la
+                  première place, et « Réessayer » reste disponible en dessous
+                  pour qui veut tenter une autre carte. Les deux issues restent
+                  toujours offertes : c'est leur hiérarchie qui dit quoi faire. */}
+              {reessayerEnTete ? (
                 <Button label={t('paiement.reessayer')} icon="refresh" onPress={preparer} />
               ) : null}
-              {motif !== 'commande_introuvable' && motif !== 'commande_non_payable' ? (
+              {!sansIssue ? (
                 <Button
                   label={t('paiement.payerEspeces')}
-                  variant="outline"
+                  variant={especesEnTete ? 'primary' : 'outline'}
                   icon="payments"
                   onPress={passerEnEspeces}
                   loading={bascule}
@@ -376,6 +436,18 @@ export default function PaiementScreen() {
                   onPress={() => router.replace(`/order/${orderId}`)}
                 />
               )}
+              {/* Le « Réessayer » du refus de banque : en second, en creux —
+                  pour la personne qui veut essayer une AUTRE carte. Absent du
+                  canal fermé (`indisponible`), où réessayer ne peut rien
+                  donner tant que la configuration n'a pas changé. */}
+              {etape === 'echec' && !sansIssue && !reessayerEnTete ? (
+                <Button
+                  label={t('paiement.reessayer')}
+                  icon="refresh"
+                  variant="outline"
+                  onPress={preparer}
+                />
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -432,7 +504,19 @@ function messageMotif(
       return t('paiement.motif.methodeNonCarte');
     case 'authentification_requise':
       return t('paiement.motif.authentification');
+    case 'refus_banque':
+      // La banque a refusé. `note` porte le message exact du SDK Stripe quand
+      // il y en a un — il est plus précis que le nôtre (carte expirée, fonds
+      // insuffisants) et il dit déjà quoi faire.
+      return note || t('paiement.refusBanque');
     case 'stripe_indisponible':
+    case 'erreur_serveur':
+      // ⚠️ MÊME MESSAGE POUR LES DEUX, ET C'EST VOULU : du point de vue du
+      // client, « Stripe ne répond pas » et « notre fonction a planté » sont le
+      // même événement — le canal est en panne, sa carte n'y est pour rien, et
+      // la conduite à tenir est identique (réessayer dans un instant, ou payer
+      // en espèces). La distinction, elle, vit en base : `payment_intents.erreur`
+      // porte `stripe_502`, `stripe_injoignable` ou `exception:TypeError`.
       return t('paiement.motif.stripeIndisponible');
     case 'reseau':
       return t('paiement.motif.reseau');
@@ -484,6 +568,13 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: 12,
+  },
+  reference: {
+    fontFamily: fonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   note: {
     fontFamily: fonts.medium,

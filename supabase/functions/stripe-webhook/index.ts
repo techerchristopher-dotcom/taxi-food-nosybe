@@ -35,13 +35,39 @@
  * `stripe_config()` réservée à `service_role`. Tant qu'il n'y est pas, la
  * fonction répond proprement « webhook non configuré » — elle ne plante jamais.
  *
+ * ⚠️ LE PIRE SCÉNARIO DE TOUT LE PROJET : l'argent encaissé chez Stripe pendant
+ * que la base l'ignore. Trois garde-fous, ajoutés le 2026-09-06 :
+ *   1. `try/catch` englobant : une exception répond 500 (donc Stripe REJOUE) au
+ *      lieu de laisser le runtime rendre un « Internal Server Error » opaque, et
+ *      elle s'inscrit dans `payment_intents.erreur` quand la ligne est connue ;
+ *   2. les écritures d'archive sont relues : un 200 rendu sur une écriture ratée
+ *      fait croire à Stripe que l'événement est traité, et il ne le rejoue plus ;
+ *   3. RATTRAPAGE PAR LES MÉTADONNÉES : si `creer-paiement` n'a pas réussi à
+ *      écrire son `pi_...`, la ligne est introuvable par `provider_intent_id`.
+ *      On la retrouve alors par `metadata[payment_intent_row]` puis par
+ *      `metadata[order_id]`, et on RECOLLE le `pi_...` au passage. Ces
+ *      métadonnées étaient posées « pour un rapprochement à la main » ; elles
+ *      servent maintenant toutes seules.
+ *
  * Déployée depuis ce dépôt ; l'original fait foi ici, pas dans le tableau de bord.
  */
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 /** Au-delà, on refuse : un événement rejoué bien plus tard n'a rien de légitime. */
 const MAX_SKEW_SECONDS = 5 * 60;
+
+/**
+ * Même raison que `CLE_STRIPE_VALIDE` dans `creer-paiement` : un secret copié
+ * depuis le tableau de bord peut arriver masqué, ou entouré d'espaces. Ici il ne
+ * part dans aucun en-tête, donc il ne fait rien planter — mais un secret
+ * illisible ferait échouer TOUTES les signatures, soit un refus permanent
+ * impossible à distinguer d'une attaque. Autant le dire.
+ */
+const SECRET_WEBHOOK_VALIDE = /^whsec_[A-Za-z0-9+/=_-]+$/;
+
+/** Ce qui tient dans `payment_intents.erreur` : un motif, pas une archive. */
+const MAX_ERREUR = 300;
 
 type StripeConfig = {
   secret_key: string | null;
@@ -50,6 +76,14 @@ type StripeConfig = {
   devise: string | null;
   carte_active: boolean | null;
   configure: boolean;
+};
+
+type LignePaiement = {
+  id: string;
+  status: string;
+  amount_minor: number;
+  order_id: string;
+  provider_intent_id: string | null;
 };
 
 /**
@@ -88,6 +122,14 @@ function toHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+/** Le type de l'exception compte autant que son message. Voir `creer-paiement`. */
+function decrire(e: unknown): { type: string; message: string } {
+  if (e instanceof Error) {
+    return { type: e.name || 'Error', message: (e.message || '').slice(0, MAX_ERREUR) };
+  }
+  return { type: typeof e, message: String(e).slice(0, MAX_ERREUR) };
 }
 
 type VerdictSignature = { ok: true } | { ok: false; code: number; motif: string };
@@ -191,174 +233,374 @@ function ok(detail: Record<string, unknown>): Response {
   });
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method !== 'POST') {
-    return new Response('method not allowed', { status: 405 });
-  }
+/**
+ * Refus. ⚠️ Toujours du JSON, avec un code STABLE. « erreur base » en texte brut
+ * ne disait ni ce qui avait raté, ni s'il fallait s'en inquiéter — et un
+ * « Internal Server Error » rendu par le runtime encore moins.
+ */
+function refus(status: number, code: string, detail: Record<string, unknown> = {}): Response {
+  return new Response(JSON.stringify({ erreur: code, ...detail }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
-
-  // ⚠️ Le corps brut, avant tout parsing. Voir l'en-tête de fichier.
-  const corps = await req.text();
-
-  const { data: cfgData, error: cfgError } = await admin.rpc('stripe_config');
-  const cfg = cfgData as StripeConfig | null;
-  if (cfgError || !cfg?.webhook_secret) {
-    // Tant que `stripe_webhook_secret` n'est pas dans le Vault : refus net et
-    // explicite. Surtout pas un 200, qui ferait croire à Stripe que l'événement
-    // a été traité et le supprimerait de la file de reprise.
-    console.error('stripe_webhook_secret absent du Vault', cfgError);
-    return new Response('webhook non configure', { status: 503 });
-  }
-
-  const verdict = await verifierSignature(
-    req.headers.get('Stripe-Signature'),
-    corps,
-    cfg.webhook_secret,
-  );
-  if (!verdict.ok) {
-    console.error('signature Stripe refusée', verdict.motif);
-    return new Response(verdict.motif, { status: verdict.code });
-  }
-
-  let evenement: { id?: string; type?: string; data?: { object?: Record<string, unknown> } };
+/**
+ * L'identifiant de l'événement, lu d'un corps NON VÉRIFIÉ.
+ *
+ * ⚠️ À N'UTILISER QUE POUR JOURNALISER. Un corps dont la signature est refusée
+ * n'est pas une donnée de confiance ; mais sans son `evt_...`, un refus de
+ * signature est indistinguable du suivant dans les journaux — et c'est
+ * précisément le cas où de l'argent peut être pris sans que la base le sache.
+ */
+function idEvenementNonVerifie(corps: string): string | null {
   try {
-    evenement = JSON.parse(corps);
+    const brut = JSON.parse(corps);
+    return typeof brut?.id === 'string' ? brut.id.slice(0, 64) : null;
   } catch {
-    return new Response('corps illisible', { status: 400 });
+    return null;
   }
+}
 
-  const type = evenement.type ?? '';
-  const objet = evenement.data?.object ?? {};
+/** Un `uuid` de nos lignes, tel qu'il revient des métadonnées Stripe. */
+function uuidValide(v: unknown): v is string {
+  return typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
+}
 
-  // Sur quel PaymentIntent porte l'événement. Pour un `charge.*`, c'est le champ
-  // `payment_intent` de la charge ou du litige ; pour un `payment_intent.*`,
-  // c'est l'objet lui-même.
-  const intentId = type.startsWith('payment_intent.')
-    ? (objet.id as string | undefined)
-    : (objet.payment_intent as string | undefined);
+const COLONNES_LIGNE = 'id, status, amount_minor, order_id, provider_intent_id';
 
-  let nouveauStatut: string | null = null;
-  let erreur: string | null = null;
-
-  switch (type) {
-    case 'payment_intent.succeeded':
-      nouveauStatut = 'capture';
-      break;
-    case 'payment_intent.payment_failed':
-      nouveauStatut = 'echoue';
-      erreur =
-        ((objet.last_payment_error as Record<string, unknown> | undefined)?.message as string) ??
-        'paiement refusé';
-      break;
-    case 'payment_intent.canceled':
-      nouveauStatut = 'annule';
-      break;
-    case 'payment_intent.requires_action':
-      nouveauStatut = 'requiert_action';
-      break;
-    case 'payment_intent.amount_capturable_updated':
-      nouveauStatut = 'autorise';
-      break;
-    case 'payment_intent.processing':
-      nouveauStatut = 'en_attente';
-      break;
-    case 'charge.refunded':
-      // Un remboursement fait depuis le tableau de bord Stripe n'a aucun autre
-      // chemin pour revenir en base : sans cet événement, la commande resterait
-      // marquée payée alors que l'argent est rendu.
-      nouveauStatut = 'rembourse';
-      break;
-    case 'charge.dispute.created':
-      // Un litige ne change pas l'état du paiement (l'argent est toujours pris),
-      // mais il coûte 20 € et il faut le voir tout de suite. On le journalise et
-      // on l'archive dans `raw_event`, sans toucher au statut.
-      console.error('LITIGE STRIPE ouvert', {
-        intent: intentId,
-        montant: objet.amount,
-        motif: objet.reason,
-      });
-      break;
-    default:
-      // Un type inconnu se répond 200 : un non-2xx ferait rejouer Stripe en
-      // boucle sur un événement qu'on ne traitera jamais.
-      return ok({ ignore: type });
-  }
-
-  if (!intentId) return ok({ ignore: type, motif: 'aucun_payment_intent' });
-
-  const { data: ligneData, error: lectureError } = await admin
+/**
+ * Retrouve la tentative de paiement visée par l'événement.
+ *
+ * Trois chemins, du plus sûr au plus tolérant. Les deux derniers n'existent que
+ * pour le scénario où `creer-paiement` a bien créé le PaymentIntent mais n'a pas
+ * réussi à écrire son `pi_...` : sans eux, l'événement `succeeded` d'un paiement
+ * RÉELLEMENT ENCAISSÉ repartirait en « intent inconnu », la commande resterait
+ * non payée, et le restaurant ne serait jamais prévenu.
+ *
+ * ⚠️ Lève plutôt que de rendre `null` sur une erreur de lecture : « je n'ai pas
+ * trouvé » et « je n'ai pas pu chercher » ne se répondent pas pareil — le second
+ * doit faire rejouer Stripe.
+ */
+async function trouverLigne(
+  admin: SupabaseClient,
+  intentId: string,
+  objet: Record<string, unknown>,
+): Promise<{ ligne: LignePaiement; via: string } | null> {
+  const parIntent = await admin
     .from('payment_intents')
-    .select('id, status, amount_minor, order_id')
+    .select(COLONNES_LIGNE)
     .eq('provider_intent_id', intentId)
     .maybeSingle();
+  if (parIntent.error) throw new Error(`lecture par provider_intent_id: ${parIntent.error.message}`);
+  if (parIntent.data) return { ligne: parIntent.data as LignePaiement, via: 'provider_intent_id' };
 
-  if (lectureError) {
-    // Une vraie panne de lecture : on répond 500 pour que Stripe rejoue.
-    console.error('lecture payment_intents impossible', lectureError);
-    return new Response('erreur base', { status: 500 });
+  const meta = (objet.metadata ?? {}) as Record<string, unknown>;
+
+  if (uuidValide(meta.payment_intent_row)) {
+    const parLigne = await admin
+      .from('payment_intents')
+      .select(COLONNES_LIGNE)
+      .eq('id', meta.payment_intent_row)
+      .maybeSingle();
+    if (parLigne.error) throw new Error(`lecture par metadata.payment_intent_row: ${parLigne.error.message}`);
+    const l = parLigne.data as LignePaiement | null;
+    // Une ligne déjà rattachée à un AUTRE PaymentIntent n'est pas la nôtre : on
+    // ne recolle jamais par-dessus un rattachement existant.
+    if (l && (l.provider_intent_id === null || l.provider_intent_id === intentId)) {
+      return { ligne: l, via: 'metadata.payment_intent_row' };
+    }
   }
 
-  const ligne = ligneData as
-    | { id: string; status: string; amount_minor: number; order_id: string }
-    | null;
-
-  if (!ligne) {
-    // Paiement inconnu de nous : PaymentIntent créé hors de l'app, ou événement
-    // d'un autre projet branché sur le même compte. 200 pour ne pas boucler.
-    console.error('PaymentIntent inconnu en base', intentId, type);
-    return ok({ ignore: type, motif: 'intent_inconnu' });
+  if (uuidValide(meta.order_id)) {
+    const parCommande = await admin
+      .from('payment_intents')
+      .select(COLONNES_LIGNE)
+      .eq('order_id', meta.order_id)
+      .is('provider_intent_id', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (parCommande.error) throw new Error(`lecture par metadata.order_id: ${parCommande.error.message}`);
+    if (parCommande.data) return { ligne: parCommande.data as LignePaiement, via: 'metadata.order_id' };
   }
 
-  // Contrôle comptable : si Stripe a encaissé un montant différent de celui
-  // qu'on a calculé, ce n'est pas une raison de refuser l'encaissement — mais
-  // ça doit se voir dans les logs le jour du rapprochement.
-  const encaisse = (objet.amount_received ?? objet.amount) as number | undefined;
-  if (nouveauStatut === 'capture' && typeof encaisse === 'number' && encaisse !== ligne.amount_minor) {
-    console.error('ÉCART DE MONTANT', {
-      intent: intentId,
-      attendu: ligne.amount_minor,
-      recu: encaisse,
+  return null;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method !== 'POST') {
+    return refus(405, 'methode_non_autorisee');
+  }
+
+  // Déclarés hors du `try` : le `catch` doit savoir où on en était et sur quelle
+  // ligne écrire. Sans ça il ne saurait rien de l'échec qu'il rattrape.
+  let admin: SupabaseClient | null = null;
+  let ligneId: string | null = null;
+  let etape = 'demarrage';
+  let idEvenement: string | null = null;
+
+  try {
+    admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    // ⚠️ Le corps brut, avant tout parsing. Voir l'en-tête de fichier.
+    etape = 'lecture_corps';
+    const corps = await req.text();
+
+    etape = 'lecture_config';
+    const { data: cfgData, error: cfgError } = await admin.rpc('stripe_config');
+    const cfg = cfgData as StripeConfig | null;
+    if (cfgError || !cfg?.webhook_secret) {
+      // Tant que `stripe_webhook_secret` n'est pas dans le Vault : refus net et
+      // explicite. Surtout pas un 200, qui ferait croire à Stripe que l'événement
+      // a été traité et le supprimerait de la file de reprise.
+      console.error('stripe-webhook: stripe_webhook_secret absent du Vault', cfgError);
+      return refus(503, 'webhook_non_configure', { sous_motif: 'secret_absent' });
+    }
+
+    if (!SECRET_WEBHOOK_VALIDE.test(cfg.webhook_secret)) {
+      // Jamais le secret dans les journaux, même tronqué : seulement de quoi
+      // comprendre qu'il a été mal copié.
+      console.error('stripe-webhook: SECRET DE SIGNATURE ILLISIBLE dans le Vault', {
+        longueur: cfg.webhook_secret.length,
+        indice: 'attendu whsec_… — secret masqué, ou espaces collés au copier-coller ?',
+      });
+      return refus(503, 'webhook_non_configure', { sous_motif: 'secret_illisible' });
+    }
+
+    etape = 'verification_signature';
+    const verdict = await verifierSignature(
+      req.headers.get('Stripe-Signature'),
+      corps,
+      cfg.webhook_secret,
+    );
+    if (!verdict.ok) {
+      // ⚠️ CE JOURNAL EST LA SEULE TRACE D'UN ÉVÉNEMENT REFUSÉ : il n'y a aucune
+      // ligne à écrire, on ne sait même pas de quel paiement il parle. S'il se
+      // répète, c'est soit une rotation de secret oubliée — et alors des
+      // paiements RÉELS n'arrivent plus en base — soit quelqu'un qui essaie.
+      console.error('stripe-webhook: ÉVÉNEMENT REFUSÉ', {
+        motif: verdict.motif,
+        evenement: idEvenementNonVerifie(corps),
+      });
+      return refus(verdict.code, verdict.motif);
+    }
+
+    etape = 'lecture_evenement';
+    let evenement: { id?: string; type?: string; data?: { object?: Record<string, unknown> } };
+    try {
+      evenement = JSON.parse(corps);
+    } catch {
+      return refus(400, 'corps_illisible');
+    }
+
+    idEvenement = typeof evenement.id === 'string' ? evenement.id : null;
+    const type = evenement.type ?? '';
+    const objet = evenement.data?.object ?? {};
+
+    // Sur quel PaymentIntent porte l'événement. Pour un `charge.*`, c'est le champ
+    // `payment_intent` de la charge ou du litige ; pour un `payment_intent.*`,
+    // c'est l'objet lui-même.
+    const intentId = type.startsWith('payment_intent.')
+      ? (objet.id as string | undefined)
+      : (objet.payment_intent as string | undefined);
+
+    let nouveauStatut: string | null = null;
+    let erreur: string | null = null;
+
+    switch (type) {
+      case 'payment_intent.succeeded':
+        nouveauStatut = 'capture';
+        break;
+      case 'payment_intent.payment_failed':
+        nouveauStatut = 'echoue';
+        // ⚠️ Préfixé `refus_banque`. C'est ce qui distingue « la carte a été
+        // refusée » de « notre code a planté » DANS LA MÊME COLONNE, sans avoir
+        // à ouvrir `raw_event` — et les deux n'appellent pas la même conduite :
+        // l'un se répond au client, l'autre se corrige chez nous.
+        erreur = `refus_banque | ${
+          ((objet.last_payment_error as Record<string, unknown> | undefined)?.message as string) ??
+            'paiement refusé'
+        }`.slice(0, MAX_ERREUR);
+        break;
+      case 'payment_intent.canceled':
+        nouveauStatut = 'annule';
+        // Sans ça, un intent annulé n'expliquait jamais pourquoi.
+        // `cancellation_reason` vaut `abandoned` (expiré tout seul),
+        // `requested_by_customer`, `duplicate`…
+        erreur = `annule_stripe | ${String(objet.cancellation_reason ?? 'sans motif')}`.slice(0, MAX_ERREUR);
+        break;
+      case 'payment_intent.requires_action':
+        nouveauStatut = 'requiert_action';
+        break;
+      case 'payment_intent.amount_capturable_updated':
+        nouveauStatut = 'autorise';
+        break;
+      case 'payment_intent.processing':
+        nouveauStatut = 'en_attente';
+        break;
+      case 'charge.refunded':
+        // Un remboursement fait depuis le tableau de bord Stripe n'a aucun autre
+        // chemin pour revenir en base : sans cet événement, la commande resterait
+        // marquée payée alors que l'argent est rendu.
+        nouveauStatut = 'rembourse';
+        break;
+      case 'charge.dispute.created':
+        // Un litige ne change pas l'état du paiement (l'argent est toujours pris),
+        // mais il coûte 20 € et il faut le voir tout de suite. On le journalise et
+        // on l'archive dans `raw_event`, sans toucher au statut.
+        console.error('stripe-webhook: LITIGE STRIPE ouvert', {
+          intent: intentId,
+          montant: objet.amount,
+          motif: objet.reason,
+        });
+        break;
+      default:
+        // Un type inconnu se répond 200 : un non-2xx ferait rejouer Stripe en
+        // boucle sur un événement qu'on ne traitera jamais.
+        return ok({ ignore: type });
+    }
+
+    if (!intentId) return ok({ ignore: type, motif: 'aucun_payment_intent' });
+
+    etape = 'recherche_ligne';
+    const trouvee = await trouverLigne(admin, intentId, objet);
+
+    if (!trouvee) {
+      // Paiement inconnu de nous : PaymentIntent créé hors de l'app, ou événement
+      // d'un autre projet branché sur le même compte. 200 pour ne pas boucler.
+      // ⚠️ Sur un `succeeded`, c'est GRAVE : de l'argent a été pris et aucune
+      // commande ne le sait. Le rattrapage par métadonnées a déjà échoué, donc
+      // seul un rapprochement manuel reste possible — d'où ce journal explicite.
+      console.error('stripe-webhook: PaymentIntent inconnu en base', {
+        intent: intentId,
+        type,
+        evenement: idEvenement,
+        gravite: nouveauStatut === 'capture' ? 'ARGENT ENCAISSÉ SANS COMMANDE RATTACHÉE' : 'sans effet',
+      });
+      return ok({ ignore: type, motif: 'intent_inconnu' });
+    }
+
+    const ligne = trouvee.ligne;
+    ligneId = ligne.id;
+
+    // Rattrapage : la ligne a été retrouvée par ses métadonnées, donc elle ne
+    // portait pas son `pi_...`. On le recolle, sinon chaque événement suivant
+    // referait le détour — et le rapprochement comptable resterait impossible.
+    if (ligne.provider_intent_id !== intentId) {
+      console.error('stripe-webhook: RATTRAPAGE — ligne retrouvée sans son pi_', {
+        via: trouvee.via,
+        ligne: ligne.id,
+        intent: intentId,
+      });
+      const { error: recollageError } = await admin
+        .from('payment_intents')
+        .update({ provider_intent_id: intentId })
+        .eq('id', ligne.id)
+        .is('provider_intent_id', null);
+      if (recollageError) {
+        console.error('stripe-webhook: recollage du pi_ impossible', ligne.id, recollageError);
+      }
+    }
+
+    // Contrôle comptable : si Stripe a encaissé un montant différent de celui
+    // qu'on a calculé, ce n'est pas une raison de refuser l'encaissement — mais
+    // ça doit se voir dans les logs le jour du rapprochement.
+    const encaisse = (objet.amount_received ?? objet.amount) as number | undefined;
+    if (nouveauStatut === 'capture' && typeof encaisse === 'number' && encaisse !== ligne.amount_minor) {
+      console.error('stripe-webhook: ÉCART DE MONTANT', {
+        intent: intentId,
+        attendu: ligne.amount_minor,
+        recu: encaisse,
+      });
+    }
+
+    // ⚠️ Jamais l'evenement brut : voir `nettoyerPourArchive`. Le secret de
+    // confirmation et les coordonnees bancaires ne descendent pas en base.
+    const archive = {
+      ...(nettoyerPourArchive(evenement) as Record<string, unknown>),
+      _recu_le: new Date().toISOString(),
+    };
+
+    // ⚠️ UN 200 RENDU SUR UNE ÉCRITURE RATÉE EST PIRE QUE PAS DE 200 DU TOUT :
+    // Stripe considère l'événement traité et ne le rejoue plus jamais. Chacune
+    // des trois écritures ci-dessous est donc relue.
+    etape = 'archivage';
+    if (nouveauStatut === null) {
+      // Litige : on archive l'événement sans toucher au statut.
+      const { error } = await admin
+        .from('payment_intents')
+        .update({ raw_event: archive })
+        .eq('id', ligne.id);
+      if (error) {
+        console.error('stripe-webhook: archivage litige impossible', ligne.id, error);
+        return refus(500, 'ecriture_impossible', { etape });
+      }
+      return ok({ traite: type, statut: ligne.status });
+    }
+
+    // ⚠️ L'IDEMPOTENCE EST ICI. Un rejeu, ou un événement arrivé dans le désordre,
+    // ne fait pas reculer l'état — et ne redéclenche donc pas le trigger qui
+    // recalcule `orders.payment_status`.
+    if ((RANG[nouveauStatut] ?? 0) <= (RANG[ligne.status] ?? 0)) {
+      const { error } = await admin
+        .from('payment_intents')
+        .update({ raw_event: archive })
+        .eq('id', ligne.id);
+      if (error) {
+        console.error('stripe-webhook: archivage rejeu impossible', ligne.id, error);
+        return refus(500, 'ecriture_impossible', { etape });
+      }
+      return ok({ traite: type, statut: ligne.status, applique: false });
+    }
+
+    const maj: Record<string, unknown> = { status: nouveauStatut, raw_event: archive };
+    if (erreur) maj.erreur = erreur;
+    if (nouveauStatut === 'capture') maj.captured_at = new Date().toISOString();
+
+    etape = 'application_statut';
+    const { error: majError } = await admin
+      .from('payment_intents')
+      .update(maj)
+      .eq('id', ligne.id);
+
+    if (majError) {
+      console.error('stripe-webhook: mise à jour payment_intents impossible', ligne.id, majError);
+      return refus(500, 'ecriture_impossible', { etape });
+    }
+
+    return ok({ traite: type, statut: nouveauStatut, applique: true });
+  } catch (e) {
+    // ------------------------------------------------------- LE FILET DE SÉCURITÉ
+    // 500 volontaire : Stripe rejoue, donc un incident passager se rattrape tout
+    // seul. Et la raison est écrite quelque part, toujours.
+    const d = decrire(e);
+    console.error('stripe-webhook: EXCEPTION NON PRÉVUE', {
+      etape,
+      evenement: idEvenement,
+      ligne: ligneId,
+      type: d.type,
+      message: d.message,
+      stack: e instanceof Error ? (e.stack ?? '').slice(0, 800) : undefined,
     });
+
+    // ⚠️ Le statut n'est PAS touché : une exception de notre côté ne dit rien de
+    // l'état réel du paiement chez Stripe. On note seulement le motif, pour que
+    // la question « pourquoi ? » ait une réponse en base.
+    if (admin && ligneId) {
+      try {
+        await admin
+          .from('payment_intents')
+          .update({ erreur: `exception:${d.type} | ${d.message}`.slice(0, MAX_ERREUR) })
+          .eq('id', ligneId);
+      } catch (e2) {
+        console.error('stripe-webhook: motif non enregistrable', ligneId, decrire(e2));
+      }
+    }
+
+    return refus(500, 'erreur_serveur', { code: `exception:${d.type}`, etape });
   }
-
-  // ⚠️ Jamais l'evenement brut : voir `nettoyerPourArchive`. Le secret de
-  // confirmation et les coordonnees bancaires ne descendent pas en base.
-  const archive = {
-    ...(nettoyerPourArchive(evenement) as Record<string, unknown>),
-    _recu_le: new Date().toISOString(),
-  };
-
-  if (nouveauStatut === null) {
-    // Litige : on archive l'événement sans toucher au statut.
-    await admin.from('payment_intents').update({ raw_event: archive }).eq('id', ligne.id);
-    return ok({ traite: type, statut: ligne.status });
-  }
-
-  // ⚠️ L'IDEMPOTENCE EST ICI. Un rejeu, ou un événement arrivé dans le désordre,
-  // ne fait pas reculer l'état — et ne redéclenche donc pas le trigger qui
-  // recalcule `orders.payment_status`.
-  if ((RANG[nouveauStatut] ?? 0) <= (RANG[ligne.status] ?? 0)) {
-    await admin.from('payment_intents').update({ raw_event: archive }).eq('id', ligne.id);
-    return ok({ traite: type, statut: ligne.status, applique: false });
-  }
-
-  const maj: Record<string, unknown> = { status: nouveauStatut, raw_event: archive };
-  if (erreur) maj.erreur = erreur;
-  if (nouveauStatut === 'capture') maj.captured_at = new Date().toISOString();
-
-  const { error: majError } = await admin
-    .from('payment_intents')
-    .update(maj)
-    .eq('id', ligne.id);
-
-  if (majError) {
-    console.error('mise à jour payment_intents impossible', majError);
-    return new Response('erreur base', { status: 500 });
-  }
-
-  return ok({ traite: type, statut: nouveauStatut, applique: true });
 });

@@ -678,6 +678,47 @@ marque `annule` sans que Stripe en sache rien. **Optimisation de fond**, à gard
 tard : autoriser à la commande et ne capturer qu'à l'acceptation par le restaurant supprimerait
 la classe de bug entière (annulation gratuite au lieu de remboursement payant).
 
+### Qui a le droit de déclencher un remboursement — revue adversariale du 2026-09-06
+
+Vérifié **par requête sur l'API en production**, pas par lecture de code, avec les trois comptes
+de démonstration de la fiche App Store (client, restaurant) et la clé `anon` du projet.
+
+| Tentative | Réponse |
+|---|---|
+| `POST /functions/v1/rembourser-paiement`, aucun en-tête | `403 sans_autorisation` |
+| avec la **clé `anon`** en `Authorization` (un JWT parfaitement valide) | `403 jeton_invalide` |
+| avec le jeton d'un **client** connecté | `403 reserve_aux_admins` |
+| avec le jeton d'un **restaurateur** connecté | `403 reserve_aux_admins` |
+| avec un `x-hook-secret` inventé | `403 secret_invalide` |
+| `GET` au lieu de `POST` | `405` |
+| `rpc/admin_demander_remboursement` en client, puis en restaurateur | `Reserve aux administrateurs` |
+| `rpc/relancer_remboursements_en_attente` en client, puis en restaurateur | `Reserve aux administrateurs` |
+| `rpc/demander_remboursement`, `declencher_remboursement`, `enregistrer_verdict_remboursement`, `stripe_config`, `remboursement_hook_secret` en client | `permission denied for function` |
+| `INSERT` direct dans `payment_refunds` en client | `permission denied for table` |
+| lecture de `payment_refunds` en anonyme | `permission denied` |
+
+La clé Stripe ne sort d'aucune de ces réponses : elle n'apparaît dans aucun corps, et les
+journaux de la fonction n'en écrivent que la **longueur** et la position du premier caractère
+illisible. Aucune clé (`sk_`, `rk_`, `whsec_`) n'existe dans le dépôt ni dans son historique git.
+
+**Une faille a en revanche été trouvée et fermée, et elle ne passait pas par la fonction de
+remboursement** : `orders.accept_token` — le jeton des liens Telegram « J'accepte / Je refuse » —
+était **lisible par le client dans sa propre commande** (`GET /rest/v1/orders?select=accept_token`
+répondait 200, et `create_order` rend de toute façon la ligne entière). Avec ce jeton, l'appel
+anonyme `rpc/repondre_commande_par_jeton` acceptait le client comme s'il était le restaurant :
+sur une commande encore en `recue` — c'est-à-dire déjà encaissée, la fenêtre exacte de TF-96 —
+il pouvait la refuser avec un motif de son choix, ce qui déclenche `remboursement_sur_annulation`
+et renvoie l'argent, le refus étant journalisé au nom du restaurant. Le même jeton permettait
+aussi de **confirmer** la commande à sa place.
+
+Corrigé par la migration `20260906101500_le_client_ne_refuse_plus_sa_propre_commande` : le jeton
+vit désormais dans `public.order_accept_jetons`, table sans policy **et sans aucun droit** pour
+`anon` et `authenticated` (contrôlé : `permission denied` pour les trois rôles). Masquer la
+colonne n'aurait pas suffi, et les deux essais sont dans l'en-tête de la migration : un
+`revoke select (colonne)` ne perce pas le `GRANT SELECT` de table, et les droits de colonne ne
+s'appliquent pas à la ligne composite que `create_order` rend à l'appelant.
+
+
 ---
 
 ## 9. Le problème connu, non résolu : le restaurant est prévenu trop tôt

@@ -1,0 +1,35 @@
+-- ============================================================================
+-- REMBOURSEMENT : UN QUATRIEME ETAT, `sans_objet` — 2026-09-06
+-- ============================================================================
+--
+-- POURQUOI. Le memo Stripe du chantier tranche un cas que le socle ne savait pas
+-- ecrire : un PaymentIntent qui n'a PAS ete capture ne se rembourse pas, il
+-- s'ANNULE (`POST /v1/payment_intents/{id}/cancel`), et c'est gratuit. Rien n'a
+-- ete debite, donc rien n'est rendu — mais la demande, elle, existe en base et
+-- doit se clore.
+--
+-- Sans ce quatrieme etat, la fonction Edge n'aurait eu que deux facons de clore
+-- une telle ligne, toutes les deux fausses :
+--   - `effectue` ferait entrer un montant dans `rapport_remboursements.rendu_ar`
+--     et dans le calcul du plafond, alors qu'aucun euro n'a bouge ;
+--   - `echoue` signifie, mot pour mot dans le commentaire de la colonne, « la
+--     banque a refuse le credit, le client n'a RIEN et il faut le rembourser
+--     autrement ». Le declarer sur un paiement jamais encaisse ferait crier a
+--     l'incident sur une ligne ou personne ne doit rien a personne. C'est
+--     exactement le faux positif que la migration `20260906084514` a corrige sur
+--     `carte_non_encaissee`, et il ne faut pas le reintroduire ailleurs.
+--
+-- `sans_objet` n'entre dans AUCUN calcul de plafond : `verifier_plafond_
+-- remboursement()` et `demander_remboursement()` somment `status in ('demande',
+-- 'effectue')` — le nouvel etat en est donc exclu sans qu'aucune de ces deux
+-- fonctions ait a changer. C'est voulu : le montant redevient remboursable si
+-- une capture arrive plus tard, et le trigger `remboursement_sur_capture_
+-- tardive` le reprendra.
+--
+-- ⚠️ CETTE MIGRATION NE FAIT QUE CA. `alter type ... add value` s'execute dans
+-- une transaction, mais PostgreSQL interdit d'UTILISER la valeur ajoutee avant
+-- que cette transaction soit validee (« unsafe use of new value of enum type »).
+-- Tout ce qui s'en sert — la vue, la porte du verdict — vit donc dans la
+-- migration suivante, et il ne faut jamais les fusionner.
+
+alter type public.payment_refund_status add value if not exists 'sans_objet';

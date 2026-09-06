@@ -17,27 +17,30 @@ valable et sert de base au raisonnement sur le taux, plus bas.
 | Fonction SQL de lecture des secrets `stripe_config()` | ✅ créée, réservée à `service_role` |
 | RPC de repli espèces `basculer_en_especes()` | ✅ appliquée — migration `20260905221246` |
 | Socle du **remboursement** (`payment_refunds`, plafond, déclenchement automatique, vues) | ✅ appliqué — migrations `20260906084514` et `20260906084907` (§ 8) |
-| Fonction Edge `rembourser-paiement` (l'appel réel à Stripe) | ⛔ **n'existe pas** — le socle enregistre la demande et attend (§ 8) |
+| Fonction Edge `rembourser-paiement` (l'appel réel à Stripe) | ✅ **déployée** (`verify_jwt: false`) — migrations `20260906090100` et `20260906090200`, secret `remboursement_hook_secret` posé (§ 8) |
 | Edge Function `creer-paiement` | ✅ déployée (`verify_jwt: true`) |
 | Edge Function `stripe-webhook` | ✅ déployée (`verify_jwt: false`), endpoint Stripe `we_1UCRd0…` |
 | `@stripe/stripe-react-native` **0.64.0** (version épinglée par Expo SDK 57) | ✅ installé + plugin dans `app.json` |
 | `@stripe/stripe-js` **9.x** + `@stripe/react-stripe-js` **6.x** (web) | ✅ installés |
 | Écran `app/app/paiement.tsx` + `components/paiement/` | ✅ écrits |
-| Secrets dans le Vault Supabase | ✅ **les trois posés** (`stripe_secret_key`, `stripe_publishable_key`, `stripe_webhook_secret`) |
-| `payment_config.carte_active` | **`false`** ← le seul verrou restant |
+| Secrets dans le Vault Supabase | ✅ **les quatre posés** (`stripe_secret_key`, `stripe_publishable_key`, `stripe_webhook_secret`, `remboursement_hook_secret`) |
+| `payment_config.carte_active` | ⚠️ **`true`** — le canal est OUVERT |
 
-⚠️ **Rien n'est encaissable aujourd'hui, et une seule ligne le décide.** Les secrets sont posés,
-donc `stripe_config()` renvoie `configure = true` : ce qui bloque désormais, c'est uniquement
-`carte_active`. Tant qu'il vaut `false`, l'option carte **n'apparaît même pas** sur l'écran de
-validation, et `creer-paiement` refuse en `503 carte_inactive` avant tout appel à Stripe.
+⚠️ **LE CANAL EST OUVERT ET LE COMPTE EST EN MODE RÉEL.** Relevé en base le 2026-09-06 à 09 h :
+`carte_active` vaut **`true`** depuis 07 h 39, et TF-96 l'a prouvé en encaissant 3,41 € pour de
+bon. Ce tableau annonçait `false` — il datait d'avant l'ouverture, et le CLAUDE.md en a hérité.
+Chaque commande carte qui passe débite donc de vrais euros.
 
-Pour ouvrir le canal, connecté avec un compte admin :
+Pour refermer le canal en urgence, connecté avec un compte admin :
 
 ```sql
-select public.admin_set_carte_active(true);
+select public.admin_set_carte_active(false);   -- les espèces continuent de fonctionner
 ```
 
-⚠️ **Le compte Stripe est en mode RÉEL.** Ouvrir le canal, c'est encaisser de vrais euros.
+La clé Stripe du Vault est une clé **restreinte**. Vérifié le 2026-09-06 sans rien créer
+(`POST /v1/refunds` avec un corps vide, sans `payment_intent` : Stripe vérifie les permissions
+avant les paramètres) : elle répond **400 « One of the following params should be provided »**
+et non 403 — elle a donc bien le droit d'**écrire des remboursements**.
 
 **Compte Stripe** : `acct_1SNuSk53bhPYA4IF`, nom « Rentanoo », réglé en **EUR**.
 
@@ -365,23 +368,57 @@ admin, ni dans aucun écran. La seule trace était la ligne `payment_intents`.
    passe, le remboursement est à relancer » ; « le restaurant ne peut plus refuser » ne l'est
    pas.
 
-### Ce qui manque encore pour que l'argent parte réellement
+### La fonction Edge `rembourser-paiement` — ✅ déployée le 2026-09-06
 
-- [ ] **La fonction Edge `rembourser-paiement`** — elle n'existe pas. Contrat attendu :
-      `POST /functions/v1/rembourser-paiement`, en-tête `x-hook-secret`, corps
-      `{ refund_id, payment_intent_row, provider_intent_id, amount_minor, currency,
-      idempotency_key, order_id, order_number, motif }`. Elle lit `stripe_secret_key` du
-      Vault et poste `POST /v1/refunds` avec `payment_intent`, `amount`,
-      `reason = requested_by_customer` (**jamais `fraudulent`** : Stripe met alors la carte
-      et l'e-mail sur ses listes de blocage Radar).
-      ⚠️ La clé d'idempotence à envoyer est `payment_refunds.idempotency_key`, **jamais**
-      `payment_intents.idempotency_key` — réutiliser celle du paiement ferait rejouer à Stripe
-      la réponse mémorisée du PaymentIntent au lieu de créer un remboursement.
-- [ ] **Poser `remboursement_hook_secret` dans le Vault**, puis
-      `select public.relancer_remboursements_en_attente();` — c'est ce qui enverra la demande
-      déjà enregistrée pour TF-96.
-- [ ] **Déclarer la fonction dans `supabase/config.toml`** (`verify_jwt = false` : l'appelant
-      est la base via `pg_net`, il s'authentifie par `x-hook-secret`).
+`supabase/functions/rembourser-paiement/index.ts`, `verify_jwt = false`, déclarée dans
+`supabase/config.toml`. Elle est ce qui manquait entre « la demande est enregistrée » et
+« l'argent part ».
+
+**Deux portes d'entrée, jamais une troisième** : la base (en-tête `x-hook-secret`, comparé au
+Vault **à temps constant**) ou un administrateur authentifié (`user_roles.role = 'admin'`,
+`status = 'active'`, lu explicitement — pas `is_admin()`, qui s'appuie sur `auth.uid()`, NULL
+sous la clé `service_role`). Vérifié : la **clé `anon` du projet**, qui est un JWT valide et
+que porte l'app cliente, se fait refuser en `403 jeton_invalide`.
+
+**Elle n'accepte aucun montant**, exactement comme `creer-paiement`. Le corps peut porter
+`amount_minor` et `currency` — le trigger les envoie — mais ils ne servent qu'à **vérifier** :
+s'ils diffèrent de la ligne `payment_refunds`, elle refuse en `409` **avant tout appel à
+Stripe**. Le montant qui part est `payment_refunds.amount_minor`, relu en base.
+
+**Elle relit l'état réel chez Stripe avant d'agir** (`GET /v1/payment_intents/{id}` avec
+`expand[]=latest_charge`), et branche :
+
+| État Stripe du PaymentIntent | Ce qu'elle fait |
+|---|---|
+| `succeeded` | `POST /v1/refunds` — `reason = requested_by_customer`, **jamais `fraudulent`** (listes de blocage Radar) |
+| `requires_*`, `processing` | `POST /v1/payment_intents/{id}/cancel` — **gratuit**, rien n'avait été pris |
+| `canceled` | rien du tout |
+
+Dans les deux derniers cas la demande se clôt en **`sans_objet`** (quatrième état ajouté par la
+migration `20260906090100`) : dire `effectue` ferait entrer un montant jamais rendu dans le
+rapport, et `echoue` crierait à l'incident sur une ligne où personne ne doit rien à personne.
+
+**Trois barrières contre le double remboursement**, dans cet ordre :
+1. la fonction refuse une demande qui n'est plus en `demande` ou qui porte déjà un `re_...`
+   (réponse `200 deja_traite`, **sans toucher à Stripe**) ;
+2. l'en-tête `Idempotency-Key` envoyé à Stripe est `payment_refunds.idempotency_key` — **jamais**
+   `payment_intents.idempotency_key`, qui ferait rejouer la réponse mémorisée du PaymentIntent ;
+3. `enregistrer_envoi_remboursement()` n'attache un `re_...` qu'à une ligne qui n'en a pas.
+   C'est la seule des trois qui survive à la purge des clés d'idempotence Stripe (24 h).
+
+⚠️ **Un envoi raté ne marque jamais la demande `echoue`** : elle reste en `demande` avec son
+motif dans `erreur`, et `relancer_remboursements_en_attente()` la rejouera. La marquer terminale
+la sortirait de l'index unique partiel `payment_refunds_une_demande_en_vol` — la relance
+créerait alors une **seconde** demande, donc un second remboursement.
+
+⚠️ **`carte_active` n'est délibérément pas testé** dans cette fonction : couper l'encaissement ne
+doit jamais empêcher de rendre de l'argent déjà pris. C'est même le moment où on en a besoin.
+
+**Ce qui reste :**
+
+- [ ] `select public.relancer_remboursements_en_attente();` — **c'est ce geste qui rendra les
+      3,41 € de TF-96**. Volontairement pas fait : cette commande est celle du porteur du projet,
+      à lui de décider s'il la rembourse par là ou depuis le tableau de bord Stripe.
 - [ ] **`stripe-webhook`** : s'abonner à `refund.created`, `refund.updated` et surtout
       `refund.failed` — **aucun des trois n'est dans `enabled_events`** de l'endpoint
       `we_1UCRd0…` aujourd'hui — et appeler `enregistrer_verdict_remboursement()`.
@@ -393,7 +430,44 @@ admin, ni dans aucun écran. La seule trace était la ligne `payment_intents`.
       automatiquement. » L'application annonce donc un automatisme qui ne va pas encore
       jusqu'au bout.
 
-### Le chemin manuel, tant que la fonction Edge n'existe pas
+### Recette de `rembourser-paiement` — 2026-09-06, sans rembourser un centime
+
+Les appels **autorisés** ne sont pas passés en `curl` : le secret serait sorti du Vault pour
+transiter par un terminal. Ils sont passés **depuis la base**, par `net.http_post`, qui lit le
+secret sur place — c'est-à-dire par le chemin de production exact.
+
+| # | Ce qu'on envoie | Réponse | Ce que ça prouve |
+|---|---|---|---|
+| A | `curl` sans aucun en-tête | `403 sans_autorisation` | La fonction est fermée par défaut |
+| B | `curl` avec un mauvais `x-hook-secret` | `403 secret_invalide` | Le secret est réellement comparé |
+| C | `curl` en `GET` | `405` | — |
+| D | `curl` avec la **clé `anon` du projet** | `403 jeton_invalide` | Un JWT valide ne suffit pas : l'app cliente ne peut pas rembourser |
+| E | `curl` avec un jeton bidon | `403 jeton_invalide` | — |
+| F | autorisé, TF-96, `amount_minor: 99999` | `409 montant_incoherent`, `attendu: 341` | **Le montant vient de la base**, jamais du réseau. Refus **avant** tout appel à Stripe |
+| G | autorisé, `currency: "usd"` | `409 devise_incoherente` | Idem sur la devise |
+| H | autorisé, `refund_id` inconnu | `404 demande_introuvable` | — |
+| I | autorisé, corps sans identifiant | `400 identifiant_manquant` | — |
+| J | **bout en bout** : capture tardive sur TF-95 → trigger → `pg_net` → fonction | `200 sans_objet`, `statut_stripe: canceled` | Toute la chaîne, du trigger au verdict écrit en base |
+| K | second appel sur la demande de J | `200 deja_traite` | Un rejeu ne repart pas chez Stripe |
+| L | `declencher_remboursement()` sur la demande de J | `false`, aucun HTTP émis | La base ne remet pas en file une demande tranchée |
+
+⚠️ **Aucune de ces preuves n'a déplacé d'argent.** Le test J s'appuie sur **TF-95**, la commande
+de vérification du 6 septembre, dont le PaymentIntent `pi_3UCb3W…` est `canceled` chez Stripe
+(vérifié par `GET` : `amount_received = 0`, `latest_charge = null`) : il est *impossible* d'en
+rembourser un centime. TF-95 a été remise dans son état d'origine et la ligne de test supprimée.
+TF-96 n'a jamais été appelée qu'avec des corps volontairement faux, et vérification faite chez
+Stripe après coup, elle est toujours `succeeded` / non remboursée.
+
+⚠️ **CE QUI N'EST PAS PROUVÉ : la branche `POST /v1/refunds` elle-même.** Le seul paiement
+`succeeded` du compte est TF-96, celle du porteur du projet — l'exercer, c'est la rembourser
+pour de bon. Ce qui est établi à sa place : la clé restreinte du Vault **a bien la permission
+d'écrire des remboursements** (§ 1), et tout ce qui précède l'appel — autorisation, relecture en
+base, refus d'incohérence, relecture chez Stripe, barrières anti-rejeu — a tourné en vrai. La
+première vraie annulation de commande carte fera le reste ; **lire alors
+`destination_details.card.type` du `Refund`** pour trancher enfin la question du *reversal*
+(§ « Stripe ne rend pas les frais »).
+
+### Le chemin manuel — il reste valable, et il reste le seul pour TF-96
 
 Depuis le **tableau de bord Stripe** : Paiements → le PaymentIntent → *Refund*.
 

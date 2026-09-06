@@ -51,3 +51,14 @@ verify_jwt = false
 
 [functions.deposer-visuel-guide]
 verify_jwt = false
+
+[functions.rembourser-paiement]
+# L'appelant est la BASE (trigger `remboursement_sur_annulation` ->
+# `declencher_remboursement()` -> pg_net), qui n'a aucun jeton utilisateur a
+# presenter. Elle s'authentifie par l'en-tete `x-hook-secret`, compare au secret
+# du Vault `remboursement_hook_secret` — meme patron que notify-order.
+# La seconde porte, l'administrateur, presente un vrai JWT que la fonction
+# verifie ELLE-MEME (`auth.getUser` puis lecture de `user_roles`), parce que
+# `verify_jwt = true` aurait ferme la premiere porte sans rien prouver sur la
+# seconde : la cle `anon` du projet est un JWT valide.
+verify_jwt = false

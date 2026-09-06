@@ -165,11 +165,19 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 **Document de référence complet : [docs/PAIEMENT-STRIPE.md](docs/PAIEMENT-STRIPE.md).**
 Ce qu'il faut savoir sans l'ouvrir :
 
-- **Rien n'est encaissable tant que `payment_config.carte_active` vaut `false`** — c'est le cas
-  aujourd'hui. Tant qu'il est faux, l'option carte **n'apparaît pas** sur l'écran de validation
-  (elle n'est pas grisée : elle est absente), et `creer-paiement` refuse avant tout appel à
-  Stripe. Pour ouvrir : `select public.admin_set_carte_active(true);` en tant qu'admin.
-  ⚠️ **Le compte Stripe est en mode RÉEL** : ouvrir, c'est encaisser de vrais euros.
+- ⚠️ **LE CANAL CARTE EST OUVERT.** `payment_config.carte_active` vaut **`true`** depuis le
+  2026-09-06 07 h 39, et le compte Stripe est en mode **RÉEL** : TF-96 a encaissé 3,41 € pour de
+  bon. Ce paragraphe annonçait le contraire — il datait d'avant l'ouverture. Arrêt d'urgence,
+  sans déploiement : `select public.admin_set_carte_active(false);` en tant qu'admin ; les
+  espèces continuent de fonctionner. Tant que l'interrupteur est faux, l'option carte
+  **n'apparaît pas** sur l'écran de validation (absente, pas grisée) et `creer-paiement` refuse
+  avant tout appel à Stripe.
+- ✅ **Une commande carte annulée demande et envoie son remboursement toute seule.** Trigger sur
+  `orders` (et son miroir sur une capture tardive) → `payment_refunds` → fonction Edge
+  **`rembourser-paiement`** → Stripe. Le montant rendu est celui des **euros réellement
+  débités** (`payment_intents.amount_minor`), jamais une reconversion de l'ariary au taux du
+  jour. Un paiement jamais capturé est **annulé** (gratuit), pas remboursé. Détail, recette et
+  limites : `docs/PAIEMENT-STRIPE.md` § 8.
 - **Les prix restent en ariary, le débit se fait en euros** à un taux **fixe** lu dans
   `payment_config.fx_ar_per_eur` (4 700 Ar = 1 EUR). Jamais une constante dans le code.
   L'écran de validation ET l'écran de paiement affichent le total en ariary, le montant exact

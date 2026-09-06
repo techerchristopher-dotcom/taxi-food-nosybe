@@ -331,7 +331,32 @@ export function VisiteGuidee({
                 </View>
                 <Text style={styles.caseTexte}>{t('visitePro.nePlusAfficher')}</Text>
               </Pressable>
-            ) : null}
+            ) : (
+              /*
+                ⚠️ SANS CETTE LIGNE, L'ÉCRAN MENT PAR OMISSION.
+
+                « Fermer la visite » mémorise SUR-LE-CHAMP, à n'importe quelle
+                étape — c'est l'arbitrage voulu (se represser la visite un soir de
+                service serait pire que rien). Mais la case « Ne plus afficher »
+                n'apparaît qu'à la DERNIÈRE étape, et sa seule existence enseigne
+                le contraire : « je ferme sans cocher, donc elle reviendra ». Le
+                cas est concret — une vraie commande arrive pendant la visite, il
+                ferme pour la servir, il ne la revoit jamais ; et le repêchage lui
+                est présenté à l'étape 4, celle qu'il n'a pas vue.
+
+                On ne change donc pas le comportement, on cesse de le cacher. La
+                ligne ne vit que sur les étapes 1 à 4, là où la case est absente :
+                la bulle ne dépasse jamais la hauteur qu'elle atteint déjà à
+                l'étape 5, dont la mise en page est déjà éprouvée.
+
+                Le libellé « Découvrir votre espace » est INTERPOLÉ depuis la clé
+                que l'écran Réglages rend vraiment, jamais recopié (piège déjà payé
+                en anglais et en italien sur « Mon espace partenaire »).
+              */
+              <Text style={styles.noteFermer}>
+                {t('visitePro.fermerNote', { revoir: t('visitePro.revoirTitre') })}
+              </Text>
+            )}
 
             {/* Fermeture possible à TOUTE étape, et logée dans la bulle : une
                 croix flottante viendrait forcément buter, selon l'étape, sur le
@@ -468,14 +493,25 @@ function CommandeExemple({ margeHaute }: { margeHaute: number }) {
   };
 
   return (
-    <ScrollView
-      // Dégage la barre d'état et la croix de fermeture, posée juste au-dessus.
-      style={{ marginTop: margeHaute }}
-      contentContainerStyle={styles.exempleContenu}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Panneau opaque : la carte flotte au-dessus de l'en-tête assombri, dont
-          le titre transparaîtrait sinon sous cette légende. */}
+    // Dégage la barre d'état et la croix de fermeture, posée juste au-dessus.
+    <View style={[styles.exempleCadre, { marginTop: margeHaute }]}>
+      {/*
+        ⚠️ LE PANNEAU « EXEMPLE » EST ÉPINGLÉ HORS DU ScrollView, ET C'EST TOUT
+        L'INTÉRÊT.
+
+        Sur un écran de 667 pt (iPhone SE 2/3, iPhone 8 — et le mode compatibilité
+        iPhone dans lequel le relecteur Apple teste sur iPad), la carte réclame plus
+        de hauteur que la zone ne lui en laisse : il faut faire défiler pour
+        atteindre « Refuser » / « Accepter », les deux boutons que la bulle explique
+        mot pour mot. Tant que cette légende défilait AVEC la carte, ce geste la
+        chassait de l'écran — il restait une commande #TF-000 d'apparence
+        parfaitement réelle, dont les boutons ne font rien. Épinglée, la mention
+        « Cette commande n'existe pas » reste lisible quelle que soit la position du
+        défilement. À 812 pt rien ne défile et le rendu est inchangé.
+
+        Le panneau est opaque : la carte flotte au-dessus de l'en-tête assombri,
+        dont le titre transparaîtrait sinon sous cette légende.
+      */}
       <View style={styles.exempleEntete}>
         <View style={styles.exempleBadge}>
           <Icon name="visibility" size={13} color={colors.ink} />
@@ -484,22 +520,36 @@ function CommandeExemple({ margeHaute }: { margeHaute: number }) {
         <Text style={styles.exempleNote}>{t('visitePro.exempleNote')}</Text>
       </View>
 
-      {/* `pointerEvents="none"` : la carte est une vitrine. Sans ça, la puce
-          « Itinéraire » ouvrirait vraiment Google Maps et le numéro lancerait un
-          appel, en pleine visite. Les gestes traversent jusqu'à la ScrollView,
-          qui reste donc défilable sur un petit écran. */}
-      <View pointerEvents="none">
-        <RestaurantOrderCard
-          order={commande}
-          footer={
-            <View style={styles.exempleActions}>
-              <Button label={t('visitePro.exempleRefuser')} variant="outline" style={{ flex: 1 }} />
-              <Button label={t('visitePro.exempleAccepter')} icon="check" style={{ flex: 1.3 }} />
-            </View>
-          }
-        />
-      </View>
-    </ScrollView>
+      <ScrollView
+        // `flex: 1` explicite : sans lui, la ScrollView se dimensionne sur son
+        // contenu et déborde du cadre au lieu de défiler dedans.
+        style={styles.exempleDefilement}
+        contentContainerStyle={styles.exempleContenu}
+        // Affichée, contrairement au reste de l'app : ici, rien d'autre ne laisse
+        // deviner qu'il faut défiler pour voir les deux boutons dont parle la bulle.
+        showsVerticalScrollIndicator
+      >
+        {/* `pointerEvents="none"` : la carte est une vitrine. Sans ça, la puce
+            « Itinéraire » ouvrirait vraiment Google Maps et le numéro lancerait un
+            appel, en pleine visite. Les gestes traversent jusqu'à la ScrollView,
+            qui reste donc défilable sur un petit écran. */}
+        <View pointerEvents="none">
+          <RestaurantOrderCard
+            order={commande}
+            footer={
+              <View style={styles.exempleActions}>
+                <Button
+                  label={t('visitePro.exempleRefuser')}
+                  variant="outline"
+                  style={{ flex: 1 }}
+                />
+                <Button label={t('visitePro.exempleAccepter')} icon="check" style={{ flex: 1.3 }} />
+              </View>
+            }
+          />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -520,7 +570,11 @@ const styles = StyleSheet.create({
   },
   zoneExemple: { flex: 1, minHeight: 0 },
   exempleAttente: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  exempleContenu: { paddingHorizontal: spacing.screen, paddingBottom: 12 },
+  // La marge horizontale est portée par le CADRE, pas par le contenu défilant :
+  // la légende épinglée et la carte doivent rester alignées au pixel près.
+  exempleCadre: { flex: 1, minHeight: 0, paddingHorizontal: spacing.screen },
+  exempleDefilement: { flex: 1, minHeight: 0 },
+  exempleContenu: { paddingBottom: 12 },
   exempleEntete: {
     backgroundColor: 'rgba(10,7,5,0.92)',
     borderRadius: radius.lg,
@@ -586,6 +640,13 @@ const styles = StyleSheet.create({
   },
   caseCochee: { backgroundColor: colors.primary, borderColor: colors.primary },
   caseTexte: { flex: 1, fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
+  noteFermer: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textMuted,
+    marginTop: 12,
+  },
   pied: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 16 },
   lienFermer: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
 });

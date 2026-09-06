@@ -372,6 +372,7 @@
     "terminer": "Finish",
     "fermer": "Close the tour",
     "nePlusAfficher": "Don't show this tour again",
+    "fermerNote": "Closing now ends the tour. You will find it again in « Réglages », under « {{revoir}} ».",
     "exempleBadge": "Example",
     "exempleNote": "This order does not exist: it shows you what you will see when a real one comes in.",
     "exempleClient": "Example customer",

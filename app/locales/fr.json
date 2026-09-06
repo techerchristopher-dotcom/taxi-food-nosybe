@@ -372,6 +372,7 @@
     "terminer": "Terminer",
     "fermer": "Fermer la visite",
     "nePlusAfficher": "Ne plus afficher cette visite",
+    "fermerNote": "Fermer maintenant met fin à la visite. Vous la retrouverez dans « Réglages », sous « {{revoir}} ».",
     "exempleBadge": "Exemple",
     "exempleNote": "Cette commande n'existe pas : elle vous montre ce que vous verrez à l'arrivée d'une vraie commande.",
     "exempleClient": "Cliente exemple",

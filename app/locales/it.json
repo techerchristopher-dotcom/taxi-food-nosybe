@@ -372,6 +372,7 @@
     "terminer": "Fine",
     "fermer": "Chiudi la visita",
     "nePlusAfficher": "Non mostrare più questa visita",
+    "fermerNote": "Chiudere ora conclude la visita. La ritroverai in « Réglages », sotto « {{revoir}} ».",
     "exempleBadge": "Esempio",
     "exempleNote": "Questo ordine non esiste: ti mostra cosa vedrai all'arrivo di un ordine vero.",
     "exempleClient": "Cliente di esempio",

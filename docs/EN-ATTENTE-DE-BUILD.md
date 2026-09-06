@@ -942,7 +942,7 @@ Concerne **taxifood.distripro207.com** (fenêtre redimensionnable), le **Split V
 l'iPad** et l'apparition du **clavier**. L'app native est verrouillée en portrait
 (`app.json`), la rotation n'est donc pas un cas.
 
-## ⚠️ Deux points de la visite laissés à l'arbitrage (2026-09-06)
+## ✅ Les deux points de la visite laissés à l'arbitrage — TRANCHÉS ET CORRIGÉS (2026-09-06)
 
 **1. Sur un écran de 667 pt, la commande d'exemple est coupée avant ses boutons.**
 Mesuré à 375×667 (iPhone SE 2/3, iPhone 8, et le mode compatibilité iPhone dans lequel le
@@ -968,3 +968,54 @@ L'arbitrage « fermer mémorise aussi » se défend (se la reprendre chaque soir
 serait pire) ; c'est l'**affichage** qui ment. Deux voies : afficher la case à toutes les
 étapes (coût : ~36 px de bulle en plus, ce qui aggrave le point 1), ou dire dans le lien
 de fermeture qu'on la retrouve dans les Réglages.
+
+---
+
+### Ce qui a été fait, et pourquoi
+
+**Point 1 — le panneau « EXEMPLE » est ÉPINGLÉ hors du `ScrollView`.**
+La voie choisie est la troisième de la liste ci-dessus, et c'est la seule qui ne coûte rien
+ailleurs : ni texte raccourci, ni bulle amputée, ni pixel de plus. Le cadre
+(`styles.exempleCadre`) porte désormais la légende, fixe ; seule la carte défile dessous.
+Le geste qui va chercher « Accepter » ne peut plus faire disparaître la mention
+« Cette commande n'existe pas » — c'était le vrai danger, bien plus que le défilement
+lui-même : une commande #TF-000 d'apparence réelle, sans son démenti à l'écran.
+`showsVerticalScrollIndicator` est passé à **true** sur cette carte, et sur elle seule :
+ailleurs dans l'app la barre est masquée par choix, mais ici rien d'autre ne dit qu'il faut
+défiler pour voir les deux boutons dont la bulle parle.
+
+**Vérifié en navigateur, pas déduit** : à 375×667, `clientHeight` = 190 px pour un
+`scrollHeight` de 407 px — la carte défile bien de 217 px ; défilement poussé jusqu'en bas,
+capture à l'appui : « Refuser » et « Accepter » sont atteints **et** le panneau « EXEMPLE »
+est toujours là. À 375×812, rendu inchangé.
+
+**Point 2 — le lien de fermeture dit maintenant où la retrouver.**
+Voie retenue : la seconde. Le comportement ne change pas (fermer mémorise, c'est
+l'arbitrage voulu) ; c'est l'affichage qui cesse de mentir par omission. Une ligne discrète
+sous le texte de l'étape, sur les étapes **1 à 4 uniquement** — là où la case
+« Ne plus afficher » est absente :
+
+> Fermer maintenant met fin à la visite. Vous la retrouverez dans « Réglages », sous
+> « Découvrir votre espace ».
+
+Le libellé « Découvrir votre espace » est **interpolé** depuis `visitePro.revoirTitre`, la
+clé que l'écran Réglages rend vraiment — jamais recopié (piège déjà payé en anglais et en
+italien sur « Mon espace partenaire »).
+
+La crainte d'aggraver le point 1 ne se matérialise pas : la ligne ne s'affiche jamais en
+même temps que la case, donc la bulle ne dépasse pas la hauteur qu'elle atteignait déjà à
+l'étape 5, dont la mise en page était éprouvée. Vérifié à 375×667 et 375×812 : les cinq
+étapes tiennent, l'étape 5 affiche la case **sans** la ligne, la cible n'est jamais masquée.
+
+`npx tsc --noEmit` ✅ · parité fr/en/it ✅ (**378 clés**, `visitePro.fermerNote` ajoutée).
+Base **non touchée** pendant ces essais : 33 commandes, la dernière du 2026-09-05 13:52 UTC,
+et `visite_pro_vue_le` à `null` sur les 12 profils (ni « Terminer » ni « Fermer » n'ont été
+tapés — c'est ce qui écrit la colonne).
+
+### Reste à voir sur un vrai téléphone
+
+- Le panneau épinglé et la barre de défilement **sur appareil** : le web et le natif ne
+  dessinent pas les indicateurs de défilement de la même façon, et sur iOS la barre
+  n'apparaît qu'**au moment du geste**. Si elle ne se voit pas assez, l'affordance à
+  ajouter est un dégradé de bas de carte, pas un texte de plus.
+- La ligne de fermeture **en italien**, la plus longue des trois, sur un écran de 360 px.

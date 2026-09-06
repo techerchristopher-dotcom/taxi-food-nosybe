@@ -92,6 +92,53 @@ const CLE_STRIPE_VALIDE = /^(sk|rk)_(live|test)_[A-Za-z0-9]+$/;
 /** Au-delà, on tronque : `payment_intents.erreur` sert à comprendre, pas à archiver. */
 const MAX_ERREUR = 300;
 
+/**
+ * Champs qu'on ne garde JAMAIS dans `payment_intents.raw_event`.
+ *
+ * ⚠️ POURQUOI CETTE LISTE EST ICI ALORS QU'ELLE EXISTE DÉJÀ DANS
+ * `stripe-webhook`. Les deux fonctions écrivent la MÊME colonne, lue par les
+ * MÊMES gens : la policy `payment_intents_select` -> `peut_voir_paiements_commande`
+ * l'ouvre au client, à l'admin ET au personnel du restaurant. Le webhook
+ * nettoyait, celle-ci se contentait de retirer `client_secret` — donc la
+ * protection tombait dès que l'archive passait par ce fichier-ci.
+ *
+ * Le cas n'est pas théorique : sur le chemin `relecture_stripe` (le client
+ * rouvre l'écran de paiement après un refus de sa banque), le PaymentIntent
+ * relu porte `last_payment_error.payment_method`, c'est-à-dire les
+ * `billing_details` du client (nom, e-mail, téléphone, adresse complète) et sa
+ * `card` (4 derniers chiffres, réseau, expiration, pays). Un employé de
+ * restaurant pouvait les lire pour toutes les commandes de son établissement.
+ *
+ * Ce qui reste — id, statut, montants, devise, `last_payment_error.code` et son
+ * message — suffit à l'enquête, qui est le seul usage de `raw_event`.
+ */
+const CHAMPS_A_RETIRER = new Set([
+  'client_secret',
+  'billing_details',
+  'payment_method_details',
+  'card',
+  'receipt_email',
+  'customer_email',
+  'payment_method_options',
+]);
+
+/**
+ * Récursif, parce que ces champs sont IMBRIQUÉS : `last_payment_error.payment_method`,
+ * `charges.data[]`. Les retirer seulement à la racine ne retirait rien du tout.
+ */
+function nettoyerPourArchive(valeur: unknown): unknown {
+  if (Array.isArray(valeur)) return valeur.map(nettoyerPourArchive);
+  if (valeur && typeof valeur === 'object') {
+    const sortie: Record<string, unknown> = {};
+    for (const [cle, v] of Object.entries(valeur as Record<string, unknown>)) {
+      if (CHAMPS_A_RETIRER.has(cle)) continue;
+      sortie[cle] = nettoyerPourArchive(v);
+    }
+    return sortie;
+  }
+  return valeur;
+}
+
 type StripeConfig = {
   secret_key: string | null;
   webhook_secret: string | null;
@@ -456,12 +503,21 @@ Deno.serve(async (req: Request) => {
       if (insertError.code === '23505') {
         // Un paiement est déjà vivant sur cette commande. On le REPREND — on n'en
         // crée surtout pas un second.
-        const { data: existante } = await admin
+        const { data: existante, error: repriseError } = await admin
           .from('payment_intents')
           .select('id, provider_intent_id, status, amount_minor, currency, amount_ar, fx_rate, idempotency_key')
           .eq('order_id', order.id)
           .in('status', ['en_attente', 'requiert_action', 'autorise'])
           .maybeSingle();
+        // ⚠️ Cette erreur-là se lit aussi. Elle ne se lisait pas, et le seul
+        // symptôme d'une reprise ratée était un `insert_23505` — c'est-à-dire
+        // le code de l'insertion, qui accusait l'index alors que la panne était
+        // dans la relecture. Un `23505` sans ligne reprise ne devrait jamais
+        // arriver (l'index et ce filtre portent sur les mêmes trois statuts) :
+        // le jour où ça arrive, on veut savoir laquelle des deux a menti.
+        if (repriseError) {
+          console.error('creer-paiement: reprise de la ligne existante impossible', orderId, repriseError);
+        }
         ligne = existante as IntentRow | null;
       }
       if (!ligne) {
@@ -625,11 +681,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ⚠️ `client_secret` NE VA PAS EN BASE. `payment_intents` est lisible par le
-    // client, l'admin ET le personnel du restaurant (policy `payment_intents_select`) :
-    // y déposer le secret de confirmation donnerait au restaurant de quoi confirmer
-    // le paiement d'un client. On archive le PaymentIntent amputé de ce seul champ.
-    const { client_secret: _secret, ...intentSansSecret } = intent as Record<string, unknown>;
+    // ⚠️ NI LE SECRET, NI LES COORDONNÉES BANCAIRES NE VONT EN BASE.
+    // `payment_intents` est lisible par le client, l'admin ET le personnel du
+    // restaurant (policy `payment_intents_select`) : y déposer le secret de
+    // confirmation donnerait au restaurant de quoi confirmer le paiement d'un
+    // client, et y déposer le PaymentIntent brut lui donnerait en plus le nom,
+    // l'e-mail, le téléphone, l'adresse et la carte de ce client — c'est ce que
+    // porte `last_payment_error.payment_method` sur le chemin de relecture.
+    // `nettoyerPourArchive` retire les deux, récursivement. Même liste et même
+    // raison que dans `stripe-webhook`, qui écrit la même colonne.
+    const intentSansSecret = nettoyerPourArchive(intent) as Record<string, unknown>;
 
     // ⚠️ CETTE ÉCRITURE N'A PAS LE DROIT D'ÉCHOUER EN SILENCE. Sans son `pi_...`,
     // la ligne est invisible pour le webhook, qui cherche par `provider_intent_id` :

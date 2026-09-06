@@ -272,6 +272,32 @@ export async function getRestaurant(id: string): Promise<Restaurant | null> {
   return data ? mapRestaurant(data as unknown as RestaurantRow) : null;
 }
 
+/**
+ * Frais de livraison COURANTS d'un restaurant, relus en base.
+ *
+ * ⚠️ Le panier mémorise les frais du jour où son premier article y a été mis
+ * (`cart.deliveryFeeValue`), et rien ne les rafraîchissait ensuite. Or
+ * `create_order` relit toujours `restaurants.delivery_fee` : un panier laissé de
+ * côté pendant que le tarif change affichait un total qui n'était plus celui
+ * qu'on allait facturer. Le passage de 5 000 à 10 000 Ar le 2026-09-06 rend
+ * l'écart bien réel — et un code promo « livraison », lui calculé sur le tarif
+ * COURANT, pouvait alors effacer à l'écran une livraison qui restait due.
+ *
+ * Une seule colonne, aucune jointure : c'est appelé à l'ouverture du panier et
+ * du récapitulatif, sur la liaison de Nosy Be.
+ */
+export async function getDeliveryFee(restaurantId: string): Promise<number | null> {
+  if (!restaurantId) return null;
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('delivery_fee')
+    .eq('id', restaurantId)
+    .maybeSingle();
+  if (error) throw error;
+  const fee = (data as { delivery_fee: number } | null)?.delivery_fee;
+  return typeof fee === 'number' ? fee : null;
+}
+
 export async function getMenu(
   restaurantId: string,
 ): Promise<{ categories: Category[]; products: Product[]; featured: Product[] }> {
@@ -669,7 +695,14 @@ export type RaisonPromo =
   | 'epuise'
   | 'deja_utilise'
   | 'non_connecte'
-  | 'restaurant_inconnu';
+  | 'restaurant_inconnu'
+  /**
+   * Le code est bon, mais il ne donne rien ICI : un code « livraison » sur un
+   * restaurant qui livre gratuitement, un code « sous_total » sur un panier
+   * trop petit. Refusé plutôt qu'annoncé à 0 Ar — sinon `create_order`
+   * consommerait l'unique utilisation du client sans lui rendre un ariary.
+   */
+  | 'sans_effet';
 
 export type VerificationPromo =
   | { valide: true; code: string; remise: number; porteSur: 'livraison' | 'sous_total'; description: string | null }

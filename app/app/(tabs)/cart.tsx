@@ -14,6 +14,7 @@ import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/to
 import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../../store/cart';
 import { usePromo } from '../../store/promo';
 import { useLoad } from '../../lib/useLoad';
+import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { Product } from '../../data/types';
 
@@ -37,6 +38,13 @@ export default function CartScreen() {
   const cartLines = useCart((s) => s.lines);
   const packaging = useMemo(() => packagingLines(cartLines), [cartLines]);
   const total = useCart((s) => s.total());
+
+  // ⚠️ AVANT d'afficher le moindre total : réaligner les frais de livraison sur
+  // ceux que `create_order` facturera. Le panier les fige au premier ajout ;
+  // sans ce rafraîchissement, un panier ouvert avant un changement de tarif
+  // annonce un montant qui n'est plus le bon — et la remise du code promo, elle
+  // calculée sur le tarif courant, creuse l'écart au lieu de le combler.
+  useFraisLivraisonAJour();
 
   // Aperçu de la remise. `total` reste le montant plein : la remise s'en
   // retranche à l'affichage, et c'est `create_order` qui recalculera tout.
@@ -72,6 +80,14 @@ export default function CartScreen() {
       isAvailable: true,
       photoUrl: s.photoUrl,
       hasOptions: false,
+      // ⚠️ L'emballage voyage avec le produit, sinon le panier l'oublie à
+      // l'affichage pendant que `create_order` le facture : deux totaux
+      // différents pour la même commande. Le carrousel propose les articles les
+      // moins chers, aujourd'hui tous sans boîte — mais un jour où une pizza y
+      // passera, l'écart serait de 2 000 Ar par article, invisible jusqu'à la
+      // confirmation.
+      packagingFee: s.packagingFee,
+      packagingLabel: s.packagingLabel,
     };
     const ctx: RestaurantContext = {
       id: restaurantId,

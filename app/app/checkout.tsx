@@ -21,6 +21,7 @@ import {
   lireConfigPaiement,
 } from '../data/paiement';
 import { useLoad } from '../lib/useLoad';
+import { useFraisLivraisonAJour } from '../lib/fraisLivraison';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { usePromo, usePromoStore } from '../store/promo';
 import { useCheckout } from '../store/checkout';
@@ -79,6 +80,12 @@ function CheckoutForm() {
   const packaging = useMemo(() => packagingLines(lines), [lines]);
   const total = useCart((s) => s.total());
   const clear = useCart((s) => s.clear);
+
+  // Dernier écran avant le débit : les frais de livraison affichés doivent être
+  // ceux que `create_order` va facturer, pas ceux mémorisés au premier ajout au
+  // panier. Voir `lib/fraisLivraison.ts` — c'est aussi ce qui empêche la remise
+  // d'un code promo d'effacer à l'écran une livraison réellement due.
+  useFraisLivraisonAJour();
 
   const addressId = useCheckout((s) => s.addressId);
   const paymentMethod = useCheckout((s) => s.paymentMethod);
@@ -157,10 +164,12 @@ function CheckoutForm() {
           options: l.options.map((o) => ({ optionId: o.optionId, quantity: o.quantity })),
         })),
         // On envoie le CODE, jamais le montant : la base recalcule la remise.
-        // Et seulement un code que la base vient de valider — un code refusé
-        // reste affiché avec sa raison, mais ne repart pas faire échouer la
-        // commande.
-        codePromo: promo.valide ? promo.code : null,
+        // Tout code retenu part, même quand la vérification d'aperçu n'a pas
+        // abouti (réponse encore en vol, réseau coupé) — c'est `create_order`
+        // qui tranche, et le client ne perd plus sa remise en silence. Seul un
+        // code qu'elle a déjà refusé reste à quai : il ferait échouer la
+        // commande en boucle. Voir `store/promo.ts`.
+        codePromo: promo.aEnvoyer,
       });
       // Le panier est vidé dès que la commande existe, y compris pour une carte
       // non encore payée : la commande est créée quoi qu'il arrive, et garder le

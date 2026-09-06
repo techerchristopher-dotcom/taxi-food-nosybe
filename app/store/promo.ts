@@ -75,6 +75,24 @@ type PromoState = {
 };
 
 /**
+ * Verdict posé par `create_order`, hors de toute vérification.
+ *
+ * ⚠️ Il fait AUTORITÉ sur la réponse d'une vérification encore en vol. Le cas
+ * existe : la base répond « valide » à T0, le client valide à T1, et entre les
+ * deux le code a été consommé depuis un autre appareil. Sans ce verrou, la
+ * réponse tardive réécrirait le refus, la remise réapparaîtrait à l'écran et le
+ * tap suivant renverrait le même code à `create_order` — qui le refuserait
+ * encore. Boucle sans issue pour le client.
+ *
+ * On repère un verdict par CODE + COMPTE, pas par la signature complète : le
+ * sous-total peut avoir bougé entre la vérification et la validation, ça ne
+ * change rien au fait que ce code-là est refusé à ce client-là.
+ */
+let verdictValidation: string | null = null;
+
+const cleVerdict = (e: Entrees) => e.code + '|' + (e.userId ?? '');
+
+/**
  * Garde anti-double-appel, hors du store à dessein.
  *
  * Le panier reste monté sous le récapitulatif dans la pile de navigation : les
@@ -98,6 +116,7 @@ export const usePromoStore = create<PromoState>((set) => ({
     set({ enCours: true });
     try {
       const r = await verifierCodePromo(e.code, e.restaurantId, e.sousTotal);
+      if (verdictValidation === cleVerdict(e)) return;
       set({
         resultat: r.valide
           ? { ...e, code: r.code, porteSur: r.porteSur, remise: r.remise, raison: null }
@@ -108,7 +127,9 @@ export const usePromoStore = create<PromoState>((set) => ({
       // chaîne que celle qu'on vient de valider et repartirait pour un tour.
       if (r.valide && r.code !== e.code) useCart.getState().setPromoCode(r.code);
     } catch {
-      set({ resultat: { ...e, porteSur: null, remise: 0, raison: 'reseau' } });
+      if (verdictValidation !== cleVerdict(e)) {
+        set({ resultat: { ...e, porteSur: null, remise: 0, raison: 'reseau' } });
+      }
     } finally {
       enVol = null;
       set({ enCours: false });
@@ -116,14 +137,55 @@ export const usePromoStore = create<PromoState>((set) => ({
   },
 
   marquerRefus: (raison) =>
-    set((s) => ({ resultat: s.resultat ? { ...s.resultat, remise: 0, raison } : s.resultat })),
+    set((s) => {
+      if (s.resultat) {
+        verdictValidation = cleVerdict(s.resultat);
+        return { resultat: { ...s.resultat, remise: 0, raison } };
+      }
+      // Aucune vérification n'avait encore abouti — elle était en vol quand le
+      // client a validé. Sans ce repli, le refus ne s'afficherait NULLE PART
+      // (le message du récapitulatif renvoie à « ci-dessus », où il n'y aurait
+      // rien) et le code repartirait tel quel au tap suivant. On fabrique donc
+      // le verdict sur les entrées courantes.
+      const panier = useCart.getState();
+      if (!panier.promoCode || !panier.restaurantId) return {};
+      const entrees: Entrees = {
+        code: panier.promoCode,
+        restaurantId: panier.restaurantId,
+        userId: useSession.getState().session?.userId ?? null,
+        sousTotal: panier.subtotal(),
+      };
+      verdictValidation = cleVerdict(entrees);
+      return { resultat: { ...entrees, porteSur: null, remise: 0, raison } };
+    }),
 
-  oublier: () => set({ resultat: null }),
+  oublier: () => {
+    verdictValidation = null;
+    set({ resultat: null });
+  },
 }));
 
 export type Promo = {
-  /** Code retenu, tel qu'il sera envoyé à `create_order`. null = aucun. */
+  /** Code retenu, celui que le client lit dans le champ. null = aucun. */
   code: string | null;
+  /**
+   * Code à transmettre à `create_order` : tout code retenu que la base n'a pas
+   * expressément refusé.
+   *
+   * ⚠️ Ce n'est PAS `valide`. N'envoyer que les codes déjà confirmés perdait en
+   * silence la remise de deux clients sur trois cas d'usage : la vérification
+   * encore en vol au moment du tap (liaison de Nosy Be), et l'échec réseau qui
+   * laisse le code affiché dans le champ. Le client lisait « TAXIFOOD50 » à
+   * l'écran et payait la livraison plein tarif, sans un mot. Un code non
+   * confirmé part donc à la base, qui tranche : elle l'applique, ou elle lève
+   * `code_promo:<raison>` et la commande n'est pas créée. Dans les deux cas le
+   * client sait. Un code déjà refusé, lui, ne repart jamais — sinon la commande
+   * échouerait en boucle.
+   *
+   * L'APERÇU à l'écran, lui, ne bouge pas : la remise n'est affichée que
+   * confirmée. On peut donc facturer moins que le montant annoncé, jamais plus.
+   */
+  aEnvoyer: string | null;
   /** Remise en ariary, 0 tant que la base ne l'a pas confirmée POUR CES ENTRÉES. */
   remise: number;
   /** true quand la base a validé le code : seul cas où on l'envoie à la commande. */
@@ -171,8 +233,13 @@ export function usePromo(): Promo {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, restaurantId, userId, sousTotal, resultat, verifier]);
 
+  // Un refus vient de la BASE ; « reseau » n'est pas un refus, c'est une
+  // question restée sans réponse — et c'est à `create_order` d'y répondre.
+  const refuseParLaBase = !!aJour && aJour.raison !== null && aJour.raison !== 'reseau';
+
   return {
     code,
+    aEnvoyer: code && !refuseParLaBase ? code : null,
     remise: aJour?.raison === null ? aJour.remise : 0,
     valide: !!aJour && aJour.raison === null,
     raison: aJour?.raison === 'non_connecte' ? null : (aJour?.raison ?? null),

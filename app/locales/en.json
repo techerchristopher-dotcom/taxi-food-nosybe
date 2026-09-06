@@ -264,6 +264,7 @@
       "deja_utilise": "You have already used this code. It is valid once per customer.",
       "non_connecte": "Sign in to use a promo code.",
       "restaurant_inconnu": "This code does not apply to this restaurant.",
+      "sans_effet": "This code changes nothing on this order: delivery is already free here. Keep it for next time.",
       "reseau": "We could not check the code right now. Check your connection and try again."
     }
   },

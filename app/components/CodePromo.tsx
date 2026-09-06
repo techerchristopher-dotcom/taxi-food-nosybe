@@ -99,7 +99,20 @@ export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
           Sans erreur, on rappelle sur quoi porte la remise — sans jamais citer
           de taux ni de montant : ils vivent en base, pas dans un dictionnaire. */}
       {raison ? (
-        <Text style={styles.erreur}>{t(`promo.erreur.${raison}`)}</Text>
+        /* ⚠️ « Retire-le pour valider ta commande » disent deux de ces
+           messages — et il n'y avait rien à toucher pour le faire : le bouton
+           « Retirer » n'existe que dans les états appliqué et en attente, et
+           vider le champ ne retire rien (le bouton « Appliquer » se désactive
+           sur un champ vide). Le client lisait une consigne qu'il ne pouvait
+           pas suivre. */
+        <View style={styles.erreurLigne}>
+          <Text style={[styles.erreur, { flex: 1 }]}>{t(`promo.erreur.${raison}`)}</Text>
+          {code ? (
+            <Pressable onPress={retirer} hitSlop={8}>
+              <Text style={[styles.action, { marginTop: 10 }]}>{t('promo.retirer')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : (
         <Text style={styles.aide}>{t('promo.surLivraison')}</Text>
       )}
@@ -135,6 +148,7 @@ const styles = StyleSheet.create({
   },
   boutonInactif: { opacity: 0.45 },
   boutonTexte: { fontFamily: fonts.bold, fontSize: 13, color: colors.surface },
+  erreurLigne: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   erreur: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.dangerText, marginTop: 10 },
   aide: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 10 },
 });

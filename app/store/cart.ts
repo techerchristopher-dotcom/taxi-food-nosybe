@@ -106,6 +106,18 @@ type CartState = Persisted & {
   clear: () => void;
   /** Pose ou retire le code promo saisi (null = retiré). */
   setPromoCode: (code: string | null) => void;
+  /**
+   * Réaligne les frais de livraison mémorisés sur ceux que la base facturera.
+   *
+   * ⚠️ `deliveryFeeValue` est un INSTANTANÉ pris au premier ajout au panier, et
+   * il ne bougeait plus jamais. `create_order`, elle, relit toujours
+   * `restaurants.delivery_fee`. Les deux ont divergé pour de bon le 2026-09-06
+   * (5 000 → 10 000 Ar) : un panier resté ouvert affichait 5 000 et se faisait
+   * facturer 10 000. Avec un code promo « livraison », dont la remise est
+   * calculée sur le tarif COURANT, le total affiché tombait carrément à
+   * « livraison offerte » pour une livraison à 5 000 Ar bien due.
+   */
+  setDeliveryFee: (fee: number) => void;
 
   count: () => number;
   subtotal: () => number;
@@ -236,6 +248,18 @@ export const useCart = create<CartState>((set, get) => ({
 
   setPromoCode: (code) => {
     const next: Persisted = { ...toPersisted(get()), promoCode: code };
+    set(next);
+    void persist(next);
+  },
+
+  // On n'écrit que si la valeur CHANGE : l'appelant est un effet d'écran, et
+  // un `set` inconditionnel relancerait le rendu à chaque montage. Et on ne
+  // touche rien tant que le panier est vide — `EMPTY.deliveryFeeValue` vaut 0
+  // et doit le rester, sinon un panier vide afficherait des frais.
+  setDeliveryFee: (fee) => {
+    const s = get();
+    if (s.lines.length === 0 || s.deliveryFeeValue === fee) return;
+    const next: Persisted = { ...toPersisted(s), deliveryFeeValue: fee };
     set(next);
     void persist(next);
   },

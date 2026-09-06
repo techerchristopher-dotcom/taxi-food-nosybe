@@ -29,6 +29,17 @@ export type Suggestion = {
   kind: SuggestionKind;
   /** true si le produit a des groupes d'options (→ passer par la fiche produit). */
   hasOptions: boolean;
+  /**
+   * Frais d'emballage porté par le produit (boîte à pizza…), en ariary.
+   *
+   * ⚠️ Il DOIT voyager jusqu'ici. `create_order` le facture en relisant
+   * `products.packaging_fee` ; l'ajout rapide depuis ce carrousel reconstruit un
+   * produit de toutes pièces, et tant que ce champ manquait le panier oubliait
+   * l'emballage à l'affichage seulement — le client lisait un total, en payait
+   * un autre.
+   */
+  packagingFee: number;
+  packagingLabel: string | null;
 };
 
 /** Résultat : le `mode` détermine le titre de section affiché par le panier. */
@@ -40,7 +51,15 @@ export type CartSuggestions = {
 const MAX_SUGGESTIONS = 6;
 
 type CategoryRow = { id: string; name: string; icon: string | null };
-type ProductRow = { id: string; category_id: string | null; name: string; price: number; photo_url: string | null };
+type ProductRow = {
+  id: string;
+  category_id: string | null;
+  name: string;
+  price: number;
+  photo_url: string | null;
+  packaging_fee: number | null;
+  packaging_label: string | null;
+};
 
 /** Minuscules + suppression des accents (« Bières » → « bieres »). */
 function normalize(s: string): string {
@@ -81,7 +100,7 @@ export async function getCartSuggestions(
       .eq('is_active', true),
     supabase
       .from('products')
-      .select('id, category_id, name, price, photo_url')
+      .select('id, category_id, name, price, photo_url, packaging_fee, packaging_label')
       .eq('restaurant_id', restaurantId)
       .eq('is_available', true)
       .order('price', { ascending: true }),
@@ -144,6 +163,8 @@ export async function getCartSuggestions(
     photoUrl: p.photo_url,
     kind: kindOf(p),
     hasOptions: withOptions.has(p.id),
+    packagingFee: p.packaging_fee ?? 0,
+    packagingLabel: p.packaging_label ?? null,
   }));
 
   return { mode, items };

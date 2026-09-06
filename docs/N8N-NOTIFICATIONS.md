@@ -43,17 +43,53 @@ de service dans un outil tiers serait une clé de tout le système, pour
 `n8n/taxifood-notifications.json` — créé sur l'instance sous l'identifiant
 **`T7uXG7Lwwjro6Ds8`**, webhook `POST /webhook/taxifood-commande`.
 
-⚠️ **À RÉIMPORTER SUR L'INSTANCE (2026-09-06).** Le fichier versionné a été mis à jour pour
-afficher la ligne de remise (`Code TAXIFOOD50 −5 000 Ar`) dans l'e-mail client et dans le message
-Telegram du restaurant ; la charge utile du trigger transporte désormais `code_promo` et
-`remise`. Tant que le workflow en ligne n'est pas remplacé, un e-mail de commande remisée
-listera « Livraison 10 000 Ar » puis un total inférieur de 5 000 : le client qui additionne
-ne tombera pas juste. **Volontairement non déployé** — la mise en ligne est laissée au
-porteur du projet, qui relit avant.
+⚠️ **À RÉIMPORTER SUR L'INSTANCE — DEUX CHANGEMENTS EN ATTENTE (2026-09-06).** Le fichier
+versionné est en avance sur l'instance. **Partir de ce fichier, jamais de la version en
+ligne.** **Volontairement non déployé** — la mise en ligne est laissée au porteur du projet,
+qui relit avant.
 
-Un seul nœud « Code » construit l'e-mail HTML et le texte Telegram pour les sept
-états (reçue, confirmée, en préparation, prête, récupérée, livrée, annulée).
-Sept branches auraient été sept endroits à corriger.
+1. **La ligne de remise** (`Code TAXIFOOD50 −5 000 Ar`) dans l'e-mail client et dans le
+   message Telegram ; la charge utile du trigger transporte désormais `code_promo` et
+   `remise`. Tant que le workflow en ligne n'est pas remplacé, un e-mail de commande remisée
+   listera « Livraison 10 000 Ar » puis un total inférieur de 5 000 : le client qui additionne
+   ne tombera pas juste.
+2. **L'e-mail de remboursement** (voir plus bas). Tant qu'il n'est pas en ligne, un client
+   remboursé ne reçoit **rien du tout** : le trigger enverra bien sa charge utile, le nœud
+   Code retombera sur `cmd.statut` et lui renverra l'e-mail d'annulation qu'il a déjà reçu.
+
+Un seul nœud « Code » construit l'e-mail HTML et le texte Telegram pour les huit
+états (reçue, confirmée, en préparation, prête, récupérée, livrée, annulée,
+**remboursée**). Huit branches auraient été huit endroits à corriger.
+
+### L'e-mail de remboursement — `evenement: 'rembourse'`
+
+Il n'est **pas** envoyé par `notify_order_status()`, qui en est structurellement incapable :
+sur le passage `paye` → `rembourse` la commande est déjà `annulee`, donc
+`new.status is not distinct from old.status` est vrai et la fonction sort sans rien envoyer.
+C'est le trigger **`notifier_remboursement()`** sur `payment_refunds`
+(migration `20260906093054`) qui appelle le webhook, et seulement quand un remboursement
+passe à **`effectue`**.
+
+⚠️ **Pourquoi côté `payment_refunds` et non côté `orders`** : un remboursement **partiel**
+ne fait jamais basculer `orders.payment_status`, qui ne passe à `rembourse` qu'au montant
+plein. Un déclencheur posé sur la commande resterait muet exactement dans le cas où le
+client comprend le moins ce qu'il voit sur son relevé.
+
+Rien n'est envoyé sur `demande` (l'argent n'est pas parti), sur `sans_objet` (rien n'avait
+été capturé) ni sur `echoue` — ce dernier surtout : **le client n'a PAS son argent**, lui
+écrire « vous avez été remboursé » serait le mensonge le plus grave de la chaîne. Un échec
+est une alerte interne, à traiter avec l'abonnement `refund.failed` du webhook Stripe.
+
+Bloc `remboursement` de la charge utile : `montant_minor`, `devise`, `montant_ar`, `taux`,
+`capture_minor`, `partiel`, `motif`, `origine`, `effectue_le`. **Le montant annoncé est en
+euros** : c'est celui que la banque du client a débité, le seul qu'il retrouvera sur son
+relevé. L'e-mail dit ce qu'il doit dire — quelle commande, combien, pourquoi, et sous quel
+délai (5 à 10 jours ouvrés, avec la nuance du débit qui disparaît au lieu d'un crédit
+séparé). Il ne renvoie **pas** vers le téléphone du restaurant : le restaurant n'a rien
+encaissé et ne peut rien rendre.
+
+Le restaurant n'est pas prévenu par Telegram d'un remboursement : il a déjà reçu
+l'annulation, et l'argent rendu est un mouvement entre Taxi Food et le client.
 
 Le restaurant **n'est pas** notifié à chaque étape : c'est lui qui les déclenche,
 le prévenir de ses propres actions serait du bruit. Uniquement nouvelle commande

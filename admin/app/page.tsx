@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Realtime } from '../components/Realtime';
+import { Remboursements } from '../components/Remboursements';
 import { Report } from '../components/Report';
 import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 
-type Tab = 'realtime' | 'report' | 'requests' | 'restaurants';
+type Tab = 'realtime' | 'remboursements' | 'report' | 'requests' | 'restaurants';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -98,6 +99,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'realtime' ? 'active' : ''}`} onClick={() => setTab('realtime')}>
           Temps réel
         </button>
+        <button className={`tab ${tab === 'remboursements' ? 'active' : ''}`} onClick={() => setTab('remboursements')}>
+          Remboursements
+        </button>
         <button className={`tab ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>
           Rapport de clôture
         </button>
@@ -110,6 +114,7 @@ export default function AdminPage() {
       </div>
 
       {tab === 'realtime' && <Realtime />}
+      {tab === 'remboursements' && <Remboursements />}
       {tab === 'report' && <Report />}
       {tab === 'requests' && <Requests />}
       {tab === 'restaurants' && <Restaurants />}

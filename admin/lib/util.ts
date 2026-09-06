@@ -36,3 +36,42 @@ export function todayNosyBe(): string {
   const nosy = new Date(now.getTime() + (now.getTimezoneOffset() + 180) * 60000);
   return nosy.toISOString().slice(0, 10);
 }
+
+/** Statut du PAIEMENT d'une commande (à ne pas confondre avec son statut de préparation). */
+export const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  non_requis: 'Sans paiement en ligne',
+  en_attente: 'Paiement en attente',
+  paye: 'Payée',
+  echoue: 'Paiement échoué',
+  rembourse: 'Remboursée',
+};
+
+export const REFUND_STATUS_LABEL: Record<string, string> = {
+  demande: 'Demandé',
+  effectue: 'Effectué',
+  echoue: 'Échoué',
+  sans_objet: 'Sans objet',
+};
+
+/**
+ * Montant en centimes → « 3,41 € ».
+ *
+ * Les prix du catalogue sont en ariary, mais Stripe ne connaît que l'euro : un
+ * remboursement se raisonne, se saisit et se contrôle dans la devise réellement
+ * débitée. Convertir pour l'affichage ferait apparaître un montant que la banque
+ * du client n'a jamais vu.
+ */
+export function formatEur(centimes: number | null | undefined, devise = 'eur'): string {
+  const v = Number(centimes ?? 0) / 100;
+  try {
+    return v.toLocaleString('fr-FR', { style: 'currency', currency: devise.toUpperCase() });
+  } catch {
+    // Devise inconnue d'Intl : mieux vaut un montant brut qu'une exception.
+    return `${v.toFixed(2)} ${devise.toUpperCase()}`;
+  }
+}
+
+/** PostgREST renvoie un embed to-one comme objet, mais son typage suppose un tableau. */
+export function un<T>(v: T | T[] | null): T | null {
+  return Array.isArray(v) ? (v[0] ?? null) : v;
+}

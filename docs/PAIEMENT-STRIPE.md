@@ -422,10 +422,11 @@ doit jamais empêcher de rendre de l'argent déjà pris. C'est même le moment o
 - [ ] **`stripe-webhook`** : s'abonner à `refund.created`, `refund.updated` et surtout
       `refund.failed` — **aucun des trois n'est dans `enabled_events`** de l'endpoint
       `we_1UCRd0…` aujourd'hui — et appeler `enregistrer_verdict_remboursement()`.
-- [ ] **Prévenir le client.** `notify_order_status()` se tait sur un passage `paye` →
-      `rembourse` : la commande étant déjà `annulee`, `new.status is not distinct from
-      old.status` est vrai et la fonction sort sans rien envoyer. Il faut une clé d'événement
-      dédiée dans le trigger **et** dans le nœud Code n8n, avec le montant en euros.
+- [x] **Prévenir le client — fait le 2026-09-06** (migration `20260906093054` +
+      `n8n/taxifood-notifications.json`). Voir « L'annonce au client » plus bas.
+      ⚠️ **Le workflow n8n reste à réimporter sur l'instance** : tant que ce n'est pas fait,
+      le trigger envoie bien sa charge utile mais le nœud Code en ligne ne connaît pas la clé
+      `rembourse` et renvoie l'e-mail d'annulation.
 - [ ] **`app/locales/*.json`** promet déjà « Si ta carte a été débitée, tu seras remboursé
       automatiquement. » L'application annonce donc un automatisme qui ne va pas encore
       jusqu'au bout.
@@ -524,6 +525,72 @@ client au lieu qu'un crédit séparé lui soit versé, et Stripe ne retient alor
 - Une carte non-euro sera reconvertie par la banque du client à **son** taux du jour : il peut
   voir revenir un montant légèrement différent de celui qu'il a vu partir. Nous, on rend
   exactement ce qui a été débité.
+
+### L'annonce au client — trigger `notifier_remboursement()`, 2026-09-06
+
+Migration `20260906093054_remboursement_prevenir_le_client.sql`. Trigger sur
+**`payment_refunds`**, `after insert or update of status`, qui n'envoie la charge utile au
+webhook n8n (`evenement: 'rembourse'`) que lorsqu'un remboursement passe à **`effectue`**.
+
+⚠️ **Pourquoi pas depuis `orders`.** Deux raisons, et la seconde est la vraie :
+`notify_order_status()` est structurellement muette sur `paye` → `rembourse` (la commande est
+déjà `annulee`, donc `new.status is not distinct from old.status`) ; et surtout, un
+remboursement **partiel** ne fait jamais bouger `orders.payment_status`, que
+`repercuter_remboursement_sur_paiement()` ne bascule qu'au montant plein. Un déclencheur posé
+sur la commande resterait muet exactement là où le client comprend le moins son relevé.
+
+**Ce qui ne déclenche RIEN, et pourquoi :** `demande` (rien n'est parti), `sans_objet` (rien
+n'avait été capturé), et surtout **`echoue`** — le client n'a pas son argent, lui écrire
+qu'il a été remboursé serait le pire mensonge de la chaîne. C'est une alerte interne, à
+brancher sur `refund.failed`.
+
+Le trigger est sous `exception when others then raise warning`, même règle que le trigger
+d'annulation : **rendre l'argent ne doit jamais échouer parce qu'un e-mail n'est pas parti.**
+
+Recette du 2026-09-06, **en transaction annulée** (`pg_net` met la requête dans une table :
+le rollback l'emporte, aucun e-mail ne part) : verdict `effectue` sur TF-96 → **1** requête
+mise en file, vers le webhook n8n, en-tête `x-taxifood-secret` présent,
+`evenement: rembourse`, `341 eur / 16 000 Ar`, `partiel: false`, motif et numéro justes ·
+`demande` → `demande` : **0** · `→ echoue` : **0** · `→ sans_objet` : **0** ·
+`effectue` puis deux `UPDATE` de plus (dont l'attachement d'un `re_…`) : **1** seule requête.
+Après rollback, TF-96 est intacte (`demande` / `capture` / `paye`, file `pg_net` vide).
+
+L'e-mail lui-même est rendu par le nœud Code de `n8n/taxifood-notifications.json`, vérifié
+sur la charge utile réelle de TF-96 : objet « Remboursement de 3,41 € — commande TF-96 ».
+Il annonce le montant **en euros** (celui que la banque a débité), le délai de 5 à 10 jours
+ouvrés, le cas du débit qui disparaît au lieu d'un crédit séparé, et la reconversion possible
+par une banque hors zone euro. ⚠️ **Le workflow n'est pas déployé sur l'instance** — voir
+`docs/N8N-NOTIFICATIONS.md`.
+
+### Le bouton « Rembourser » de l'espace admin — 2026-09-06
+
+Onglet **Remboursements** (`admin/components/Remboursements.tsx`), cinquième onglet du
+tableau de bord. Il appelle `admin_demander_remboursement(p_order_id, p_motif,
+p_montant_minor)`, qui journalise dans `admin_actions` et déclenche la fonction Edge.
+
+⚠️ **La liste part des PAIEMENTS, pas des commandes.** `payment_method = 'cb'` ne prouve
+rien : une commande peut porter « carte » sans qu'un centime ait été pris, et
+`basculer_en_especes()` peut la repasser en espèces alors qu'un PaymentIntent vit encore.
+L'écran ne liste donc que les `payment_intents` en `capture` / `rembourse` — même critère que
+le trigger `remboursement_sur_annulation`. C'est aussi ce qui le rend visible : une commande
+annulée sort de « Temps réel » (`.not('status','in','(livree,annulee)')`) et n'entre jamais
+dans le rapport de clôture, borné aux `livree`.
+
+Le montant par défaut est tout ce qui reste ; il se baisse pour un plat manquant. Le plafond
+affiché est celui que `verifier_plafond_remboursement()` impose de toute façon, et
+l'équivalent ariary annoncé recopie la règle de `demander_remboursement()` (sur un
+remboursement **total**, on reprend `amount_ar` du paiement au lieu de le recalculer : le
+chemin retour 341 × 4 700 / 100 = 16 027 ne retombe pas sur les 16 000 Ar d'origine).
+Motif obligatoire, et deux écrans avant l'envoi. Le bouton **n'apparaît pas** quand une
+demande est déjà en vol (la base n'en autorise qu'une par paiement) ni quand tout est rendu :
+un bouton présent puis refusé par la base apprend à se méfier de l'écran.
+
+L'écran dit noir sur blanc que **Stripe ne rend pas ses frais** — c'est la seule information
+que le gestionnaire ne peut deviner nulle part ailleurs au moment de cliquer.
+
+« Temps réel » a reçu au passage le minimum qui manquait : une pastille **Payée** /
+**Remboursée** sur la ligne, et un avertissement explicite avant d'annuler une commande déjà
+débitée. Sans ça on continue d'annuler à l'aveugle — c'est ce qui est arrivé à TF-96.
 
 ### Le cas « paiement pas encore capturé » : on ANNULE, on ne rembourse pas
 

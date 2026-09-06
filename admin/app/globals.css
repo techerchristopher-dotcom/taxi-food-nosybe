@@ -68,6 +68,40 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pill.livree { background: #10281a; color: #58d68d; }
 .pill.annulee { background: #3b1414; color: #ff7a7a; }
 
+/* Statuts de PAIEMENT et de REMBOURSEMENT. Volontairement distincts des pastilles
+   de préparation ci-dessus : sur une même ligne, « Livrée » et « Remboursée » ne
+   doivent pas se ressembler, sinon on croit lire deux fois la même information. */
+.pill.paye { background: #10281a; color: #58d68d; }
+.pill.rembourse { background: #2a2233; color: #d3a8ff; }
+.pill.paiement_echoue { background: #3b1414; color: #ff7a7a; }
+.pill.demande { background: #3b2f10; color: var(--accent); }
+.pill.effectue { background: #10281a; color: #58d68d; }
+.pill.echoue { background: #3b1414; color: #ff7a7a; }
+.pill.sans_objet { background: #22262f; color: var(--muted); }
+
+/* Encadré d'avertissement : un fond rouge sourd, pas un aplat. Il accompagne un
+   geste irréversible, il ne doit pas devenir décoratif à force d'être vu. */
+.warn {
+  background: #2a1414; border: 1px solid #5b2020; border-radius: 10px;
+  padding: 10px 12px; font-size: 12px; line-height: 1.5; color: #ffb4b4;
+}
+
+/* Voile de confirmation. `position: fixed` : la liste derrière peut se
+   rafraîchir toute seule, la boîte ne doit pas bouger sous la souris. */
+.voile {
+  position: fixed; inset: 0; background: rgba(8, 10, 14, 0.72);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+}
+.boite {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  padding: 22px; width: 100%; max-width: 520px; max-height: 90vh; overflow: auto;
+}
+.boite h3 { margin: 0 0 4px; font-size: 16px; }
+.champ {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  padding: 9px 11px; border-radius: 9px; font-size: 14px; width: 100%; font-family: inherit;
+}
+
 .badge-late { background: var(--red); color: white; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 8px; }
 .dot-avail { width: 9px; height: 9px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 8px; }
 

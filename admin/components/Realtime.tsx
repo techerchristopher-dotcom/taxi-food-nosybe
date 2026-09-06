@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { CSSProperties } from 'react';
-import { formatAr, minutesSince, PAYMENT_LABEL, STATUS_LABEL, timeLabel } from '../lib/util';
+import { formatAr, minutesSince, PAYMENT_LABEL, PAYMENT_STATUS_LABEL, STATUS_LABEL, timeLabel, un } from '../lib/util';
 
 /**
  * Écran de pilotage du service.
@@ -51,6 +51,8 @@ type OrderRow = {
   picked_up_at: string | null;
   status_updated_at: string | null;
   payment_method: string;
+  /** Statut du PAIEMENT, pas de la commande : « paye » veut dire qu'un débit a eu lieu. */
+  payment_status: string;
   restaurants: { id: string; name: string; phone: string | null } | null;
   profiles: { full_name: string | null; phone: string | null } | null;
   addresses: { zone: string | null; landmark: string | null; phone: string | null; latitude: number | null; longitude: number | null } | null;
@@ -58,11 +60,6 @@ type OrderRow = {
 
 type CourierRow = { user_id: string; zone: string | null; is_available: boolean };
 type RestoRow = { id: string; name: string; is_open: boolean; listing_status: string };
-
-/** PostgREST renvoie un embed to-one comme objet, mais son typage suppose un tableau. */
-function un<T>(v: T | T[] | null): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : v;
-}
 
 function isLate(o: OrderRow): boolean {
   if (o.status === 'recue') return minutesSince(o.created_at) >= LATE_RECUE_MIN;
@@ -118,7 +115,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -172,6 +169,15 @@ export function Realtime() {
   async function changerStatut(o: OrderRow, statut: string) {
     let motif: string | null = null;
     if (statut === 'annulee') {
+      // Annuler une commande DEJA DEBITEE n'est pas le meme geste qu'annuler une
+      // commande en especes : la base declenche le remboursement toute seule, et
+      // les frais Stripe, eux, ne reviennent pas. L'annoncer avant, pas apres.
+      if (o.payment_status === 'paye' && !window.confirm(
+        `${o.order_number} est DÉJÀ PAYÉE par carte (${formatAr(o.total)}).\n\n` +
+        `L'annuler déclenchera le remboursement automatique du client. ` +
+        `Les frais Stripe de la transaction, eux, resteront perdus.\n\nContinuer ?`)) {
+        return;
+      }
       motif = window.prompt(`Annuler la commande ${o.order_number} — motif ?`);
       if (!motif?.trim()) return;
     } else if (!window.confirm(`Passer ${o.order_number} en « ${STATUS_LABEL[statut] ?? statut} » ?`)) {
@@ -298,6 +304,15 @@ export function Realtime() {
                     <td>
                       <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
+                      {/* Sans ce rappel, on annule une commande encaissee sans le
+                          savoir : c'est exactement ce qui est arrive a TF-96. */}
+                      {o.payment_status === 'paye' || o.payment_status === 'rembourse' ? (
+                        <div style={{ marginTop: 4 }}>
+                          <span className={`pill ${o.payment_status === 'rembourse' ? 'rembourse' : 'paye'}`}>
+                            {PAYMENT_STATUS_LABEL[o.payment_status]}
+                          </span>
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       {/* Assignable des que la commande est prete a partir. Avant, le

@@ -214,7 +214,7 @@ Ce qu'il faut savoir sans l'ouvrir :
 
 **Le code donne une remise sur la LIVRAISON seulement.** La commission prélevée sur les
 plats n'est pas touchée : la remise sort de notre marge de livraison, jamais de la poche du
-restaurant. Le code de lancement est **`LALIE`** — 50 %, soit 10 000 → 5 000 Ar.
+restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 5 000 Ar.
 
 - **Tables** : `promo_codes` (code, `code_normalise` **générée** via `normaliser_code_promo()`
   — majuscules, sans espaces —, type/valeur de remise, `porte_sur` ∈ {livraison, sous_total},

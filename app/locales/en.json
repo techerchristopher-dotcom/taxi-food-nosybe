@@ -245,7 +245,7 @@
   },
   "promo": {
     "section": "Promo code",
-    "placeholder": "e.g. LALIE",
+    "placeholder": "e.g. TAXIFOOD50",
     "appliquer": "Apply",
     "retirer": "Remove",
     "applique": "Code {{code}} applied",

@@ -44,7 +44,7 @@ de service dans un outil tiers serait une clé de tout le système, pour
 **`T7uXG7Lwwjro6Ds8`**, webhook `POST /webhook/taxifood-commande`.
 
 ⚠️ **À RÉIMPORTER SUR L'INSTANCE (2026-09-06).** Le fichier versionné a été mis à jour pour
-afficher la ligne de remise (`Code LALIE −5 000 Ar`) dans l'e-mail client et dans le message
+afficher la ligne de remise (`Code TAXIFOOD50 −5 000 Ar`) dans l'e-mail client et dans le message
 Telegram du restaurant ; la charge utile du trigger transporte désormais `code_promo` et
 `remise`. Tant que le workflow en ligne n'est pas remplacé, un e-mail de commande remisée
 listera « Livraison 10 000 Ar » puis un total inférieur de 5 000 : le client qui additionne

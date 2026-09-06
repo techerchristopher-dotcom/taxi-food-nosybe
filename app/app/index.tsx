@@ -9,6 +9,17 @@ import type { AppMode } from '../data/types';
 /**
  * Où envoyer la personne, selon l'état de son compte. Fonction pure, sans hook : c'est
  * elle qui porte toute la logique d'aiguillage, et elle se relit d'un bloc.
+ *
+ * ⚠️ **Un rôle pro ACTIF est une décision d'administrateur ; un rôle client n'est qu'un
+ * tap.** C'est le principe qui gouverne tout ce qui suit, et il a été payé cher : cette
+ * fonction testait autrefois `role === 'client' && status === 'active'` pour décider si un
+ * compte était « vraiment » multi-rôle. Or ce rôle s'obtient en tapant la carte « Je
+ * commande » de `/role-select`, il ne donne AUCUN droit (aucune policy RLS ne le
+ * mentionne — commander est autorisé par `orders.user_id = auth.uid()`), et il est
+ * définitif côté app. Le patron de « Chez Bidul & Truc » l'a tapé une fois le 2026-09-06 :
+ * à partir de là son compte n'a plus jamais retrouvé son espace pro, et l'app lui a
+ * redemandé son téléphone comme à un nouveau client. On ne lit donc plus le rôle client
+ * ici — seuls les rôles pro actifs et le `mode` décident.
  */
 function destination(session: Session | null, mode: AppMode | null, intent: string | null): string {
   // Pas de session → CATALOGUE LIBRE. Parcourir les restaurants, un menu, une fiche
@@ -22,41 +33,56 @@ function destination(session: Session | null, mode: AppMode | null, intent: stri
   // nom sur la commande, « Client » ne leur sert à rien.
   if (!session.hasName) return '/name';
 
-  const hasStaffRole = session.roles.some((r) => r.role === 'restaurant' || r.role === 'livreur');
-  const activeRestaurant =
+  // Un restaurant « actif » exige les DEUX : le rôle validé et le rattachement à un
+  // établissement. Sans `restaurantId`, l'espace pro n'aurait aucune commande à montrer.
+  const restaurantActif =
     session.roles.some((r) => r.role === 'restaurant' && r.status === 'active') &&
     !!session.restaurantId;
-  const activeCourier = session.roles.some((r) => r.role === 'livreur' && r.status === 'active');
+  const livreurActif = session.roles.some((r) => r.role === 'livreur' && r.status === 'active');
 
-  // Client sans rôle pro : comportement historique, pas d'écran de sélection.
-  if (!hasStaffRole) {
-    if (!session.phone) return '/phone';
-    return intent ?? '/(tabs)';
-  }
+  // Le `mode` porte le seul choix EXPLICITE de la personne (bouton « App client » de
+  // l'en-tête pro, cartes de `/role-select`, tap sur une notification pro). Il est persisté
+  // en local et passe donc avant les rôles : quelqu'un qui est passé côté client hier doit
+  // y retrouver l'app ce matin, pas être renvoyé de force dans son espace pro.
+  if (mode === 'restaurant' && restaurantActif) return '/(restaurant)';
+  if (mode === 'livreur' && livreurActif) return '/(livreur)';
+  if (mode === 'client') return cheminClient(session, intent, restaurantActif || livreurActif);
 
-  // Comptes multi-rôle : on respecte le mode choisi, sinon on demande de choisir.
-  if (mode === 'restaurant' && activeRestaurant) return '/(restaurant)';
-  if (mode === 'livreur' && activeCourier) return '/(livreur)';
-  if (mode === 'client') {
-    if (!session.phone) return '/phone';
-    return intent ?? '/(tabs)';
-  }
+  // Aucun mode choisi : premier lancement, réinstallation, ou compte tout neuf. On tranche
+  // sur les rôles pro actifs SEULS.
+  //
+  // Un compte professionnel entre DIRECTEMENT dans son espace, sans écran intermédiaire.
+  // C'est aussi ce qui protège la revue Apple : le relecteur connecté avec le compte
+  // restaurant de démonstration tomberait sinon sur `/role-select`, dont la carte la plus
+  // voyante est « Je commande » — il conclurait, une seconde fois, qu'il n'accède pas à
+  // l'espace restaurant (rejet 2.1(a) du build 17). Cette garantie ne dépend plus de
+  // l'ABSENCE de rôle client sur ces comptes, qui était un équilibre fragile.
+  if (restaurantActif && livreurActif) return '/role-select'; // seule vraie ambiguïté
+  if (restaurantActif) return '/(restaurant)';
+  if (livreurActif) return '/(livreur)';
 
-  // Un seul rôle possible → rien à demander. Un compte purement professionnel (employé de
-  // restaurant, livreur) n'a pas de rôle client : lui poser « comment veux-tu utiliser
-  // Taxi Food ? » à chaque nouvel appareil n'a pas de sens, et la carte la plus mise en
-  // avant de cet écran est justement « Je commande » — on l'envoyait donc du mauvais côté.
-  // C'est aussi ce qui aurait fait échouer la revue Apple : le relecteur connecté avec le
-  // compte restaurant de démonstration serait tombé sur ce choix et aurait pu conclure,
-  // une seconde fois, qu'il n'accède pas à l'espace restaurant.
-  // On sort par le bouton `swap_horiz` de l'en-tête, présent sur tous les écrans pro.
-  const clientActif = session.roles.some((r) => r.role === 'client' && r.status === 'active');
-  if (!clientActif) {
-    if (activeRestaurant && !activeCourier) return '/(restaurant)';
-    if (activeCourier && !activeRestaurant) return '/(livreur)';
-  }
+  // Aucun rôle pro actif — y compris une demande encore en `pending`, qui n'ouvre rien et
+  // ne doit donc pas détourner le démarrage vers l'écran de choix.
+  return cheminClient(session, intent, false);
+}
 
-  return '/role-select';
+/**
+ * Le parcours client, et la question du téléphone.
+ *
+ * `profiles.phone` sert à UNE chose : que le livreur puisse appeler en arrivant. On le
+ * demande donc à un client au moment où il se connecte, comme avant — c'est le seul numéro
+ * qu'on aura de lui, et le tunnel de commande s'en sert pour pré-remplir l'adresse.
+ *
+ * ⚠️ Mais pas à quelqu'un qui a un espace pro. Un restaurateur qui vient regarder l'app
+ * côté client n'est pas en train de commander : lui barrer la route par un formulaire de
+ * numéro, sans rien lui expliquer, c'est exactement ce qui s'est passé le 2026-09-06 — il
+ * y a saisi le numéro de son ÉTABLISSEMENT, croyant qu'on le lui redemandait par erreur.
+ * Le numéro reste exigé s'il commande vraiment : l'écran `/address` a son propre champ
+ * téléphone, obligatoire, sur chaque adresse de livraison.
+ */
+function cheminClient(session: Session, intent: string | null, pro: boolean): string {
+  if (!pro && !session.phone) return '/phone';
+  return intent ?? '/(tabs)';
 }
 
 /**
@@ -97,6 +123,7 @@ export default function Index() {
   const router = useRouter();
   const session = useSession((s) => s.session);
   const mode = useSession((s) => s.mode);
+  const setMode = useSession((s) => s.setMode);
   const [intent] = useState(() => useAuthIntent.getState().intent);
   const dejaNavigue = useRef<string | null>(null);
 
@@ -110,9 +137,21 @@ export default function Index() {
     // finirait par déposer quelqu'un sur l'écran d'adresse des semaines plus tard.
     if (intent && href === intent) useAuthIntent.getState().clear();
 
+    // Le mode déduit des rôles est ÉCRIT, pas seulement calculé. Sans ça, un restaurateur
+    // qui n'est jamais passé par `/role-select` restait en `mode = null` indéfiniment,
+    // donc suspendu à cette déduction à chaque lancement — et un aller-retour côté client
+    // devenait indémêlable. `destination()` reste pure : l'effet vit ici, à côté de la
+    // consommation de l'intention. Écrire le mode ne change pas `href` (le mode posé mène
+    // au même espace), le verrou `dejaNavigue` n'est donc pas rejoué.
+    // Même geste que `app/_layout.tsx` au tap sur une notification pro.
+    if (!mode) {
+      if (href === '/(restaurant)') void setMode('restaurant');
+      else if (href === '/(livreur)') void setMode('livreur');
+    }
+
     if (href.startsWith('/(tabs)')) retourOnglets(router, href);
     else router.replace(href);
-  }, [intent, href, router]);
+  }, [intent, href, router, mode, setMode]);
 
   // Le temps de la bascule : rien du tout. Un spinner clignoterait sur chaque démarrage.
   return null;

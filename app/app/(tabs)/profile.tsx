@@ -36,6 +36,7 @@ function AccountProfile() {
   const session = useSession((s) => s.session);
   const signOut = useSession((s) => s.signOut);
   const deleteAccount = useSession((s) => s.deleteAccount);
+  const setMode = useSession((s) => s.setMode);
   const [notif, setNotif] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const { data: addresses } = useLoad(() => listAddresses(), []);
@@ -44,6 +45,25 @@ function AccountProfile() {
   const email = session?.email ?? '';
   const phone = session?.phone ?? '—';
   const initials = session?.initials ?? '··';
+
+  // ⚠️ LE chemin de retour vers l'espace pro, et il manquait.
+  //
+  // Cette ligne envoyait tout le monde sur `/role-select`, y compris quelqu'un qui EST déjà
+  // partenaire — donc sur un écran dont la carte la plus voyante est « Je commande ». Un
+  // restaurateur passé côté client n'avait alors plus aucune porte de retour : ni ici, ni au
+  // démarrage. Quand le rôle pro est actif, la ligne nomme son espace et y ramène
+  // directement, en reposant le `mode` au passage pour que le prochain lancement suive.
+  const restaurantActif =
+    !!session?.roles.some((r) => r.role === 'restaurant' && r.status === 'active') &&
+    !!session?.restaurantId;
+  const livreurActif = !!session?.roles.some((r) => r.role === 'livreur' && r.status === 'active');
+
+  function entrerEspacePro(mode: 'restaurant' | 'livreur') {
+    void (async () => {
+      await setMode(mode);
+      router.replace(mode === 'restaurant' ? '/(restaurant)' : '/(livreur)');
+    })();
+  }
 
   // L'app reste parcourable sans compte : après déconnexion on rend le CATALOGUE, pas un
   // écran de connexion dont on ne pourrait plus sortir. Sinon on recrée exactement le mur
@@ -188,14 +208,41 @@ function AccountProfile() {
           })}
         </View>
 
-        <Pressable style={styles.partner} onPress={() => router.push('/role-select')}>
-          <Icon name="storefront" size={22} color={colors.secondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.partnerLabel}>{t('profile.partnerLabel')}</Text>
-            <Text style={styles.partnerSub}>{t('profile.partnerSub')}</Text>
-          </View>
-          <Icon name="chevron_right" size={20} color={colors.textFaint} />
-        </Pressable>
+        {restaurantActif && livreurActif ? (
+          // Deux espaces pro actifs : la seule vraie ambiguïté, et le seul cas où l'écran
+          // de choix a encore un sens pour un professionnel.
+          <ProLine
+            icon="swap_horiz"
+            label={t('profile.proChooseLabel')}
+            sub={t('profile.proChooseSub')}
+            onPress={() => router.push('/role-select')}
+          />
+        ) : restaurantActif ? (
+          <ProLine
+            icon="storefront"
+            label={t('profile.proRestaurantLabel')}
+            sub={t('profile.proRestaurantSub', { restaurant: session?.restaurantName ?? '' })}
+            onPress={() => entrerEspacePro('restaurant')}
+          />
+        ) : livreurActif ? (
+          <ProLine
+            icon="two_wheeler"
+            label={t('profile.proCourierLabel')}
+            sub={t('profile.proCourierSub')}
+            onPress={() => entrerEspacePro('livreur')}
+          />
+        ) : (
+          // Aucun rôle pro actif : la candidature, inchangée. Une demande en `pending`
+          // s'affiche telle quelle sur `/role-select`.
+          <Pressable style={styles.partner} onPress={() => router.push('/role-select')}>
+            <Icon name="storefront" size={22} color={colors.secondary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.partnerLabel}>{t('profile.partnerLabel')}</Text>
+              <Text style={styles.partnerSub}>{t('profile.partnerSub')}</Text>
+            </View>
+            <Icon name="chevron_right" size={20} color={colors.textFaint} />
+          </Pressable>
+        )}
 
         <Pressable style={styles.logout} onPress={handleSignOut}>
           <Icon name="logout" size={20} color={colors.primary} />
@@ -339,6 +386,42 @@ function HelpLine() {
   );
 }
 
+/**
+ * Ligne d'accès à un espace professionnel, depuis le profil client.
+ *
+ * Elle se démarque volontairement de la ligne « Espace partenaire » du visiteur : fond
+ * teinté, liseré, pastille « PRO ». Le porteur du projet insiste pour qu'on voie « pro »
+ * tout au long de la chaîne — y compris quand le partenaire est du côté client de l'app,
+ * c'est-à-dire précisément là où il risque d'oublier qu'il a un espace.
+ */
+function ProLine({
+  icon,
+  label,
+  sub,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={[styles.partner, styles.partnerPro]} onPress={onPress}>
+      <Icon name={icon} size={22} color={colors.secondary} />
+      <View style={{ flex: 1 }}>
+        <View style={styles.proRow}>
+          <Text style={styles.partnerLabel}>{label}</Text>
+          <View style={styles.proTag}>
+            <Text style={styles.proTagText}>PRO</Text>
+          </View>
+        </View>
+        <Text style={styles.partnerSub}>{sub}</Text>
+      </View>
+      <Icon name="chevron_right" size={20} color={colors.secondary} />
+    </Pressable>
+  );
+}
+
 /** Une ligne « ce que le compte apporte ». */
 function Benefit({ icon, text }: { icon: string; text: string }) {
   return (
@@ -417,6 +500,15 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 20,
   },
+  partnerPro: { borderColor: colors.secondary, borderWidth: 1.5, backgroundColor: colors.warnBg },
+  proRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  proTag: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.secondary,
+  },
+  proTagText: { fontFamily: fonts.extrabold, fontSize: 9, letterSpacing: 0.8, color: colors.white },
   langRow: { flexDirection: 'row', gap: 8 },
   langChip: {
     flex: 1,

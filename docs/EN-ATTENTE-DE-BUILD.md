@@ -674,3 +674,66 @@ création de la commande**, donc **avant** le paiement. Un client qui abandonne 
 laisse un restaurateur prêt à cuisiner un repas que personne n'a payé. La correction demande de
 toucher `notify_order_status()` — pas `create_order`. Détail et piège de la clause `OF` du
 trigger : PAIEMENT-STRIPE.md § 9.
+
+## 🧭 Un partenaire arrive dans SON espace (2026-09-06) — EXIGE UN BUILD
+
+**Le déclencheur, constaté en vrai.** Le patron de « Chez Bidul & Truc »
+(`marcantoine14000@yahoo.fr`) s'est connecté pour la première fois le 2026-09-06 à 05:41.
+Il **est** bien entré dans son espace pro — à ce moment-là son compte ne portait que
+`restaurant:active`. Puis il en est sorti par la double flèche `swap_horiz`, sans libellé, qui
+**effaçait le mode** et le déposait sur `/role-select` ; il y a tapé « Devenir livreur »
+(05:44:40) puis la grosse carte « Je commande » (05:44:49), qui a créé un `client:active`
+définitif. À partir de là, `destination()` ne lui a plus jamais rendu son espace, et l'app lui
+a redemandé son téléphone — il y a saisi le numéro de son **établissement**. Mot pour mot :
+« on mélange le pro et le perso, ce n'est pas bon. »
+
+**La règle, désormais.** *Un rôle pro ACTIF est une décision d'administrateur ; un rôle client
+n'est qu'un tap.* `app/app/index.tsx` ne lit plus du tout le rôle client (il ne donne aucun
+droit : aucune policy RLS ne le mentionne, commander est autorisé par
+`orders.user_id = auth.uid()`). L'aiguillage tient en trois temps : le `mode` persisté
+d'abord, puis les rôles pro actifs seuls, puis le parcours client.
+
+| Ce qui change | Fichier |
+|---|---|
+| **Un restaurant/livreur actif entre dans son espace même s'il a aussi un rôle client.** Plus de détour par `/role-select` (réservé au seul cas restaurant **et** livreur actifs), plus de `/phone` | `app/app/index.tsx` |
+| **Le mode déduit des rôles est ÉCRIT**, plus seulement calculé — un pro n'est plus suspendu à cette déduction à chaque lancement | `app/app/index.tsx` |
+| **`/phone` ne barre plus la route à un compte qui a un espace pro.** Le numéro reste exigé d'un client (c'est le seul qu'on aura de lui) et, pour tout le monde, sur chaque adresse de livraison de `/address` | `app/app/index.tsx` |
+| **La double flèche devient « ↔ App client »**, avec intitulé et `accessibilityLabel`. Elle **pose** `mode = 'client'` au lieu de l'effacer, et dépose sur les onglets — plus sur l'écran de choix | `components/RestaurantHeader.tsx`, `components/CourierHeader.tsx` |
+| **Badge « ESPACE PARTENAIRE » / « ESPACE LIVREUR »** dans l'en-tête pro, donc sur les 4 écrans restaurant et les 2 écrans livreur | idem |
+| **Profil → « Mon espace partenaire — <resto> », pastille PRO** : le chemin de retour, qui n'existait pas. La ligne « Devenir partenaire » s'affichait à quelqu'un qui EST déjà partenaire | `app/app/(tabs)/profile.tsx` |
+| **La carte mise en avant de `/role-select` suit le compte** : pro d'abord pour un pro, « Je commande » sinon | `app/app/role-select.tsx` |
+
+**Contrainte Apple préservée, et même consolidée.** `demo.resto@taxifood.mg`
+(`restaurant:active` seul, `profiles.phone` **null**) et `demo.livreur@taxifood.mg`
+(`livreur:active` seul) entrent toujours directement dans leur espace — mais cette garantie
+ne dépend plus de l'**absence** d'un rôle client sur ces comptes, équilibre qui se cassait au
+premier tap du relecteur. `demo.apple@taxifood.mg` (client seul) est inchangé, `/(tabs)` reste
+libre sans session, et les gardes de rôle des deux layouts pro ne sont pas touchées.
+
+Vérifié : `npx tsc --noEmit` ✅ · parité des 3 fichiers de langue ✅ (349 clés, 6 ajoutées dans
+`profile.*`) · **navigateur** : catalogue visiteur et Profil visiteur inchangés, et les deux
+en-têtes pro rendus à 375 pt (badge + « App client », rien ne déborde).
+
+Recette restante, à passer sur appareil réel avec de vrais comptes :
+
+1. **`demo.resto`, installation neuve** → l'espace restaurant s'ouvre directement, aucun
+   écran intermédiaire, aucune demande de téléphone.
+2. Depuis cet espace, **« App client »** → onglets client. Fermer et rouvrir l'app → on
+   revient bien **côté client** (le mode est persisté, c'est voulu).
+3. **Profil → « Mon espace partenaire — Taxi Be »** → retour dans l'espace pro. Fermer et
+   rouvrir → l'espace pro s'ouvre à nouveau.
+4. Le compte de Marc-Antoine (`client:active | livreur:pending | restaurant:active`) →
+   **espace partenaire**, quel que soit le mode enregistré sur son téléphone, dès lors qu'il
+   n'a pas lui-même choisi le mode client.
+5. `techerchristopher@gmail.com` (restaurant **et** livreur actifs) → `/role-select`, dont la
+   carte principale est maintenant **la carte restaurant**.
+6. Un compte purement client : **rien ne doit changer**, `/phone` compris à la première
+   connexion.
+7. **Appuyer sur RETOUR** après « App client » : l'app doit se fermer, pas dévoiler un second
+   jeu d'onglets (`retourOnglets`, pas `replace` — voir `lib/nav.ts`).
+
+⚠️ **À trancher par le porteur du projet, aucune écriture faite en base.** Le compte de
+Marc-Antoine porte toujours `client:active` et `livreur:pending`, et son `profiles.phone` vaut
+`+261322664143` — c'est-à-dire `restaurants.phone` de Chez Bidul & Truc, pas son numéro
+personnel. Les rôles ne sont plus gênants (l'aiguillage ne les lit plus), et un restaurateur a
+le droit de commander comme client ; le numéro, lui, est celui qu'un livreur appellera.

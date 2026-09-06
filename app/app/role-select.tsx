@@ -60,6 +60,20 @@ export default function RoleSelectScreen() {
   if (!session) return <Redirect href="/(tabs)" />;
   const statusOf = (role: AppRole) => session.roles.find((r) => r.role === role)?.status;
   const restaurantActive = statusOf('restaurant') === 'active' && !!session.restaurantId;
+  const courierActive = statusOf('livreur') === 'active';
+
+  // ⚠️ La carte mise en avant suit le compte, elle n'est plus « Je commande » par principe.
+  // Un rôle pro ACTIF a été accordé par un administrateur ; le rôle client s'obtient d'un
+  // tap. Présenter « Je commande » en grand à un restaurateur, c'est ce qui l'a envoyé du
+  // mauvais côté le 2026-09-06 — et ce qui aurait pu faire conclure au relecteur Apple,
+  // une seconde fois, qu'il n'accède pas à l'espace restaurant.
+  const vedette: AppRole = restaurantActive ? 'restaurant' : courierActive ? 'livreur' : 'client';
+  const ordre: AppRole[] =
+    vedette === 'restaurant'
+      ? ['restaurant', 'livreur', 'client']
+      : vedette === 'livreur'
+        ? ['livreur', 'restaurant', 'client']
+        : ['client', 'restaurant', 'livreur'];
 
   async function run(role: AppRole, fn: () => Promise<void>) {
     setError(null);
@@ -129,71 +143,87 @@ export default function RoleSelectScreen() {
       >
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        {/* CLIENT — toujours disponible, et mis en avant : c'est l'usage principal */}
-        <RoleCard
-          featured
-          photo={ROLE_PHOTOS.client}
-          icon="shopping_bag"
-          tint={colors.primary}
-          title={t('roleSelect.clientTitle')}
-          subtitle={t('roleSelect.clientSubtitle')}
-          actionLabel={t('roleSelect.clientAction')}
-          loading={busy === 'client'}
-          onPress={chooseClient}
-        />
+        {/* L'ordre d'affichage suit la mise en avant : la carte principale est la première
+            lue, et sur un petit écran c'est parfois la seule visible sans défiler. */}
+        {ordre.map((role) => {
+          if (role === 'client') {
+            return (
+              <RoleCard
+                key="client"
+                featured={vedette === 'client'}
+                photo={ROLE_PHOTOS.client}
+                icon="shopping_bag"
+                tint={colors.primary}
+                title={t('roleSelect.clientTitle')}
+                subtitle={t('roleSelect.clientSubtitle')}
+                actionLabel={t('roleSelect.clientAction')}
+                loading={busy === 'client'}
+                onPress={chooseClient}
+              />
+            );
+          }
 
-        {/* RESTAURANT — selon l'état du rôle */}
-        <RoleCard
-          icon="storefront"
-          tint={colors.secondary}
-          title={t('roleSelect.restaurantTitle')}
-          // Restaurant rattaché : pas de sous-titre. Son nom est déjà dans l'action
-          // (« Entrer — Angelo ») ; le répéter en description n'apprenait rien.
-          subtitle={
-            restaurantActive
-              ? undefined
-              : statusOf('restaurant') === 'pending'
-                ? t('roleSelect.restaurantPending')
-                : t('roleSelect.restaurantSubtitle')
+          if (role === 'restaurant') {
+            return (
+              <RoleCard
+                key="restaurant"
+                featured={vedette === 'restaurant'}
+                icon="storefront"
+                tint={colors.secondary}
+                title={t('roleSelect.restaurantTitle')}
+                // Restaurant rattaché : pas de sous-titre. Son nom est déjà dans l'action
+                // (« Entrer — Angelo ») ; le répéter en description n'apprenait rien.
+                subtitle={
+                  restaurantActive
+                    ? undefined
+                    : statusOf('restaurant') === 'pending'
+                      ? t('roleSelect.restaurantPending')
+                      : t('roleSelect.restaurantSubtitle')
+                }
+                actionLabel={
+                  restaurantActive
+                    ? t('roleSelect.restaurantEnterNamed', { restaurant: session.restaurantName })
+                    : statusOf('restaurant') === 'pending'
+                      ? t('roleSelect.restaurantWaiting')
+                      : t('roleSelect.restaurantAsk')
+                }
+                disabled={statusOf('restaurant') === 'pending'}
+                pending={statusOf('restaurant') === 'pending'}
+                loading={busy === 'restaurant'}
+                onPress={restaurantActive ? enterRestaurant : () => askRole('restaurant')}
+              />
+            );
           }
-          actionLabel={
-            restaurantActive
-              ? t('roleSelect.restaurantEnterNamed', { restaurant: session.restaurantName })
-              : statusOf('restaurant') === 'pending'
-                ? t('roleSelect.restaurantWaiting')
-                : t('roleSelect.restaurantAsk')
-          }
-          disabled={statusOf('restaurant') === 'pending'}
-          pending={statusOf('restaurant') === 'pending'}
-          loading={busy === 'restaurant'}
-          onPress={restaurantActive ? enterRestaurant : () => askRole('restaurant')}
-        />
 
-        {/* LIVREUR — Phase 3, on peut demander l'accès mais l'espace n'existe pas encore */}
-        <RoleCard
-          photo={ROLE_PHOTOS.livreur}
-          icon="two_wheeler"
-          tint={colors.ink}
-          title={t('roleSelect.courierTitle')}
-          subtitle={
-            statusOf('livreur') === 'active'
-              ? t('roleSelect.courierActive')
-              : statusOf('livreur') === 'pending'
-                ? t('roleSelect.courierPending')
-                : t('roleSelect.courierSubtitle')
-          }
-          actionLabel={
-            statusOf('livreur') === 'active'
-              ? t('roleSelect.courierEnter')
-              : statusOf('livreur') === 'pending'
-                ? t('roleSelect.courierWaiting')
-                : t('roleSelect.courierAsk')
-          }
-          disabled={statusOf('livreur') === 'pending'}
-          pending={statusOf('livreur') === 'pending'}
-          loading={busy === 'livreur'}
-          onPress={statusOf('livreur') === 'active' ? enterCourier : () => askRole('livreur')}
-        />
+          return (
+            <RoleCard
+              key="livreur"
+              featured={vedette === 'livreur'}
+              photo={ROLE_PHOTOS.livreur}
+              icon="two_wheeler"
+              tint={colors.ink}
+              title={t('roleSelect.courierTitle')}
+              subtitle={
+                courierActive
+                  ? t('roleSelect.courierActive')
+                  : statusOf('livreur') === 'pending'
+                    ? t('roleSelect.courierPending')
+                    : t('roleSelect.courierSubtitle')
+              }
+              actionLabel={
+                courierActive
+                  ? t('roleSelect.courierEnter')
+                  : statusOf('livreur') === 'pending'
+                    ? t('roleSelect.courierWaiting')
+                    : t('roleSelect.courierAsk')
+              }
+              disabled={statusOf('livreur') === 'pending'}
+              pending={statusOf('livreur') === 'pending'}
+              loading={busy === 'livreur'}
+              onPress={courierActive ? enterCourier : () => askRole('livreur')}
+            />
+          );
+        })}
       </ScrollView>
     </View>
   );

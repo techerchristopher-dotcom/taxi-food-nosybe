@@ -1,5 +1,5 @@
-import { ReactNode, useRef } from 'react';
-import { View } from 'react-native';
+import { ReactNode, useCallback, useEffect, useRef } from 'react';
+import { useWindowDimensions, View } from 'react-native';
 import { NomZone, useVisiteGuidee } from '../store/visiteGuidee';
 
 type Marge = { haut?: number; bas?: number; gauche?: number; droite?: number };
@@ -31,8 +31,9 @@ export function ZoneVisite({
 }) {
   const ref = useRef<View>(null);
   const signalerZone = useVisiteGuidee((s) => s.signalerZone);
+  const { width: largeurFenetre, height: hauteurFenetre } = useWindowDimensions();
 
-  function mesurer() {
+  const mesurer = useCallback(() => {
     // `requestAnimationFrame` : mesurer depuis le `onLayout` lui-même renvoie
     // des zéros sur Android tant que la vue n'est pas posée dans sa fenêtre.
     requestAnimationFrame(() => {
@@ -46,7 +47,23 @@ export function ZoneVisite({
         });
       });
     });
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nom, signalerZone, marge?.gauche, marge?.droite, marge?.haut, marge?.bas]);
+
+  /**
+   * ⚠️ `onLayout` NE SUFFIT PAS, et le défaut est visible.
+   *
+   * On publie des coordonnées de FENÊTRE, alors qu'`onLayout` ne se déclenche que
+   * si la vue bouge DANS SON PARENT. Quand la fenêtre change de hauteur sans que
+   * la barre d'onglets change de taille — fenêtre du navigateur redimensionnée sur
+   * taxifood.distripro207.com, Split View de l'iPad, apparition du clavier —, la
+   * position en fenêtre bouge et personne ne le dit : la visite dessine alors son
+   * contour dans le vide, au-dessus de l'onglet, qui reste lui dans l'ombre.
+   * Constaté en navigateur en passant de 360×640 à 375×667, visite ouverte.
+   */
+  useEffect(() => {
+    mesurer();
+  }, [largeurFenetre, hauteurFenetre, mesurer]);
 
   // `collapsable={false}` : sans lui, Android fusionne cette vue sans style avec
   // son parent, et la ref ne désigne plus rien à mesurer.

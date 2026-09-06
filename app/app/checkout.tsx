@@ -1,22 +1,17 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
+import { CodePromo } from '../components/CodePromo';
 import { Avatar, Card, Divider, InfoBanner, SectionLabel } from '../components/primitives';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
 import { BottomBar } from '../components/BottomBar';
 import { ChoixModePaiement } from '../components/paiement/ChoixModePaiement';
-import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
+import { colors, fonts, formatAr, spacing } from '../theme/tokens';
 import { formatAddressLine, paymentShort } from '../data/types';
-import {
-  createOrder,
-  listAddresses,
-  raisonPromoDepuisErreur,
-  RaisonPromo,
-  verifierCodePromo,
-} from '../data/api';
+import { createOrder, listAddresses, raisonPromoDepuisErreur } from '../data/api';
 import {
   apercuMontantMineur,
   ConfigPaiement,
@@ -27,6 +22,7 @@ import {
 } from '../data/paiement';
 import { useLoad } from '../lib/useLoad';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
+import { usePromo, usePromoStore } from '../store/promo';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
 import { useAuthIntent } from '../store/authIntent';
@@ -94,15 +90,13 @@ function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Code promo. `promo` n'est renseigné qu'après un aller-retour avec la base :
-  // on n'affiche jamais une remise que le serveur n'a pas confirmée.
-  const [codeSaisi, setCodeSaisi] = useState('');
-  const [promo, setPromo] = useState<{ code: string; remise: number } | null>(null);
-  const [promoRaison, setPromoRaison] = useState<RaisonPromo | 'reseau' | null>(null);
-  const [promoEnCours, setPromoEnCours] = useState(false);
-
-  const remise = promo?.remise ?? 0;
-  const totalAPayer = Math.max(0, total - remise);
+  // Code promo — état PARTAGÉ avec le panier (`store/promo.ts`). Le client l'a
+  // très probablement déjà saisi là-bas, au moment où les frais de livraison sont
+  // apparus dans son total : il le retrouve ici rempli, remise comprise, et n'a
+  // rien à retaper. `remise` reste un aperçu confirmé par la base, jamais un
+  // calcul local.
+  const promo = usePromo();
+  const totalAPayer = Math.max(0, total - promo.remise);
 
   // ------------------------------------------------------------ PAIEMENT CARTE
   // Réglages lus en base (`payment_config`), jamais devinés : le taux, la devise
@@ -145,34 +139,6 @@ function CheckoutForm() {
     if (paymentMethod === 'cb' && !carteProposable) setPayment('especes');
   }, [paymentMethod, carteProposable, setPayment]);
 
-  async function appliquerCode() {
-    const saisi = codeSaisi.trim();
-    if (!saisi || !restaurantId) return;
-    setPromoRaison(null);
-    setPromoEnCours(true);
-    try {
-      const r = await verifierCodePromo(saisi, restaurantId, subtotal);
-      if (r.valide) {
-        setPromo({ code: r.code, remise: r.remise });
-        setCodeSaisi(r.code);
-      } else {
-        setPromo(null);
-        setPromoRaison(r.raison);
-      }
-    } catch {
-      setPromo(null);
-      setPromoRaison('reseau');
-    } finally {
-      setPromoEnCours(false);
-    }
-  }
-
-  function retirerCode() {
-    setPromo(null);
-    setPromoRaison(null);
-    setCodeSaisi('');
-  }
-
   async function validate() {
     if (!restaurantId || !addressId) {
       setError(t('checkout.needAddress'));
@@ -191,7 +157,10 @@ function CheckoutForm() {
           options: l.options.map((o) => ({ optionId: o.optionId, quantity: o.quantity })),
         })),
         // On envoie le CODE, jamais le montant : la base recalcule la remise.
-        codePromo: promo?.code ?? null,
+        // Et seulement un code que la base vient de valider — un code refusé
+        // reste affiché avec sa raison, mais ne repart pas faire échouer la
+        // commande.
+        codePromo: promo.valide ? promo.code : null,
       });
       // Le panier est vidé dès que la commande existe, y compris pour une carte
       // non encore payée : la commande est créée quoi qu'il arrive, et garder le
@@ -223,8 +192,7 @@ function CheckoutForm() {
       // que d'afficher « la commande n'a pas pu être créée ».
       const raison = raisonPromoDepuisErreur(msg);
       if (raison) {
-        setPromo(null);
-        setPromoRaison(raison);
+        usePromoStore.getState().marquerRefus(raison);
         setError(t('promo.rejeteALaValidation'));
       } else {
         setError(
@@ -282,54 +250,9 @@ function CheckoutForm() {
 
         <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('promo.section')}</SectionLabel>
         <Card>
-          {promo ? (
-            <View style={styles.promoApplique}>
-              <Icon name="check_circle" size={20} color={colors.primary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.promoTitre}>{t('promo.applique', { code: promo.code })}</Text>
-                <Text style={styles.promoSous}>
-                  {t('promo.economie', { amount: formatAr(promo.remise) })}
-                </Text>
-              </View>
-              <Pressable onPress={retirerCode} hitSlop={8}>
-                <Text style={styles.modify}>{t('promo.retirer')}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.promoLigne}>
-              <TextInput
-                style={styles.promoInput}
-                value={codeSaisi}
-                onChangeText={(v) => {
-                  setCodeSaisi(v);
-                  if (promoRaison) setPromoRaison(null);
-                }}
-                placeholder={t('promo.placeholder')}
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={appliquerCode}
-                editable={!promoEnCours}
-              />
-              <Pressable
-                onPress={appliquerCode}
-                disabled={promoEnCours || codeSaisi.trim().length === 0}
-                style={[
-                  styles.promoBouton,
-                  (promoEnCours || codeSaisi.trim().length === 0) && styles.promoBoutonInactif,
-                ]}
-              >
-                {promoEnCours ? (
-                  <ActivityIndicator size="small" color={colors.surface} />
-                ) : (
-                  <Text style={styles.promoBoutonTexte}>{t('promo.appliquer')}</Text>
-                )}
-              </Pressable>
-            </View>
-          )}
-          {/* Un message d'erreur doit dire QUOI FAIRE, pas seulement que ça a raté. */}
-          {promoRaison ? <Text style={styles.promoErreur}>{t(`promo.erreur.${promoRaison}`)}</Text> : null}
+          {/* Même bloc qu'au panier, même état : si le code a été saisi là-bas,
+              il est ici déjà appliqué, remise à l'appui. Jamais deux saisies. */}
+          <CodePromo />
         </Card>
 
         <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('checkout.paymentSection')}</SectionLabel>
@@ -393,7 +316,7 @@ function CheckoutForm() {
           <Text style={styles.detailLabel}>{t('common.deliveryFee')}</Text>
           <Text style={styles.detailValue}>{formatAr(deliveryFee)}</Text>
         </View>
-        {promo ? (
+        {promo.remise > 0 && promo.code ? (
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, styles.remiseTexte]}>
               {t('promo.ligne', { code: promo.code })}
@@ -432,33 +355,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
-  promoLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  promoInput: {
-    flex: 1,
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    color: colors.ink,
-    backgroundColor: colors.bg,
-    borderRadius: radius.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  promoBouton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.input,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    minWidth: 96,
-    alignItems: 'center',
-  },
-  promoBoutonInactif: { opacity: 0.45 },
-  promoBoutonTexte: { fontFamily: fonts.bold, fontSize: 13, color: colors.surface },
-  promoApplique: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  promoTitre: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
-  promoSous: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  promoErreur: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.dangerText, marginTop: 10 },
   remiseTexte: { color: colors.primary },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
   detailLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted },

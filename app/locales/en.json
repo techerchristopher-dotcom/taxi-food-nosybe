@@ -251,6 +251,9 @@
     "applique": "Code {{code}} applied",
     "economie": "You save {{amount}} on delivery.",
     "ligne": "Code {{code}}",
+    "surLivraison": "The discount applies to the delivery fee.",
+    "enAttente": "Code {{code}} saved",
+    "enAttenteDetail": "We check it as soon as you sign in. Tap “{{bouton}}”: the discount will show before payment.",
     "rejeteALaValidation": "The code could not be applied. Your order was not sent: check the message above, then confirm again.",
     "erreur": {
       "inconnu": "This code does not exist. Check the spelling and try again.",

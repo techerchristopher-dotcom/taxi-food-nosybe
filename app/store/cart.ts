@@ -77,6 +77,17 @@ type Persisted = {
   restaurantLogoUrl: string | null;
   deliveryFeeValue: number;
   lines: CartLine[];
+  /**
+   * Code promo saisi, tel que le client l'a tapé (normalisé par la base au retour).
+   *
+   * ⚠️ C'est le CODE seul, jamais la remise : le montant est recalculé en base à
+   * chaque vérification, et de façon autoritaire par `create_order`. Il vit ici
+   * parce qu'il se saisit au panier — là où le client découvre les frais de
+   * livraison — et doit encore être là au récapitulatif, deux écrans et une
+   * connexion plus loin (`/address` fait `router.replace('/login')`, le panier
+   * est démonté au passage). La vérification, elle, est dans `store/promo.ts`.
+   */
+  promoCode: string | null;
 };
 
 type CartState = Persisted & {
@@ -93,6 +104,8 @@ type CartState = Persisted & {
   setQuantity: (key: string, quantity: number) => void;
   remove: (key: string) => void;
   clear: () => void;
+  /** Pose ou retire le code promo saisi (null = retiré). */
+  setPromoCode: (code: string | null) => void;
 
   count: () => number;
   subtotal: () => number;
@@ -112,6 +125,7 @@ const EMPTY: Persisted = {
   restaurantLogoUrl: null,
   deliveryFeeValue: 0,
   lines: [],
+  promoCode: null,
 };
 
 export const useCart = create<CartState>((set, get) => ({
@@ -132,8 +146,14 @@ export const useCart = create<CartState>((set, get) => ({
         options: l.options ?? [],
         key: l.key ?? lineKey(l.product.id, (l.options ?? []).map((o) => o.optionId)),
       }));
-      // `restaurantLogoUrl` est absent des paniers persistés avant son introduction.
-      set({ ...parsed, restaurantLogoUrl: parsed.restaurantLogoUrl ?? null, lines });
+      // `restaurantLogoUrl` et `promoCode` sont absents des paniers persistés
+      // avant leur introduction.
+      set({
+        ...parsed,
+        restaurantLogoUrl: parsed.restaurantLogoUrl ?? null,
+        promoCode: parsed.promoCode ?? null,
+        lines,
+      });
     } catch (e) {
       console.warn('[panier] hydratation impossible', e);
     } finally {
@@ -160,11 +180,18 @@ export const useCart = create<CartState>((set, get) => ({
       restaurantLogoUrl: ctx.logoUrl ?? null,
       deliveryFeeValue: ctx.deliveryFee,
       lines: nextLines,
+      promoCode: get().promoCode,
     };
     set(next);
     void persist(next);
   },
 
+  // Le code promo SURVIT au changement de restaurant : le client l'a saisi
+  // exprès, le lui retirer en silence serait la meilleure façon de lui faire
+  // payer la livraison plein tarif sans qu'il comprenne pourquoi. Il est
+  // revérifié contre le nouveau restaurant (`store/promo.ts` : le restaurant
+  // fait partie des entrées de la vérification), et si le code ne s'y applique
+  // pas le client lit la raison exacte au lieu d'une remise disparue.
   replaceWith: (product, ctx, quantity = 1, options = []) => {
     const next: Persisted = {
       restaurantId: ctx.id,
@@ -173,6 +200,7 @@ export const useCart = create<CartState>((set, get) => ({
       restaurantLogoUrl: ctx.logoUrl ?? null,
       deliveryFeeValue: ctx.deliveryFee,
       lines: [{ key: lineKey(product.id, options.map((o) => o.optionId)), product, quantity, options }],
+      promoCode: get().promoCode,
     };
     set(next);
     void persist(next);
@@ -206,6 +234,12 @@ export const useCart = create<CartState>((set, get) => ({
     void persist(next);
   },
 
+  setPromoCode: (code) => {
+    const next: Persisted = { ...toPersisted(get()), promoCode: code };
+    set(next);
+    void persist(next);
+  },
+
   count: () => get().lines.reduce((n, l) => n + l.quantity, 0),
   subtotal: () => get().lines.reduce((n, l) => n + lineUnitPrice(l) * l.quantity, 0),
   deliveryFee: () => get().deliveryFeeValue,
@@ -224,5 +258,6 @@ function toPersisted(s: CartState): Persisted {
     restaurantLogoUrl: s.restaurantLogoUrl,
     deliveryFeeValue: s.deliveryFeeValue,
     lines: s.lines,
+    promoCode: s.promoCode,
   };
 }

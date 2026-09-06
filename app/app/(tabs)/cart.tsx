@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
+import { CodePromo } from '../../components/CodePromo';
 import { Card, Divider } from '../../components/primitives';
 import { ProductThumb } from '../../components/ProductThumb';
 import { QtyStepper } from '../../components/QtyStepper';
@@ -11,6 +12,7 @@ import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../../store/cart';
+import { usePromo } from '../../store/promo';
 import { useLoad } from '../../lib/useLoad';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { Product } from '../../data/types';
@@ -35,6 +37,11 @@ export default function CartScreen() {
   const cartLines = useCart((s) => s.lines);
   const packaging = useMemo(() => packagingLines(cartLines), [cartLines]);
   const total = useCart((s) => s.total());
+
+  // Aperçu de la remise. `total` reste le montant plein : la remise s'en
+  // retranche à l'affichage, et c'est `create_order` qui recalculera tout.
+  const promo = usePromo();
+  const totalAPayer = Math.max(0, total - promo.remise);
 
   // Suggestions d'upsell (« faire gonfler le panier ») du restaurant courant.
   // Les ids en panier servent d'exclusion ET de bascule boisson → dessert : ajouter
@@ -197,10 +204,35 @@ export default function CartScreen() {
             <Text style={styles.sumLabel}>{t('common.deliveryFee')}</Text>
             <Text style={styles.sumValue}>{formatAr(deliveryFee)}</Text>
           </View>
+
+          {/* ⚠️ LE CODE PROMO EST ICI, collé à la ligne qu'il fait baisser.
+              C'est le premier écran où les frais de livraison s'AJOUTENT au
+              total — jusque-là ce n'était qu'une étiquette sur une carte de
+              restaurant. C'est donc l'instant exact où un panier de 6 000 Ar
+              plus 10 000 Ar de livraison fait renoncer le client, et l'instant
+              où la sortie de secours doit être sous ses yeux. Le récapitulatif
+              de validation, trois écrans plus loin, arrive après la connexion
+              et l'adresse : trop tard pour celui qui est déjà parti. */}
+          <View style={styles.promoBloc}>
+            <Text style={styles.promoTitre}>{t('promo.section')}</Text>
+            <CodePromo style={{ marginTop: 10 }} />
+          </View>
+
+          {/* La remise n'apparaît qu'une fois confirmée par la base, et pour
+              l'état courant du panier — jamais un montant hérité d'un panier
+              précédent. */}
+          {promo.remise > 0 && promo.code ? (
+            <View style={styles.sumRow}>
+              <Text style={[styles.sumLabel, styles.remiseTexte]}>
+                {t('promo.ligne', { code: promo.code })}
+              </Text>
+              <Text style={[styles.sumValue, styles.remiseTexte]}>−{formatAr(promo.remise)}</Text>
+            </View>
+          ) : null}
           <Divider style={{ marginVertical: 14 }} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t('common.total')}</Text>
-            <Text style={styles.totalValue}>{formatAr(total)}</Text>
+            <Text style={styles.totalValue}>{formatAr(totalAPayer)}</Text>
           </View>
         </Card>
       </ScrollView>
@@ -269,6 +301,15 @@ const styles = StyleSheet.create({
     minHeight: 34,
   },
   suggestPrice: { fontFamily: fonts.bold, fontSize: 14, color: colors.primary, marginTop: 2 },
+  promoBloc: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginBottom: 14,
+  },
+  promoTitre: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
+  remiseTexte: { color: colors.primary },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between' },
   sumLabel: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDark },
   sumValue: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },

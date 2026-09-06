@@ -251,6 +251,9 @@
     "applique": "Code {{code}} appliqué",
     "economie": "Tu économises {{amount}} sur la livraison.",
     "ligne": "Code {{code}}",
+    "surLivraison": "La remise porte sur les frais de livraison.",
+    "enAttente": "Code {{code}} enregistré",
+    "enAttenteDetail": "On le vérifie dès ta connexion. Appuie sur « {{bouton}} » : la remise s'affichera avant le paiement.",
     "rejeteALaValidation": "Le code n'a pas pu être appliqué. Ta commande n'a pas été envoyée : vérifie le message ci-dessus, puis valide à nouveau.",
     "erreur": {
       "inconnu": "Ce code n'existe pas. Vérifie l'orthographe, puis réessaie.",

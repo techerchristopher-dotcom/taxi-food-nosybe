@@ -126,6 +126,8 @@
     "notFound": "Ristorante non trovato.",
     "coverHint": "foto copertina ristorante",
     "minOrder": "Min. {{amount}}",
+    "featuredTitle": "Piatti del giorno",
+    "featuredSub": "Proposti oggi dal ristorante",
     "productCount_one": "· {{count}} prodotto",
     "productCount_other": "· {{count}} prodotti",
     "viewCart": "Vedi il carrello · {{count}} art.",

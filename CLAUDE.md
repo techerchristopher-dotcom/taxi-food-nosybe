@@ -266,6 +266,51 @@ Ce qu'il faut savoir sans l'ouvrir :
   permissions** (DDL sur des policies RLS) : c'est un geste que le porteur du projet doit faire
   lui-même, ou autoriser explicitement.
 
+## ⚠️ Le restaurant recevait une commande VIDE (corrige le 2026-09-06)
+
+Constate sur le telephone du patron de Chez Bidul & Truc a sa premiere commande :
+**« il me dit qu'il a recu une commande a 0 Ar »**. Ce n'etait pas un souci d'affichage
+Telegram — c'est bien une commande vide qui partait. Mesure dans une transaction annulee :
+
+| | En base | Envoye au restaurant |
+|---|---|---|
+| Sous-total | 9 000 Ar | **0** |
+| Total | 19 000 Ar | **10 000** (les frais de livraison seuls) |
+| Articles | 1 | **0** |
+
+**Cause.** `create_order` procede en trois temps, et elle y est obligee : INSERT de la
+commande (subtotal 0, total = frais de livraison) pour obtenir son id, INSERT des lignes
+d'articles qui referencent cet id, puis UPDATE des montants recalcules. `orders_notify_new`
+etait un `AFTER INSERT` ordinaire : il partait **dans l'intervalle**.
+
+⚠️ **Pourquoi c'est reste invisible — et pourquoi ca aurait frappe le premier vrai client.**
+Les seules commandes annoncees jusqu'ici etaient des commandes **carte**, volontairement
+muettes a l'insertion : leur annonce est rattrapee plus tard par le trigger UPDATE, quand
+articles et montants sont en place. **Le chemin carte masquait le defaut ; le chemin
+especes — celui de la quasi-totalite des clients reels — le portait en plein.**
+
+**Correctif** (migration `20260906183000_le_restaurant_recoit_la_commande_entiere`), deux
+gestes **indissociables** :
+
+1. `orders_notify_new` devient un **`CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED`** :
+   il se declenche au COMMIT, pas a l'insertion.
+2. `notify_order_status()` **RELIT la ligne** (`select * into v_o from orders where id = new.id`)
+   au lieu de faire confiance a `NEW`. ⚠️ Un trigger differe conserve le `NEW` **fige a
+   l'instant de l'INSERT** : reporter sans relire n'aurait repare que la moitie du probleme —
+   les articles seraient apparus (ils viennent d'un sous-select), les montants seraient restes
+   faux. C'est la moitie la plus trompeuse.
+
+⚠️ **Ne jamais remettre `orders_notify_new` en `after insert` simple.** Le defaut revient
+entier, et il ne se voit pas en carte.
+
+✅ **Verifie apres correction** : base et charge utile coincident (total 19 000, sous-total
+9 000, 1 article nomme). ✅ **Et le bouton Accepter de Telegram fonctionne de bout en bout** —
+TF-99 est passee en `confirmee` par un appui du patron : Telegram -> lien `/a/<id>/<jeton>` ->
+base. C'etait le dernier maillon jamais eprouve.
+
+Les trois liens de la charge utile (suivi, accepter, refuser) sont passes au domaine canonique
+au meme moment.
+
 ## Codes promo (2026-09-06)
 
 **Le code donne une remise sur la LIVRAISON seulement.** La commission prélevée sur les

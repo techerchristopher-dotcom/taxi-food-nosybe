@@ -126,6 +126,8 @@
     "notFound": "Restaurant introuvable.",
     "coverHint": "photo bannière resto",
     "minOrder": "Min. {{amount}}",
+    "featuredTitle": "Plats du jour",
+    "featuredSub": "Proposés aujourd'hui par le restaurant",
     "productCount_one": "· {{count}} produit",
     "productCount_other": "· {{count}} produits",
     "viewCart": "Voir le panier · {{count}} art.",

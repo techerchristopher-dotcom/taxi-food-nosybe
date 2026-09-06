@@ -126,6 +126,8 @@
     "notFound": "Restaurant not found.",
     "coverHint": "restaurant cover photo",
     "minOrder": "Min. {{amount}}",
+    "featuredTitle": "Today's specials",
+    "featuredSub": "Offered today by the restaurant",
     "productCount_one": "· {{count}} item",
     "productCount_other": "· {{count}} items",
     "viewCart": "View cart · {{count}} item(s)",

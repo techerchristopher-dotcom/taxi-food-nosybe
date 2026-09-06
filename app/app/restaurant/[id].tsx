@@ -141,6 +141,16 @@ export default function RestaurantMenuScreen() {
             catégorie — c'est un coup de projecteur, pas un déplacement. */}
         {featured.length ? (
           <View style={styles.featuredWrap}>
+            {/* ⚠️ Sans ce titre, deux plats du jour se lisaient comme deux plats
+                ordinaires posés en haut de la carte : rien ne disait pourquoi
+                ils étaient là ni qu'ils ne dureraient pas. Le bandeau nomme la
+                section côté client. L'écran Réglages du partenaire, lui, garde
+                son propre libellé « À l'affiche » : c'est le même contenu, vu
+                des deux côtés du comptoir. */}
+            <View style={styles.featuredHead}>
+              <Text style={styles.featuredTitle}>🔥 {t('restaurant.featuredTitle')}</Text>
+              <Text style={styles.featuredSub}>{t('restaurant.featuredSub')}</Text>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -349,6 +359,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   featuredWrap: { backgroundColor: colors.bg, paddingTop: 14, paddingBottom: 16 },
+  featuredHead: { paddingHorizontal: spacing.screen, paddingBottom: 10, gap: 1 },
+  featuredTitle: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.ink },
+  featuredSub: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted },
   featuredCard: { width: 148 },
   featuredCardOff: { opacity: 0.55 },
   featuredLabel: { fontFamily: fonts.extrabold, fontSize: 10, letterSpacing: 0.8, color: colors.primary },

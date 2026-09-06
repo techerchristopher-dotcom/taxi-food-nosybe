@@ -222,11 +222,38 @@ c'est le seul moment où on peut vérifier que le nombre vient bien de son tél�
 - ⚠️ **`getUpdates` répond `409 Conflict`** si un nœud *Telegram Trigger* tourne
   dans n8n sur le même robot. Aucun webhook n'est posé aujourd'hui.
 
-### ⚠️ État réel au 2026-09-05
+### ⚠️ État réel au 2026-09-06
 
-**Aucun restaurant n'a de vrai canal.** L'identifiant enregistré pour La Cabane,
-`7699975131`, est celui du **téléphone du porteur du projet** — posé pendant les
-tests. Ses commandes arrivent donc chez lui, pas au restaurant. À refaire.
+- ✅ **Chez Bidul & Truc** — `8683552574`, canal privé du patron (« Marco Bidule »),
+  posé le 2026-09-06. Le message de contrôle a été **remis par Telegram** (`ok: true`).
+  ⚠️ Les boutons Accepter / Refuser n'ont PAS encore été éprouvés par une vraie
+  commande : le restaurant est `is_open = false`, donc personne ne peut lui commander.
+- ⚠️ **La Cabane** — `7699975131` est le **téléphone du porteur du projet**, posé
+  pendant les tests. Ses commandes arrivent chez lui, pas au restaurant. **À refaire.**
+
+### ⚠️ Le piège de la recherche, rencontré le 2026-09-06
+
+Un restaurateur a cherché `taxifood_commandes` et obtenu « Aucun résultat » : il
+tapait dans la **recherche de stickers/GIF de la conversation ouverte** (le canard à
+la loupe, au-dessus du clavier), pas dans la recherche Telegram — qui est la loupe en
+haut de l'**écran principal**, celui qui liste les conversations.
+
+**Ne plus faire chercher. Envoyer le lien direct :**
+
+    https://t.me/Taxifood_commandes_bot
+
+Un appui ouvre la conversation avec le bouton DÉMARRER, sans recherche ni ambiguïté.
+
+⚠️ **« Bot Info » n'est pas la conversation.** Le même restaurateur est arrivé sur la
+fiche du robot (nom, `@username`, Notifications, Add to Group) et s'y est arrêté. Il
+faut **fermer ce panneau** (croix ✕ en haut à gauche) : le bouton DÉMARRER est en bas
+de la conversation, à la place de la zone de saisie. Tant qu'il n'est pas appuyé,
+`getUpdates` ne renvoie rien de nouveau — c'est le contrôle qui tranche.
+
+⚠️ **`set_restaurant_telegram()` lève « Reserve aux administrateurs » par MCP.**
+`is_admin()` lit `auth.uid()`, qui est NULL sur une connexion directe — même piège que
+`relancer_remboursements_en_attente()`. Écrire la colonne directement :
+`update public.restaurants set telegram_chat_id = '<id>' where id = '<uuid>';`
 
 Page d'accompagnement (générateur de requête + pièges) :
 https://claude.ai/code/artifact/5b98005a-012b-4c88-985c-e7d8a8f0d4e1
@@ -326,7 +353,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 | | |
 |---|---|
 | Application (commande + espace partenaire) | https://taxifood.distripro207.com |
-| Site vitrine | https://taxifoodnosybe.distripro207.com — aussi https://taxifoodnosybe.distripro207.com |
+| Site vitrine | https://taxifoodnosybe.distripro207.com — l'ancien https://taxifood.rentanoo.com y redirige en 301 |
 | Guide restaurateur | https://taxifoodnosybe.distripro207.com/mon-espace/ |
 
 ## État des partenaires
@@ -334,7 +361,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 | Restaurant | E-mail | Mot de passe | Téléphone | Compte | Telegram |
 |---|---|---|---|---|---|
 | La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ⚠️ à refaire — pointe sur le téléphone du porteur du projet |
-| Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ❌ à faire |
+| Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
 | Les Siciliens | — | — | — | ❌ | ❌ |
 | Taxi Be | — | — | — | ❌ | ❌ |
 | Angelo | — | — | — | ❌ (masqué) | ❌ |

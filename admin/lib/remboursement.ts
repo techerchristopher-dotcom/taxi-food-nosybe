@@ -19,6 +19,13 @@ export type RemboursementLigne = {
   payment_intent_id: string;
   status: string;
   amount_minor: number;
+  /**
+   * Le `re_...` rendu par Stripe. C'est LA marque que l'appel est parti : tant
+   * qu'il est nul, l'argent n'a pas bougé. Facultatif ici parce que
+   * l'arithmétique du solde n'en a pas besoin — `envoiBloque()`, si.
+   */
+  provider_refund_id?: string | null;
+  created_at?: string;
 };
 
 /** Ce que la base autorise encore sur un paiement donné. */
@@ -56,6 +63,40 @@ export function soldeDe(intent: PaiementCapture, refunds: RemboursementLigne[]):
 export function arRendu(intent: PaiementCapture, montantMinor: number): number {
   if (montantMinor === intent.amount_minor) return intent.amount_ar;
   return Math.max(Math.round((montantMinor * Number(intent.fx_rate)) / 100), 1);
+}
+
+/**
+ * Une demande partie chez Stripe, ou une demande qui n'est jamais partie ?
+ *
+ * ⚠️ CETTE DISTINCTION EST LA DIFFÉRENCE ENTRE ATTENDRE ET AGIR, et l'écran ne
+ * la faisait pas : toute demande en `demande` s'affichait « en attente du
+ * verdict de Stripe », y compris celle dont l'appel n'a jamais quitté la base.
+ * Le soir du 6 septembre, TF-96 était exactement dans ce cas depuis une heure.
+ *
+ * Ce qui peut bloquer un envoi, sans que personne ne le sache : Stripe
+ * injoignable, la fonction Edge en erreur, le secret du Vault absent, une
+ * requête `pg_net` perdue. Dans tous ces cas la base garde la demande en vol —
+ * c'est voulu, la marquer `echoue` dirait à tort que la banque a refusé — mais
+ * rien ne la relance : ce projet n'a pas d'ordonnanceur (pg_cron n'y est pas
+ * installé). La relance est donc un geste humain, et il faut d'abord voir quoi
+ * relancer.
+ *
+ * Le critère est le `re_...` : Stripe le rend au premier appel réussi, et
+ * `enregistrer_envoi_remboursement()` l'écrit avant que la fonction ne réponde.
+ * Nul = l'argent n'a pas bougé.
+ *
+ * Le délai de grâce évite d'alarmer sur la seconde qui suit une annulation,
+ * pendant laquelle l'aller-retour est parfaitement normal.
+ */
+export function envoiBloque(
+  refund: RemboursementLigne,
+  maintenant: number = Date.now(),
+  graceMs = 120_000,
+): boolean {
+  if (refund.status !== 'demande') return false;
+  if (refund.provider_refund_id) return false;
+  if (!refund.created_at) return true;
+  return maintenant - new Date(refund.created_at).getTime() > graceMs;
 }
 
 /** « 3,41 » ou « 3.41 » → 341 centimes. NaN si la saisie n'est pas un montant. */

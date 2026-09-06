@@ -184,10 +184,26 @@ Ce qu'il faut savoir sans l'ouvrir :
   **Stripe ne rend pas ses frais**. Côté client, le trigger `notifier_remboursement()` sur
   `payment_refunds` envoie l'e-mail dès qu'un remboursement passe à `effectue` — jamais sur
   `demande`, `echoue` ni `sans_objet`. ⚠️ **Le workflow n8n reste à réimporter sur
-  l'instance**, sans quoi le client reçoit l'e-mail d'annulation à la place.
+  l'instance** : tant que ce n'est pas fait, un remboursement réussi envoie au client un
+  **second e-mail d'annulation** (l'ancien nœud Code retombe sur `cmd.statut`, qui vaut
+  `annulee`) **et repousse un message Telegram d'annulation au restaurant** — vérifié dans le
+  nœud de `HEAD~1`, qui émet vers Telegram sur `cle === 'annulee'`.
 - ⚠️ **La liste des remboursables part des `payment_intents` capturés, jamais de
   `payment_method`.** Une commande peut porter « carte » sans qu'un centime ait été pris, et
   `basculer_en_especes()` peut la repasser en espèces alors qu'un paiement vit encore.
+- ⚠️ **RIEN NE RÉESSAIE TOUT SEUL.** `pg_cron` n'est pas installé sur ce projet et `pg_net`
+  n'émet qu'une fois : si Stripe est injoignable au moment de l'annulation, la demande reste
+  en `demande` avec son motif dans `erreur`, et **elle y reste**. Elle bloque au passage tout
+  autre remboursement sur le même paiement (index unique partiel). Le réveil est un geste
+  humain : bouton **« Relancer les envois »** de l'onglet Remboursements, ou
+  `select public.relancer_remboursements_en_attente();`. ⚠️ Cet appel SQL **levait
+  « Reserve aux administrateurs » jusqu'à la migration `20260906113000`** — `is_admin()` lit
+  `auth.uid()`, NULL sur une connexion directe — donc le filet de sécurité n'avait jamais pu
+  servir.
+- **« Ce client a-t-il été remboursé ? » se répond en une requête** :
+  `select * from public.suivi_remboursements where commande = 'TF-96';` — une ligne par
+  paiement encaissé, colonne `ou_en_est` en français, et `a_regarder` pour le balayage du soir.
+  `rapport_remboursements` agrège par jour et par restaurant : elle compte, elle ne montre pas.
 - **Les prix restent en ariary, le débit se fait en euros** à un taux **fixe** lu dans
   `payment_config.fx_ar_per_eur` (4 700 Ar = 1 EUR). Jamais une constante dans le code.
   L'écran de validation ET l'écran de paiement affichent le total en ariary, le montant exact

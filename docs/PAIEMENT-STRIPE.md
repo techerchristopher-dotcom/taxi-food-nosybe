@@ -354,8 +354,9 @@ admin, ni dans aucun écran. La seule trace était la ligne `payment_intents`.
 | `remboursement_sur_capture_tardive` | le miroir : une capture qui arrive **après** l'annulation produit aussi une demande |
 | `admin_demander_remboursement()` | le geste admin, journalisé dans `admin_actions` (`action = 'remboursement'`) |
 | `enregistrer_verdict_remboursement()` | la porte que `stripe-webhook` devra pousser (`effectue` / `echoue`) |
-| `relancer_remboursements_en_attente()` | rejoue les envois restés en file (réservé `is_admin()`) |
-| `rapport_remboursements` | la vue qui rend les remboursements visibles, **y compris sur les commandes annulées** |
+| `relancer_remboursements_en_attente()` | rejoue les envois restés en file. Ouverte à un administrateur connecté **et à la base elle-même** (éditeur SQL, `service_role`) depuis la migration `20260906113000` — avant elle, `is_admin()` seul la rendait **inutilisable depuis l'éditeur SQL**, où `auth.uid()` est NULL |
+| `rapport_remboursements` | la vue d'agrégat par jour et par restaurant — elle compte, elle ne montre pas |
+| `suivi_remboursements` | **une ligne par paiement encaissé**, avec la colonne `ou_en_est` en français : c'est la vue qui répond à « ce client a-t-il été remboursé ? » en une requête |
 
 ⚠️ **Deux partis pris à connaître avant de toucher à tout ça :**
 
@@ -419,6 +420,11 @@ doit jamais empêcher de rendre de l'argent déjà pris. C'est même le moment o
 - [ ] `select public.relancer_remboursements_en_attente();` — **c'est ce geste qui rendra les
       3,41 € de TF-96**. Volontairement pas fait : cette commande est celle du porteur du projet,
       à lui de décider s'il la rembourse par là ou depuis le tableau de bord Stripe.
+      ⚠️ **Cet appel levait « Reserve aux administrateurs » jusqu'à la migration
+      `20260906113000`** : `is_admin()` lit `auth.uid()`, NULL sur une connexion directe. Le
+      filet de sécurité de tout le chantier n'avait donc jamais pu se déclencher. Le même geste
+      existe maintenant en un clic dans l'onglet **Remboursements** (bouton « Relancer les
+      envois »), qui n'apparaît que s'il y a quelque chose à relancer.
 - [ ] **`stripe-webhook`** : s'abonner à `refund.created`, `refund.updated` et surtout
       `refund.failed` — **aucun des trois n'est dans `enabled_events`** de l'endpoint
       `we_1UCRd0…` aujourd'hui — et appeler `enregistrer_verdict_remboursement()`.
@@ -430,6 +436,70 @@ doit jamais empêcher de rendre de l'argent déjà pris. C'est même le moment o
 - [ ] **`app/locales/*.json`** promet déjà « Si ta carte a été débitée, tu seras remboursé
       automatiquement. » L'application annonce donc un automatisme qui ne va pas encore
       jusqu'au bout.
+
+### Un soir de service, 21 h — revue d'exploitation du 2026-09-06
+
+Le scénario réel : le restaurant refuse depuis Telegram une commande déjà débitée, personne
+n'est devant un écran. Voici ce que la chaîne fait, seule.
+
+**Le chemin nominal tient, et il est rapide.** `repondre_commande_par_jeton` passe la commande
+en `annulee` → le trigger `remboursement_sur_annulation` écrit la demande → `declencher_remboursement()`
+met l'appel en file (`pg_net`) → `rembourser-paiement` relit Stripe, poste le remboursement,
+écrit le verdict → le trigger `notifier_remboursement` prévient le client. **Quelques secondes**,
+sans intervention. Le client reçoit l'e-mail d'annulation, puis celui du remboursement.
+
+**Mais la chaîne n'a aucune seconde chance automatique.** Quatre faits, tous vérifiés en base :
+
+1. **`pg_cron` n'est pas installé sur ce projet** (`select * from pg_extension` : absent).
+   Rien de périodique ne tourne. Aucune relance, aucune veille, aucune alerte.
+2. **`pg_net` n'est pas une file avec réessai.** Il émet une fois. Si Stripe est indisponible à
+   cet instant, la fonction Edge écrit le motif dans `payment_refunds.erreur`, laisse la demande
+   en `demande` — c'est le bon comportement, `echoue` voudrait dire « la banque a refusé » — et
+   **plus rien ne se passe**. La demande ne se perd pas : elle **dort**.
+3. **Une demande qui dort bloque tout le reste.** L'index unique partiel n'autorise qu'une
+   demande en vol par paiement : tant qu'elle y est, aucun autre remboursement n'est possible
+   sur ce paiement, et l'écran admin masquait le bouton « Rembourser ».
+4. **Le réveil demande un geste humain**, et il faut d'abord savoir qu'il y a quelqu'un à
+   réveiller. C'est ce que la revue a corrigé : bannière rouge + bouton « Relancer les envois »
+   dans l'onglet Remboursements, et la vue `suivi_remboursements` côté SQL.
+
+**Combien de temps avant que le client soit remboursé et prévenu ?** Quelques secondes si tout
+va bien ; **indéfiniment** si l'envoi échoue et que personne ne regarde. Il n'y a pas de délai
+maximal garanti, et il ne peut pas y en avoir sans ordonnanceur.
+
+**« Ce client a-t-il été remboursé ? » — une requête, désormais :**
+
+```sql
+select commande, client, encaisse_minor, remboursement, ou_en_est, depuis
+  from public.suivi_remboursements where commande = 'TF-96';
+
+-- et le balayage du soir :
+select * from public.suivi_remboursements where a_regarder;
+```
+
+`ou_en_est` distingue les six situations en français, dont les deux qu'aucun écran ne séparait :
+« envoyé à Stripe, verdict attendu » et « **PAS PARTI CHEZ STRIPE** ». `a_regarder` isole ce qui
+réclame une main : une commande annulée et encaissée sans aucune demande, un `echoue`, ou une
+demande de plus de dix minutes sans `re_...`.
+
+⚠️ La vue porte le nom et le téléphone du client : elle est révoquée à `anon` **et** à
+`authenticated` (vérifié : `permission denied for view suivi_remboursements`). Elle sert la
+connexion directe, pas l'API.
+
+**Ce qui reste ouvert après cette revue** — aucun n'est corrigeable depuis le périmètre du
+chantier :
+
+- **`stripe-webhook` n'est abonné à aucun `refund.*`.** Quand Stripe répond `pending` plutôt que
+  `succeeded`, la demande reste en `demande` **pour toujours** : le client n'est jamais prévenu,
+  `payment_status` ne bascule jamais, et le paiement reste bloqué pour tout autre remboursement.
+  Et surtout un `refund.failed` — l'argent nous est revenu, le client n'a rien — est
+  **totalement invisible**.
+- **Le workflow n8n n'est pas réimporté.** Tant qu'il ne l'est pas, un remboursement réussi
+  envoie au client un **second e-mail d'annulation** (le nœud Code en ligne ne connaît pas la clé
+  `rembourse` et retombe sur `cmd.statut`, qui vaut `annulee`) — et **repousse un message
+  Telegram d'annulation au restaurant**, puisque l'ancien nœud émet vers Telegram sur
+  `cle === 'annulee'`.
+- **Rien n'alerte.** Voir `a_regarder` ci-dessus : il faut aller regarder.
 
 ### Recette de `rembourser-paiement` — 2026-09-06, sans rembourser un centime
 
@@ -581,6 +651,12 @@ affiché est celui que `verifier_plafond_remboursement()` impose de toute façon
 l'équivalent ariary annoncé recopie la règle de `demander_remboursement()` (sur un
 remboursement **total**, on reprend `amount_ar` du paiement au lieu de le recalculer : le
 chemin retour 341 × 4 700 / 100 = 16 027 ne retombe pas sur les 16 000 Ar d'origine).
+⚠️ **`arRendu()` dans `admin/lib/remboursement.ts` a une version de retard sur ce point**
+depuis la migration `20260906120000` : la base donne désormais l'ariary **restant** au
+remboursement qui solde le paiement — le total comme le **dernier des partiels** — parce que
+la somme de plusieurs partiels reconvertis chacun de son côté dépassait le total encaissé
+(200 + 141 centimes = 9 400 + 6 627 = 16 027 Ar sur une commande de 16 000). L'écran annoncera
+donc 6 627 Ar là où la base écrira 6 600, sur ce seul cas. Purement affichage, à aligner.
 Motif obligatoire, et deux écrans avant l'envoi. Le bouton **n'apparaît pas** quand une
 demande est déjà en vol (la base n'en autorise qu'une par paiement) ni quand tout est rendu :
 un bouton présent puis refusé par la base apprend à se méfier de l'écran.

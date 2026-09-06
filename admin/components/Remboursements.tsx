@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   formatAr, formatEur, PAYMENT_STATUS_LABEL, REFUND_STATUS_LABEL, STATUS_LABEL, un,
 } from '../lib/util';
-import { arRendu, enCentimes, soldeDe } from '../lib/remboursement';
+import { arRendu, enCentimes, envoiBloque, soldeDe } from '../lib/remboursement';
 import type { Solde } from '../lib/remboursement';
 
 /**
@@ -35,6 +35,13 @@ import type { Solde } from '../lib/remboursement';
  * 4. DEUX ÉCRANS AVANT L'ENVOI. L'argent part chez Stripe dès la validation et
  *    ne revient pas. La deuxième étape ne redemande pas de saisie : elle relit à
  *    voix haute ce qui va partir.
+ * 5. UNE DEMANDE QUI N'EST PAS PARTIE SE VOIT, ET SE RELANCE ICI. Ajouté après
+ *    la revue d'exploitation : l'écran affichait « en attente du verdict de
+ *    Stripe » aussi bien pour une demande envoyée que pour une demande dont
+ *    l'appel n'avait jamais quitté la base — et il ne proposait alors aucun
+ *    geste, le bouton « Rembourser » étant masqué par la demande en vol. Un
+ *    remboursement bloqué un soir de service était donc invisible ET sans
+ *    recours depuis l'application. C'était exactement l'état de TF-96.
  */
 
 const POLL_MS = 60000;   // un remboursement n'a pas l'urgence d'un service
@@ -102,6 +109,7 @@ export function Remboursements() {
     etape: 'saisie' | 'confirmation';
   } | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [relance, setRelance] = useState(false);
 
   // Le sondage ne doit pas rafraichir la liste pendant qu'une boite est ouverte :
   // le « reste remboursable » affiche dans la boite deviendrait faux sous les
@@ -109,6 +117,14 @@ export function Remboursements() {
   // plutot qu'un etat : `load()` doit lire la valeur du moment, pas celle de la
   // derniere fermeture rendue.
   const boiteOuverte = useRef(false);
+
+  // ⚠️ Double-clic. `setEnvoi(true)` ne désactive le bouton qu'au rendu suivant :
+  // deux clics assez rapprochés partent tous les deux. La base refuserait bien le
+  // second (index unique partiel `payment_refunds_une_demande_en_vol`), mais le
+  // gestionnaire verrait alors un message d'erreur Postgres après un geste
+  // parfaitement normal — et apprendrait à se méfier d'un écran qui n'a rien fait
+  // de mal. Un verrou synchrone coûte deux lignes.
+  const gestEnCours = useRef(false);
 
   const load = useCallback(async (force = false) => {
     if (!force && boiteOuverte.current) return;
@@ -157,8 +173,9 @@ export function Remboursements() {
   }
 
   async function envoyer() {
-    if (!boite) return;
+    if (!boite || gestEnCours.current) return;
     const montantMinor = enCentimes(boite.montant);
+    gestEnCours.current = true;
     setEnvoi(true);
     const { error } = await supabase.rpc('admin_demander_remboursement', {
       p_order_id: boite.intent.order_id,
@@ -168,12 +185,40 @@ export function Remboursements() {
       // montré si une autre demande était passée entre-temps.
       p_montant_minor: montantMinor,
     });
+    gestEnCours.current = false;
     setEnvoi(false);
     if (error) { setErr(error.message); return; }
     const numero = un(boite.intent.orders)?.order_number ?? '';
     fermer();
     setErr(null);
     setInfo(`Remboursement de ${formatEur(montantMinor, boite.intent.currency)} demandé sur ${numero} et envoyé à Stripe.`);
+    await load(true);
+  }
+
+  /**
+   * Rejoue les envois restés en file.
+   *
+   * ⚠️ CE N'EST PAS UN SECOND REMBOURSEMENT. La RPC ne crée aucune demande :
+   * elle reprend celles qui sont déjà écrites en base et rappelle la fonction
+   * Edge. Trois barrières empêchent qu'un euro parte deux fois — la clé
+   * d'idempotence Stripe portée par la demande, le refus de la base d'attacher
+   * un second `re_...`, et la fonction Edge qui répond « déjà traité » sans
+   * appeler Stripe. C'est ce qui autorise à cliquer sans compter.
+   */
+  async function relancer() {
+    if (gestEnCours.current) return;
+    gestEnCours.current = true;
+    setRelance(true);
+    setInfo(null);
+    const { data, error } = await supabase.rpc('relancer_remboursements_en_attente');
+    gestEnCours.current = false;
+    setRelance(false);
+    if (error) { setErr(error.message); return; }
+    setErr(null);
+    const n = Number(data ?? 0);
+    setInfo(n === 0
+      ? 'Aucun envoi à rejouer : soit tout est parti, soit la demande n’a pas de paiement Stripe à rembourser (regarde le motif d’erreur sur la ligne).'
+      : `${n} envoi${n > 1 ? 's' : ''} rejoué${n > 1 ? 's' : ''} chez Stripe. Le verdict arrive en quelques secondes — recharge dans un instant.`);
     await load(true);
   }
 
@@ -189,6 +234,12 @@ export function Remboursements() {
     // ferait disparaitre de l'ecran le seul endroit ou son verdict se lit.
     .filter(({ solde }) => (tout || solde.reste > 0 || solde.enCours))
     .filter(({ i }) => !q || (un(i.orders)?.order_number ?? '').toLowerCase().includes(q));
+
+  // Les demandes dont l'appel n'est jamais parti. Elles n'attendent pas Stripe :
+  // elles attendent qu'on les relance. Sans ordonnanceur sur ce projet, personne
+  // ne le fera à notre place.
+  const bloquees = refunds.filter((r) => envoiBloque(r));
+  const bloqueesMinor = bloquees.reduce((s, r) => s + r.amount_minor, 0);
 
   const boiteMontant = boite ? enCentimes(boite.montant) : Number.NaN;
   const boiteMotif = boite ? boite.motif.trim() : '';
@@ -223,6 +274,28 @@ export function Remboursements() {
 
       {err ? <div className="card" style={{ marginBottom: 16, color: 'var(--red)' }}>Erreur : {err}</div> : null}
       {info ? <div className="card" style={{ marginBottom: 16, color: 'var(--green)' }}>{info}</div> : null}
+
+      {bloquees.length ? (
+        <div className="card" style={{ marginBottom: 16, borderColor: 'var(--red)' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <strong style={{ color: 'var(--red)' }}>
+                {bloquees.length} remboursement{bloquees.length > 1 ? 's' : ''} ({formatEur(bloqueesMinor)}) n
+                {bloquees.length > 1 ? '’ont' : '’a'} pas été envoyé{bloquees.length > 1 ? 's' : ''} à Stripe.
+              </strong>
+              <div className="muted" style={{ fontSize: 13, marginTop: 4, lineHeight: 1.6 }}>
+                La demande est bien enregistrée, mais l’appel n’a pas abouti — Stripe injoignable,
+                coupure réseau, ou erreur signalée sur la ligne. <strong>Ces clients n’ont pas encore
+                été remboursés</strong>, et rien ne réessaiera tout seul. Relancer est sans risque :
+                un remboursement déjà parti n’est jamais renvoyé deux fois.
+              </div>
+            </div>
+            <button className="btn" disabled={relance} onClick={() => void relancer()}>
+              {relance ? 'Relance…' : 'Relancer les envois'}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
@@ -305,11 +378,27 @@ export function Remboursements() {
                           Stripe, ce serait affirmer que le client a son argent. */}
                       {solde.enCours ? (
                         // La base n'autorise qu'une demande en vol par paiement
-                        // (index unique partiel). Proposer le bouton ici, ce
-                        // serait promettre un geste que le clic refusera.
-                        <span className="muted" style={{ fontSize: 12 }}>
-                          {formatEur(solde.enVol, i.currency)} en attente du verdict de Stripe
-                        </span>
+                        // (index unique partiel). Proposer « Rembourser » ici, ce
+                        // serait promettre un geste que le clic refusera. Mais
+                        // « en attente du verdict de Stripe » n'était vrai que
+                        // pour une demande RÉELLEMENT partie : celle dont l'appel
+                        // a échoué n'attend personne, elle attend qu'on la relance.
+                        siens.some((r) => envoiBloque(r)) ? (
+                          <>
+                            <div style={{ color: 'var(--red)', fontSize: 12, marginBottom: 6 }}>
+                              {formatEur(solde.enVol, i.currency)} <strong>jamais parti chez Stripe</strong> —
+                              le client n’a rien reçu.
+                            </div>
+                            <button className="btn" style={{ fontSize: 13, padding: '7px 13px' }}
+                                    disabled={relance} onClick={() => void relancer()}>
+                              {relance ? 'Relance…' : 'Relancer l’envoi'}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="muted" style={{ fontSize: 12 }}>
+                            {formatEur(solde.enVol, i.currency)} envoyé à Stripe, verdict attendu
+                          </span>
+                        )
                       ) : solde.reste <= 0 ? (
                         <span className="muted" style={{ fontSize: 12 }}>Intégralement remboursé</span>
                       ) : (
@@ -333,6 +422,9 @@ export function Remboursements() {
           remboursement n&apos;est possible sur le même paiement. Une commande annulée dont le
           paiement était encaissé demande son remboursement toute seule — la ligne apparaît
           alors ici en « automatique », sans qu&apos;on ait à cliquer.
+          {' '}<strong>Si l&apos;envoi n&apos;a pas abouti</strong> (Stripe injoignable, coupure), la demande
+          reste enregistrée mais l&apos;argent n&apos;est pas parti : la ligne le dit en rouge et
+          propose « Relancer l&apos;envoi ». Rien ne réessaie tout seul — c&apos;est le geste à faire.
         </p>
       </div>
 

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
+import { ZoneVisite } from './ZoneVisite';
 import { colors, fonts, radius, spacing } from '../theme/tokens';
 import { useSession } from '../store/session';
 import { retourOnglets } from '../lib/nav';
@@ -57,16 +58,21 @@ export function RestaurantHeader({ title, right }: { title: string; right?: Reac
         <Text style={styles.title}>{title}</Text>
       </View>
       {right}
-      <Pressable
-        onPress={voirAppClient}
-        hitSlop={8}
-        style={styles.switch}
-        accessibilityRole="button"
-        accessibilityLabel="Voir l'application client"
-      >
-        <Icon name="swap_horiz" size={18} color={colors.white} />
-        <Text style={styles.switchText}>App client</Text>
-      </Pressable>
+      {/* `ZoneVisite` : la dernière étape de la visite guidée désigne ce bouton.
+          C'est la seule sortie de l'espace pro, et son ancienne version muette a
+          fait sortir un restaurateur sans qu'il sache y revenir. */}
+      <ZoneVisite nom="bascule" marge={{ haut: 5, bas: 5, gauche: 5, droite: 5 }}>
+        <Pressable
+          onPress={voirAppClient}
+          hitSlop={8}
+          style={styles.switch}
+          accessibilityRole="button"
+          accessibilityLabel="Voir l'application client"
+        >
+          <Icon name="swap_horiz" size={18} color={colors.white} />
+          <Text style={styles.switchText}>App client</Text>
+        </Pressable>
+      </ZoneVisite>
     </View>
   );
 }

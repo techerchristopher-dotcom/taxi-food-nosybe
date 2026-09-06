@@ -46,6 +46,13 @@ export type Session = {
   /** Restaurant lié si le compte est staff restaurant ACTIF (V1 : un compte = un resto). */
   restaurantId: string | null;
   restaurantName: string | null;
+  /**
+   * Date de la visite guidée de l'espace partenaire ; `null` tant qu'elle n'a
+   * jamais été vue — c'est ce `null` qui la déclenche. Portée par le COMPTE et
+   * non par l'appareil : un restaurateur qui change de téléphone ne doit pas se
+   * reprendre la visite en plein service.
+   */
+  visiteProVueLe: string | null;
 };
 
 /** Deep link de retour de l'OAuth (scheme `taxifood` en natif, origine en web). */
@@ -342,7 +349,11 @@ async function buildSession(): Promise<Session | null> {
 
   // Profil + rôles + restaurant lié en parallèle.
   const [{ data: profile }, { data: roleRows }, { data: staffRows }] = await Promise.all([
-    supabase.from('profiles').select('full_name, email, phone').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('profiles')
+      .select('full_name, email, phone, visite_pro_vue_le')
+      .eq('id', user.id)
+      .maybeSingle(),
     supabase.from('user_roles').select('role, status'),
     supabase.from('restaurant_staff').select('restaurant_id, restaurants ( name )'),
   ]);
@@ -377,6 +388,7 @@ async function buildSession(): Promise<Session | null> {
     roles,
     restaurantId: link?.restaurant_id ?? null,
     restaurantName: linkRestaurant?.name ?? null,
+    visiteProVueLe: profile?.visite_pro_vue_le ?? null,
   };
 }
 

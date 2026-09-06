@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { ProductThumb } from '../../components/ProductThumb';
@@ -33,6 +35,7 @@ import {
 import { Category, DayHours, Product } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { useVisiteGuidee } from '../../store/visiteGuidee';
 import { supabase } from '../../lib/supabase';
 
 /** « 22:30:00 » ou « 22:30 » -> « 22:30 » pour la saisie. */
@@ -199,6 +202,20 @@ function poseur(set: Dispatch<SetStateAction<Record<string, boolean>>>, id: stri
 /** Espace restaurant — Réglages : ouverture, horaires, visuels, ruptures de stock. */
 export default function RestaurantSettingsScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
+  const { t } = useTranslation();
+  const router = useRouter();
+  const demanderVisite = useVisiteGuidee((s) => s.demanderVisite);
+
+  /**
+   * Rejoue la visite guidée. Elle vit sur l'écran Commandes — le seul où la
+   * commande d'exemple veut dire quelque chose : on pose le drapeau, puis on
+   * change d'onglet. `navigate`, et non `replace` : à l'intérieur d'un
+   * navigateur d'onglets, c'est lui qui bascule sur l'onglet visé.
+   */
+  function revoirLaVisite() {
+    demanderVisite();
+    router.navigate('/(restaurant)');
+  }
 
   const { data, loading, reload } = useLoad(async () => {
     const resto = await getMyRestaurant(restaurantId);
@@ -455,6 +472,26 @@ export default function RestaurantSettingsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {/* ------------------------------------------------ Visite guidée */}
+          {/* En TÊTE d'écran, et pas relégué en bas : c'est le repêchage de
+              quelqu'un qui ne comprend pas son application. Le chercher n'est
+              pas son travail. */}
+          <Pressable
+            onPress={revoirLaVisite}
+            style={[styles.carte, styles.visiteCarte]}
+            accessibilityRole="button"
+            accessibilityLabel={t('visitePro.revoirBouton')}
+          >
+            <View style={styles.visiteIcone}>
+              <Icon name="help_outline" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.visiteTitre}>{t('visitePro.revoirTitre')}</Text>
+              <Text style={styles.visiteTexte}>{t('visitePro.revoirTexte')}</Text>
+            </View>
+            <Icon name="chevron_right" size={22} color={colors.textFaint} />
+          </Pressable>
 
           {/* ------------------------------------------------------ Visuels */}
           <Text style={styles.section}>Logo et couverture</Text>
@@ -981,6 +1018,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
+  visiteCarte: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
+  visiteIcone: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.dangerBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  visiteTitre: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  visiteTexte: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   ligneTitre: { fontFamily: fonts.bold, fontSize: 15, color: colors.textDark },
   ligneSous: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
   separateur: { height: 1, backgroundColor: colors.border, marginVertical: 8 },

@@ -5,12 +5,14 @@ import { Button } from '../../components/Button';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { RefuseSheet } from '../../components/RefuseSheet';
+import { VisiteGuidee } from '../../components/VisiteGuidee';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { listRestaurantOrders, setOrderStatus } from '../../data/api';
+import { listRestaurantOrders, marquerVisiteProVue, setOrderStatus } from '../../data/api';
 import { Order, OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { useRestaurantQueue } from '../../store/restaurantQueue';
+import { useVisiteGuidee } from '../../store/visiteGuidee';
 
 // Statuts « actifs » : demandent une action ou un suivi. en_livraison sort de la liste.
 const ACTIVE: OrderStatus[] = ['recue', 'confirmee', 'en_preparation'];
@@ -39,6 +41,48 @@ export default function RestaurantOrdersScreen() {
   const [working, setWorking] = useState<string | null>(null);
   const [refuseTarget, setRefuseTarget] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // ------------------------------------------------------------------ Visite
+  // La visite guidée se joue ICI, et pas ailleurs : c'est le seul écran où la
+  // commande d'exemple a un sens, et c'est celui sur lequel le restaurateur
+  // atterrit en entrant dans son espace.
+  const visiteProVueLe = useSession((s) => s.session?.visiteProVueLe ?? null);
+  const sessionChargee = useSession((s) => !!s.session);
+  const refreshSession = useSession((s) => s.refresh);
+  const visiteDemandee = useVisiteGuidee((s) => s.demandee);
+  const consommerDemande = useVisiteGuidee((s) => s.consommerDemande);
+  const [visite, setVisite] = useState(false);
+  // Une seule proposition spontanée par montage de l'écran. Sans ce verrou, la
+  // visite refermée sans mémorisation se rouvrirait aussitôt (la session dit
+  // toujours « jamais vue »), et le restaurateur ne pourrait plus en sortir.
+  const [dejaProposee, setDejaProposee] = useState(false);
+
+  useEffect(() => {
+    if (!sessionChargee || dejaProposee || visiteProVueLe !== null) return;
+    setDejaProposee(true);
+    setVisite(true);
+  }, [sessionChargee, dejaProposee, visiteProVueLe]);
+
+  // Rediffusion demandée depuis les Réglages (le bouton y change d'onglet).
+  useEffect(() => {
+    if (!visiteDemandee) return;
+    consommerDemande();
+    setDejaProposee(true);
+    setVisite(true);
+  }, [visiteDemandee, consommerDemande]);
+
+  async function fermerVisite(memoriser: boolean) {
+    setVisite(false);
+    try {
+      await marquerVisiteProVue(memoriser);
+      // La session porte la date : sans ce rafraîchissement, la visite se
+      // rouvrirait au prochain montage de l'écran alors qu'elle est vue.
+      await refreshSession();
+    } catch {
+      // Réseau coupé : le verrou local tient pour cette session, et la visite
+      // se represente au prochain lancement. Rien à dire au restaurateur.
+    }
+  }
 
   async function advance(order: Order, status: OrderStatus, reason?: string) {
     setError(null);
@@ -94,6 +138,8 @@ export default function RestaurantOrdersScreen() {
         onCancel={() => setRefuseTarget(null)}
         onConfirm={(reason) => refuseTarget && advance(refuseTarget, 'annulee', reason)}
       />
+
+      <VisiteGuidee visible={visite} onFermer={fermerVisite} />
     </View>
   );
 }

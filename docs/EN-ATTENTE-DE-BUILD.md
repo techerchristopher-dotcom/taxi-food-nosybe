@@ -737,3 +737,78 @@ Marc-Antoine porte toujours `client:active` et `livreur:pending`, et son `profil
 `+261322664143` — c'est-à-dire `restaurants.phone` de Chez Bidul & Truc, pas son numéro
 personnel. Les rôles ne sont plus gênants (l'aiguillage ne les lit plus), et un restaurateur a
 le droit de commander comme client ; le numéro, lui, est celui qu'un livreur appellera.
+
+## Visite guidée de l'espace partenaire (2026-09-06)
+
+Suite directe du chantier ci-dessus. Le restaurateur arrive maintenant DANS son espace ;
+encore faut-il qu'il comprenne ce qu'il y voit. Consigne du porteur du projet : « il faut
+qu'il y ait au moins une commande de test […] une espèce de table de présentation lors de la
+première connexion […] il faut qu'il comprenne comment fonctionne son application
+rapidement. »
+
+**Cinq étapes, jouées automatiquement à la première entrée dans l'espace partenaire** :
+Commandes (avec une commande d'exemple) · En livraison · Historique · Réglages · le bouton
+« App client ». Numérotation « 2 / 5 », bouton « Suivant », « Fermer la visite » à chaque
+étape, case « Ne plus afficher cette visite » (cochée par défaut) à la dernière.
+
+| Ce qui a été fait | Où |
+|---|---|
+| La visite elle-même : voile, contour, bulle, étapes, case à cocher | `app/components/VisiteGuidee.tsx` |
+| Le repérage des cibles (les 4 onglets + le bouton « App client ») | `app/components/ZoneVisite.tsx`, `app/store/visiteGuidee.ts`, `app/app/(restaurant)/_layout.tsx`, `app/components/RestaurantHeader.tsx` |
+| Déclenchement, fermeture, mémorisation | `app/app/(restaurant)/index.tsx` |
+| « Découvrir votre espace / Revoir la visite », en TÊTE des Réglages | `app/app/(restaurant)/reglages.tsx` |
+| `profiles.visite_pro_vue_le` + RPC `marquer_visite_pro_vue(p_vue boolean)` | `supabase/migrations/20260906_visite_guidee_espace_partenaire.sql` — **déjà appliquée en base** |
+| 30 clés `visitePro.*` dans les trois langues | `app/locales/{fr,en,it}.json` |
+
+**Quatre décisions à connaître avant d'y toucher :**
+
+1. ⚠️ **Le repère ne masque jamais ce qu'il désigne.** Le voile est fait de QUATRE bandes
+   posées AUTOUR de la cible, jamais d'un rectangle plein par-dessus ; la cible garde sa
+   luminosité, un simple contour l'entoure, et la bulle se place À CÔTÉ (au-dessus d'une
+   cible du bas, en dessous d'une cible du haut). L'erreur inverse a déjà été commise sur le
+   guide restaurateur du site vitrine.
+2. ⚠️ **La commande d'exemple n'existe pas en base.** C'est un objet en mémoire rendu par le
+   vrai `RestaurantOrderCard` (composant purement présentatif), sous un badge « Exemple » et
+   la phrase « Cette commande n'existe pas ». En créer une vraie polluerait le rapport
+   journalier et les commissions, et déclencherait e-mail + Telegram + push chez un vrai
+   restaurant. Ses **frais de livraison sont lus en base** (`restaurants.delivery_fee`) et
+   non écrits en dur, pour que la démonstration ne mente pas le jour où le tarif bougera.
+3. ⚠️ **On n'annonce que ce qui existe.** L'app **ne permet pas** d'ajouter un plat à la
+   carte permanente, ni d'en changer le prix ou la catégorie — seulement de mettre un plat en
+   avant, d'ajouter un plat du jour et de signaler une rupture. Le texte de l'étape
+   « Réglages » s'y tient mot pour mot. Une promesse fausse dans une visite guidée est pire
+   que pas de visite : le restaurateur cherchera un bouton absent.
+4. ⚠️ **La préférence est en BASE, pas en AsyncStorage** : elle suit la personne, pas
+   l'appareil. Se reprendre la visite après un changement de téléphone, un soir de service,
+   est exactement ce qu'il ne faut pas. L'écriture passe par une RPC `SECURITY DEFINER` qui
+   fixe elle-même la valeur (`now()`), jamais par un UPDATE direct.
+
+Fermer la visite en cours de route la mémorise aussi : elle ne doit pas se represser à chaque
+lancement. Le repêchage, c'est **Réglages → « Découvrir votre espace »**, posé en TÊTE
+d'écran — chercher ce bouton n'est pas le travail du restaurateur.
+
+Vérifié : `npx tsc --noEmit` ✅ · parité des 3 fichiers de langue ✅ (377 clés, 30 ajoutées
+dans `visitePro.*`) · **navigateur, connecté en `demo.resto` sur un gabarit 375 pt** : les
+cinq étapes parcourues une à une, chaque cible (icône ET intitulé d'onglet, puis le bouton
+« App client ») restée entièrement lisible dans son contour ; carte d'exemple rendue avec ses
+10 000 Ar lus en base ; « Terminer » a bien écrit `visite_pro_vue_le` en base **par la RPC**,
+et la même case décochée l'a bien remis à `null` ; rediffusion par Réglages → bascule sur
+l'onglet Commandes et rouvre à l'étape 1 ; rendu italien contrôlé, aucun débordement.
+Compte de démonstration remis à `null` après les essais — aucun compte ne porte de date.
+
+À passer sur appareil réel :
+
+1. **Premier lancement d'un vrai partenaire** (Marc-Antoine, Chez Bidul & Truc) : la visite
+   s'ouvre seule, la commande d'exemple s'affiche, et il comprend ses 4 onglets.
+2. **Écran vide** : contrairement à `demo.resto` (qui a 3 commandes de démonstration), son
+   écran Commandes est vide derrière la visite — vérifier que la carte d'exemple s'y lit bien.
+3. **Petit écran** : la carte d'exemple doit rester **défilable** sous le doigt (elle est en
+   `pointerEvents="none"` pour que la puce « Itinéraire » n'ouvre pas Google Maps en pleine
+   visite ; les gestes traversent jusqu'à la `ScrollView`).
+4. **Android** : les contours doivent tomber pile sur les onglets. Si tout est décalé vers le
+   bas de la hauteur de la barre d'état, c'est `statusBarTranslucent` sur la `Modal` qu'il
+   faut regarder — `measureInWindow` compte depuis le haut de la fenêtre.
+5. **« Réduire les animations »** activé dans les réglages du téléphone : pas de fondu, pas de
+   contour qui respire. Code relu, **jamais exécuté dans cet état**.
+6. Fermer en cours de route, tuer l'app, la rouvrir → la visite **ne revient pas**, et
+   Réglages → « Découvrir votre espace » la rejoue.

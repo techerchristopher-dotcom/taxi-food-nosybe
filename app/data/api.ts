@@ -1046,3 +1046,17 @@ export async function getMyRestaurant(
 
   return { ...mapRestaurant(data as unknown as RestaurantRow), weekHours };
 }
+
+/**
+ * Memorise que la visite guidee de l'espace partenaire a ete vue — ou, avec
+ * `vue = false`, remet le compte a l'etat « jamais vue » quand la case
+ * « ne plus afficher » a ete decochee pendant une rediffusion.
+ *
+ * ⚠️ La preference est portee par le COMPTE, pas par l'appareil : elle survit a
+ * un changement de telephone et a une reinstallation. C'est tout l'interet de
+ * la ranger en base plutot qu'en AsyncStorage.
+ */
+export async function marquerVisiteProVue(vue: boolean): Promise<void> {
+  const { error } = await supabase.rpc('marquer_visite_pro_vue', { p_vue: vue });
+  if (error) throw error;
+}

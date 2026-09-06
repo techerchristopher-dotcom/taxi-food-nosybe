@@ -855,3 +855,34 @@ interpolé, il ne peut plus se désynchroniser du Profil.
    « Réglages » a gagné une ligne environ. Vérifier que la bulle ne déborde pas sur un petit
    écran, dans les trois langues — c'est l'étape dont la cible est en bas, donc celle qui a le
    moins de place au-dessus d'elle.
+
+## 🔒 Le partenaire ne voit plus les commandes de ses clients côté client (2026-09-06)
+
+Trouvé en revue de régression du chantier ci-dessus, **corrigé** (`app/data/api.ts`). Le
+défaut était latent depuis toujours ; c'est le bouton **« App client »** qui l'a mis à un
+tap d'un partenaire.
+
+`orders` porte **quatre** politiques SELECT permissives (propriétaire, staff du restaurant,
+livreur, admin) et `addresses` **trois** : elles se cumulent en **OU**. Les deux lectures du
+parcours client ne filtraient rien et s'en remettaient à la RLS. Mesuré avec de vrais jetons
+avant correction :
+
+| Compte | Onglet « Commandes » client | Adresses enregistrées |
+|---|---|---|
+| `demo.resto` | **4 commandes, aucune à lui** (celles de ses clients : nom, téléphone, adresse, lien d'itinéraire) | **2, aucune à lui** |
+| `demo.livreur` | **5 commandes, aucune à lui** (toutes les courses en attente) | 0 |
+| `demo.apple` (client pur) | 4, les siennes | 1, la sienne |
+
+`listOrders()` et `listAddresses()` filtrent désormais sur `user_id`. Aux mêmes jetons après
+correction : 0 / 0 pour les deux comptes pro, **4 / 1 inchangés** pour `demo.apple`.
+
+**À passer sur appareil, dans le prochain build :**
+
+1. `demo.resto` → **App client** → onglet **Commandes** : « Aucune commande » (et surtout
+   pas TF-71 / TF-58 / TF-57 / TF-56).
+2. `demo.resto` → **App client** → **Profil** → « Adresses enregistrées » : aucune.
+3. `demo.livreur` → **App client** → **Commandes** : « Aucune commande ».
+4. `demo.apple` : son historique et son adresse « Hell-Ville — Hôtel » sont **intacts**, et
+   `/address` la propose toujours. C'est le contrôle de non-régression du parcours client.
+5. Passer une commande de bout en bout avec un compte purement client : l'adresse
+   enregistrée reste sélectionnable, la commande arrive bien chez le restaurant.

@@ -16,6 +16,8 @@ valable et sert de base au raisonnement sur le taux, plus bas.
 | Socle base de données (`payment_config`, `payment_intents`, `orders.payment_status`, verrous) | ✅ appliqué — migrations `20260905213821` et `20260905214324` |
 | Fonction SQL de lecture des secrets `stripe_config()` | ✅ créée, réservée à `service_role` |
 | RPC de repli espèces `basculer_en_especes()` | ✅ appliquée — migration `20260905221246` |
+| Socle du **remboursement** (`payment_refunds`, plafond, déclenchement automatique, vues) | ✅ appliqué — migrations `20260906084514` et `20260906084907` (§ 8) |
+| Fonction Edge `rembourser-paiement` (l'appel réel à Stripe) | ⛔ **n'existe pas** — le socle enregistre la demande et attend (§ 8) |
 | Edge Function `creer-paiement` | ✅ déployée (`verify_jwt: true`) |
 | Edge Function `stripe-webhook` | ✅ déployée (`verify_jwt: false`), endpoint Stripe `we_1UCRd0…` |
 | `@stripe/stripe-react-native` **0.64.0** (version épinglée par Expo SDK 57) | ✅ installé + plugin dans `app.json` |
@@ -321,10 +323,84 @@ langues restent alignées : **à réparer**.
 
 ## 8. Remboursements
 
-### Le chemin normal
+### Le cas qui a tout déclenché — TF-96, 6 septembre 2026
 
-Depuis le **tableau de bord Stripe** : Paiements → le PaymentIntent → *Refund*. C'est le seul
-chemin aujourd'hui ; il n'existe **aucune RPC ni aucun écran** de remboursement.
+```
+08:09:23  TF-96 créée — 16 000 Ar, La Cabane, mode carte
+08:10:09  capture chez Stripe : 3,41 € débités (pi_3UCb8j53bhPYA4IF1zRA7Usq)
+08:12:06  le restaurant REFUSE depuis Telegram
+```
+
+Le client a payé, ne sera pas livré, et **l'argent n'est jamais revenu**. Aucun des trois
+chemins d'annulation (`repondre_commande_par_jeton`, `set_order_status`,
+`admin_set_order_status`) ne regardait `payment_status` : une commande encaissée s'annulait
+aussi silencieusement qu'une commande en espèces. Les 3,41 € n'apparaissaient nulle part —
+ni dans le rapport du soir (borné aux commandes `livree`), ni dans le CA du jour de l'écran
+admin, ni dans aucun écran. La seule trace était la ligne `payment_intents`.
+
+### Le socle en base — migrations `20260906084514` et `20260906084907`
+
+| Brique | Rôle |
+|---|---|
+| `payment_refunds` | une ligne par remboursement, **partiels compris** — montant en centimes + équivalent ariary, taux figé, motif **obligatoire**, `origine`, `idempotency_key`, `provider_refund_id` unique |
+| `payment_refunds_une_demande_en_vol` | index unique partiel : **au plus une demande en vol par paiement**. La clé d'idempotence Stripe est purgée au bout de 24 h, celle-ci ne l'est jamais |
+| `verifier_plafond_remboursement()` | trigger `BEFORE` : la somme des remboursements ne peut jamais dépasser le montant capturé. Le `select … for update` sur `payment_intents` **sérialise** les demandes concurrentes — c'est le verrou, pas le calcul, qui rend le contrôle sûr |
+| `demander_remboursement()` | enregistre la demande. Ne parle pas à Stripe |
+| `declencher_remboursement()` | met l'appel HTTP en file (`net.http_post`). **Inerte tant que `remboursement_hook_secret` est absent du Vault** |
+| `remboursement_sur_annulation` | trigger sur `orders` : toute commande qui passe en `annulee` avec un paiement **capturé** produit une demande, quel que soit le chemin d'annulation |
+| `remboursement_sur_capture_tardive` | le miroir : une capture qui arrive **après** l'annulation produit aussi une demande |
+| `admin_demander_remboursement()` | le geste admin, journalisé dans `admin_actions` (`action = 'remboursement'`) |
+| `enregistrer_verdict_remboursement()` | la porte que `stripe-webhook` devra pousser (`effectue` / `echoue`) |
+| `relancer_remboursements_en_attente()` | rejoue les envois restés en file (réservé `is_admin()`) |
+| `rapport_remboursements` | la vue qui rend les remboursements visibles, **y compris sur les commandes annulées** |
+
+⚠️ **Deux partis pris à connaître avant de toucher à tout ça :**
+
+1. **La source de vérité est le paiement capturé, pas `payment_method`.** Une commande passée
+   en « espèces » par `basculer_en_especes()` alors qu'un PaymentIntent vivait encore chez
+   Stripe serait quand même remboursée. Une commande espèces n'a aucune ligne capturée : elle
+   ne déclenche donc rien, sans qu'on ait à tester quoi que ce soit.
+2. **Une annulation ne peut jamais échouer à cause d'un remboursement.** Le trigger est sous
+   `exception when others then raise warning`. Le pire scénario acceptable est « le refus
+   passe, le remboursement est à relancer » ; « le restaurant ne peut plus refuser » ne l'est
+   pas.
+
+### Ce qui manque encore pour que l'argent parte réellement
+
+- [ ] **La fonction Edge `rembourser-paiement`** — elle n'existe pas. Contrat attendu :
+      `POST /functions/v1/rembourser-paiement`, en-tête `x-hook-secret`, corps
+      `{ refund_id, payment_intent_row, provider_intent_id, amount_minor, currency,
+      idempotency_key, order_id, order_number, motif }`. Elle lit `stripe_secret_key` du
+      Vault et poste `POST /v1/refunds` avec `payment_intent`, `amount`,
+      `reason = requested_by_customer` (**jamais `fraudulent`** : Stripe met alors la carte
+      et l'e-mail sur ses listes de blocage Radar).
+      ⚠️ La clé d'idempotence à envoyer est `payment_refunds.idempotency_key`, **jamais**
+      `payment_intents.idempotency_key` — réutiliser celle du paiement ferait rejouer à Stripe
+      la réponse mémorisée du PaymentIntent au lieu de créer un remboursement.
+- [ ] **Poser `remboursement_hook_secret` dans le Vault**, puis
+      `select public.relancer_remboursements_en_attente();` — c'est ce qui enverra la demande
+      déjà enregistrée pour TF-96.
+- [ ] **Déclarer la fonction dans `supabase/config.toml`** (`verify_jwt = false` : l'appelant
+      est la base via `pg_net`, il s'authentifie par `x-hook-secret`).
+- [ ] **`stripe-webhook`** : s'abonner à `refund.created`, `refund.updated` et surtout
+      `refund.failed` — **aucun des trois n'est dans `enabled_events`** de l'endpoint
+      `we_1UCRd0…` aujourd'hui — et appeler `enregistrer_verdict_remboursement()`.
+- [ ] **Prévenir le client.** `notify_order_status()` se tait sur un passage `paye` →
+      `rembourse` : la commande étant déjà `annulee`, `new.status is not distinct from
+      old.status` est vrai et la fonction sort sans rien envoyer. Il faut une clé d'événement
+      dédiée dans le trigger **et** dans le nœud Code n8n, avec le montant en euros.
+- [ ] **`app/locales/*.json`** promet déjà « Si ta carte a été débitée, tu seras remboursé
+      automatiquement. » L'application annonce donc un automatisme qui ne va pas encore
+      jusqu'au bout.
+
+### Le chemin manuel, tant que la fonction Edge n'existe pas
+
+Depuis le **tableau de bord Stripe** : Paiements → le PaymentIntent → *Refund*.
+
+⚠️ **Un remboursement fait à la main redescend bien en base** : l'endpoint Stripe **est**
+abonné à `charge.refunded` et `stripe-webhook` le traite (`nouveauStatut = 'rembourse'`).
+La ligne `payment_refunds` correspondante, elle, restera en `demande` — à passer à `effectue`
+à la main via `enregistrer_verdict_remboursement()`.
 
 Retrouver le paiement à partir d'une commande :
 
@@ -340,28 +416,50 @@ Et dans l'autre sens, depuis un `pi_...` orphelin : les **métadonnées** du Pay
 Stripe portent `order_id`, `order_number`, `amount_ar`, `fx_rate` et `payment_intent_row`.
 C'est le filet de rattrapage prévu pour le jour où un webhook se perd.
 
-⚠️ **Rembourser dans Stripe ne met PAS la base à jour** tant que `stripe-webhook` n'écoute pas
-`charge.refunded` / `payment_intent.refunded`. Le webhook doit passer la ligne en `rembourse` ;
-le trigger fait alors basculer `orders.payment_status` à `rembourse` tout seul. **Tant que le
-webhook n'existe pas, il faut le faire à la main**, sinon la commande reste marquée `paye`
-alors que l'argent est rendu.
-
 ### Le montant à rendre
 
 **Le montant en euros de `payment_intents.amount_minor`**, pas une reconversion au taux du
 jour. Le taux est figé dans la ligne (`fx_rate`) précisément pour ça : le client doit récupérer
 ce qu'il a payé, à l'euro près.
 
-⚠️ **Stripe ne rend pas les frais fixes** sur un remboursement. Une commande remboursée coûte
-donc les 0,25 € (et la commission, selon le tarif). C'est une raison de plus pour que le
-restaurant ne soit **pas** notifié avant que le paiement soit confirmé (§ 9).
+Chiffré sur TF-96 : 16 000 Ar au taux figé de 4 700 = **341 centimes**. Reconvertis au marché
+du jour (~5 008), ce serait **320 centimes** — 21 centimes de moins que ce que la banque du
+client a prélevés. Un écart, même minuscule, c'est le motif de contestation bancaire parfait,
+et une contestation coûte 20 € (66 fois le montant en jeu ici). Dans l'autre sens, Stripe
+refuse tout net : « raise an error when trying to refund more money than is left on a charge ».
 
-### Le cas « le restaurant refuse la commande »
+⚠️ **Stripe ne rend pas les frais** sur un remboursement — « Stripe's processing fees from the
+original transaction aren't returned ». Sur TF-96 : 0,30 € prélevés sur 3,41 € encaissés,
+soit **8,8 % du panier** perdus sur une commande dont on ne touche rien. C'est une raison de
+plus pour que le restaurant ne soit **pas** notifié avant que le paiement soit confirmé (§ 9).
 
-Une commande carte déjà encaissée puis refusée par le restaurant **doit être remboursée** —
-c'est aujourd'hui le seul cas qui l'exige, et il n'est **pas automatisé**. Le texte de suivi
-`tracking.refusedHint` (« Aucun montant ne te sera débité ») devient faux dans cette situation :
-il faudra le conditionner au moyen de paiement.
+⚠️ **Une nuance non vérifiée, qui change le coût réel** : un remboursement demandé peu après
+la charge peut partir en *reversal* plutôt qu'en *refund* — le débit disparaît du relevé du
+client au lieu qu'un crédit séparé lui soit versé, et Stripe ne retient alors aucun frais.
+À constater sur le premier remboursement réel, en lisant `destination_details.card.type` et la
+`balance_transaction` du `Refund`. C'est la différence entre « chaque refus coûte 0,30 € » et
+« un refus immédiat ne coûte rien ».
+
+### Ce qu'il faut écrire au client
+
+- Le crédit apparaît **sous 5 à 10 jours ouvrés**, selon la banque.
+- Si le paiement était récent, il se peut que **le débit disparaisse du relevé** au lieu d'un
+  crédit séparé (cas du *reversal*) — sans quoi le client cherchera un remboursement qui
+  n'apparaîtra jamais.
+- Le numéro de traçabilité (ARN) met jusqu'à **7 jours ouvrés** à être disponible.
+- Une carte non-euro sera reconvertie par la banque du client à **son** taux du jour : il peut
+  voir revenir un montant légèrement différent de celui qu'il a vu partir. Nous, on rend
+  exactement ce qui a été débité.
+
+### Le cas « paiement pas encore capturé » : on ANNULE, on ne rembourse pas
+
+Un PaymentIntent en `requires_capture` / `requires_action` ne se rembourse pas : il faut
+`POST /v1/payment_intents/{id}/cancel`, **et c'est gratuit**. Aujourd'hui `capture_method` vaut
+`automatic_async` : le cas ne se présente que sur les intents restés en `en_attente` /
+`requiert_action` (client parti en 3-D Secure) et sur le repli espèces (§ 11) — où la base
+marque `annule` sans que Stripe en sache rien. **Optimisation de fond**, à garder pour plus
+tard : autoriser à la commande et ne capturer qu'à l'acceptation par le restaurant supprimerait
+la classe de bug entière (annulation gratuite au lieu de remboursement payant).
 
 ---
 

@@ -13,24 +13,41 @@
 /en/partner      /en/restaurant-partners/       301
 /it/partner      /it/ristoranti-partner/        301
 
-# --- Filet de securite domaine canonique ------------------------------------
-# Toutes les URL absolues du site (canonical, og:image, sitemap, JSON-LD)
-# pointent sur https://taxifood.rentanoo.com/. Tant que ce nom n'existe pas en
-# DNS, une mise en ligne sur <site>.netlify.app publie deux pages dont le
-# canonical designe un hote injoignable : Google les sort de l'index et aucun
-# apercu ne s'affiche sur WhatsApp ou Facebook.
+# --- Domaine canonique ------------------------------------------------------
+# Le site vit a UNE seule adresse : https://taxifoodnosybe.distripro207.com/
+# C'est le "primary domain" Netlify, et c'est ce que designent toutes les URL
+# absolues des pages (canonical, hreflang, og:image, sitemap, JSON-LD).
 #
-# ATTENTION, ce qui suit a ete VERIFIE le 2026-08-24 et contredit ce qu'on lit
-# partout : definir taxifood.rentanoo.com comme "primary domain" ne suffit PAS.
-# Le domaine a ete pose, le certificat emis, HTTPS force — et le sous-domaine
-# taxifood-nosybe-landing.netlify.app continuait de repondre 200 avec le site
-# entier, canonical compris. Quatre essais sur deux minutes, jamais de 301.
-# Netlify ne redirige donc pas son propre sous-domaine vers le domaine
-# principal ; il ne pose pas non plus de noindex dessus en production.
+# Deux autres noms repondent encore et doivent renvoyer ici en 301 :
 #
-# Sans la regle ci-dessous, le site existe a deux adresses avec le meme
-# contenu. Ne pas la retirer.
-https://taxifood-nosybe-landing.netlify.app/*  https://taxifood.rentanoo.com/:splat  301!
+#   1. taxifood-nosybe-landing.netlify.app — le sous-domaine Netlify.
+#      ATTENTION, VERIFIE le 2026-08-24 et contraire a ce qu'on lit partout :
+#      designer un "primary domain" ne suffit PAS. Netlify ne redirige pas son
+#      propre sous-domaine et ne pose PAS de X-Robots-Tag: noindex dessus en
+#      production (il ne le fait que sur les deploy previews et les branch
+#      deploys). Sans la regle ci-dessous, le site existe a deux adresses avec
+#      le meme contenu.
+#
+#   2. taxifood.rentanoo.com — l'ANCIEN domaine canonique, abandonne le
+#      2026-09-06. On le redirige au lieu de le couper : des liens partages sur
+#      WhatsApp le portent encore, les binaires 1.0.0/1.1.0 deja en ligne sur
+#      l'App Store declarent CE nom dans leurs Universal Links, et un 301
+#      transfere a Google ce qui avait ete indexe dessus. Le couper au DNS
+#      casserait les trois d'un coup. A retirer seulement quand un build
+#      declarant le nouveau nom sera diffuse depuis un moment.
+#      ⚠️ Le domaine doit rester attache au site Netlify pour que cette regle
+#      s'applique : le retirer de Domain management la rend inerte.
+#      ⚠️ EXCEPTION /.well-known/ : iOS et Android NE SUIVENT PAS les
+#      redirections en allant chercher apple-app-site-association et
+#      assetlinks.json. Un 301 sur ces deux fichiers casserait l'association
+#      des liens pour toute NOUVELLE installation des binaires deja en ligne,
+#      qui declarent encore taxifood.rentanoo.com. Ils continuent donc d'etre
+#      servis en 200 sur l'ancien nom, et la regle passe AVANT le catch-all.
+https://taxifood.rentanoo.com/.well-known/*    /.well-known/:splat  200
+
+https://taxifood-nosybe-landing.netlify.app/*  https://taxifoodnosybe.distripro207.com/:splat  301!
+https://taxifood.rentanoo.com/*                https://taxifoodnosybe.distripro207.com/:splat  301!
+http://taxifood.rentanoo.com/*                 https://taxifoodnosybe.distripro207.com/:splat  301!
 
 # Suivi de commande depuis les e-mails : /o/<id>.
 # Avec l'app installee, iOS et Android interceptent ce lien AVANT le reseau et

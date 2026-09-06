@@ -25,7 +25,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-const SITE = 'https://taxifood.rentanoo.com';
+const SITE = 'https://taxifoodnosybe.distripro207.com';
 const APP_STORE = 'https://apps.apple.com/app/id6802418114';
 const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.chris97416.taxifoodnosybe';
 const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;

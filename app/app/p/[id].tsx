@@ -2,7 +2,7 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 
 /**
  * Point d'entrée des liens partagés vers un produit :
- * `https://taxifood.rentanoo.com/p/<id>` → écran `/product/<id>`.
+ * `https://taxifoodnosybe.distripro207.com/p/<id>` → écran `/product/<id>`.
  *
  * Ce fichier n'affiche rien. Il existe uniquement pour qu'expo-router sache
  * faire correspondre le CHEMIN du lien universel à un écran : le routeur

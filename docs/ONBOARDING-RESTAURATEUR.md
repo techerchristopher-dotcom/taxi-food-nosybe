@@ -326,7 +326,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 | | |
 |---|---|
 | Application (commande + espace partenaire) | https://taxifood.distripro207.com |
-| Site vitrine | https://taxifood.rentanoo.com — aussi https://taxifoodnosybe.distripro207.com |
+| Site vitrine | https://taxifoodnosybe.distripro207.com — aussi https://taxifoodnosybe.distripro207.com |
 | Guide restaurateur | https://taxifoodnosybe.distripro207.com/mon-espace/ |
 
 ## État des partenaires

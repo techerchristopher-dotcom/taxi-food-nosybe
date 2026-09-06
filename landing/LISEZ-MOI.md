@@ -431,12 +431,12 @@ Le dossier publié est **`landing/`**.
 l'intégralité des URL absolues du site — `canonical`, `og:url`, `og:image`, `twitter:image`, les
 **sept** `<loc>` du `sitemap.xml`, les vingt-quatre `<xhtml:link rel="alternate">` du graphe
 hreflang et les `@id`/`url` du graphe JSON-LD des six pages — pointent sur
-`https://taxifood.rentanoo.com/`.
+`https://taxifoodnosybe.distripro207.com/`.
 
 Au 21 août 2026, **ce nom n'existe pas** :
 
 ```bash
-$ dig @8.8.8.8 taxifood.rentanoo.com +noall +comment | grep -i status
+$ dig @8.8.8.8 taxifoodnosybe.distripro207.com +noall +comment | grep -i status
 ;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN
 ```
 
@@ -466,7 +466,7 @@ git ls-files landing/en landing/it landing/i18n landing/tools   # doit lister le
 
 **Séquence à respecter :**
 
-1. 🛑 Créer l'enregistrement DNS `taxifood.rentanoo.com` (CNAME vers le site Netlify), puis dans
+1. 🛑 Créer l'enregistrement DNS `taxifoodnosybe.distripro207.com` (CNAME vers le site Netlify), puis dans
    Netlify → *Domain management* → **le définir comme « primary domain »**. C'est aussi la seule
    protection réelle contre le contenu dupliqué : Netlify redirige alors le sous-domaine
    `netlify.app` en 301 vers le domaine canonique.
@@ -478,15 +478,15 @@ git ls-files landing/en landing/it landing/i18n landing/tools   # doit lister le
 3. Déployer, puis vérifier que le domaine répond vraiment **avant** de partager le lien :
 
 ```bash
-dig @8.8.8.8 taxifood.rentanoo.com +short                            # doit renvoyer une réponse
-curl -I https://taxifood.rentanoo.com/og/taxi-food-nosy-be.jpg       # attendu : 200, image/jpeg
+dig @8.8.8.8 taxifoodnosybe.distripro207.com +short                            # doit renvoyer une réponse
+curl -I https://taxifoodnosybe.distripro207.com/og/taxi-food-nosy-be.jpg       # attendu : 200, image/jpeg
 
 # LES SIX PAGES, pas deux : les quatre EN/IT sont celles qui risquent le 404.
 for u in / /en/ /it/ \
          /restaurants-partenaires/ /en/restaurant-partners/ /it/ristoranti-partner/ \
          /confidentialite/ /sitemap.xml \
          /site.webmanifest /en/site.webmanifest /it/site.webmanifest; do
-  curl -s -o /dev/null -w "%{http_code} $u\n" -L https://taxifood.rentanoo.com$u
+  curl -s -o /dev/null -w "%{http_code} $u\n" -L https://taxifoodnosybe.distripro207.com$u
 done
 ```
 
@@ -517,7 +517,7 @@ immédiatement.
       vérifier dans le rapport *Ciblage international* que les trois groupes hreflang sont
       reconnus. Un « lien alternatif non réciproque » signale une page manquante en ligne.
 - [ ] Vérifier le balisage sur <https://search.google.com/test/rich-results>.
-- [ ] Poser un lien depuis la page d'accueil de `rentanoo.com` vers `taxifood.rentanoo.com`,
+- [ ] Poser un lien depuis la page d'accueil de `rentanoo.com` vers `taxifoodnosybe.distripro207.com`,
       avec l'ancre « Livraison de repas à Nosy Be ». C'est le meilleur lien entrant disponible,
       il est gratuit, et il accélère l'indexation de plusieurs semaines.
 

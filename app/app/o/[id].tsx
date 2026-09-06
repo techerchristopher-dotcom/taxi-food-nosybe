@@ -2,7 +2,7 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 
 /**
  * Point d'entrée des liens de suivi envoyés par e-mail :
- * `https://taxifood.rentanoo.com/o/<id>` → écran `/order/<id>`.
+ * `https://taxifoodnosybe.distripro207.com/o/<id>` → écran `/order/<id>`.
  *
  * Même mécanique que `app/p/[id].tsx` : expo-router n'ouvre que des chemins
  * qu'il connaît, et `/o/<id>` n'en est pas un tant qu'aucun fichier ne porte ce

@@ -74,22 +74,21 @@
     Cache-Control = "public, max-age=0, must-revalidate"
 
 # --- Redirections -----------------------------------------------------------
-# ORDRE OBLIGATOIRE : creer l'enregistrement DNS taxifood.rentanoo.com et le
-# definir comme "primary domain" AVANT le premier deploiement public.
-# Toutes les URL absolues du site (canonical, og:image, sitemap, JSON-LD)
-# pointent sur ce nom. Publier avant qu'il n'existe, c'est declarer un
-# canonical vers un hote injoignable — Google desindexe, et les scrapers
-# WhatsApp/Facebook ne peuvent pas recuperer l'image d'apercu.
+# DOMAINE CANONIQUE : https://taxifoodnosybe.distripro207.com/ (primary domain
+# Netlify depuis le 2026-09-06). Toutes les URL absolues du site (canonical,
+# hreflang, og:image, sitemap, JSON-LD) pointent sur ce nom.
 #
-# ⚠️ Le "primary domain" NE SUFFIT PAS, verifie le 2026-08-24 : une fois le
-# domaine pose, le certificat emis et HTTPS force, le sous-domaine
-# <site>.netlify.app repondait toujours 200 avec le site entier. Netlify ne
-# redirige pas son propre sous-domaine, et ne pose PAS de X-Robots-Tag:
-# noindex dessus en production (il ne le fait que sur les deploy previews et
-# les branch deploys). La protection reelle est la regle de redirection
+# L'ancien nom taxifood.rentanoo.com est abandonne mais PAS coupe : il reste
+# attache au site et renvoie ici en 301 (voir _redirects). Le couper au DNS
+# casserait les liens deja partages sur WhatsApp et les Universal Links des
+# binaires 1.0.0/1.1.0 en ligne sur l'App Store, qui declarent encore ce nom.
+#
+# ⚠️ Le "primary domain" NE SUFFIT PAS, verifie le 2026-08-24 : le sous-domaine
+# <site>.netlify.app repond toujours 200 avec le site entier, canonical compris.
+# Netlify ne redirige pas son propre sous-domaine et ne pose PAS de
+# X-Robots-Tag: noindex dessus en production (seulement sur les deploy previews
+# et les branch deploys). La protection reelle est la regle de redirection
 # absolue posee dans _redirects.
-# Filet de secours si un deploiement netlify.app est inevitable avant le
-# branchement : voir la ligne commentee en bas de _redirects.
 
 # Normalisation d'URL : une regle par racine de langue. Sans les deux dernieres,
 # /en/index.html et /it/index.html restent servis comme doublons de /en/ et /it/.

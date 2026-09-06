@@ -286,7 +286,7 @@ que les cases cochées à la création de l'application :
 
 | Déclaration | Réponse retenue |
 |---|---|
-| Politique de confidentialité | `https://taxifood.rentanoo.com/confidentialite/` |
+| Politique de confidentialité | `https://taxifoodnosybe.distripro207.com/confidentialite/` |
 | **Identifiants de connexion** | les **trois** comptes (client, restaurant, livreur), chacun avec une note en anglais |
 | Publicité | aucune |
 | Fonctionnalités financières | **aucune** — inchangé, voir la note ci-dessous |
@@ -349,7 +349,7 @@ Pour chaque type, à l'étape « Data usage and handling » : **Collected** (jam
 **non éphémère** (stocké en base), finalité **App functionality** uniquement. Aperçu final
 confirmé : *« No data shared with third parties »*, et le lien de suppression apparaît
 correctement : *« You can submit a request to delete your account and associated data for
-this app https://taxifood.rentanoo.com/suppression-compte/ »*.
+this app https://taxifoodnosybe.distripro207.com/suppression-compte/ »*.
 
 ⚠️ **La question « Purchase history »** n'est pas sous « App activity » comme on aurait pu
 le croire, mais sous **« Financial info »** — c'est là qu'est l'historique des commandes,
@@ -358,7 +358,7 @@ malgré l'absence de toute donnée bancaire.
 ### ✅ Catégorie et coordonnées — terminé le 2026-08-31
 
 Store settings → App category : **Food & Drink**. Store listing contact details : e-mail
-`techerchristopher@gmail.com`, téléphone `+261373437912`, site `https://taxifood.rentanoo.com`.
+`techerchristopher@gmail.com`, téléphone `+261373437912`, site `https://taxifoodnosybe.distripro207.com`.
 Publié immédiatement (le formulaire n'attend pas l'envoi global de la fiche).
 
 ### ⏳ Restant — à faire à la main

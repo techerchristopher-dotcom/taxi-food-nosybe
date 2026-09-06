@@ -27,7 +27,7 @@ import os
 import re
 import sys
 
-BASE = "https://taxifood.rentanoo.com"
+BASE = "https://taxifoodnosybe.distripro207.com"
 LANGS = ["fr", "en", "it"]
 LABEL = {"fr": "FR", "en": "EN", "it": "IT"}
 # Endonymes : le nom d'une langue ne se traduit pas dans un selecteur.

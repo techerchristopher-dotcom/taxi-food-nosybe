@@ -8,7 +8,7 @@ Trois livrables distincts, à ne pas confondre :
 |---|---|---|
 | **`app/`** | l'application mobile (Expo, iOS + Android) | **en ligne sur l'App Store**, déposée sur le Play Store |
 | **`admin/`** | le tableau de bord de gestion (Next.js, web) | `taxi-food-admin-nosybe.netlify.app` |
-| **`landing/`** | le site de **pré-lancement**, trilingue | `taxifood-nosybe-landing.netlify.app` |
+| **`landing/`** | le site de **pré-lancement**, trilingue | **`taxifoodnosybe.distripro207.com`** |
 
 ## Où en est la soumission
 
@@ -467,9 +467,15 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 
 ## Le site de pré-lancement (`landing/`)
 
-**https://taxifood-nosybe-landing.netlify.app** — site statique, aucun build, aucune dépendance. Déploiement `netlify deploy --prod --dir=landing`. Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).
+**https://taxifoodnosybe.distripro207.com** — site statique, aucun build, aucune dépendance. Déploiement `netlify deploy --prod --dir=landing`. Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).
 
-⚠️ **Le domaine `taxifood.rentanoo.com` n'est PAS branché.** Les `canonical` et les `hreflang` pointent déjà dessus : tant que le DNS n'est pas posé, **Google n'indexe rien**. Il faut ajouter le domaine dans Netlify, poser un CNAME `taxifood` → `taxifood-nosybe-landing.netlify.app` chez **Hostinger** (rentanoo.com y est géré, `ns1/ns2.dns-parking.com` ; le site rentanoo lui-même tourne sur Railway), puis en faire le **domaine principal** dans Netlify — sinon les deux adresses se font concurrence.
+✅ **Domaine canonique changé le 2026-09-06 : `taxifood.rentanoo.com` → `taxifoodnosybe.distripro207.com`.** C'est le *primary domain* Netlify du site `taxifood-nosybe-landing`, et toutes les URL absolues des pages (canonical, hreflang, og:image, sitemap, JSON-LD, `Sitemap:` de `robots.txt`) le désignent désormais. Tant qu'elles pointaient sur rentanoo, **le nouveau nom ne pouvait pas être indexé** : le canonical envoyait Google ailleurs.
+
+⚠️ **`taxifood.rentanoo.com` est redirigé, pas coupé** — trois raisons de ne pas le retirer du DNS ni de Netlify : des liens `/p/<id>` partagés sur WhatsApp le portent encore ; les binaires **1.0.0/1.1.0 déjà en ligne sur l'App Store déclarent ce nom** dans leurs Universal Links (`app.json` déclare maintenant les **deux**, ce qui n'existera que dans le prochain build) ; et un 301 transfère à Google ce qui avait été indexé dessus. Les règles vivent dans `landing/_redirects`. ⚠️ **`/.well-known/*` y est explicitement servi en 200 sur l'ancien nom** : iOS et Android **ne suivent pas les redirections** en cherchant `apple-app-site-association` et `assetlinks.json`, un 301 casserait l'association des liens pour toute nouvelle installation des binaires en ligne.
+
+⚠️ **Le *primary domain* Netlify ne redirige RIEN tout seul** (vérifié le 2026-08-24, et ça contredit ce qu'on lit partout) : `taxifood-nosybe-landing.netlify.app` répondait 200 avec le site entier, canonical compris, et Netlify ne pose de `X-Robots-Tag: noindex` que sur les deploy previews et les branch deploys, **jamais en production**. La seule protection est la règle de redirection absolue de `_redirects`.
+
+⚠️ **L'indexation ne se déclenche pas toute seule** : le site n'est pas déclaré en Search Console, geste que seul le porteur du projet peut faire (validation de propriété). Sans lui, Google découvrira le nouveau nom par les 301 et le sitemap, mais lentement.
 
 **Six pages, deux parcours × trois langues.** Client : `/`, `/en/`, `/it/`. Restaurateur : `/restaurants-partenaires/`, `/en/restaurant-partners/`, `/it/ristoranti-partner/`.
 

@@ -24,6 +24,7 @@
       },
       "usesAppleSignIn": true,
       "associatedDomains": [
+        "applinks:taxifoodnosybe.distripro207.com",
         "applinks:taxifood.rentanoo.com"
       ]
     },
@@ -51,6 +52,21 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            {
+              "scheme": "https",
+              "host": "taxifoodnosybe.distripro207.com",
+              "pathPrefix": "/p/"
+            },
+            {
+              "scheme": "https",
+              "host": "taxifoodnosybe.distripro207.com",
+              "pathPrefix": "/r/"
+            },
+            {
+              "scheme": "https",
+              "host": "taxifoodnosybe.distripro207.com",
+              "pathPrefix": "/o/"
+            },
             {
               "scheme": "https",
               "host": "taxifood.rentanoo.com",

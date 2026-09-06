@@ -24,7 +24,7 @@ import { Share } from 'react-native';
  *   - `landing/.well-known/apple-app-site-association`
  *   - `landing/.well-known/assetlinks.json`
  */
-export const SITE = 'https://taxifood.rentanoo.com';
+export const SITE = 'https://taxifoodnosybe.distripro207.com';
 
 export function lienProduit(productId: string) {
   return `${SITE}/p/${productId}`;
@@ -43,7 +43,7 @@ export function lienRestaurant(restaurantId: string) {
  * n'en retiennent qu'un — l'URL. Le texte (« Margherita chez Les Siciliens »)
  * disparaît alors purement et simplement, et le destinataire reçoit un lien nu.
  * Vérifié sur simulateur le 2026-09-05 : avec `url` rempli, la feuille de
- * partage n'affichait que « taxifood.rentanoo.com », sans le nom du plat.
+ * partage n'affichait que « taxifoodnosybe.distripro207.com », sans le nom du plat.
  *
  * On perd un peu côté AirDrop et Notes, qui auraient préféré `url`. C'est le
  * bon arbitrage : l'usage visé ici, c'est WhatsApp.

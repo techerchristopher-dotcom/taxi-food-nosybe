@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
@@ -16,7 +17,10 @@ const POLL_MS = 12000;
 /** Espace restaurant — En livraison (suivi, lecture seule, rafraîchissement automatique). */
 export default function RestaurantDeliveringScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
-  const { data: orders, loading, reload } = useLoad(
+  // `error` est lu : sans lui, une liaison coupée s'affichait « Aucune commande en
+  // livraison » — la même contre-vérité que sur l'écran Commandes (voir le commentaire
+  // détaillé dans `index.tsx`).
+  const { data: orders, loading, error: erreurReseau, reload } = useLoad(
     () => listRestaurantOrders(DELIVERING, restaurantId),
     [restaurantId],
   );
@@ -32,9 +36,28 @@ export default function RestaurantDeliveringScreen() {
     <View style={styles.container}>
       <RestaurantHeader title="En livraison" />
 
+      {/* Au-dessus du branchement : la liste peut être vide au moment où la liaison
+          tombe, et « Aucune commande en livraison » serait alors trompeur. */}
+      {erreurReseau && orders ? (
+        <Text style={styles.warn}>
+          Connexion perdue — cette liste date de votre dernier rafraîchissement réussi.
+        </Text>
+      ) : null}
+
       {loading && !orders ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : erreurReseau && !orders ? (
+        <View style={styles.center}>
+          <Icon name="cloud_off" size={40} color={colors.textFaint} />
+          <Text style={styles.emptyTitle}>Liste indisponible</Text>
+          <Text style={styles.emptySub}>
+            Impossible de joindre Taxi Food. Vérifiez votre connexion — l'app réessaie
+            toute seule.
+          </Text>
+          <View style={{ height: 6 }} />
+          <Button label="Réessayer" icon="refresh" onPress={reload} />
         </View>
       ) : list.length === 0 ? (
         <View style={styles.center}>
@@ -61,4 +84,14 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
   emptyTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginTop: 6 },
   emptySub: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted, textAlign: 'center' },
+  warn: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.warnTextAlt,
+    backgroundColor: colors.warnBg,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.screen,
+    textAlign: 'center',
+  },
 });

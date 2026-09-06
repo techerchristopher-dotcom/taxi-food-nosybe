@@ -22,7 +22,15 @@ const POLL_MS = 12000;
 export default function RestaurantOrdersScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
   const setActiveCount = useRestaurantQueue((s) => s.setActiveCount);
-  const { data: orders, loading, reload } = useLoad(
+  // ⚠️ `error` est LU, et ce n'est pas un détail de confort.
+  //
+  // `useLoad` l'expose depuis toujours ; aucun écran ne le lisait. Quand la liaison de
+  // Nosy Be tombe — elle tombe —, `listRestaurantOrders` rejette, `orders` reste `null`,
+  // et cet écran affichait alors, en toutes lettres, « Aucune commande en cours ». C'est
+  // le pire mensonge que puisse faire cette application à un restaurateur : elle affirme
+  // qu'il n'a rien à préparer alors qu'elle n'a simplement pas pu poser la question. Il
+  // range son téléphone, et les commandes attendent.
+  const { data: orders, loading, error: erreurReseau, reload } = useLoad(
     () => listRestaurantOrders(ACTIVE, restaurantId),
     [restaurantId],
   );
@@ -105,9 +113,32 @@ export default function RestaurantOrdersScreen() {
     <View style={styles.container}>
       <RestaurantHeader title="Commandes en cours" />
 
+      {/* Liste déjà lue une fois puis connexion perdue : on garde ce qu'on a — c'est
+          mieux que rien — mais on dit qu'elle a cessé de se rafraîchir. Le bandeau vit
+          ICI, au-dessus du branchement : la liste peut très bien être VIDE quand la
+          liaison tombe, et « Aucune commande en cours » tout seul serait alors la même
+          contre-vérité qu'avant. */}
+      {erreurReseau && orders ? (
+        <Text style={styles.warn}>
+          Connexion perdue — cette liste date de votre dernier rafraîchissement réussi.
+        </Text>
+      ) : null}
+
       {loading && !orders ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : erreurReseau && !orders ? (
+        // Rien n'a JAMAIS été lu : on ne sait pas s'il a des commandes. On le dit.
+        <View style={styles.center}>
+          <Icon name="cloud_off" size={40} color={colors.textFaint} />
+          <Text style={styles.emptyTitle}>Liste indisponible</Text>
+          <Text style={styles.emptySub}>
+            Impossible de joindre Taxi Food. Vos commandes sont peut-être là, mais nous ne
+            pouvons pas les lire. Vérifiez votre connexion — l'app réessaie toute seule.
+          </Text>
+          <View style={{ height: 6 }} />
+          <Button label="Réessayer" icon="refresh" onPress={reload} />
         </View>
       ) : list.length === 0 ? (
         <View style={styles.center}>
@@ -179,5 +210,15 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginTop: 6 },
   emptySub: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted, textAlign: 'center' },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, textAlign: 'center', marginBottom: 12 },
+  warn: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.warnTextAlt,
+    backgroundColor: colors.warnBg,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.screen,
+    textAlign: 'center',
+  },
   actionRow: { flexDirection: 'row', gap: 10 },
 });

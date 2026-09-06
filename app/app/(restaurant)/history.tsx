@@ -1,5 +1,6 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
+import { Button } from '../../components/Button';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
@@ -14,7 +15,12 @@ const DONE: OrderStatus[] = ['livree', 'annulee'];
 /** Espace restaurant — Historique (plus récent en premier, lecture seule). */
 export default function RestaurantHistoryScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
-  const { data: orders, loading } = useLoad(() => listRestaurantOrders(DONE, restaurantId), [restaurantId]);
+  // `error` est lu : sans lui, une liaison coupée annonçait « Pas encore d'historique » à
+  // un restaurant qui en a un (voir le commentaire détaillé dans `index.tsx`).
+  const { data: orders, loading, error: erreurReseau, reload } = useLoad(
+    () => listRestaurantOrders(DONE, restaurantId),
+    [restaurantId],
+  );
   const list = orders ?? [];
 
   return (
@@ -24,6 +30,16 @@ export default function RestaurantHistoryScreen() {
       {loading && !orders ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : erreurReseau && !orders ? (
+        <View style={styles.center}>
+          <Icon name="cloud_off" size={40} color={colors.textFaint} />
+          <Text style={styles.emptyTitle}>Historique indisponible</Text>
+          <Text style={styles.emptySub}>
+            Impossible de joindre Taxi Food. Vérifiez votre connexion.
+          </Text>
+          <View style={{ height: 6 }} />
+          <Button label="Réessayer" icon="refresh" onPress={reload} />
         </View>
       ) : list.length === 0 ? (
         <View style={styles.center}>

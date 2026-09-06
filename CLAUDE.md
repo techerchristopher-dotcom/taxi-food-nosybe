@@ -178,6 +178,16 @@ Ce qu'il faut savoir sans l'ouvrir :
   débités** (`payment_intents.amount_minor`), jamais une reconversion de l'ariary au taux du
   jour. Un paiement jamais capturé est **annulé** (gratuit), pas remboursé. Détail, recette et
   limites : `docs/PAIEMENT-STRIPE.md` § 8.
+- ✅ **Un remboursement se déclenche aussi à la main, et le client en est prévenu.** Cinquième
+  onglet **Remboursements** du tableau de bord admin : montant modifiable (un plat manquant
+  n'est pas une commande annulée), motif obligatoire, double confirmation, et le rappel que
+  **Stripe ne rend pas ses frais**. Côté client, le trigger `notifier_remboursement()` sur
+  `payment_refunds` envoie l'e-mail dès qu'un remboursement passe à `effectue` — jamais sur
+  `demande`, `echoue` ni `sans_objet`. ⚠️ **Le workflow n8n reste à réimporter sur
+  l'instance**, sans quoi le client reçoit l'e-mail d'annulation à la place.
+- ⚠️ **La liste des remboursables part des `payment_intents` capturés, jamais de
+  `payment_method`.** Une commande peut porter « carte » sans qu'un centime ait été pris, et
+  `basculer_en_especes()` peut la repasser en espèces alors qu'un paiement vit encore.
 - **Les prix restent en ariary, le débit se fait en euros** à un taux **fixe** lu dans
   `payment_config.fx_ar_per_eur` (4 700 Ar = 1 EUR). Jamais une constante dans le code.
   L'écran de validation ET l'écran de paiement affichent le total en ariary, le montant exact
@@ -205,7 +215,10 @@ Ce qu'il faut savoir sans l'ouvrir :
   et le restaurant ne serait *jamais* prévenu ; sans `payment_method`, le repli espèces non
   plus. Toute la garde est conditionnée à `carte_active` : elle est donc **inerte tant que
   l'interrupteur est à `false`**, et « cb » continue d'y désigner le terminal du livreur.
-  ⚠️ **Vérifiée par lecture, jamais exécutée** — à rejouer au premier vrai paiement.
+  ✅ **Exécutée pour de vrai le 2026-09-06**, et la preuve est dans `net._http_response` :
+  aucun appel sortant entre 05 h 44 et 08 h 10 alors que cinq commandes carte non payées
+  étaient créées dans cette fenêtre (TF-91, 92, 94, 95, 96), puis push + n8n à **08:10:10**,
+  une seconde après la capture de TF-96 à 08:10:09. La garde tient, et son rattrapage aussi.
 - ✅ **Double encaissement fermé des deux côtés** : `mark_order_delivered` fait primer
   `payment_status = 'paye'` sur `payment_method` et n'enregistre alors aucun cash, même si
   l'appelant coche la case. `app/components/DeliverSheet.tsx` porte la même règle à l'écran —
@@ -213,10 +226,29 @@ Ce qu'il faut savoir sans l'ouvrir :
 - ⚠️ **Reste ouvert** : le repli espèces n'annule toujours pas le PaymentIntent chez Stripe
   (il faudrait une Edge Function). La colonne `carte_non_encaissee` du rapport rend le cas
   visible — **elle doit rester à zéro**.
-- ⚠️ **`creer-paiement` déployée est la version 1**, antérieure au correctif de taux du dépôt
-  (commit `436414a`). Le dépôt fait foi, la production non : redéployer avec
-  **`verify_jwt = true`** avant d'ouvrir le canal. `supabase/config.toml` fige désormais ce
-  réglage pour toutes les fonctions.
+- ✅ **`creer-paiement` déployée est la version 4**, conforme au dépôt (relue le 2026-09-06 :
+  garde `CLE_STRIPE_VALIDE`, `try/catch` global, nettoyage récursif de `raw_event`), avec
+  `verify_jwt = true`. `rembourser-paiement` est déployée elle aussi et répond bien les codes
+  du dépôt (`identifiant_manquant`, `devise_incoherente`, `sans_objet`… vus en production).
+  Ce paragraphe annonçait la version 1 : il datait d'avant le chantier du 2026-09-06.
+  `supabase/config.toml` fige désormais `verify_jwt` pour toutes les fonctions.
+- 🚨 **LE TROU LE PLUS GRAVE ENCORE OUVERT : le client peut écrire lui-même le total de sa
+  commande.** `creer-paiement` relit `orders.total` — c'est juste — mais `orders`,
+  `order_items` et `order_item_options` acceptent toujours un **INSERT direct par l'API REST**
+  (policies `orders_insert_own`, `order_items_insert_own`, `order_item_options_insert_own`),
+  et `orders` ne porte **aucune contrainte CHECK** : `total`, `delivery_fee`, `commission_rate`
+  et `commission_amount` sont libres, `address_id` est nullable. Avec la clé anon (publique par
+  conception) et un compte gratuit : un repas payé 50 centimes en carte, une commande espèces
+  à 0 Ar qui réveille quand même le restaurant, une livraison sans GPS, un rapport de clôture
+  falsifié. Vérifié le 2026-09-06 : **aucune source** (`app/`, `admin/`, `landing/`) n'insère
+  dans ces trois tables — le seul `.insert(` du projet porte sur `addresses` — et `create_order`
+  est `SECURITY DEFINER` appartenant à `postgres`, propriétaire des trois tables, aucune en
+  `FORCE ROW LEVEL SECURITY` : elle n'est pas soumise à la RLS et n'a jamais eu besoin de ces
+  policies. Le correctif tient en trois lignes, à appliquer avec son fichier de migration :
+  `drop policy if exists orders_insert_own on public.orders;` et les deux équivalents.
+  ⚠️ Deux sessions successives ont vu leur écriture **refusée par le classificateur de
+  permissions** (DDL sur des policies RLS) : c'est un geste que le porteur du projet doit faire
+  lui-même, ou autoriser explicitement.
 
 ## Codes promo (2026-09-06)
 
@@ -244,6 +276,31 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
   commandes portant le même code. L'unicité par client, elle, ne dépend jamais de ce comptage.
 - ⚠️ **Le rapport de clôture compte les frais de livraison NETS de remise** (`admin/`), et le
   net à reverser au restaurant est inchangé.
+- ✅ **Le champ se saisit AU PANIER**, sous la ligne « Frais de livraison » : `components/CodePromo.tsx`
+  monté à l'identique par `(tabs)/cart.tsx` et `checkout.tsx`, vérification partagée dans
+  `store/promo.ts`. Le **code** vit avec le panier (AsyncStorage, il survit au détour par
+  `/login`) ; la **vérification** vit en mémoire et porte les entrées sur lesquelles elle a été
+  faite — une entrée qui change périme le résultat, jamais un montant hérité à l'écran.
+- ⚠️ **`promo.aEnvoyer` n'est PAS `promo.valide`.** Tout code retenu qu'aucune réponse de la
+  base n'a expressément refusé part à `create_order`, qui tranche. N'envoyer que les codes
+  confirmés perdait la remise en silence dans deux cas très réels sur la liaison de Nosy Be :
+  vérification encore en vol au moment du tap, et échec réseau. L'aperçu à l'écran, lui, ne
+  bouge que confirmé : **on peut facturer moins qu'annoncé, jamais plus.**
+- ✅ **Les frais de livraison affichés sont réalignés sur ceux qui seront facturés**
+  (`app/lib/fraisLivraison.ts`, monté par les deux seuls écrans qui affichent un total).
+  Le panier figeait `deliveryFeeValue` au premier ajout et ne le rafraîchissait jamais, alors
+  que `create_order` relit `restaurants.delivery_fee` : au passage de 5 000 à 10 000 Ar, un
+  panier resté ouvert affichait « livraison offerte » avec le code promo et se faisait
+  facturer 5 000 Ar. Vérifié en production le 2026-09-06 avec un panier volontairement périmé
+  à 5 000 : l'écran affiche 10 000. ⚠️ **Les prix des plats et des suppléments, eux, restent
+  figés dans le panier persisté** — la vraie réponse est une revalidation du panier à
+  l'ouverture (prix, disponibilité, rupture), qui est un chantier, pas un correctif.
+- ⚠️ **RIEN, NULLE PART, NE LIBÈRE UNE UTILISATION CONSOMMÉE.** `create_order` insère dans
+  `promo_redemptions` au moment de créer la commande ; ni une annulation, ni un paiement carte
+  qui échoue ne rendent le code au client. C'est déjà arrivé : l'unique ligne de la table
+  appartient à **TF-91**, commande carte jamais payée. Et comme `max_utilisations` est NULL
+  sur TAXIFOOD50 et que `promo_redemptions_user_id_fkey` est `ON DELETE CASCADE`, supprimer
+  puis recréer son compte rend le code réutilisable sans plafond.
 
 ## Règles produit importantes (déjà implémentées)
 

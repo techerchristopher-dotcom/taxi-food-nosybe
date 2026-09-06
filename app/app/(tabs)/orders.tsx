@@ -19,9 +19,14 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const session = useSession((s) => s.session);
-  // Pas de session = pas de commandes à lire. `listOrders()` ne lèverait pas (la RLS filtre
-  // sur `auth.uid()` et renvoie une liste vide), mais on évite la requête à chaque focus
-  // d'onglet — et surtout on distingue « aucune commande » de « pas connecté ».
+  // Pas de session = pas de commandes à lire. `listOrders()` ne lèverait pas, mais on évite
+  // la requête à chaque focus d'onglet — et surtout on distingue « aucune commande » de
+  // « pas connecté ».
+  //
+  // ⚠️ Ne JAMAIS compter sur la seule RLS pour que cet écran ne montre que ses propres
+  // commandes : `orders` porte quatre politiques SELECT qui se cumulent en OU (propriétaire,
+  // staff du restaurant, livreur, admin). C'est `listOrders()` qui filtre sur `user_id`, et
+  // ce filtre n'est pas décoratif — voir son commentaire dans `data/api.ts`.
   const { data: orders, loading } = useLoad(
     () => (session ? listOrders() : Promise.resolve<Order[]>([])),
     [session?.userId ?? ''],

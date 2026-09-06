@@ -381,10 +381,27 @@ export async function getProductDetail(id: string): Promise<{
 }
 
 // --- Adresses ---------------------------------------------------------------
+/**
+ * MES adresses de livraison — le Profil et le choix d'adresse du tunnel de commande.
+ *
+ * ⚠️ Même piège que `listOrders` : la RLS ne suffit pas. `addresses` porte, en plus de
+ * `addresses_all_own`, une politique SELECT qui ouvre l'adresse d'une commande au staff du
+ * restaurant et au livreur qui la porte — il leur faut bien savoir où livrer. Sans filtre,
+ * un restaurateur passé côté client voyait donc les adresses de SES CLIENTS listées comme
+ * les siennes (2 lignes pour `demo.resto`, qui n'en a aucune), et pouvait en choisir une
+ * comme adresse de livraison. Le filtre `user_id` est ce qui sépare les deux lectures.
+ */
 export async function listAddresses(): Promise<Address[]> {
+  // `getSession()` lit le jeton local — pas d'aller-retour réseau.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return [];
+
   const { data, error } = await supabase
     .from('addresses')
     .select('id, label, zone, landmark, phone, instructions, is_default, latitude, longitude')
+    .eq('user_id', session.user.id)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -534,10 +551,33 @@ function mapOrder(o: OrderJoinRow): Order {
   };
 }
 
+/**
+ * MES commandes — l'onglet « Commandes » du parcours client.
+ *
+ * ⚠️ Le filtre `user_id` est OBLIGATOIRE, la RLS ne suffit pas. `orders` porte quatre
+ * politiques SELECT permissives qui se cumulent en OU : propriétaire, staff du restaurant,
+ * livreur (courses disponibles + les siennes), admin. Sans ce filtre, la requête renvoyait
+ * donc à un restaurateur les commandes de SES CLIENTS — nom, téléphone et adresse joints —
+ * et à un livreur toutes les courses en attente, dans leur historique PERSONNEL. Vérifié le
+ * 2026-09-06 avec de vrais jetons : 4 lignes pour `demo.resto`, 5 pour `demo.livreur`, zéro
+ * leur appartenant. C'est le pendant exact de l'avertissement déjà porté par
+ * `listRestaurantOrders` — il manquait dans l'autre sens.
+ *
+ * Le sujet est devenu quotidien avec le bouton « App client » de l'en-tête pro (2026-09-06) :
+ * un partenaire est désormais à UN tap de cet écran, alors qu'il n'y venait jamais avant.
+ */
 export async function listOrders(): Promise<Order[]> {
+  // `getSession()` lit le jeton déjà en mémoire/stockage — pas d'aller-retour réseau,
+  // contrairement à `getUser()`. Sans session, rien à lire : on ne lance pas la requête.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return [];
+
   const { data, error } = await supabase
     .from('orders')
     .select(ORDER_SELECT)
+    .eq('user_id', session.user.id)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data as unknown as OrderJoinRow[]).map(mapOrder);

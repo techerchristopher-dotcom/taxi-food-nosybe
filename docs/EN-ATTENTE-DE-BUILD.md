@@ -886,3 +886,85 @@ correction : 0 / 0 pour les deux comptes pro, **4 / 1 inchangés** pour `demo.ap
    `/address` la propose toujours. C'est le contrôle de non-régression du parcours client.
 5. Passer une commande de bout en bout avec un compte purement client : l'adresse
    enregistrée reste sélectionnable, la commande arrive bien chez le restaurant.
+
+## 📵 Réseau coupé : l'espace pro ne dit plus « aucune commande » (2026-09-06)
+
+Trouvé en revue de parcours du chantier partenaire, **corrigé**
+(`app/app/(restaurant)/index.tsx`, `delivering.tsx`, `history.tsx`).
+
+`lib/useLoad.ts` expose `error` depuis toujours. **Aucun écran de l'application ne le
+lisait.** Sur les trois écrans de l'espace restaurant, une lecture qui échoue laisse
+`orders` à `null`, donc `list` à `[]`, donc l'écran affirmait :
+
+- « **Aucune commande en cours** — Les nouvelles commandes apparaissent ici automatiquement. »
+- « **Aucune commande en livraison** »
+- « **Pas encore d'historique** »
+
+À Nosy Be la liaison tombe. Le restaurateur range son téléphone pendant que ses commandes
+attendent — et l'application le lui a dit noir sur blanc. C'est la contre-vérité la plus
+coûteuse que puisse produire cet écran.
+
+Deux états distincts désormais :
+
+| Situation | Avant | Après |
+|---|---|---|
+| Rien n'a **jamais** été lu | « Aucune commande en cours » | **« Liste indisponible »** + bouton **Réessayer** |
+| Déjà lu, puis connexion perdue | liste (ou vide) muette | bandeau ambre **« Connexion perdue — cette liste date de votre dernier rafraîchissement réussi. »** |
+
+⚠️ Le bandeau est posé **au-dessus** du branchement vide/liste, pas dans la liste : une
+liaison qui tombe alors que la liste est vide affichait sinon « Aucune commande en cours »
+tout seul, exactement le défaut qu'on corrige.
+
+Vérifié en navigateur, connecté `marcantoine14000@yahoo.fr` (Chez Bidul & Truc), les appels
+vers `supabase.co` rejetés : bandeau sur Commandes, état « Historique indisponible » avec
+Réessayer sur un onglet jamais chargé. ⚠️ Compter ~10 s avant l'affichage de l'erreur :
+`supabase-js` réessaie tout seul avant de rejeter.
+
+**À passer sur appareil :** mode avion sur l'écran Commandes, puis relancer l'app en mode
+avion. On doit lire « Liste indisponible », jamais « Aucune commande en cours ».
+
+Les écrans **client** et **livreur** portent le même défaut (`(tabs)/index.tsx`,
+`(tabs)/orders.tsx`, `(livreur)/index.tsx`, `(livreur)/history.tsx`, `restaurant/[id].tsx`,
+`product/[id].tsx`) — **non corrigés**, hors périmètre de cette revue.
+
+## 🎯 Le repère de la visite suit la fenêtre (2026-09-06)
+
+Corrigé dans `app/components/ZoneVisite.tsx`. Le composant publie des coordonnées de
+**fenêtre** (`measureInWindow`) mais ne se remesurait que sur `onLayout` — qui ne se
+déclenche que si la vue bouge **dans son parent**. Une fenêtre qui change de hauteur sans
+que la barre d'onglets change de taille laissait donc la zone périmée.
+
+Reproduit en navigateur, visite ouverte, en passant de 360×640 à 375×667 : le contour
+flottait ~45 px trop haut, sur une bande blanche vide, et l'onglet « Commandes » restait
+dans l'ombre — l'inverse exact de la règle « le repère ne masque jamais sa cible ».
+
+Concerne **taxifood.distripro207.com** (fenêtre redimensionnable), le **Split View de
+l'iPad** et l'apparition du **clavier**. L'app native est verrouillée en portrait
+(`app.json`), la rotation n'est donc pas un cas.
+
+## ⚠️ Deux points de la visite laissés à l'arbitrage (2026-09-06)
+
+**1. Sur un écran de 667 pt, la commande d'exemple est coupée avant ses boutons.**
+Mesuré à 375×667 (iPhone SE 2/3, iPhone 8, et le mode compatibilité iPhone dans lequel le
+relecteur Apple teste sur iPad) : la zone d'exemple fait **335 px**, la carte en réclame
+**508**. Il manque 173 px. Ce qui disparaît sous la bulle : l'adresse, la puce
+« Itinéraire », le téléphone, et surtout **« Refuser » / « Accepter »** — les deux boutons
+dont l'étape 1 explique précisément l'usage. À 375×812 tout tient, c'est pourquoi ça n'a
+pas été vu. La carte **est** défilable (`ScrollView`), mais rien ne le laisse deviner :
+`showsVerticalScrollIndicator={false}`.
+Effet de bord à mesurer avant de trancher : le restaurateur qui fait défiler pour atteindre
+« Accepter » chasse du même geste le panneau **« EXEMPLE »** hors de l'écran — il lui reste
+une commande #TF-000 d'apparence parfaitement réelle, dont les boutons ne font rien
+(`pointerEvents="none"`).
+
+**2. « Fermer la visite » à l'étape 1 la supprime définitivement, sans le dire.**
+Vérifié en base : un tap sur « Fermer la visite » à 1/5 écrit `profiles.visite_pro_vue_le`
+sur-le-champ. Or la case **« Ne plus afficher cette visite »** n'apparaît qu'à l'étape 5 :
+sa seule présence enseigne le contraire — « je ferme sans cocher, donc elle reviendra ».
+Le cas est concret : une vraie commande arrive pendant la visite, il ferme pour la servir,
+et il ne reverra jamais la visite. Le repêchage existe (Réglages → « Découvrir votre
+espace ») mais il est présenté à l'étape **4** — celle qu'il n'a pas vue.
+L'arbitrage « fermer mémorise aussi » se défend (se la reprendre chaque soir de service
+serait pire) ; c'est l'**affichage** qui ment. Deux voies : afficher la case à toutes les
+étapes (coût : ~36 px de bulle en plus, ce qui aggrave le point 1), ou dire dans le lien
+de fermeture qu'on la retrouve dans les Réglages.

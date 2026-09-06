@@ -228,8 +228,20 @@ c'est le seul moment où on peut vérifier que le nombre vient bien de son tél�
   posé le 2026-09-06. Le message de contrôle a été **remis par Telegram** (`ok: true`).
   ⚠️ Les boutons Accepter / Refuser n'ont PAS encore été éprouvés par une vraie
   commande : le restaurant est `is_open = false`, donc personne ne peut lui commander.
-- ⚠️ **La Cabane** — `7699975131` est le **téléphone du porteur du projet**, posé
-  pendant les tests. Ses commandes arrivent chez lui, pas au restaurant. **À refaire.**
+- ✅ **La Cabane** — `7381518363`, canal privé de la patronne (« Nancia Elie »), posé le
+  2026-09-06. Remplace `7699975131`, qui était le **téléphone du porteur du projet** posé
+  pendant les tests : ses commandes lui arrivaient au lieu d'aller au restaurant.
+- ❌ **Les Siciliens, Taxi Be, Angelo** — aucun canal.
+
+### ⚠️ Le contrôle qui a rattrapé un bug bloquant, le 2026-09-06
+
+La commande de test n'est pas une formalité. La toute première, chez Chez Bidul & Truc, est
+arrivée **à 0 Ar et sans aucun plat** : le restaurant était prévenu avant que `create_order`
+ait fini de remplir la commande. Voir `CLAUDE.md` § « Le restaurant recevait une commande
+VIDE ». Le défaut ne se voyait QUE sur le chemin espèces — le chemin carte le masquait.
+
+**Ne jamais sauter l'étape 6.** Voir la ligne remplie en base ne prouve rien ; voir le
+message arriver ne prouve pas non plus qu'il est juste. Lire ce qu'il contient.
 
 ### ⚠️ Le piège de la recherche, rencontré le 2026-09-06
 
@@ -360,7 +372,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 
 | Restaurant | E-mail | Mot de passe | Téléphone | Compte | Telegram |
 |---|---|---|---|---|---|
-| La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ⚠️ à refaire — pointe sur le téléphone du porteur du projet |
+| La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ✅ 2026-09-06 — `7381518363` (« Nancia Elie »), message de contrôle remis |
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
 | Les Siciliens | — | — | — | ❌ | ❌ |
 | Taxi Be | — | — | — | ❌ | ❌ |

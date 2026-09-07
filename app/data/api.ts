@@ -97,11 +97,12 @@ type ProductRow = {
   diet_tags?: string[] | null;
   packaging_fee?: number | null;
   packaging_label?: string | null;
+  sort_order?: number | null;
 };
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label';
+  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
 
 type CategoryRow = {
   id: string;
@@ -334,7 +335,16 @@ export async function getMenu(
       .from('products')
       .select(PRODUCT_COLS)
       .eq('restaurant_id', restaurantId)
-      .eq('is_archived', false),
+      .eq('is_archived', false)
+      // ⚠️ Tri EXPLICITE, obligatoire. Sans lui, Postgres rend les lignes dans
+      // l'ordre physique du fichier, et une ligne modifiee est reecrite a la
+      // fin : chaque changement de prix ou de disponibilite faisait descendre le
+      // plat au bas de sa categorie chez le client. Constate le 2026-09-07 — un
+      // croque-monsieur passe de la 3e a la 15e place en recevant un label.
+      // `name` departage les egalites pour que l'ordre reste stable meme si deux
+      // plats partagent le meme rang.
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
   ]);
   if (cats.error) throw cats.error;
   if (prods.error) throw prods.error;

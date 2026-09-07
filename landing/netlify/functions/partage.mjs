@@ -44,6 +44,35 @@ const APP = 'https://taxifood.distripro207.com';
 const PLAY_PUBLIE = false;
 const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;
 
+/**
+ * Image d'apercu, redimensionnee pour les robots de WhatsApp et Facebook.
+ *
+ * ⚠️ CONSTATE LE 2026-09-07 : l'apercu WhatsApp n'affichait AUCUNE image. La
+ * cause n'etait pas la balise mais le POIDS — `og:image` pointait sur le fichier
+ * d'origine, un PNG de **1,38 Mo**. Au-dela de quelques centaines de kilo-octets
+ * le robot abandonne l'image sans rien dire, et le partage perd exactement ce
+ * qui le rend efficace : la photo du plat.
+ *
+ * 600x315 est le format minimal que Facebook documente pour un grand apercu.
+ * Le transformateur Supabase rend alors ~270 Ko en PNG, et ~30 Ko en WebP pour
+ * les robots qui l'acceptent.
+ *
+ * ⚠️ `quality` n'a AUCUN effet sur un PNG, et `format=jpeg` n'existe pas cote
+ * Supabase (verifie : 400). C'est donc la TAILLE qui fait tout le travail — ne
+ * pas la remonter en croyant gagner en nettete.
+ *
+ * ⚠️ Ne reecrit que les URL du stockage Supabase : l'image par defaut vit sur le
+ * site et n'a pas de transformateur.
+ */
+const OBJET = '/storage/v1/object/public/';
+function apercuImage(url) {
+  const u = String(url ?? '');
+  const i = u.indexOf(OBJET);
+  if (i < 0) return u;
+  return `${u.slice(0, i)}/storage/v1/render/image/public/${u.slice(i + OBJET.length)}`
+    + '?width=600&height=315&resize=cover&quality=70';
+}
+
 const echapper = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -94,12 +123,16 @@ function page({ titre, description, image, lien, prix, commander }) {
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
-<meta property="og:image" content="${echapper(image)}">
+<meta property="og:image" content="${echapper(apercuImage(image))}">
+<meta property="og:image:secure_url" content="${echapper(apercuImage(image))}">
+<meta property="og:image:width" content="600">
+<meta property="og:image:height" content="315">
+<meta property="og:image:alt" content="${t}">
 <meta property="og:url" content="${echapper(lien)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${t}">
 <meta name="twitter:description" content="${d}">
-<meta name="twitter:image" content="${echapper(image)}">
+<meta name="twitter:image" content="${echapper(apercuImage(image))}">
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
@@ -112,6 +145,13 @@ function page({ titre, description, image, lien, prix, commander }) {
   p { color:#5C554E; line-height:1.5; margin:0 0 24px; }
   a.cta { display:block; text-align:center; background:#E8590C; color:#fff; text-decoration:none;
           font-weight:600; font-size:17px; padding:16px; border-radius:999px; }
+  /* ⚠️ Le telechargement est un CHOIX, pas une note de bas de page. Il etait
+     rendu comme un lien gris de 14 px sous le bouton rouge : personne ne le
+     lisait comme une action. Meme forme, meme hauteur, meme graisse que le
+     bouton principal — seule la couleur dit lequel est le chemin conseille. */
+  a.cta2 { display:block; text-align:center; margin-top:12px; background:#fff; color:#DF3228;
+           border:2px solid #DF3228; text-decoration:none; font-weight:600; font-size:17px;
+           padding:14px; border-radius:999px; }
   a.sec { display:block; text-align:center; color:#5C554E; text-decoration:none; font-size:14px; margin-top:16px; }
   footer { margin-top:32px; font-size:12px; color:#8A827A; text-align:center; }
 </style>
@@ -123,7 +163,7 @@ function page({ titre, description, image, lien, prix, commander }) {
   ${prix ? `<p class="prix">${echapper(prix)}</p>` : ''}
   <p>${d}</p>
   <a class="cta" href="${echapper(commander)}">Commander maintenant</a>
-  <a class="sec" id="app" href="${APP_STORE}" hidden>Ou télécharger l’application</a>
+  <a class="cta2" id="app" href="${APP_STORE}" hidden>Télécharger l’application</a>
   <a class="sec" href="${SITE}/">Découvrir Taxi Food</a>
   <footer>Livraison de repas à Nosy Be</footer>
 </main>

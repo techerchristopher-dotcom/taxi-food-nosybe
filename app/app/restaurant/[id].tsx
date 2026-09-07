@@ -274,7 +274,7 @@ export default function RestaurantMenuScreen() {
         texte={
           aPartager
             ? textePartageProduit({ name: aPartager.name, restaurantName: restaurant.name })
-            : `${restaurant.name} livre avec Taxi Food 🛵`
+            : `${restaurant.name} livre avec Taxi Food`
         }
         url={aPartager ? lienProduit(aPartager.id) : lienRestaurant(restaurant.id)}
         onClose={() => setAPartager(undefined)}
@@ -333,7 +333,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
       <View style={styles.rPartage}>
         <PartageEnLigne
           titre={r.name}
-          texte={`${r.name} livre avec Taxi Food 🛵`}
+          texte={`${r.name} livre avec Taxi Food`}
           url={lienRestaurant(r.id)}
         />
       </View>

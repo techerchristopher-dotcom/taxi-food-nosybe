@@ -61,11 +61,11 @@ async function partager(titre: string, texte: string, url: string) {
 
 export function partagerProduit(p: { id: string; name: string; restaurantName?: string | null }) {
   const chez = p.restaurantName ? ` chez ${p.restaurantName}` : '';
-  return partager(p.name, `${p.name}${chez} — à commander sur Taxi Food 🛵`, lienProduit(p.id));
+  return partager(p.name, `${p.name}${chez} — à commander sur Taxi Food`, lienProduit(p.id));
 }
 
 export function partagerRestaurant(r: { id: string; name: string }) {
-  return partager(r.name, `${r.name} livre avec Taxi Food 🛵`, lienRestaurant(r.id));
+  return partager(r.name, `${r.name} livre avec Taxi Food`, lienRestaurant(r.id));
 }
 
 // --- Partage explicite : WhatsApp, Facebook, lien copié --------------------
@@ -83,7 +83,7 @@ export function partagerRestaurant(r: { id: string; name: string }) {
 /** Le texte qui accompagne un produit partagé. */
 export function textePartageProduit(p: { name: string; restaurantName?: string | null }) {
   const chez = p.restaurantName ? ` chez ${p.restaurantName}` : '';
-  return `${p.name}${chez} — à commander sur Taxi Food 🛵`;
+  return `${p.name}${chez} — à commander sur Taxi Food`;
 }
 
 /**

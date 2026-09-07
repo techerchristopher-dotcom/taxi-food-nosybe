@@ -71,10 +71,22 @@ const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;
  * deja un JPEG au bon format sur le site.
  */
 const OBJET = '/storage/v1/object/public/';
+const RENDU = '/storage/v1/render/image/public/';
 function apercuImage(url) {
   const u = String(url ?? '');
-  if (!u.includes(OBJET)) return u;
-  return `${SITE}/.netlify/images?url=${encodeURIComponent(u)}`
+  const i = u.indexOf(OBJET);
+  if (i < 0) return u;
+
+  // ⚠️ ON PASSE D'ABORD PAR LE TRANSFORMATEUR SUPABASE, et ce n'est pas une
+  // precaution gratuite : Netlify ne sait PAS decoder le HEIC et repond 500
+  // (verifie le 2026-09-07 sur la couverture de Chez Bidul & Truc, une photo
+  // prise a l'iPhone et deposee telle quelle). Supabase, lui, le convertit.
+  // La chaine Supabase -> Netlify couvre donc tous les formats deposes par un
+  // restaurateur depuis son telephone, HEIC compris.
+  const source = `${u.slice(0, i)}${RENDU}${u.slice(i + OBJET.length)}`
+    + '?width=1200&height=630&resize=cover&quality=80';
+
+  return `${SITE}/.netlify/images?url=${encodeURIComponent(source)}`
     + '&w=1200&h=630&fit=cover&fm=jpg&q=75';
 }
 

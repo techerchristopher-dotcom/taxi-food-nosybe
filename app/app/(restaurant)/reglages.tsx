@@ -298,7 +298,7 @@ export default function RestaurantSettingsScreen() {
    * de croire l'avoir fait.
    * On ne recharge JAMAIS l'écran entier pour un simple booléen ; `rafraichir`
    * n'est là que pour les bascules qui changent aussi d'autres blocs (état
-   * ouvert/fermé recalculé par la base, liste « À l'affiche »), et le
+   * ouvert/fermé recalculé par la base, liste « Offre du jour »), et le
    * rechargement se fait alors en tâche de fond, sans bloquer quoi que ce soit.
    */
   async function bascule(
@@ -726,8 +726,8 @@ export default function RestaurantSettingsScreen() {
             </Pressable>
           </View>
 
-          {/* ------------------------------------------------------ À l'affiche */}
-          <Text style={styles.section}>À l'affiche</Text>
+          {/* ----------------------------------------------------- Offre du jour */}
+          <Text style={styles.section}>Offre du jour</Text>
           <Text style={styles.intro}>
             Vos plats mis en avant en haut de votre page. Retirer un plat ne l'efface pas :
             il retourne dans votre bibliothèque, prêt à être remis à l'affiche en un tap.
@@ -953,7 +953,7 @@ export default function RestaurantSettingsScreen() {
                               !vedette,
                               () => setProductFeatured(p.id, !vedette, cat.name),
                               'Mise en avant impossible.',
-                              // L'étoile déplace aussi le plat dans « À l'affiche »,
+                              // L'étoile déplace aussi le plat dans « Offre du jour »,
                               // plus haut dans l'écran : celui-là doit se remettre à jour.
                               true,
                             )

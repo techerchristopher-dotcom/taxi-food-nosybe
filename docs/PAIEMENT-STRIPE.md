@@ -872,8 +872,80 @@ de publication pour une seule fonctionnalité.
 
 ### Ce qui n'est pas vérifié
 
-- **Le PaymentSheet natif n'a jamais tourné.** Il exige un build natif, qui n'existe pas encore.
-- **Aucun vrai PaymentIntent n'a été créé** : `carte_active` est resté à `false`, le compte est en
-  mode réel, et il n'y a aucune commande `cb` en base.
-- **Le tunnel complet en tant que client connecté** n'a pas été parcouru : il demande de saisir un
-  mot de passe. Ce qui a été vérifié à la place est listé dans le rapport de session.
+⚠️ **Cette liste datait du 5 septembre et n'est plus vraie.** Elle est conservée corrigée, parce
+qu'elle dit ce qui restait à prouver et quand ça l'a été.
+
+- ~~Le PaymentSheet natif n'a jamais tourné.~~ **Il a tourné le 2026-09-07**, sur un vrai iPhone
+  via TestFlight (build 25) : TF-117, 213 centimes capturés pour 10 000 Ar. C'est la première
+  exécution du module natif — il n'avait jamais été compilé avant ce build.
+- ~~Aucun vrai PaymentIntent n'a été créé.~~ Il y en a désormais plusieurs, dont deux capturés
+  pour de bon (TF-96 et TF-117).
+- **Le remboursement n'a toujours jamais abouti de bout en bout.** TF-96 est resté au statut
+  `demande`, `provider_refund_id` à NULL, pendant plus de 34 heures. C'est la moitié du circuit
+  qui reste à prouver — voir § 8.
+
+---
+
+## 12. Apple Pay — monté le 2026-09-07
+
+### Pourquoi il n'apparaissait pas
+
+Au premier essai sur appareil, la feuille s'est ouverte **sans bouton Apple Pay et sans la moindre
+erreur**. Ce n'était pas une panne : **aucune** des trois pièces nécessaires n'existait. Apple Pay
+n'apparaît QUE si les trois sont réunies, et il n'y a aucun message quand il en manque une.
+
+| Pièce | Où | Valeur |
+|---|---|---|
+| Identifiant marchand | portail Apple Developer | `merchant.com.chris97416.taxi-food-nosybe` |
+| Entitlement dans le binaire | `app.json`, plugin `@stripe/stripe-react-native` | `merchantIdentifier` (**doit être identique**) |
+| Certificat de traitement des paiements | Apple, puis déposé chez Stripe | expire le **2028-10-06** |
+
+Côté code, deux lignes seulement, dans `components/paiement/FormulaireCarte.tsx` :
+`initStripe({ merchantIdentifier })` et `applePay: { merchantCountryCode: 'FR' }`.
+
+⚠️ **`merchantCountryCode` est le pays du COMPTE STRIPE, pas celui du client.** Le compte Rentanoo
+est immatriculé en France (`country: "FR"`, lu via l'API le 2026-09-07). Un code qui ne correspond
+pas au compte fait échouer le paiement au moment de la confirmation, pas à l'initialisation —
+donc tard, et sur un vrai client.
+
+### ⚠️ Le piège qui a coûté deux builds : le profil de provisioning
+
+Poser le `merchantIdentifier` dans `app.json` **ne suffit pas**. L'App ID chez Apple doit lui aussi
+porter la capacité, sinon Xcode refuse de signer :
+
+```
+Provisioning profile "…" doesn't include the Apple Pay capability.
+Provisioning profile "…" doesn't support the merchant.… Merchant ID.
+Provisioning profile "…" doesn't include the com.apple.developer.in-app-payments entitlement.
+```
+
+Il faut donc, dans le portail Apple : App ID → **Apple Pay Payment Processing** → *Configure* →
+cocher l'identifiant marchand → *Save*. Apple prévient alors que les profils existants sont
+invalidés : c'est voulu, il faut qu'ils le soient.
+
+⚠️ **Et surtout : `eas build --non-interactive` ne régénère PAS le profil.** Le log le dit en une
+ligne facile à rater :
+
+```
+Skipping Provisioning Profile validation on Apple Servers because we aren't authenticated.
+```
+
+EAS réutilise alors le profil en cache, périmé, et le build échoue exactement de la même façon —
+deux fois de suite (builds 26 et 27). **Après toute modification de capacité Apple, le build doit
+tourner en mode interactif**, pour qu'EAS s'authentifie auprès d'Apple et refabrique le profil.
+C'est ce qui a produit le build 28.
+
+### Vérifier que c'est bien en place
+
+Le certificat est visible dans Stripe : *Paramètres → Moyens de paiement → Apple Pay →
+Certificats iOS*. Une ligne verte au nom de l'identifiant marchand, avec sa date d'expiration.
+
+⚠️ **Le certificat expire le 2028-10-06.** Passé cette date, Apple Pay cesse de fonctionner
+silencieusement — le bouton disparaît, sans erreur, comme au premier jour. Il faudra refaire un
+CSR chez Stripe et un certificat chez Apple, en suivant cette section.
+
+### Ce qui n'est pas encore prouvé
+
+**Aucun paiement Apple Pay n'a encore abouti.** Le montage est complet et le build 28 est signé
+avec l'entitlement — mais tant qu'un vrai débit n'est pas passé par la feuille Apple Pay sur un
+appareil, la chaîne reste théorique.

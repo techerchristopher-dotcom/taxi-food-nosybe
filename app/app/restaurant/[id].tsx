@@ -113,7 +113,15 @@ export default function RestaurantMenuScreen() {
             que pour « Ajouter » et « … » du Profil : tant que l'action n'existe pas, le
             bouton non plus. */}
         <View style={styles.bannerActions}>
-          <Pressable onPress={() => router.back()} style={styles.roundBtn} hitSlop={8}>
+          {/* ⚠️ Meme piege que sur la fiche produit : ouverte par un lien
+              partage, cette page n'a AUCUNE page precedente, et `router.back()`
+              seul ne fait rien — la fleche paraissait morte. On retombe alors
+              sur l'accueil, ou le client voit les autres restaurants. */}
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            style={styles.roundBtn}
+            hitSlop={8}
+          >
             <Icon name="arrow_back" size={22} color={colors.ink} />
           </Pressable>
           {/* Partage du restaurant — même mécanique que sur une fiche produit. */}

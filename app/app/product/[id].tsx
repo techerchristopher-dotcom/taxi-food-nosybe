@@ -128,11 +128,34 @@ export default function ProductDetailScreen() {
   const unitPrice = product.price + selectedOptions.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
   const lineTotal = unitPrice * qty;
 
+  /**
+   * Revenir en arriere — ou, faute d'arriere, aller quelque part.
+   *
+   * ⚠️ DEFAUT REEL, constate le 2026-09-07. `router.back()` seul ne fait RIEN
+   * quand l'ecran a ete ouvert DIRECTEMENT : c'est exactement le cas d'un client
+   * qui arrive par un lien WhatsApp, la pile de navigation etant vide. Le plat
+   * etait bien ajoute au panier, mais l'ecran ne bougeait pas — et ca se lit
+   * comme une application figee. Le partage social a rendu ce chemin courant :
+   * c'est desormais l'arrivee la plus frequente sur cette fiche.
+   *
+   * On retombe sur la carte du restaurant plutot que sur l'accueil : le client
+   * vient d'ajouter un plat, il est chez CE restaurant, et il en ajoutera
+   * peut-etre un deuxieme.
+   */
+  function retour() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    if (restaurant?.id) router.replace(`/restaurant/${restaurant.id}`);
+    else router.replace('/');
+  }
+
   function handleAdd() {
     if (!product || !ctx || !valid) return;
     if (canAdd(product)) {
       add(product, ctx, qty, selectedOptions);
-      router.back();
+      retour();
     } else {
       setConflict(true);
     }
@@ -154,7 +177,7 @@ export default function ProductDetailScreen() {
           />
         ) : null}
         <View style={styles.photoActions}>
-          <Pressable onPress={() => router.back()} style={styles.closeBtn} hitSlop={8}>
+          <Pressable onPress={retour} style={styles.closeBtn} hitSlop={8}>
             <Icon name="close" size={22} color={colors.ink} />
           </Pressable>
           {/* Partage : envoie un lien https ouvrant cette fiche dans l'app, ou le
@@ -294,7 +317,7 @@ export default function ProductDetailScreen() {
         onClear={() => {
           if (ctx) replaceWith(product, ctx, qty, selectedOptions);
           setConflict(false);
-          router.back();
+          retour();
         }}
       />
     </View>

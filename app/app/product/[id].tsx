@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -50,6 +50,29 @@ export default function ProductDetailScreen() {
   const [conflict, setConflict] = useState(false);
   // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
+
+  // ⚠️ Un groupe OBLIGATOIRE qui ne propose qu'UNE seule option ne pose aucune
+  // question : c'est une composition, pas un choix. Le laisser à cocher coûte un
+  // tap pour rien et, si le client ne le voit pas, un bouton « Ajouter » grisé
+  // qu'il ne peut pas expliquer — le pire des deux mondes.
+  //
+  // Le cas est réel depuis le 2026-09-06 : chez Chez Bidul & Truc, l'accompagnement
+  // des hamburgers a été ramené aux seules frites. « Coché par défaut » n'existe
+  // NULLE PART en base — `product_options` n'a pas de colonne pour ça — donc la
+  // règle vit ici, et elle vaut pour tous les restaurants, pas pour un cas
+  // particulier codé en dur.
+  //
+  // `...auto` d'abord, `...prev` ensuite : une sélection déjà faite l'emporte
+  // toujours. La règle pré-remplit, elle n'écrase jamais.
+  useEffect(() => {
+    const auto: Record<string, string[]> = {};
+    for (const g of groups) {
+      if (g.required && g.options.length === 1 && g.options[0].isAvailable) {
+        auto[g.id] = [g.options[0].id];
+      }
+    }
+    if (Object.keys(auto).length) setSel((prev) => ({ ...auto, ...prev }));
+  }, [groups]);
 
 
   if (loading && !product) {

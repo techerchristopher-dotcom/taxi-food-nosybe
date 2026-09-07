@@ -439,5 +439,15 @@
     "rateLimit": "Troppi tentativi. Riprova tra qualche minuto.",
     "notConfigured": "Questo metodo di accesso non è ancora attivo.",
     "unknown": "Accesso non possibile al momento. Riprova."
+  },
+  "partage": {
+    "titre": "Condividi",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "copier": "Copia il link",
+    "copie": "Link copiato",
+    "plus": "Altra app…",
+    "fermer": "Chiudi",
+    "surLabel": "Condividi su:"
   }
 }

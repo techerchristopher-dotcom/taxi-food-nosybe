@@ -439,5 +439,15 @@
     "rateLimit": "Trop de tentatives. Réessaie dans quelques minutes.",
     "notConfigured": "Ce mode de connexion n'est pas encore activé.",
     "unknown": "Connexion impossible pour le moment. Réessaie."
+  },
+  "partage": {
+    "titre": "Partager",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "copier": "Copier le lien",
+    "copie": "Lien copié",
+    "plus": "Autre application…",
+    "fermer": "Fermer",
+    "surLabel": "Partager sur :"
   }
 }

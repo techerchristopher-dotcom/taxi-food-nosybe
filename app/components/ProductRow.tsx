@@ -18,12 +18,15 @@ export function ProductRow({
   onOpen,
   onInc,
   onDec,
+  onShare,
 }: {
   product: Product;
   qty: number;
   onOpen: () => void;
   onInc: () => void;
   onDec: () => void;
+  /** Absent = pas de bouton de partage sur cette ligne. */
+  onShare?: () => void;
 }) {
   const { t } = useTranslation();
   const available = product.isAvailable;
@@ -63,6 +66,17 @@ export function ProductRow({
         )}
       </View>
 
+      {/* ⚠️ Le partage est volontairement DISCRET et à gauche du bouton d'ajout :
+          gris, sans fond, plus petit. La ligne a déjà une action principale —
+          ajouter au panier — et deux boutons de même poids se disputeraient le
+          pouce. Il reste visible sur un plat indisponible : un restaurateur
+          annonce volontiers un plat qui revient demain. */}
+      {onShare ? (
+        <Pressable onPress={onShare} style={styles.shareBtn} hitSlop={8}>
+          <Icon name="ios_share" size={18} color={colors.textFaint} />
+        </Pressable>
+      ) : null}
+
       {available ? (
         inCart ? (
           <QtyStepper value={qty} onDec={onDec} onInc={onInc} size="md" />
@@ -87,6 +101,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   muted: { opacity: 0.6 },
+  shareBtn: { padding: 6 },
   selected: { borderWidth: 1.5, borderColor: colors.primary },
   name: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink },
   desc: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },

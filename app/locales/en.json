@@ -439,5 +439,15 @@
     "rateLimit": "Too many attempts. Try again in a few minutes.",
     "notConfigured": "This sign-in method isn't enabled yet.",
     "unknown": "Can't sign in right now. Please try again."
+  },
+  "partage": {
+    "titre": "Share",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "copier": "Copy link",
+    "copie": "Link copied",
+    "plus": "Other app…",
+    "fermer": "Close",
+    "surLabel": "Share on:"
   }
 }

@@ -24,7 +24,8 @@ const CHIP_THUMB = 34;
 import { getProductDetail } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { RestaurantContext, useCart } from '../../store/cart';
-import { partagerProduit } from '../../lib/partage';
+import { lienProduit, textePartageProduit } from '../../lib/partage';
+import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
 
 /** Écran 04 — Détail d'un produit + configuration des options (choix guidés). */
 export default function ProductDetailScreen() {
@@ -50,6 +51,7 @@ export default function ProductDetailScreen() {
   const [conflict, setConflict] = useState(false);
   // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
+  const [partageOuvert, setPartageOuvert] = useState(false);
 
   // ⚠️ Un groupe OBLIGATOIRE qui ne propose qu'UNE seule option ne pose aucune
   // question : c'est une composition, pas un choix. Le laisser à cocher coûte un
@@ -158,7 +160,7 @@ export default function ProductDetailScreen() {
           {/* Partage : envoie un lien https ouvrant cette fiche dans l'app, ou le
               store si le destinataire ne l'a pas. Voir `lib/partage.ts`. */}
           <Pressable
-            onPress={() => partagerProduit({ id: product.id, name: product.name, restaurantName: restaurant?.name })}
+            onPress={() => setPartageOuvert(true)}
             style={styles.closeBtn}
             hitSlop={8}
             accessibilityRole="button"
@@ -178,6 +180,19 @@ export default function ProductDetailScreen() {
             <Text style={styles.price}>{formatAr(product.price)}</Text>
           </View>
           {product.description ? <Text style={styles.desc}>{product.description}</Text> : null}
+
+          {/* ⚠️ Annoncé et atteignable d'un tap, pas caché derrière l'icône de
+              l'en-tête : le restaurateur qui pousse son plat sur la page Facebook
+              de son établissement ne va pas chercher une icône. C'est aussi
+              l'écran où un client tombe en suivant un lien partagé — donc celui
+              où il repartagera. */}
+          <View style={styles.partage}>
+            <PartageEnLigne
+              titre={product.name}
+              texte={textePartageProduit({ name: product.name, restaurantName: restaurant?.name })}
+              url={lienProduit(product.id)}
+            />
+          </View>
 
           {groups.map((g) => {
             const cur = sel[g.id] ?? [];
@@ -263,6 +278,14 @@ export default function ProductDetailScreen() {
         </View>
       </View>
 
+      <PartageSheet
+        visible={partageOuvert}
+        titre={product.name}
+        texte={textePartageProduit({ name: product.name, restaurantName: restaurant?.name })}
+        url={lienProduit(product.id)}
+        onClose={() => setPartageOuvert(false)}
+      />
+
       <ConflictSheet
         visible={conflict}
         currentName={cartRestaurantName}
@@ -307,6 +330,7 @@ const styles = StyleSheet.create({
   name: { flex: 1, fontFamily: fonts.bold, fontSize: 22, lineHeight: 26, letterSpacing: -0.5, color: colors.ink },
   price: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.primary },
   desc: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 20, color: colors.textDark, marginTop: 8 },
+  partage: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.divider },
   group: { marginTop: 22 },
   groupHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   groupName: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },

@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { partagerRestaurant } from '../../lib/partage';
+import { lienProduit, lienRestaurant, textePartageProduit } from '../../lib/partage';
+import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -52,6 +53,8 @@ export default function RestaurantMenuScreen() {
 
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState<Product | null>(null);
+  // Ce qu'on partage : un plat précis, ou le restaurant lui-même (null).
+  const [aPartager, setAPartager] = useState<Product | null | undefined>(undefined);
   const scrollRef = useRef<ScrollView>(null);
 
   if (loading && !restaurant) {
@@ -115,7 +118,7 @@ export default function RestaurantMenuScreen() {
           </Pressable>
           {/* Partage du restaurant — même mécanique que sur une fiche produit. */}
           <Pressable
-            onPress={() => partagerRestaurant({ id: restaurant.id, name: restaurant.name })}
+            onPress={() => setAPartager(null)}
             style={styles.roundBtn}
             hitSlop={8}
             accessibilityRole="button"
@@ -243,6 +246,7 @@ export default function RestaurantMenuScreen() {
                 onOpen={() => router.push(`/product/${p.id}`)}
                 onInc={() => (p.hasOptions ? router.push(`/product/${p.id}`) : tryAdd(p))}
                 onDec={() => setQuantity(lineKey(p.id), qtyOf(p.id) - 1)}
+                onShare={() => setAPartager(p)}
               />
             ))}
           </View>
@@ -263,6 +267,18 @@ export default function RestaurantMenuScreen() {
           </View>
         </Pressable>
       ) : null}
+
+      <PartageSheet
+        visible={aPartager !== undefined}
+        titre={aPartager ? aPartager.name : restaurant.name}
+        texte={
+          aPartager
+            ? textePartageProduit({ name: aPartager.name, restaurantName: restaurant.name })
+            : `${restaurant.name} livre avec Taxi Food 🛵`
+        }
+        url={aPartager ? lienProduit(aPartager.id) : lienRestaurant(restaurant.id)}
+        onClose={() => setAPartager(undefined)}
+      />
 
       <ConflictSheet
         visible={pending !== null}
@@ -309,11 +325,24 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
           <Text style={styles.rMetaText}>{t('restaurant.minOrder', { amount: formatAr(r.minOrder) })}</Text>
         </View>
       </View>
+
+      {/* ⚠️ Le partage du RESTAURANT, annoncé au même titre que celui d'un plat.
+          C'est le lien qu'un patron met sur la page Facebook de son établissement
+          ou dans son statut WhatsApp — celui qui amène un client sur toute sa
+          carte, pas sur un seul plat. Il n'a aucune raison d'être plus caché. */}
+      <View style={styles.rPartage}>
+        <PartageEnLigne
+          titre={r.name}
+          texte={`${r.name} livre avec Taxi Food 🛵`}
+          url={lienRestaurant(r.id)}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rPartage: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.divider },
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },

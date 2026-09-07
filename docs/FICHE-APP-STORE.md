@@ -298,12 +298,19 @@ déclenché le rejet 2.1(a). On indique désormais explicitement comment y entre
 ```
 Taxi Food is a food delivery platform operating in Nosy Be, Madagascar.
 
-WHAT CHANGED SINCE THE LAST REVIEW
-1. Guideline 5.1.1(v) — browsing no longer requires an account. The app now opens directly
-   on the restaurant list. Browsing restaurants, menus and dish details, and filling the
-   cart, all work with no account at all. Signing in is requested only when placing an
-   order, which is an account-based feature.
-2. Guideline 2.1(a) — demo accounts are now provided for all three account types, below.
+WHAT IS NEW IN THIS VERSION (1.2.0)
+1. Card payment (Stripe) has been added, alongside cash on delivery. See PAYMENT below.
+   IMPORTANT: card payments are LIVE. Please use "Cash on delivery" to test ordering —
+   choosing "Card" would place a real charge on your card.
+2. Restaurants can now set two service windows per day (lunch and dinner), and a menu
+   section can be limited to certain hours (for example pizzas from 6pm).
+3. Restaurant owners can upload their own logo and cover photo, and feature dishes of the day.
+4. Customers and restaurant owners can share a dish or a restaurant to WhatsApp or Facebook.
+5. A guided tour introduces the restaurant space on first sign-in.
+
+STILL TRUE FROM THE PREVIOUS REVIEW
+- Guideline 5.1.1(v) — browsing requires no account. The app opens on the restaurant list.
+- Guideline 2.1(a) — demo accounts are provided for all three account types, below.
 
 DEMO ACCOUNTS — password is the same for all three: TaxiFoodDemo2026
 
@@ -311,8 +318,14 @@ DEMO ACCOUNTS — password is the same for all three: TaxiFoodDemo2026
   Restaurant   demo.resto@taxifood.mg
   Courier      demo.livreur@taxifood.mg
 
-To switch account: Profile tab > Sign out, then sign in with another one.
 All three sign in with the "E-mail" button on the sign-in screen.
+
+IMPORTANT — HOW TO MOVE BETWEEN SPACES
+The restaurant and courier accounts open DIRECTLY into their professional space. There is no
+Profile tab visible there. To reach the customer app from a professional space, tap the
+"App client" button (double arrow) in the header at the top right. To come back, use the
+Profile tab, then "Mon espace partenaire".
+To switch account: from the CUSTOMER app, Profile tab > Sign out, then sign in with another.
 
 BROWSING WITHOUT AN ACCOUNT (no sign-in needed)
 1. Open the app. You land on the restaurant list, not on a sign-in screen.
@@ -345,7 +358,16 @@ reliable street addressing, so GPS coordinates are what allows the courier to fi
 customer. Location is never captured in the background or while the app is closed. The
 customer demo account already has an address saved, so this step can be skipped.
 
-PAYMENT
+WHERE TO PLACE A TEST ORDER
+Please order from "Taxi Be". It is the one restaurant with no real customer orders and no
+live notification channel, so nothing you do there disturbs a real business. The other
+restaurants on the list are live businesses whose owners receive every order on their phone.
+
+PAYMENT — PLEASE USE "CASH ON DELIVERY" FOR THIS REVIEW
+Card payments are LIVE, not in test mode: selecting "Card" would place a real charge on your
+own card. "Cash on delivery" is the default and lets the whole ordering flow be tested end to
+end at no cost.
+
 The app sells physical goods that are prepared and delivered in the real world, so it uses
 external payment rather than in-app purchase (guideline 3.1.5(a) "Goods and Services Outside
 of the App"). There is no in-app purchase of digital content anywhere in the app.
@@ -405,3 +427,58 @@ des visiteurs verront :
   et brouillent le message pour un client ;
 - un panier vide ou un écran de chargement ;
 - toute donnée personnelle réelle (nom complet, numéro de téléphone).
+
+---
+
+## 6. Nouveautés de la version 1.2.0 — à coller dans « Nouveautés de cette version »
+
+⚠️ **Registre : on tutoie le client.** C'est la décision du 2026-08-24, appliquée partout
+côté client. Le vouvoiement ne subsiste que pour s'adresser aux professionnels — d'où le
+« votre » du paragraphe restaurateurs, volontaire.
+
+⚠️ **On n'annonce que ce qui est visible par la personne qui lit.** Les corrections
+internes (ordre de la carte, notification vide, garde d'ouverture) ne sont mentionnées que
+par leur effet, jamais par leur cause : « les commandes arrivent complètes chez le
+restaurant » se comprend, « le trigger est devenu differable » non.
+
+1 440 caractères sur 4 000.
+
+```
+Payez par carte, ou toujours en espèces à la livraison.
+
+Le paiement par carte arrive : tes prix restent en ariary, le débit se fait en euros à un taux fixe que tu vois avant de confirmer, avec le montant exact. Tes coordonnées bancaires ne passent jamais par nous. Et si tu préfères, les espèces à la livraison n'ont pas bougé.
+
+Les restaurants ouvrent à leurs vraies heures. Midi et soir séparément, chacun avec ses horaires — fini les restaurants affichés ouverts en plein après-midi. Certaines cartes n'ouvrent qu'à leur heure : les pizzas au four sortent le soir, et l'application te le dit avant que tu remplisses ton panier.
+
+Partage un plat en un geste. Sur chaque plat et chaque restaurant, un bouton pour envoyer le lien sur WhatsApp ou Facebook, ou le copier. Le destinataire voit la photo, le nom et le prix, et peut commander directement.
+
+L'offre du jour, mise en avant. Les restaurants peuvent mettre leurs plats du jour en tête de leur carte, avec la quantité restante.
+
+Un repère « Contient du porc » sur les plats concernés, pour choisir d'un coup d'œil.
+
+Côté restaurateurs : votre logo et votre photo de couverture depuis vos réglages, vos horaires jour par jour, et une visite guidée de votre espace à la première connexion.
+
+Et beaucoup de petits ajustements : la carte ne se réorganise plus toute seule, les plats à choix multiple annoncent enfin leurs options, et les commandes arrivent complètes chez le restaurant.
+```
+
+---
+
+## 7. Ce qui a été mis en place POUR LA REVUE, et qu'il faut défaire après
+
+⚠️ **À rétablir dès la validation d'Apple.** Laisser ces réglages en l'état après la revue
+crée de vrais dégâts en exploitation.
+
+| Réglage | État posé le 2026-09-07 | À rétablir |
+|---|---|---|
+| Les trois restaurants visibles | `is_open = true`, `auto_open = false` — ouverts en permanence | `auto_open = true`, pour que leurs horaires reprennent la main |
+| **Taxi Be** | passé `coming_soon` → `visible` | Rendre `coming_soon` s'il n'est toujours pas exploité |
+| **Telegram de Taxi Be** | pointé sur le téléphone du porteur du projet (`7699975131`) | Le retirer, ou le brancher sur son vrai patron |
+
+**Pourquoi ces réglages.** Depuis le 2026-09-07, `create_order` REFUSE une commande sur un
+restaurant fermé. Le relecteur teste depuis la Californie, à n'importe quelle heure : sans
+ouverture permanente il tombe sur un restaurant fermé, ne peut pas commander, et conclut que
+l'app ne fonctionne pas — exactement le scénario des deux rejets précédents.
+
+**Pourquoi le filet Telegram sur Taxi Be.** Le rendre commandable l'expose à de VRAIS
+clients, alors qu'aucun patron n'y est branché : sans ce renvoi, une commande réelle passée
+pendant la revue ne serait vue par personne.

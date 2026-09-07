@@ -111,13 +111,37 @@ export function lienFacebook(url: string) {
 
 /** Ouvre un lien de partage externe. */
 export async function ouvrirPartage(url: string) {
-  if (Platform.OS === 'web') {
-    // ⚠️ `_blank` et pas une navigation : on ne fait pas sortir le client de son
-    // panier en cours pour un partage.
-    window.open(url, '_blank', 'noopener,noreferrer');
+  if (Platform.OS !== 'web') {
+    // Sur l'app installée, le système ouvre WhatsApp ou Facebook par-dessus, et
+    // un retour arrière ramène à la fiche. Rien à arbitrer.
+    await Linking.openURL(url);
     return;
   }
-  await Linking.openURL(url);
+
+  // ⚠️ SUR TÉLÉPHONE, ON NAVIGUE DANS LE MÊME ONGLET.
+  //
+  // `window.open(_blank)` y fait deux dégâts, tous deux constatés :
+  //  - les onglets s'empilent, et celui qu'on quitte apparaît VIDE quand on y
+  //    revient — au point de devoir fermer le site et le rouvrir ;
+  //  - il est souvent bloqué : les navigateurs mobiles n'y voient pas un geste
+  //    direct de l'utilisateur, React Native Web passant par des événements
+  //    pointer. Il renvoie alors `null` et il ne se passe RIEN.
+  //
+  // Sur ordinateur, un nouvel onglet n'a aucun de ces défauts et évite de
+  // quitter son panier : on le garde là, et là seulement.
+  const tactile =
+    typeof navigator !== 'undefined' &&
+    (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+
+  if (tactile) {
+    window.location.href = url;
+    return;
+  }
+
+  const onglet = window.open(url, '_blank', 'noopener,noreferrer');
+  // Bloqué malgré tout (extension, réglage strict) : on ne laisse pas le client
+  // devant un bouton qui n'a rien fait.
+  if (!onglet) window.location.href = url;
 }
 
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */

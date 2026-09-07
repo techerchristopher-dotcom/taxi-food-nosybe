@@ -28,6 +28,20 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SITE = 'https://taxifoodnosybe.distripro207.com';
 const APP_STORE = 'https://apps.apple.com/app/id6802418114';
 const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.chris97416.taxifoodnosybe';
+
+// L'APPLICATION WEB — a ne pas confondre avec SITE, qui est la vitrine.
+// C'est elle qui permet de commander SANS RIEN INSTALLER, sur n'importe quel
+// appareil. C'est donc la vraie destination d'un lien partage.
+const APP = 'https://taxifood.distripro207.com';
+
+// ⚠️ TANT QUE GOOGLE N'A PAS VALIDE, LA FICHE PLAY N'EXISTE PAS.
+// Verifie le 2026-09-07 : l'URL ci-dessus repond **404 « We're sorry, the
+// requested URL was not found »**. Le bouton y envoyait pourtant tout visiteur
+// Android — c'est-a-dire la majorite des telephones a Nosy Be. Un client qui
+// recoit un plat par WhatsApp, clique, et tombe sur une page Google morte est
+// un client perdu, et personne ne le sait.
+// Passer a `true` LE JOUR de la publication, pas avant.
+const PLAY_PUBLIE = false;
 const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;
 
 const echapper = (s) =>
@@ -64,7 +78,7 @@ function versAccueil() {
   });
 }
 
-function page({ titre, description, image, lien, prix }) {
+function page({ titre, description, image, lien, prix, commander }) {
   const t = echapper(titre);
   const d = echapper(description);
   return `<!doctype html>
@@ -108,16 +122,35 @@ function page({ titre, description, image, lien, prix }) {
   <h1>${t}</h1>
   ${prix ? `<p class="prix">${echapper(prix)}</p>` : ''}
   <p>${d}</p>
-  <a class="cta" id="cta" href="${APP_STORE}">Ouvrir dans Taxi&nbsp;Food</a>
+  <a class="cta" href="${echapper(commander)}">Commander maintenant</a>
+  <a class="sec" id="app" href="${APP_STORE}" hidden>Ou télécharger l’application</a>
   <a class="sec" href="${SITE}/">Découvrir Taxi Food</a>
   <footer>Livraison de repas à Nosy Be</footer>
 </main>
 <script>
-  // Le bouton mène au store du téléphone qui consulte la page. Quelqu'un qui a
-  // déjà l'app n'arrive jamais ici : le lien s'ouvre dans l'app en amont.
-  if (/android/i.test(navigator.userAgent)) {
-    document.getElementById('cta').href = ${JSON.stringify(PLAY_STORE)};
-  }
+  // ⚠️ LE BOUTON PRINCIPAL NE MENE PLUS A UN STORE.
+  // Il menait a l'App Store par defaut, bascule sur Google Play si le navigateur
+  // etait Android. Deux consequences, les deux mauvaises : sur ORDINATEUR on
+  // atterrissait sur une fiche « Only for iPhone », impossible a installer ; sur
+  // ANDROID, sur une page Google Play qui n'existe pas encore (404).
+  // Le lien partage sert a FAIRE COMMANDER, pas a faire installer. L'application
+  // web fonctionne sur tous les appareils, sans rien installer : c'est elle la
+  // destination. Le telechargement devient un choix secondaire, et n'est propose
+  // QUE la ou le magasin a vraiment l'application.
+  (function () {
+    var ua = navigator.userAgent || '';
+    var android = /android/i.test(ua);
+    // iPad recent se declare « Macintosh » : le nombre de points de contact
+    // le distingue d'un vrai Mac. Piege deja rencontre sur /telegram/.
+    var ios = /iPhone|iPod/i.test(ua)
+      || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var lien = document.getElementById('app');
+    if (android) {
+      if (${JSON.stringify(PLAY_PUBLIE)}) { lien.href = ${JSON.stringify(PLAY_STORE)}; lien.hidden = false; }
+    } else if (ios) {
+      lien.hidden = false;
+    }
+  })();
 </script>
 </body>
 </html>`;
@@ -151,6 +184,7 @@ export default async (request) => {
         description: p.description || (resto ? `À commander chez ${resto} sur Taxi Food.` : 'À commander sur Taxi Food.'),
         image: p.photo_url || OG_DEFAUT,
         lien: `${SITE}/p/${id}`,
+        commander: `${APP}/product/${id}`,
       };
     } else {
       // ⚠️ `restaurants` n'a PAS de colonne `description` (vérifié en base le
@@ -167,6 +201,7 @@ export default async (request) => {
         description: `${r.cuisine_type ? r.cuisine_type + '. ' : ''}Commandez${ou} avec Taxi Food.`,
         image: r.cover_url || r.logo_url || OG_DEFAUT,
         lien: `${SITE}/r/${id}`,
+        commander: `${APP}/restaurant/${id}`,
       };
     }
     return new Response(page(vue), {

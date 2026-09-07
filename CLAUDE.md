@@ -12,21 +12,63 @@ Trois livrables distincts, à ne pas confondre :
 
 ## Où en est la soumission
 
-**iOS — ✅ VALIDÉE PAR APPLE** (annoncé par le porteur du projet le 2026-08-24 ; je n'ai pas
-accès à App Store Connect pour le confirmer moi-même). Le build 1.0.0 (22) est passé, après
-**deux rejets** du build 17 :
+**iOS — ⏳ 1.2.0 (28) EN VÉRIFICATION CHEZ APPLE**, envoyée le **2026-09-07 à 23 h 09**
+depuis App Store Connect. Apple annonce jusqu'à 48 h. La 1.1.0 reste en ligne pendant ce
+temps.
+
+⚠️ **Les builds 26 et 27 sont des échecs, pas des versions** : le profil de provisioning
+n'avait pas encore l'entitlement Apple Pay. Détail et remède dans `docs/PAIEMENT-STRIPE.md`
+§ 12 — et la règle à retenir : **`eas build --non-interactive` ne régénère JAMAIS le profil**
+après un changement de capacité Apple, il réutilise celui en cache et échoue à l'identique.
+
+⚠️ **Ce qui a changé dans la fiche produit, et qui n'est pas anodin.** La déclaration de
+confidentialité a gagné un 9ᵉ type de données : **Informations de paiement**
+(*Fonctionnalité de l'app*, lié à l'identité, pas de suivi), parce que la carte se saisit
+désormais dans la feuille Stripe **à l'intérieur de l'app**. Apple affiche une exemption qui
+ne s'applique PAS ici — le raisonnement complet, à ressortir si c'est contesté, est dans
+`docs/FICHE-APP-STORE.md` § 8.
+
+⚠️ **Changer de build oblige à retirer la version de la vérification**, donc à repartir en
+bas de la file. Les textes, eux, restent modifiables pendant l'attente.
+
+⚠️ **À défaire dès qu'Apple valide** : les réglages posés pour le relecteur (restaurants
+ouverts en permanence, Taxi Be rendu visible et renvoyé sur le Telegram du porteur du
+projet). Tableau dans `docs/FICHE-APP-STORE.md` § 7. Les laisser en l'état fait de vrais
+dégâts en exploitation.
+
+**Historique.** La **1.0.0 (22)** est passée le 2026-08-24, après **deux rejets** du build 17 :
 
 1. **Guideline 5.1.1(v)** — « the app requires users to register before viewing the menu ». L'app s'ouvrait sur l'écran de connexion. Corrigé : le catalogue est désormais libre, voir la section « Navigation libre » plus bas. C'est le changement de comportement le plus important de tout le projet.
 2. **Guideline 2.1(a)** — « we cannot access the Restaurant and Courier accounts ». Un seul compte de démo était fourni, et les notes disaient que les espaces pro étaient hors périmètre. **Apple veut vérifier CHAQUE type de compte.** Trois comptes actifs sont maintenant fournis.
 
 ⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
 
-**Android — ⏳ DÉPOSÉE SUR LE PLAY STORE, EN ATTENTE DE REVUE** (annoncé par le porteur du
-projet le 2026-09-05 : dépôt fait, environ une semaine d'attente à cette date). Vérifié
-moi-même en Play Console le 2026-09-05 : l'app **Taxi Food** existe bien, Play App Signing
-est actif, et sa clé de signature est marquée *In use* — donc au moins un bundle a été
-déposé. **Objectif fixé : dès que Google valide, on lance le build groupé**, pour que les
-deux plateformes offrent exactement les mêmes fonctionnalités.
+**Android — ⏳ EN REVUE DEPUIS LE 2026-09-01**, et toujours rien au 2026-09-07 (6 jours).
+Constaté moi-même en Play Console, pas rapporté :
+
+| | |
+|---|---|
+| Envoyée | **1er septembre 2026, 2 h 13** |
+| Statut | *In review* — Production, Store Listing, App Content, Store settings |
+| Version en revue | **1.1.0, build 4** |
+| Notifications Google | deux seulement, du 20 et 26 août, **toutes deux positives** (identité vérifiée, propriété du site vérifiée) |
+| Infraction aux règles | aucune |
+| Politique de confidentialité | joignable, HTTP 200 sur les deux domaines |
+
+**Rien ne bloque : la revue tourne, simplement.** Google annonce « jusqu'à 7 jours, parfois
+plus », et *plus* est la règle pour un **premier** passage. Celui-ci part avec le dossier
+complet — classification du contenu, sécurité des données, public cible 18 ans et plus,
+déclaration publicitaire, applications gouvernementales et **fonctionnalités financières**,
+cette dernière étant la plus lente à examiner.
+
+⚠️ **Ne rien modifier tant que c'est en revue** : toucher un élément du dossier remet le
+compteur à zéro. Si rien n'arrive vers le 9-10 septembre, le levier utile est
+*Aide → Contacter l'assistance* dans la console, bien plus efficace que d'attendre.
+
+⚠️ **Ce qui est en revue chez Google, c'est la 1.1.0 — pas la 1.2.0.** Quand Google validera,
+l'app Android publiée sera donc l'**ancienne** : sans paiement par carte, sans les deux
+services par jour, sans le partage social, sans l'offre du jour. Il faudra enchaîner sur un
+build Android 1.2.0 — **après** la validation, jamais pendant.
 
 Toute la chaîne technique était prête et testée en conditions réelles le 2026-08-19 (Google
 natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé,
@@ -51,13 +93,17 @@ Où la retrouver : **Play Console → Protected with Play → App signing**. La 
 même le `assetlinks.json` déjà rempli, prêt à copier. Package Android :
 `com.chris97416.taxifoodnosybe`, identifiant d'app Play `4972795001003481903`.
 
-⚠️ **Règle Google des 12 testeurs — statut réel inconnu de moi.** Tout compte **personnel**
-créé après le 13 novembre 2023 (le nôtre date du 2026-08-19) doit faire tourner un test
-fermé avec **12 testeurs pendant 14 jours continus** avant de pouvoir demander l'accès à la
-production. La voie envisagée était d'y échapper en convertissant le compte en
-« organisation » (la SAS Rentanoo a déjà son numéro **D-U-N-S**). **Le porteur du projet n'a
-pas dit comment ce point a été levé** — ne pas supposer qu'il l'est, le lui demander avant
-de raisonner dessus. Procédure : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
+✅ **Règle Google des testeurs — POINT TRANCHÉ le 2026-09-07.** Le compte est bien un
+**compte d'organisation** (« Organization account », vu en clair en Play Console,
+identifiant `6682410097385681985`). L'obligation de test fermé avec des testeurs pendant
+14 jours continus ne vise que les comptes **personnels** créés après le 13 novembre 2023 :
+elle **ne s'applique donc pas ici**. La conversion envisagée a bien été faite. Ce doute est
+clos, ne plus le rouvrir.
+
+⚠️ Le tableau de bord affiche quand même un parcours guidé « SET UP YOUR CLOSED TEST TRACK »
+avec *Select testers* non coché. **Ce n'est pas un blocage** : c'est le fil d'accueil
+générique de Play Console, et la production est déjà partie en revue à côté. Ne pas s'y
+laisser prendre. Procédure : [docs/SOUMISSION-ANDROID.md](docs/SOUMISSION-ANDROID.md).
 
 ⚠️ **Cinq documents à tenir à jour, à lire avant de commencer quoi que ce soit :**
 

@@ -204,7 +204,9 @@
     "validate": "Valider la commande",
     "needAddress": "Choisis une adresse de livraison avant de valider.",
     "needGps": "Position GPS manquante sur cette adresse. Reviens à l'étape adresse et capte ta position.",
-    "failed": "La commande n'a pas pu être créée. Réessaie."
+    "failed": "La commande n'a pas pu être créée. Réessaie.",
+    "restaurantFerme": "Ce restaurant est fermé pour le moment. Ta commande n'a pas été envoyée — reviens à l'ouverture, ton panier est gardé.",
+    "categorieHorsService": "{{categorie}} n'est servi qu'entre {{de}} et {{a}}. Retire ces plats de ton panier, ou reviens à {{de}}."
   },
   "paiement": {
     "titre": "Paiement par carte",

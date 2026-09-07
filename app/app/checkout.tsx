@@ -11,7 +11,7 @@ import { BottomBar } from '../components/BottomBar';
 import { ChoixModePaiement } from '../components/paiement/ChoixModePaiement';
 import { colors, fonts, formatAr, spacing } from '../theme/tokens';
 import { formatAddressLine, paymentShort } from '../data/types';
-import { createOrder, listAddresses, raisonPromoDepuisErreur } from '../data/api';
+import { createOrder, listAddresses, raisonPromoDepuisErreur, refusServiceDepuisErreur } from '../data/api';
 import {
   apercuMontantMineur,
   ConfigPaiement,
@@ -199,8 +199,23 @@ function CheckoutForm() {
       // quelques secondes plus tôt (plafond atteint, commande passée depuis un
       // autre appareil). On le retire et on dit précisément pourquoi, plutôt
       // que d'afficher « la commande n'a pas pu être créée ».
+      // ⚠️ D'abord le service : un restaurant fermé ou une carte pas encore
+      // ouverte n'est pas un échec technique, et « la commande n'a pas pu être
+      // créée » ne dit rien à quelqu'un qui vient de composer son panier. Le
+      // client doit lire l'heure à laquelle revenir.
+      const refus = refusServiceDepuisErreur(msg);
       const raison = raisonPromoDepuisErreur(msg);
-      if (raison) {
+      if (refus) {
+        setError(
+          refus.motif === 'restaurant_ferme'
+            ? t('checkout.restaurantFerme')
+            : t('checkout.categorieHorsService', {
+                categorie: refus.categorie,
+                de: refus.de,
+                a: refus.a,
+              }),
+        );
+      } else if (raison) {
         usePromoStore.getState().marquerRefus(raison);
         setError(t('promo.rejeteALaValidation'));
       } else {

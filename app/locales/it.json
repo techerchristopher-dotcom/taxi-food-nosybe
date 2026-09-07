@@ -204,7 +204,9 @@
     "validate": "Conferma l'ordine",
     "needAddress": "Scegli un indirizzo di consegna prima di confermare.",
     "needGps": "Posizione GPS mancante su questo indirizzo. Torna al passaggio indirizzo e registra la tua posizione.",
-    "failed": "Non è stato possibile creare l'ordine. Riprova."
+    "failed": "Non è stato possibile creare l'ordine. Riprova.",
+    "restaurantFerme": "Questo ristorante è chiuso in questo momento. Il tuo ordine non è stato inviato — torna all'apertura, il carrello resta.",
+    "categorieHorsService": "{{categorie}} si serve solo tra le {{de}} e le {{a}}. Togli questi piatti dal carrello, oppure torna alle {{de}}."
   },
   "paiement": {
     "titre": "Pagamento con carta",

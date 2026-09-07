@@ -204,7 +204,9 @@
     "validate": "Place the order",
     "needAddress": "Choose a delivery address before confirming.",
     "needGps": "GPS location missing on this address. Go back to the address step and capture your location.",
-    "failed": "The order could not be created. Please try again."
+    "failed": "The order could not be created. Please try again.",
+    "restaurantFerme": "This restaurant is closed right now. Your order was not sent — come back when it opens, your cart is kept.",
+    "categorieHorsService": "{{categorie}} is only served between {{de}} and {{a}}. Remove those dishes from your cart, or come back at {{de}}."
   },
   "paiement": {
     "titre": "Card payment",

@@ -755,6 +755,31 @@ export function raisonPromoDepuisErreur(message: string): RaisonPromo | null {
   return m ? (m[1] as RaisonPromo) : null;
 }
 
+/** Pourquoi la base a refusé de servir : le restaurant est fermé, ou la carte
+ *  demandée n'est pas encore ouverte (les pizzas au four, le soir seulement). */
+export type RefusService =
+  | { motif: 'restaurant_ferme' }
+  | { motif: 'categorie_hors_service'; categorie: string; de: string; a: string };
+
+/**
+ * Traduit l'échec d'un `create_order` portant sur les heures de service.
+ *
+ * ⚠️ Ce n'est pas un doublon de la vérification d'écran. L'écran grise ce qui
+ * n'est pas servi, mais l'écran n'a jamais été l'autorité : la clé anon est
+ * publique par conception, et `create_order` reste appelable directement. La
+ * base tranche, et ces messages ne font que rendre son verdict lisible.
+ *
+ * ⚠️ Séparateur « | » et non « : » — un nom de catégorie peut contenir un
+ * deux-points, et le découpage se ferait alors au mauvais endroit.
+ */
+export function refusServiceDepuisErreur(message: string): RefusService | null {
+  const msg = message ?? '';
+  if (/service:restaurant_ferme/i.test(msg)) return { motif: 'restaurant_ferme' };
+  const m = /service:categorie_hors_service\|([^|]*)\|([^|]*)\|([^|\s]*)/i.exec(msg);
+  if (m) return { motif: 'categorie_hors_service', categorie: m[1], de: m[2], a: m[3] };
+  return null;
+}
+
 /**
  * Crée une commande via la RPC `create_order` (atomique, options validées et prix
  * recalculés côté serveur). Renvoie le numéro généré par la base (ex. TF-1).

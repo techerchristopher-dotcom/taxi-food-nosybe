@@ -448,6 +448,7 @@
     "copie": "Lien copié",
     "plus": "Autre application…",
     "fermer": "Fermer",
-    "surLabel": "Partager sur :"
+    "surLabel": "Partager sur :",
+    "copieColler": "Lien copié — collez-le dans votre publication"
   }
 }

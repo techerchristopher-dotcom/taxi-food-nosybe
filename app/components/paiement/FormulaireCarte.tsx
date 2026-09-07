@@ -17,6 +17,18 @@
  * web. C'est le jumeau `FormulaireCarte.web.tsx` qui garantit ça (voir
  * `contrat.ts`).
  *
+ * ⚠️ APPLE PAY. Il ne s'affiche dans la feuille QUE si les trois pièces sont
+ * réunies : le `merchantIdentifier` passé à `initStripe` (il vient du plugin
+ * dans `app.json`, qui pose aussi l'entitlement Apple Pay dans le binaire), le
+ * bloc `applePay` ci-dessous, ET un certificat Apple Pay valide côté Stripe
+ * pour ce même identifiant marchand. S'il en manque une, la feuille s'ouvre
+ * normalement mais SANS le bouton — sans la moindre erreur. C'est exactement ce
+ * qui s'est passé au premier test du 2026-09-07 : aucune des trois n'existait.
+ *
+ * `merchantCountryCode` est le pays du compte Stripe, PAS celui du client :
+ * compte Rentanoo immatriculé en France, donc « FR ». Un code qui ne
+ * correspond pas au compte fait échouer le paiement à la confirmation.
+ *
  * `initStripe` plutôt que `<StripeProvider>` : la clé publiable vient du Vault,
  * via la réponse de `creer-paiement`, donc elle n'existe qu'au moment du
  * paiement. Envelopper toute l'app dans un provider obligerait à la connaître au
@@ -29,6 +41,18 @@ import { initPaymentSheet, initStripe, presentPaymentSheet } from '@stripe/strip
 import { Button } from '../Button';
 import { colors, fonts } from '../../theme/tokens';
 import { ProprietesFormulaireCarte } from './contrat';
+
+/**
+ * Identifiant marchand Apple, cree dans le portail developpeur Apple et
+ * rattache a un certificat Apple Pay dans le tableau de bord Stripe.
+ * ⚠️ Il doit etre IDENTIQUE a celui declare dans `app.json` (plugin Stripe) :
+ * c'est ce dernier qui pose l'entitlement dans le binaire. Deux valeurs
+ * differentes = feuille sans Apple Pay, en silence.
+ */
+const MARCHAND_APPLE = 'merchant.com.chris97416.taxi-food-nosybe';
+
+/** Pays du compte Stripe Rentanoo (verifie via l'API : `country: "FR"`). */
+const PAYS_COMPTE_STRIPE = 'FR';
 
 export function FormulaireCarte({
   clientSecret,
@@ -52,7 +76,7 @@ export function FormulaireCarte({
       setPrepaEnCours(true);
       setErreurPrepa(null);
       try {
-        await initStripe({ publishableKey });
+        await initStripe({ publishableKey, merchantIdentifier: MARCHAND_APPLE });
         const { error } = await initPaymentSheet({
           merchantDisplayName: 'Taxi Food',
           paymentIntentClientSecret: clientSecret,
@@ -61,6 +85,9 @@ export function FormulaireCarte({
           // Sans lui, un 3-D Secure qui sort de l'app ne saurait pas revenir.
           returnURL: 'taxifood://paiement',
           allowsDelayedPaymentMethods: false,
+          // Sur Android ce bloc est simplement ignoré par le SDK : pas de garde
+          // `Platform.OS` a ecrire, et donc pas de garde a oublier.
+          applePay: { merchantCountryCode: PAYS_COMPTE_STRIPE },
         });
         if (annule || !vivant.current) return;
         if (error) setErreurPrepa(error.message);

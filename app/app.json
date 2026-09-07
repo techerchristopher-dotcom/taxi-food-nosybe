@@ -142,7 +142,8 @@
       [
         "@stripe/stripe-react-native",
         {
-          "enableGooglePay": false
+          "enableGooglePay": false,
+          "merchantIdentifier": "merchant.com.chris97416.taxi-food-nosybe"
         }
       ]
     ],

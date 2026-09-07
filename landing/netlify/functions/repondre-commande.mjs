@@ -22,10 +22,26 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SITE = 'https://taxifoodnosybe.distripro207.com';
 
+// ⚠️ NE PAS CONFONDRE LES DEUX ADRESSES.
+//   SITE = le site vitrine, qui presente Taxi Food au public.
+//   APP  = l'application, ou le restaurateur voit ses commandes.
+// Le bouton de cette page renvoyait sur SITE : le restaurateur venait d'accepter
+// une commande et atterrissait sur une page de presentation, sans sa commande
+// nulle part. Il faut l'amener LA OU EST SON TRAVAIL.
+//
+// ⚠️ La racine de l'app suffit : `app/index.tsx` aiguille un compte a role
+// restaurant ACTIF directement vers son espace « Commandes en cours ». Pointer
+// vers un chemin interne du groupe `(restaurant)` serait plus fragile — ces
+// groupes ne se retrouvent pas dans l'URL, et l'aiguillage vit dans le code.
+const APP = 'https://taxifood.distripro207.com';
+
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-function page(emoji, titre, corps, couleur = '#157F3C') {
+function page(emoji, titre, corps, couleur = '#157F3C', cta = null) {
+  // Par defaut on renvoie vers l'app : quelle que soit la situation, ce que le
+  // restaurateur veut faire ensuite se passe dans son espace, pas sur le site.
+  const lien = cta ?? { libelle: 'Ouvrir mon espace', href: `${APP}/` };
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(titre)} — Taxi Food</title>
@@ -41,7 +57,7 @@ function page(emoji, titre, corps, couleur = '#157F3C') {
     font-weight:700;padding:14px 26px;border-radius:999px}
 </style></head><body><div class="c">
 <div class="e">${emoji}</div><h1>${esc(titre)}</h1><p>${corps}</p>
-<a class="b" href="${SITE}/">Taxi Food</a>
+<a class="b" href="${lien.href}">${esc(lien.libelle)}</a>
 </div></body></html>`;
 }
 
@@ -82,9 +98,14 @@ export default async (request) => {
       return new Response(
         action === 'accepter'
           ? page('✅', `Commande ${esc(d.numero)} acceptée`,
-              'C’est noté. Le client vient d’être prévenu, et la commande est visible dans ton espace.')
+              'C’est noté. Le client vient d’être prévenu. Ouvre ton espace pour la passer en préparation, puis la marquer prête.',
+              '#157F3C',
+              { libelle: `Voir la commande ${d.numero ?? ''}`.trim(), href: `${APP}/` })
           : page('❌', `Commande ${esc(d.numero)} refusée`,
-              'Le client vient d’être prévenu. Il n’a rien à payer.', '#DF3228'),
+              'Le client vient d’être prévenu. Il n’a rien à payer.', '#DF3228',
+              // Une commande refusee passe en « annulee » : elle est dans
+              // l'Historique, pas dans les commandes en cours.
+              { libelle: 'Voir mon historique', href: `${APP}/history` }),
         { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
     }
 
@@ -92,7 +113,8 @@ export default async (request) => {
       // Cas le plus frequent en vrai : deja repondu depuis l'application.
       // Ce n'est pas une erreur, et le dire ainsi evite une inquietude inutile.
       return new Response(page('👍', 'Déjà traitée',
-        `Cette commande est déjà en « ${esc(d.statut)} ». Rien de plus à faire.`, '#8A827A'),
+        `Cette commande est déjà en « ${esc(d.statut)} ». Rien de plus à faire.`, '#8A827A',
+        { libelle: 'Ouvrir mon espace', href: `${APP}/` }),
         { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
     }
 

@@ -84,6 +84,11 @@ export type Product = {
   packagingFee?: number;
   /** Libellé de la ligne d'emballage, ex. « Boîte à pizza ». */
   packagingLabel?: string | null;
+  /**
+   * Rang du plat dans sa catégorie, tel que le restaurateur l'a rangé. Absent
+   * des charges utiles qui ne lisent pas la carte complète.
+   */
+  sortOrder?: number;
 };
 
 /** Une option d'un groupe (ex. « Poulet », « + Fromage »). */

@@ -91,11 +91,29 @@ LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device <udid>
 - **Supabase** projet `bmdveawomizjpiebgtkj` (accès via le connecteur MCP claude.ai ; c'est un projet distinct des autres — voir aussi le projet frère `addition-appli`).
 - **Clés** dans `app/.env` (git-ignoré, à recréer depuis `app/.env.example`) : `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (clé **publishable/anon**, publique par conception — RLS protège), `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
 
-## Les trois vrais restaurants
+## Les vrais restaurants
 
-- **Angelo** — voir sa carte en base pour le détail des catégories.
-- **Taxi Be** — bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs). ⚠️ Les 6 cocktails sont désactivés depuis le 2026-08-19 (`categories.is_active = false`, décision classement d'âge — voir `docs/FICHE-APP-STORE.md` § 3), les 19 bières restent.
-- **La Cabane** — snacks (Sandwichs & Repas, Burgers, Bières, Softs, Milkshakes, Crêpes).
+État vérifié en base le 2026-09-07 : **cinq** lignes dans `restaurants`, dont trois seulement
+sont `listing_status = 'visible'`. Le titre de cette section disait « les trois vrais
+restaurants » ; c'est daté.
+
+- **Chez Bidul & Truc** (`700e8f32-…`) — **visible**, et le seul en `auto_open = true` : son
+  ouverture est déduite de ses horaires, pas d'un interrupteur. Deux services par jour, midi et
+  soir, et une catégorie « Pizza » servie de 18 h à 22 h seulement — c'est lui qui a fait naître
+  tout le chantier « heures de service » plus bas. Enseigne, logo et visuels branchés depuis
+  `produits/chez-bidul-truc/divers`. ⚠️ **Sa couverture est un HEIC**, photo iPhone déposée
+  telle quelle : Chrome et Android ne savent pas l'afficher, Safari si. Elle passe côté client
+  parce que la fiche restaurant appelle `imageUrl()`, qui réécrit vers le **transformateur
+  d'images Supabase** et rend un `image/jpeg`. `PhotoEditable`, dans l'écran Réglages du
+  partenaire, affichait l'URL **brute** : le restaurateur voyait un cadre vide sur Android que
+  ses clients, eux, ne voyaient pas. Corrigé le 2026-09-07 — tout passe par le transformateur.
+- **La Cabane** — snacks. ⚠️ Son `chat_id` Telegram était celui du téléphone du porteur du
+  projet, posé pendant les tests : **ses commandes nous arrivaient à nous**. Remplacé le
+  2026-09-06 par son canal privé, message de contrôle et commande de test remis. La commande de
+  test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
+- **Les Siciliens** — visible.
+- **Angelo** — `listing_status = 'hidden'`. Voir sa carte en base pour le détail des catégories.
+- **Taxi Be** — `coming_soon`. Bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs). ⚠️ Les 6 cocktails sont désactivés depuis le 2026-08-19 (`categories.is_active = false`, décision classement d'âge — voir `docs/FICHE-APP-STORE.md` § 3), les 19 bières restent.
 
 ⚠️ Les 4 restaurants de **démo** (Pizzeria Papillon, Tacos du Boulevard, Burger Baobab, Chez Loulou) ont été **supprimés de la base**. Ne pas les réintroduire ; aucun nom en dur dans le code (juste un exemple dans un commentaire de `data/types.ts`).
 
@@ -300,8 +318,12 @@ gestes **indissociables** :
    les articles seraient apparus (ils viennent d'un sous-select), les montants seraient restes
    faux. C'est la moitie la plus trompeuse.
 
-⚠️ **Ne jamais remettre `orders_notify_new` en `after insert` simple.** Le defaut revient
-entier, et il ne se voit pas en carte.
+⚠️ **Ne jamais remettre `orders_notify_new` en `after insert` simple, ni retirer la relecture
+de `notify_order_status()`.** Les deux gestes se tiennent : reporter sans relire ne repare que
+la moitie du probleme, et relire sans reporter ne repare rien. Le defaut revient entier, et il
+ne se voit pas en carte. Etat re-verifie en base le 2026-09-07 :
+`CREATE CONSTRAINT TRIGGER orders_notify_new AFTER INSERT ON public.orders DEFERRABLE INITIALLY
+DEFERRED FOR EACH ROW EXECUTE FUNCTION notify_order_status()`.
 
 ✅ **Verifie apres correction** : base et charge utile coincident (total 19 000, sous-total
 9 000, 1 article nomme). ✅ **Et le bouton Accepter de Telegram fonctionne de bout en bout** —
@@ -363,8 +385,172 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
   sur TAXIFOOD50 et que `promo_redemptions_user_id_fkey` est `ON DELETE CASCADE`, supprimer
   puis recréer son compte rend le code réutilisable sans plafond.
 
+## Heures de service — deux services par jour, cartes à l'heure (2026-09-07)
+
+Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et dont les
+**pizzas ne sortent qu'à partir de 18 h**. Migration
+`20260907190000_deux_services_par_jour_et_cartes_a_l_heure`.
+
+- ⚠️ **Deux services n'étaient pas « pas prévus » : ils étaient INTERDITS par la clé.**
+  `restaurant_hours` avait `primary key (restaurant_id, weekday)` — une seule ligne par jour,
+  point. La table porte désormais `service smallint not null default 1`
+  (`check (service between 1 and 2)` ; 1 = midi, 2 = soir) et sa clé primaire est
+  **`(restaurant_id, weekday, service)`** — vérifié en base. Un restaurant à service unique
+  n'utilise que le 1 : la migration ne change rien pour lui.
+- **`ouvert_maintenant(restaurants)` est passé en `exists`** : ouvert = il existe **un**
+  service du jour, non fermé, dont la plage contient l'heure d'`Indian/Antananarivo`. Le
+  calcul de plage est extrait dans **`heure_dans_plage(ouvre, ferme, moment)`**, et il l'est
+  exprès : il sert maintenant à **trois** endroits (ouverture du restaurant, disponibilité
+  d'une catégorie, garde de `create_order`) — trois copies auraient divergé. Il gère le
+  **passage de minuit** (22h → 02h est vraie aux deux bouts).
+- **`services_du_jour(r)` rend TOUS les services du jour**, dans l'ordre. `horaires_du_jour(r)`
+  survit et rend le **service 1**, le temps que les binaires déjà sur les magasins soient
+  remplacés. ⚠️ La fiche restaurant lit `services_du_jour`, pas `horaires_du_jour` : à 18 h,
+  un restaurant qui sert midi et soir affichait « Ouvert · 11h30 – 15h » — l'état était juste,
+  l'horaire montrait le service **déjà terminé**.
+- ⚠️ **`set_restaurant_week_hours` : `service` est OPTIONNEL dans la charge utile et retombe
+  sur 1.** C'est ce qui laisse les écrans déjà installés (sept objets sans `service`) piloter
+  le midi sans rien casser. Mais s'appuyer là-dessus depuis l'app écraserait silencieusement
+  un service du soir sur le midi : `app/data/api.ts` envoie donc **toujours** `service`, même
+  à 1. Et « Fermé » ferme **la journée**, donc les DEUX services — n'en remettre qu'un à zéro
+  laisserait un service du soir actif en base sur un jour de fermeture.
+
+### Une catégorie peut n'être servie qu'à certaines heures
+
+- **`categories.serving_from` / `serving_to`** (`time`, nullables). **Vide = servie dès que le
+  restaurant est ouvert** — c'est le cas de toutes les catégories sauf une, vérifiée en base :
+  « Pizza » chez Chez Bidul & Truc, **18:00 → 22:00**. Le verdict est rendu par
+  `categorie_servie_maintenant(categories)`, que `getMenu` sélectionne comme colonne calculée.
+- ⚠️ Avant, `is_active` était le seul levier, et il est tout ou rien : masquer les pizzas le
+  midi obligeait à **les éteindre et les rallumer à la main, deux fois par jour, tous les
+  jours**.
+
+### Et le vrai trou : `create_order` ne regardait NI l'ouverture NI l'heure
+
+⚠️ **On pouvait commander à 3 h du matin sur un restaurant fermé.** Mesuré le 2026-09-07 dans
+une transaction annulée, Chez Bidul & Truc fermé : « restaurant ouvert ? f | commande acceptée
+? t » — TF-107, 19 000 Ar. Le restaurant aurait reçu son message Telegram, avec ses boutons,
+sans personne en cuisine. **L'écran grisait le bouton — l'écran n'a jamais été l'autorité** :
+la clé anon est publique par conception, l'API REST s'appelle directement.
+
+`create_order` lève désormais deux exceptions, en `errcode = '22023'` :
+
+| Message levé | Quand |
+|---|---|
+| `service:restaurant_ferme` | `ouvert_maintenant(resto)` est faux |
+| <code>service:categorie_hors_service&#124;nom&#124;de&#124;a</code> | la catégorie d'un plat du panier n'est pas servie à cette heure |
+
+- ⚠️ **Le séparateur est `|`, pas `:`** — un nom de catégorie peut contenir un deux-points, et
+  le découpage côté app se ferait alors au mauvais endroit.
+- ⚠️ **Pas de `to_char()` sur un `time`** : Postgres n'a pas de `to_char(time, text)`. Les
+  heures partent en `substring(x::text from 1 for 5)`, soit « 18:00 ».
+- Côté app, `refusServiceDepuisErreur()` (`app/data/api.ts`) reconstitue le motif, et
+  `checkout.tsx` le teste **avant** le code promo : un restaurant fermé ou une carte pas encore
+  ouverte n'est pas un échec technique, et « la commande n'a pas pu être créée » ne dit rien à
+  quelqu'un qui vient de composer son panier. Le client doit lire **l'heure à laquelle
+  revenir**.
+- Côté saisie, l'écran Réglages du partenaire compose les deux services par jour
+  (« + Ajouter un service du soir », « Retirer ») ; sa clé interne est `weekday:service`, pas
+  `weekday`.
+
+## L'ordre de la carte n'existait pas (2026-09-07)
+
+Migration `20260907200000_la_carte_ne_se_reordonne_plus_toute_seule`.
+
+⚠️ **`products` ne portait aucune colonne d'ordre, et `getMenu` ne demandait aucun `ORDER
+BY`.** Sans tri explicite, Postgres rend les lignes dans l'**ordre physique du fichier**, et
+une ligne `UPDATE`-ée est réécrite **à la fin**. Chaque changement de prix, chaque rupture
+cochée, chaque plat étoilé faisait donc descendre le plat au bas de sa catégorie, **chez le
+client, définitivement**. Constaté en posant des labels « contient du porc » chez Chez Bidul &
+Truc : le croque-monsieur est passé de la 3e à la 15e place et la croque-madame en dernier,
+alors que **rien n'avait bougé à l'écran** — c'est la base qui les avait déplacés. Ce n'est pas
+un défaut d'affichage : c'est un ordre qui n'existait pas, et un restaurateur qui range sa
+carte ne pouvait pas la ranger.
+
+- Le correctif a **deux moitiés indissociables** : la colonne `products.sort_order` **et** le
+  tri explicite `.order('sort_order').order('name')` dans `getMenu`. ⚠️ **Ne jamais retirer cet
+  `ORDER BY`** : la colonne seule ne trie rien, et le défaut revient entier et silencieux.
+  `name` départage les ex æquo pour que l'ordre reste stable même à rangs égaux.
+- Le semis part de `ctid` — la position physique, précisément ce qui servait d'ordre implicite
+  — numéroté par dizaines dans chaque catégorie, pour que **rien ne bouge** à l'application de
+  la migration. ⚠️ **L'ordre semé est donc celui d'aujourd'hui, déjà partiellement brassé par
+  les modifications passées** : il n'y a aucun moyen de retrouver l'ordre d'origine de la carte
+  papier, `products` n'ayant même pas de `created_at`. Le figer est le mieux qu'on puisse faire
+  sans inventer.
+- Les 18 plats de la catégorie « Plat » de Chez Bidul & Truc ont ensuite été remis dans l'ordre
+  de sa **carte papier**, relevé sur la photo versionnée à côté — ni alphabétique, ni par prix :
+  celui que le restaurateur a choisi.
+- Index `products_categorie_ordre_idx (category_id, sort_order)`.
+- ⚠️ **Figer l'ordre n'est pas le CHOISIR.** Le restaurateur qui veut remonter sa spécialité en
+  tête de catégorie ne pouvait toujours rien faire : l'ordre était simplement figé, et figé sur
+  une disposition déjà brassée. Un écran de réordonnancement (« monter » / « descendre » dans
+  les Réglages) et sa RPC `set_product_sort_order` sont **en cours dans le répertoire de
+  travail, ni commités ni appliqués en base au 2026-09-07** — migration
+  `20260907210000_le_restaurateur_range_enfin_sa_carte.sql`. À reprendre là.
+
+## Partage social d'un plat ou d'un restaurant (2026-09-07)
+
+`app/lib/partage.ts` et `app/components/PartageSheet.tsx`, qui exporte **deux** composants :
+**`PartageSheet`** (la feuille modale, montée par la fiche produit et par les lignes de menu de
+la fiche restaurant) et **`PartageEnLigne`** (la rangée « Partager sur : » annoncée en clair sur
+la fiche produit — une icône de partage seule ne se remarque pas, et la fiche est le seul écran
+qui a la place).
+
+- ⚠️ **`navigator.share` N'EXISTE PAS sur un navigateur de bureau** — vérifié le 2026-09-07 en
+  production : `typeof navigator.share === 'undefined'`. `Share.share` de React Native s'appuie
+  dessus côté web, donc le bouton de partage n'y faisait **RIEN, en silence**, l'échec étant
+  avalé par le `catch` de `partager()`. Et c'est exactement là que ça compte : un restaurateur
+  qui pousse son plat sur la page Facebook de son établissement le fait **depuis un
+  ordinateur**. Les trois destinations sont donc explicites et marchent partout (WhatsApp par
+  `wa.me`, Facebook par `sharer.php`, copie du lien pour tout le reste), et la feuille système
+  n'est proposée que là où **`partageNatifDisponible()`** est vrai.
+- ⚠️ **Facebook IGNORE tout texte qu'on lui passe** — le paramètre `quote` ne fonctionne plus
+  depuis 2017. Titre, description et image viennent **exclusivement** des balises Open Graph de
+  la page ciblée : d'où `/p/<id>` et `/r/<id>`, servis par
+  `landing/netlify/functions/partage.mjs`, qui lit Supabase et rend ces balises. Ne jamais
+  pointer un partage vers `/product/<id>`, qui est l'app et n'a aucune balise.
+- ⚠️ **L'URL est mise DANS `message`, et `url` est laissé vide** dans `Share.share`. C'est
+  contre-intuitif et délibéré : quand les deux sont fournis, iOS publie deux éléments distincts
+  et la plupart des applications de destination n'en retiennent qu'un — l'URL. Le texte
+  disparaît, le destinataire reçoit un lien nu.
+- **Le lien partagé est une vraie URL `https://`, jamais le schéma `taxifood://`** : un schéma
+  privé n'est même pas cliquable dans WhatsApp et ne fait rien chez qui n'a pas l'app —
+  c'est-à-dire exactement la personne qu'on cherche à convertir.
+- ⚠️ **`SITE`, dans `app/lib/partage.ts`, est un endroit de PLUS où le domaine doit rester
+  aligné**, avec `app.json` (`ios.associatedDomains`, `android.intentFilters`),
+  `landing/.well-known/apple-app-site-association` et `landing/.well-known/assetlinks.json`.
+  Désaligné, le lien tombe silencieusement dans le navigateur au lieu de l'app.
+
+⚠️ **Le domaine canonique est `taxifoodnosybe.distripro207.com`** — c'est lui que portent
+`SITE`, les trois liens de la notification Telegram (suivi, accepter, refuser) et toutes les URL
+absolues du site. **Ne pas le confondre avec `taxifood.distripro207.com`, qui est l'app web** :
+elle n'a aucune balise Open Graph, et un partage qui la vise ne montre qu'un lien nu.
+
 ## Règles produit importantes (déjà implémentées)
 
+- ⚠️ **Labels alimentaires « contient du porc » : on ne tague que ce qui est CONFIRMÉ par le
+  restaurateur, jamais par déduction.** Document de référence :
+  [docs/LABELS-ALIMENTAIRES.md](docs/LABELS-ALIMENTAIRES.md). Un label est un label de
+  confiance : se tromper une fois coûte le client définitivement, et **ne rien afficher vaut
+  mieux qu'une supposition**. La déduction se trompe dans les **deux** sens — les pizzas
+  « Reine » et « Pepperoni » d'Angelo et de Taxi Be sont au jambon de volaille (les taguer
+  aurait fait fuir exactement les clients que le label sert), et à l'inverse la « Terrine foie
+  gras » de Chez Bidul & Truc n'en contient pas, alors que la déduction courante l'aurait
+  taguée et aurait écarté un plat à 29 000 Ar sans raison. Colonne `products.diet_tags`, posée
+  par `set_product_diet_tags`.
+- **Un groupe d'options OBLIGATOIRE qui ne propose qu'une seule option disponible se
+  pré-remplit** (2026-09-07). ⚠️ « Coché par défaut » **n'existe nulle part en base** —
+  `product_options` n'a pas de colonne pour ça : la règle vit dans l'écran produit, et elle est
+  **générale**, pas codée en dur pour un restaurant. Sans elle, il reste un tap pour rien et,
+  pour qui ne le voit pas, un bouton « Ajouter » grisé inexplicable. ⚠️ Une sélection déjà faite
+  l'emporte toujours : la règle **pré-remplit, elle n'écrase jamais**.
+- ⚠️ **La rubrique de mise en avant s'appelle « Offre du jour » DES DEUX CÔTÉS du comptoir**
+  (2026-09-07) : le partenaire lisait « À l'affiche » dans ses Réglages et le client « Plats du
+  jour » sur la fiche — deux noms pour une seule chose. Le libellé de l'écran Réglages est une
+  **chaîne EN DUR**, pas une clé traduite, et la **visite guidée le CITE dans les trois
+  langues** : renommer l'un sans l'autre envoie le restaurateur chercher une section qui
+  n'existe plus. Les deux bougent ensemble, et le nom cité reste le **texte littéral de
+  l'écran**, français quelle que soit la langue lue.
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
 - **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
 - **Frais de livraison : 10 000 Ar depuis le 2026-09-06** (5 000 auparavant). Le montant vit **uniquement** dans `restaurants.delivery_fee` — il n'est écrit en dur nulle part dans le code ; l'app et le site l'affichent tels qu'ils le lisent. Le seul reliquat était la valeur **par défaut du formulaire** de création de restaurant (`admin/components/Restaurants.tsx`), mise à jour elle aussi.

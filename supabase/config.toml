@@ -62,3 +62,13 @@ verify_jwt = false
 # `verify_jwt = true` aurait ferme la premiere porte sans rien prouver sur la
 # seconde : la cle `anon` du projet est un JWT valide.
 verify_jwt = false
+
+[functions.deposer-visuel]
+# ⚠️ `false` est OBLIGATOIRE et n'est PAS un relachement. L'appelant est un outil,
+# il n'a volontairement aucune session Supabase : c'est tout l'interet de la
+# fonction, qui existe precisement pour deposer un visuel SANS le mot de passe
+# d'un administrateur. Elle verifie elle-meme son appelant, par un secret dont la
+# base ne connait que le SHA-256.
+# Repasser a `true` la rendrait inappelable, et l'echec serait silencieux —
+# exactement le piege deja paye sur `stripe-webhook`.
+verify_jwt = false

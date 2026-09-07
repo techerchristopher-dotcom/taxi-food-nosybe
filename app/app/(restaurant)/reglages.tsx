@@ -26,6 +26,7 @@ import {
   saveFeaturedProduct,
   setProductAvailable,
   setProductFeatured,
+  setProductSortOrder,
   setRestaurantAutoOpen,
   setRestaurantOpen,
   setRestaurantPhone,
@@ -369,6 +370,34 @@ export default function RestaurantSettingsScreen() {
 
   function majJour(weekday: number, patch: Partial<JourSaisi>) {
     setBrouillon({ ...jours, [weekday]: { ...(jours[weekday] ?? JOUR_VIDE), ...patch } });
+  }
+
+  /**
+   * Monte ou descend un plat d'un cran dans sa catégorie.
+   *
+   * On échange son rang avec celui du voisin, en deux appels : `sort_order` ne
+   * porte aucune contrainte d'unicité, l'état intermédiaire reste donc valide
+   * même si la liaison lâche entre les deux.
+   * ⚠️ Cas des rangs ÉGAUX (le semis initial en a laissé, et deux plats
+   * peuvent partager un rang) : les échanger ne changerait rien du tout. On
+   * glisse alors le plat déplacé juste au-delà de son voisin, et le voisin ne
+   * bouge pas.
+   */
+  async function deplacer(produits: Product[], index: number, sens: -1 | 1) {
+    const plat = produits[index];
+    const voisin = produits[index + sens];
+    if (!plat || !voisin) return;
+    const rangPlat = plat.sortOrder ?? 0;
+    const rangVoisin = voisin.sortOrder ?? 0;
+    const nouveauPlat = rangPlat === rangVoisin ? rangVoisin + sens : rangVoisin;
+    await run(
+      `ordre-${plat.id}`,
+      async () => {
+        await setProductSortOrder(plat.id, nouveauPlat);
+        if (rangPlat !== rangVoisin) await setProductSortOrder(voisin.id, rangPlat);
+      },
+      'Impossible de déplacer ce plat.',
+    );
   }
 
   function majPlage(weekday: number, service: 1 | 2, patch: Partial<PlageSaisie>) {
@@ -1030,7 +1059,8 @@ export default function RestaurantSettingsScreen() {
           <Text style={styles.intro}>
             Un produit en rupture reste visible par vos clients, avec la mention
             « Bientôt de retour ». Il n'est simplement plus commandable. L'étoile met un plat
-            de votre carte en avant, sans le sortir de sa catégorie.
+            de votre carte en avant, sans le sortir de sa catégorie. Les flèches rangent votre
+            carte : l'ordre que vous posez ici est celui que voit le client.
           </Text>
 
           {menu?.categories.map((cat: Category) => {
@@ -1059,6 +1089,37 @@ export default function RestaurantSettingsScreen() {
                             {dispo ? '' : '  ·  Bientôt de retour'}
                           </Text>
                         </View>
+                        {/* Rangement de la carte. Un cran par tap, plutôt qu'un
+                            glisser-déposer : le restaurateur range en plein service,
+                            d'une main, sur un téléphone. */}
+                        <Pressable
+                          onPress={() => deplacer(produits, i, -1)}
+                          disabled={i === 0 || busy !== null}
+                          style={styles.fleche}
+                          hitSlop={6}
+                          accessibilityLabel={`Monter ${p.name}`}
+                        >
+                          <Icon
+                            name="arrow_upward"
+                            size={20}
+                            color={i === 0 ? colors.borderStrong : colors.textMuted}
+                          />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => deplacer(produits, i, 1)}
+                          disabled={i === produits.length - 1 || busy !== null}
+                          style={styles.fleche}
+                          hitSlop={6}
+                          accessibilityLabel={`Descendre ${p.name}`}
+                        >
+                          <Icon
+                            name="arrow_downward"
+                            size={20}
+                            color={
+                              i === produits.length - 1 ? colors.borderStrong : colors.textMuted
+                            }
+                          />
+                        </Pressable>
                         {/* Mise en avant d'un plat de la carte permanente : il reste
                             dans sa catégorie ET remonte en tête de page. */}
                         <Pressable
@@ -1213,6 +1274,7 @@ const styles = StyleSheet.create({
   lienAnnuler: { alignItems: 'center', paddingVertical: 10 },
   lienAnnulerTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
   etoile: { padding: 6 },
+  fleche: { paddingHorizontal: 3, paddingVertical: 6 },
   categorie: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.textDark, marginBottom: 6 },
   produitNom: { fontFamily: fonts.semibold, fontSize: 14.5, color: colors.textDark },
   produitCoupe: { color: colors.textMuted },

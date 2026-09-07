@@ -204,6 +204,7 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     dietTags: p.diet_tags ?? [],
     packagingFee: p.packaging_fee ?? 0,
     packagingLabel: p.packaging_label ?? null,
+    sortOrder: p.sort_order ?? 0,
   };
 }
 
@@ -1160,6 +1161,20 @@ export async function setProductStock(productId: string, stock: number | null): 
   const { error } = await supabase.rpc('set_product_stock', {
     p_product_id: productId,
     p_stock: stock,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Pose le rang d'un plat dans sa categorie. Sans rang explicite, l'ordre suivait
+ * la disposition physique des lignes et changeait a chaque modification.
+ * Un echange avec le voisin se fait en DEUX appels : `sort_order` ne porte aucune
+ * contrainte d'unicite, l'etat intermediaire reste donc toujours valide.
+ */
+export async function setProductSortOrder(productId: string, sortOrder: number): Promise<void> {
+  const { error } = await supabase.rpc('set_product_sort_order', {
+    p_product_id: productId,
+    p_sort_order: sortOrder,
   });
   if (error) throw error;
 }

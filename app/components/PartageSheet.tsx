@@ -216,15 +216,7 @@ export function PartageEnLigne({
           icone="facebook"
           teinte="#1877F2"
           libelle={t('partage.facebook')}
-          onPress={async () => {
-            // ⚠️ Sur mobile ce bouton COPIE puis ouvre Facebook. Le dire est
-            // indispensable : sans un mot, le client arrive dans le composeur
-            // sans savoir qu'il n'a qu'a coller.
-            if (await partagerFacebook(titre, texte, url)) {
-              setCopie(true);
-              setTimeout(() => setCopie(false), 4000);
-            }
-          }}
+          onPress={() => partagerFacebook(titre, texte, url)}
         />
         <Pastille
           icone={copie ? 'check' : 'link'}
@@ -241,7 +233,7 @@ export function PartageEnLigne({
           />
         ) : null}
       </View>
-      {copie ? <Text style={enLigne.confirme}>{t('partage.copieColler')}</Text> : null}
+      {copie ? <Text style={enLigne.confirme}>{t('partage.copie')}</Text> : null}
     </View>
   );
 }

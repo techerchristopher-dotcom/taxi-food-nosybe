@@ -159,62 +159,44 @@ export async function ouvrirPartage(url: string) {
 }
 
 /**
- * Ouvre l'APPLICATION Facebook si elle est installée, son site sinon.
+ * Partage vers Facebook.
  *
- * ⚠️ `fb://` est un schéma d'application : s'il n'y a pas d'application pour le
- * traiter, il ne se passe rien du tout — d'où le repli. On le déclenche à retard
- * et seulement si la page est TOUJOURS AU PREMIER PLAN : quand l'application a
- * pris la main, le navigateur passe en arrière-plan et `document.hidden`
- * devient vrai. Sans ce test, on ouvrirait le site par-dessus l'application qui
- * vient de s'ouvrir.
+ * ⚠️ TROIS VOIES ONT ÉTÉ ESSAYÉES SUR MOBILE. Celle-ci est la seule qui aboutit
+ * vraiment ; les deux autres sont décrites ici pour qu'on ne les re-tente pas.
+ *
+ *  1. `facebook.com/sharer/sharer.php` — une relique du web de bureau. Sur
+ *     mobile, Facebook renvoie vers son application ou son site allégé, qui ne
+ *     le gèrent pas : la page s'ouvre et il n'y a RIEN à partager. Sur
+ *     ORDINATEUR il fonctionne parfaitement — d'où un défaut totalement
+ *     invisible tant qu'on ne teste que là.
+ *
+ *  2. Copier le lien puis ouvrir l'application par `fb://` — un seul geste de
+ *     notre côté, mais il faut ensuite trouver son composeur et coller. Essayé
+ *     le 2026-09-07, ABANDONNÉ à l'usage : on gagne des taps sur le papier, on
+ *     en perd en repères.
+ *
+ *  3. La feuille de partage du système — RETENUE. Elle demande de passer par
+ *     « Plus » puis de choisir Facebook, ce qui est plus long qu'on ne
+ *     voudrait, mais c'est l'application Facebook elle-même qui prend la main :
+ *     le composeur s'ouvre avec le lien, et la publication affiche bien la
+ *     photo, le nom et le prix. Vérifié en publiant pour de vrai.
+ *
+ * ⚠️ On ne passe PAS `text` à `navigator.share`. iOS le colle devant l'URL, et
+ * le composeur reçoit alors une phrase contenant un lien plutôt qu'un lien : il
+ * ne va pas chercher l'aperçu.
  */
-function ouvrirApplicationFacebook() {
-  const repli = () => {
-    if (!document.hidden) window.location.href = 'https://www.facebook.com/';
-  };
-  window.location.href = 'fb://';
-  setTimeout(repli, 1200);
-}
-
-/**
- * Partage vers Facebook — trois chemins, un par contexte.
- *
- * ⚠️ SUR TÉLÉPHONE : ON COPIE LE LIEN, PUIS ON OUVRE L'APPLICATION.
- *
- * Les deux autres voies ont été essayées et écartées, chacune pour une raison
- * constatée le 2026-09-07 :
- *
- *  - `facebook.com/sharer/sharer.php` est une relique du web de bureau. Sur
- *    mobile, Facebook renvoie vers son application ou son site allégé, qui ne le
- *    gèrent pas : la page s'ouvre et il n'y a RIEN à partager.
- *
- *  - La feuille de partage du système aboutit, mais il faut « Plus », puis
- *    chercher Facebook dans la liste, puis attendre son composeur : trois gestes
- *    pour une action qui devrait en demander un. Jugée trop longue à l'usage.
- *
- * Copier puis ouvrir l'application donne un seul geste de notre côté, et il ne
- * reste qu'à coller — iOS et Android proposent d'ailleurs le collage tout seuls
- * au-dessus du clavier, le lien venant d'être copié.
- *
- * ⚠️ La copie DOIT précéder l'ouverture : une fois la page en arrière-plan, le
- * navigateur refuse l'accès au presse-papiers.
- *
- * Renvoie `true` si le lien a bien été copié, pour que l'écran puisse le dire.
- */
-export async function partagerFacebook(
-  titre: string,
-  texte: string,
-  url: string,
-): Promise<boolean> {
-  if (Platform.OS === 'web' && estTactile()) {
-    const copie = await copierLien(url);
-    ouvrirApplicationFacebook();
-    return copie;
+export async function partagerFacebook(titre: string, texte: string, url: string) {
+  if (Platform.OS === 'web' && estTactile() && typeof navigator?.share === 'function') {
+    try {
+      await navigator.share({ title: titre, url });
+      return;
+    } catch (e) {
+      // Feuille fermée par l'utilisateur : ce n'est pas une erreur, et ouvrir le
+      // partageur derrière serait agressif.
+      return;
+    }
   }
-  // Sur ordinateur, le partageur fonctionne : nouvel onglet, page d'origine
-  // intacte, et l'aperçu vient des balises Open Graph de la page ciblée.
   await ouvrirPartage(lienFacebook(url));
-  return false;
 }
 
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */

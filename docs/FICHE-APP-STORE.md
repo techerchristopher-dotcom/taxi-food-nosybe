@@ -482,3 +482,76 @@ l'app ne fonctionne pas — exactement le scénario des deux rejets précédents
 **Pourquoi le filet Telegram sur Taxi Be.** Le rendre commandable l'expose à de VRAIS
 clients, alors qu'aucun patron n'y est branché : sans ce renvoi, une commande réelle passée
 pendant la revue ne serait vue par personne.
+
+---
+
+## 8. Soumission du 2026-09-07 — ce qui est parti chez Apple
+
+**Version 1.2.0, build 28**, envoyée à 23 h 09 (heure locale). Apple annonce jusqu'à
+48 heures de vérification. Statut visible sur la page de la version : tant qu'elle est en
+attente, les textes restent modifiables, mais **changer de build oblige à retirer la version
+du processus** — donc à repartir en bas de la file.
+
+⚠️ Les builds 26 et 27 sont des **échecs**, pas des versions : le profil de provisioning
+n'avait pas encore l'entitlement Apple Pay (voir `PAIEMENT-STRIPE.md` § 12). Le 28 est le
+premier build signé avec.
+
+### Ce qui a été vérifié dans le binaire, pas supposé
+
+L'IPA a été téléchargé et ouvert avant l'envoi :
+
+- profil de provisioning **recréé le 2026-09-07 à 19:36:39** (l'ancien datait du 17 août) ;
+- `com.apple.developer.in-app-payments = ['merchant.com.chris97416.taxi-food-nosybe']`,
+  présent **dans le profil ET dans la signature du binaire** — c'est cette dernière qu'iOS lit ;
+- `CFBundleShortVersionString` 1.2.0, `CFBundleVersion` 28.
+
+⚠️ Le profil s'appelle toujours `…AppStore 2026-08-17T19:44:54`. **Ne pas s'y fier** : EAS
+conserve le libellé d'origine. Seules la date de création et le contenu font foi.
+
+### Déclaration de confidentialité — modifiée et publiée
+
+Ajout d'un 9ᵉ type de données : **Informations de paiement**, *Fonctionnalité de l'app*,
+*lié à l'identité de l'utilisateur*, **pas de suivi**.
+
+**Pourquoi.** Depuis 1.2.0, le numéro de carte est saisi dans la feuille Stripe, qui s'ouvre
+**à l'intérieur de l'app**. Le questionnaire d'Apple rappelle lui-même que les données
+collectées par un SDK tiers comptent comme collectées par l'app.
+
+⚠️ **Un point de droit à connaître, au cas où on nous le reprocherait.** Apple affiche, sous
+« Informations de paiement », une exemption :
+
+> *Si votre app utilise un service de paiement, les informations de paiement sont saisies en
+> dehors de votre app et vous, en tant que développeur, n'avez jamais accès à ces
+> informations, qui ne sont donc pas collectées et qui n'ont pas besoin d'être déclarées.*
+
+Les deux conditions sont cumulatives. La seconde est remplie (la carte ne touche jamais nos
+serveurs, cf. `PAIEMENT-STRIPE.md`), **mais pas la première** : la feuille est native et
+s'ouvre dans l'app, pas dans un navigateur. On a donc déclaré. C'est le choix prudent — sous-
+déclarer expose à un retrait, sur-déclarer n'expose qu'à une ligne de plus sur la fiche.
+
+⚠️ **Pas déclaré, et c'est discutable** : *Interaction avec le produit*. Le SDK Stripe collecte
+des indicateurs d'activité (rythme de frappe, copier-coller) à des fins **anti-fraude
+uniquement**, jamais publicitaires, et jamais recoupés entre apps. `Identifiant de l'appareil`
+est déjà déclaré et couvre les caractéristiques matérielles. À rouvrir si Apple le soulève.
+
+### Ajout aux notes du relecteur
+
+Une phrase sur Apple Pay, désormais présent dans la feuille :
+
+> *Apple Pay is offered inside that same Stripe sheet: it is also a real charge, and it pays
+> for physical goods, not in-app content.*
+
+Elle sert à couper court au réflexe « paiement Apple = achat intégré » : c'est bien de la
+marchandise physique, donc paiement externe autorisé (règle 3.1.5(a)).
+
+### État des restaurants au moment de l'envoi
+
+Vérifié en base, pas de mémoire — les quatre visibles sont ouverts en permanence
+(`auto_open = false`, `is_open = true`) : Chez Bidul & Truc, La Cabane, Les Siciliens,
+Taxi Be. Angelo reste `hidden`. **Tout ceci est à défaire après validation — voir § 7.**
+
+### Ce qui n'a PAS été refait
+
+Les captures d'écran **datent du 2026-08-19** et montrent encore le vouvoiement, abandonné
+côté client le 2026-08-24. Ce n'est pas un motif de rejet, mais c'est une incohérence visible
+sur la fiche produit, à reprendre à la prochaine version.

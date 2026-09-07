@@ -186,10 +186,30 @@ export async function ouvrirPartage(url: string) {
  * ne va pas chercher l'aperçu.
  */
 export async function partagerFacebook(titre: string, texte: string, url: string) {
-  if (Platform.OS === 'web' && estTactile() && typeof navigator?.share === 'function') {
+  // ⚠️ L'APPLICATION NATIVE PASSE PAR LA FEUILLE DU SYSTÈME, comme le web mobile.
+  //
+  // Le defaut a failli partir en revue Apple : la garde ne testait que
+  // `Platform.OS === 'web'`, si bien que sur iOS et Android — donc dans le
+  // binaire soumis — le bouton retombait sur `sharer.php`, qui n'affiche RIEN a
+  // partager sur mobile. Un relecteur y aurait vu une fonction cassee (2.1).
+  //
+  // Le web de BUREAU est le seul cas ou `sharer.php` fonctionne : c'est la, et
+  // la seulement, qu'on l'utilise.
+  const surTelephone = Platform.OS !== 'web' || estTactile();
+
+  if (surTelephone) {
     try {
-      await navigator.share({ title: titre, url });
-      return;
+      if (Platform.OS === 'web') {
+        if (typeof navigator?.share === 'function') {
+          await navigator.share({ title: titre, url });
+          return;
+        }
+      } else {
+        // Feuille native iOS/Android : Facebook y figure, et c'est l'application
+        // elle-même qui prend la main.
+        await Share.share({ title: titre, message: url }, { subject: titre });
+        return;
+      }
     } catch (e) {
       // Feuille fermée par l'utilisateur : ce n'est pas une erreur, et ouvrir le
       // partageur derrière serait agressif.

@@ -110,6 +110,15 @@ export function lienFacebook(url: string) {
 }
 
 /** Ouvre un lien de partage externe. */
+/** Appareil tactile — téléphone ou tablette. */
+export function estTactile(): boolean {
+  if (Platform.OS !== 'web') return true;
+  if (typeof navigator === 'undefined') return false;
+  // ⚠️ L'iPad récent se déclare « Macintosh » : seul le nombre de points de
+  // contact le distingue d'un vrai Mac.
+  return navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 export async function ouvrirPartage(url: string) {
   if (Platform.OS !== 'web') {
     // Sur l'app installée, le système ouvre WhatsApp ou Facebook par-dessus, et
@@ -118,30 +127,63 @@ export async function ouvrirPartage(url: string) {
     return;
   }
 
-  // ⚠️ SUR TÉLÉPHONE, ON NAVIGUE DANS LE MÊME ONGLET.
-  //
-  // `window.open(_blank)` y fait deux dégâts, tous deux constatés :
-  //  - les onglets s'empilent, et celui qu'on quitte apparaît VIDE quand on y
-  //    revient — au point de devoir fermer le site et le rouvrir ;
-  //  - il est souvent bloqué : les navigateurs mobiles n'y voient pas un geste
-  //    direct de l'utilisateur, React Native Web passant par des événements
-  //    pointer. Il renvoie alors `null` et il ne se passe RIEN.
-  //
-  // Sur ordinateur, un nouvel onglet n'a aucun de ces défauts et évite de
-  // quitter son panier : on le garde là, et là seulement.
-  const tactile =
-    typeof navigator !== 'undefined' &&
-    (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-
-  if (tactile) {
+  // ⚠️ SUR TÉLÉPHONE, MÊME ONGLET.
+  // `window.open(_blank)` y empile les onglets, et celui qu'on quitte apparaît
+  // VIDE quand on y revient — au point de devoir fermer le site et le rouvrir.
+  // Il est en plus souvent bloqué : les navigateurs mobiles n'y voient pas un
+  // geste direct, React Native Web passant par des événements pointer.
+  if (estTactile()) {
     window.location.href = url;
     return;
   }
 
-  const onglet = window.open(url, '_blank', 'noopener,noreferrer');
-  // Bloqué malgré tout (extension, réglage strict) : on ne laisse pas le client
-  // devant un bouton qui n'a rien fait.
-  if (!onglet) window.location.href = url;
+  // ⚠️ SUR ORDINATEUR, NOUVEL ONGLET — ET L'ONGLET D'ORIGINE NE BOUGE PAS.
+  //
+  // On passe par un <a target="_blank"> qu'on déclenche, et NON par
+  // `window.open`. Raison précise, et c'est un piège que j'ai payé :
+  // `window.open(url, '_blank', 'noopener')` renvoie **null par spécification**,
+  // même quand il réussit. Tout repli du genre `if (!fenetre) location.href = url`
+  // se déclenche donc À CHAQUE FOIS : le nouvel onglet s'ouvre ET la page
+  // d'origine part avec. C'est exactement ce qui a été constaté.
+  //
+  // Un ancre cliquée n'a pas ce défaut : elle ouvre l'onglet, ne renvoie rien à
+  // mal interpréter, et ne touche jamais à la page courante.
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/**
+ * Partage vers Facebook.
+ *
+ * ⚠️ `facebook.com/sharer/sharer.php` NE FONCTIONNE PAS SUR TÉLÉPHONE. Constaté
+ * le 2026-09-07 : sur ordinateur la publication part sans problème, sur mobile
+ * Facebook s'ouvre et le formulaire de partage n'apparaît jamais. Le sharer est
+ * une relique du web de bureau ; sur mobile Facebook renvoie vers son
+ * application ou son site allégé, qui ne le gèrent pas.
+ *
+ * On passe donc par la feuille de partage du système, où Facebook figure — et où
+ * il fonctionne, puisque c'est l'application elle-même qui prend la main.
+ * `navigator.share` est disponible sur Chrome Android et Safari iOS ; à défaut,
+ * on retombe sur le sharer, qui vaut mieux que rien.
+ */
+export async function partagerFacebook(titre: string, texte: string, url: string) {
+  if (Platform.OS === 'web' && estTactile() && typeof navigator?.share === 'function') {
+    try {
+      await navigator.share({ title: titre, text: texte, url });
+      return;
+    } catch (e) {
+      // L'utilisateur a fermé la feuille : ce n'est pas une erreur, et ouvrir le
+      // sharer derrière serait agressif.
+      return;
+    }
+  }
+  await ouvrirPartage(lienFacebook(url));
 }
 
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */

@@ -6,10 +6,10 @@ import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
 import {
   copierLien,
-  lienFacebook,
   lienWhatsApp,
   ouvrirPartage,
   partageNatifDisponible,
+  partagerFacebook,
   partageSysteme,
 } from '../lib/partage';
 
@@ -86,7 +86,7 @@ export function PartageSheet({
               teinte="#1877F2"
               libelle={t('partage.facebook')}
               onPress={() => {
-                ouvrirPartage(lienFacebook(url));
+                partagerFacebook(titre, texte, url);
                 onClose();
               }}
             />
@@ -216,7 +216,7 @@ export function PartageEnLigne({
           icone="facebook"
           teinte="#1877F2"
           libelle={t('partage.facebook')}
-          onPress={() => ouvrirPartage(lienFacebook(url))}
+          onPress={() => partagerFacebook(titre, texte, url)}
         />
         <Pastille
           icone={copie ? 'check' : 'link'}

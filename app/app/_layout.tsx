@@ -55,6 +55,20 @@ export default function RootLayout() {
     JetBrainsMono_700Bold,
   });
 
+  // ⚠️ Retire le voile de demarrage pose par `app/+html.tsx` (web uniquement).
+  //
+  // Il est en HTML pur dans la page, donc visible AVANT le moindre octet de
+  // JavaScript : c'est ce qui remplace l'ecran blanc de plusieurs secondes que
+  // voyait un visiteur arrivant par un lien WhatsApp.
+  //
+  // ⚠️ On le retire ICI, au premier rendu de React — surtout pas sur l'evenement
+  // `load` de la page : le bundle serait charge mais React pas encore monte, et
+  // on retomberait sur du blanc, exactement le defaut qu'on corrige.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    document.getElementById('tf-boot')?.remove();
+  }, []);
+
   const router = useRouter();
   const { i18n } = useTranslation();
   const language = i18n.language;

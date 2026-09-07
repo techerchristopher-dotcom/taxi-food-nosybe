@@ -131,3 +131,14 @@
   from = "/it/partner"
   to = "/it/ristoranti-partner/"
   status = 301
+
+# --- Images d'apercu (Netlify Image CDN) ------------------------------------
+# ⚠️ Autorise la transformation d'images hebergees sur le stockage Supabase.
+# Sans cette liste, `/.netlify/images?url=...` refuse toute source externe.
+#
+# A quoi ca sert : les photos de plats sont des PNG de plus d'un mega-octet, sur
+# un domaine tiers. Le robot WhatsApp ne les affichait pas. Netlify les rend en
+# JPEG, au bon format, depuis NOTRE domaine — les trois differences constatees
+# avec un apercu qui marche.
+[images]
+  remote_images = ["https://bmdveawomizjpiebgtkj.supabase.co/storage/.*"]

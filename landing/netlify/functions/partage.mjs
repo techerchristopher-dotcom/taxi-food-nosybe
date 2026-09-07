@@ -45,32 +45,37 @@ const PLAY_PUBLIE = false;
 const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;
 
 /**
- * Image d'apercu, redimensionnee pour les robots de WhatsApp et Facebook.
+ * Image d'apercu pour les robots de WhatsApp et Facebook.
  *
- * ⚠️ CONSTATE LE 2026-09-07 : l'apercu WhatsApp n'affichait AUCUNE image. La
- * cause n'etait pas la balise mais le POIDS — `og:image` pointait sur le fichier
- * d'origine, un PNG de **1,38 Mo**. Au-dela de quelques centaines de kilo-octets
- * le robot abandonne l'image sans rien dire, et le partage perd exactement ce
- * qui le rend efficace : la photo du plat.
+ * ⚠️ TROIS ESSAIS ONT ETE NECESSAIRES ; voici ce qui bloquait, pour ne pas le
+ * re-tenter :
  *
- * 600x315 est le format minimal que Facebook documente pour un grand apercu.
- * Le transformateur Supabase rend alors ~270 Ko en PNG, et ~30 Ko en WebP pour
- * les robots qui l'acceptent.
+ * 1. L'URL D'ORIGINE. `og:image` pointait sur le fichier du stockage, un PNG de
+ *    **1,38 Mo**. Au-dela de quelques centaines de kilo-octets le robot abandonne
+ *    l'image sans rien dire, et le partage perd la photo du plat.
  *
- * ⚠️ `quality` n'a AUCUN effet sur un PNG, et `format=jpeg` n'existe pas cote
- * Supabase (verifie : 400). C'est donc la TAILLE qui fait tout le travail — ne
- * pas la remonter en croyant gagner en nettete.
+ * 2. LE TRANSFORMATEUR SUPABASE. Il descend le poids, mais garde le PNG :
+ *    `quality` n'a AUCUN effet sur ce format et `format=jpeg` n'existe pas (400).
+ *    A 600x315 on tombait a 274 Ko — et WhatsApp n'affichait toujours rien.
  *
- * ⚠️ Ne reecrit que les URL du stockage Supabase : l'image par defaut vit sur le
- * site et n'a pas de transformateur.
+ * 3. CE QUI MARCHE. Compare a un apercu qui fonctionne
+ *    (ledimoredelsalento.rentanoo.com), trois differences ressortaient : format
+ *    **JPEG**, poids moitie moindre, et image servie depuis **le meme domaine**
+ *    que la page. Le Netlify Image CDN donne les trois d'un coup — 1200x630 en
+ *    JPEG, 64 Ko, sur notre domaine.
+ *
+ * ⚠️ Exige `[images] remote_images` dans netlify.toml, sans quoi l'endpoint
+ * refuse toute source externe. Retirer cette ligne casse tous les apercus.
+ *
+ * ⚠️ Ne transforme QUE les images du stockage Supabase : l'image par defaut est
+ * deja un JPEG au bon format sur le site.
  */
 const OBJET = '/storage/v1/object/public/';
 function apercuImage(url) {
   const u = String(url ?? '');
-  const i = u.indexOf(OBJET);
-  if (i < 0) return u;
-  return `${u.slice(0, i)}/storage/v1/render/image/public/${u.slice(i + OBJET.length)}`
-    + '?width=600&height=315&resize=cover&quality=70';
+  if (!u.includes(OBJET)) return u;
+  return `${SITE}/.netlify/images?url=${encodeURIComponent(u)}`
+    + '&w=1200&h=630&fit=cover&fm=jpg&q=75';
 }
 
 const echapper = (s) =>
@@ -125,8 +130,9 @@ function page({ titre, description, image, lien, prix, commander }) {
 <meta property="og:description" content="${d}">
 <meta property="og:image" content="${echapper(apercuImage(image))}">
 <meta property="og:image:secure_url" content="${echapper(apercuImage(image))}">
-<meta property="og:image:width" content="600">
-<meta property="og:image:height" content="315">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:alt" content="${t}">
 <meta property="og:url" content="${echapper(lien)}">
 <meta name="twitter:card" content="summary_large_image">
@@ -153,6 +159,26 @@ function page({ titre, description, image, lien, prix, commander }) {
            border:2px solid #DF3228; text-decoration:none; font-weight:600; font-size:17px;
            padding:14px; border-radius:999px; }
   a.sec { display:block; text-align:center; color:#5C554E; text-decoration:none; font-size:14px; margin-top:16px; }
+
+  /* ⚠️ ETAT « EN COURS ». L'application web pese plusieurs mega-octets : entre
+     le tap et le premier ecran il s'ecoule des secondes, bien plus sur la
+     liaison de Nosy Be. Sans retour immediat, le bouton parait mort et on
+     retape dessus — ou on abandonne. */
+  a.occupe { pointer-events:none; opacity:.85; }
+  a.occupe .txt { visibility:hidden; }
+  a.occupe::after {
+    content:''; position:absolute; top:50%; left:50%;
+    width:20px; height:20px; margin:-10px 0 0 -10px;
+    border:2.5px solid currentColor; border-top-color:transparent;
+    border-radius:50%; animation:tourne .7s linear infinite;
+  }
+  a.cta, a.cta2 { position:relative; }
+  @keyframes tourne { to { transform:rotate(360deg); } }
+  /* Une animation qui tourne en boucle est penible pour qui a demande moins de
+     mouvement : on garde alors un mot, pas un rond. */
+  @media (prefers-reduced-motion: reduce) {
+    a.occupe::after { animation:none; border-top-color:currentColor; }
+  }
   footer { margin-top:32px; font-size:12px; color:#8A827A; text-align:center; }
 </style>
 </head>
@@ -162,8 +188,8 @@ function page({ titre, description, image, lien, prix, commander }) {
   <h1>${t}</h1>
   ${prix ? `<p class="prix">${echapper(prix)}</p>` : ''}
   <p>${d}</p>
-  <a class="cta" href="${echapper(commander)}">Commander maintenant</a>
-  <a class="cta2" id="app" href="${APP_STORE}" hidden>Télécharger l’application</a>
+  <a class="cta" href="${echapper(commander)}"><span class="txt">Commander maintenant</span></a>
+  <a class="cta2" id="app" href="${APP_STORE}" hidden><span class="txt">Télécharger l’application</span></a>
   <a class="sec" href="${SITE}/">Découvrir Taxi Food</a>
   <footer>Livraison de repas à Nosy Be</footer>
 </main>
@@ -190,6 +216,22 @@ function page({ titre, description, image, lien, prix, commander }) {
     } else if (ios) {
       lien.hidden = false;
     }
+
+    // Retour immediat au tap : le bouton tourne, et ne se laisse plus retaper.
+    document.querySelectorAll('a.cta, a.cta2').forEach(function (b) {
+      b.addEventListener('click', function () {
+        b.classList.add('occupe');
+        // ⚠️ Filet de securite. Sur iOS, revenir en arriere restaure la page
+        // TELLE QU'ELLE ETAIT (bfcache) : sans cela le bouton resterait fige a
+        // tourner, et paraitrait casse pour de bon. On le libere aussi au retour.
+        setTimeout(function () { b.classList.remove('occupe'); }, 12000);
+      });
+    });
+    window.addEventListener('pageshow', function () {
+      document.querySelectorAll('a.occupe').forEach(function (b) {
+        b.classList.remove('occupe');
+      });
+    });
   })();
 </script>
 </body>

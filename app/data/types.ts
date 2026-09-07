@@ -165,14 +165,38 @@ export type Category = {
   name: string;
   icon?: string | null; // emoji de la catégorie (ex. 🍕)
   sortOrder: number;
+  /**
+   * Heures de service de la catégorie — les pizzas au four de Chez Bidul & Truc
+   * ne sortent qu'entre 18 h et 22 h. `null` = servie dès que le restaurant est
+   * ouvert, ce qui est le cas de la quasi-totalité des catégories.
+   */
+  servingFrom?: string | null; // 'HH:MM'
+  servingTo?: string | null;
+  /**
+   * Calculé par la base (`categorie_servie_maintenant`), pas par l'appareil.
+   * ⚠️ Ne jamais le recalculer ici : l'horloge du téléphone peut être fausse ou
+   * réglée sur un autre fuseau, et c'est la base qui refusera la commande.
+   */
+  servedNow: boolean;
 };
 
 /** Tag de catégorie affiché sur la carte restaurant (emoji + nom). */
 export type CategoryTag = { name: string; icon: string | null };
 
-/** Une ligne de `restaurant_hours` — un jour de la semaine (0=dimanche..6=samedi, aligné sur `extract(dow from ...)`). */
+/**
+ * Une ligne de `restaurant_hours` — un SERVICE d'un jour de la semaine
+ * (0=dimanche..6=samedi, aligné sur `extract(dow from ...)`).
+ *
+ * ⚠️ Un jour porte jusqu'à DEUX services : `service` vaut 1 pour le midi, 2 pour
+ * le soir. Beaucoup de restaurants de Nosy Be ferment entre 15 h et 18 h ; tant
+ * qu'un jour ne pouvait porter qu'une plage, « 11h30–15h et 18h–22h » ne
+ * s'exprimait pas — on écrivait 11h30–22h, et le restaurant paraissait ouvert
+ * en plein après-midi.
+ */
 export type DayHours = {
   weekday: number;
+  /** 1 = midi, 2 = soir. Absent des anciennes charges utiles, où il vaut 1. */
+  service: number;
   opensAt: string; // '' si non renseigné
   closesAt: string;
   isClosed: boolean;
@@ -199,6 +223,8 @@ export type Restaurant = {
   phone?: string | null;
   /** Horaire du jour courant (dérivé de `restaurant_hours` via `horaires_du_jour`) — null si aucun horaire renseigné pour aujourd'hui. */
   todayHours: DayHours | null;
+  /** Tous les services d'aujourd'hui (midi et soir), dans l'ordre. */
+  todayServices: DayHours[];
   /** true : l'ouverture se déduit des horaires du jour ; false : bascule manuelle. */
   autoOpen: boolean;
   etaLabel: string; // cosmétique (non stocké) — placeholder
@@ -412,6 +438,23 @@ export function todayHoursLabel(h: DayHours | null): string {
   if (!h) return '';
   if (h.isClosed) return 'Fermé aujourd\'hui';
   return hoursLabel(h.opensAt, h.closesAt);
+}
+
+/**
+ * Libellé de TOUS les services du jour — « 11h30 – 15h · 18h – 22h ».
+ *
+ * ⚠️ Ne jamais retomber sur le seul premier service. Chez Bidul & Truc sert midi
+ * et soir : à 18 h, n'afficher que le midi donnait « Ouvert · 11h30 – 15h », un
+ * horaire déjà terminé à côté d'un badge juste. Le client en conclut que
+ * l'application se trompe — ou qu'elle est fermée alors qu'elle est ouverte.
+ */
+export function todayServicesLabel(services: DayHours[], repli: DayHours | null): string {
+  const plages = services
+    .filter((h) => !h.isClosed && h.opensAt && h.closesAt)
+    .map((h) => hoursLabel(h.opensAt, h.closesAt))
+    .filter(Boolean);
+  if (plages.length) return plages.join(' · ');
+  return todayHoursLabel(repli);
 }
 
 /** Date ISO → libellé court « Aujourd'hui 09h52 » / « 6 août · 19h40 ». */

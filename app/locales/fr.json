@@ -131,7 +131,8 @@
     "productCount_one": "· {{count}} produit",
     "productCount_other": "· {{count}} produits",
     "viewCart": "Voir le panier · {{count}} art.",
-    "share": "Partager ce restaurant"
+    "share": "Partager ce restaurant",
+    "categoryServedFrom": "{{categorie}} sort du four à partir de {{de}} — service jusqu'à {{a}}. Vous pouvez regarder la carte, mais pas encore commander ces plats."
   },
   "conflict": {
     "title": "Changer de restaurant ?",

@@ -131,7 +131,8 @@
     "productCount_one": "· {{count}} item",
     "productCount_other": "· {{count}} items",
     "viewCart": "View cart · {{count}} item(s)",
-    "share": "Share this restaurant"
+    "share": "Share this restaurant",
+    "categoryServedFrom": "{{categorie}} is served from {{de}} to {{a}}. You can browse the menu, but these dishes can't be ordered yet."
   },
   "conflict": {
     "title": "Switch restaurant?",

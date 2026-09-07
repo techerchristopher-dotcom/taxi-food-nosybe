@@ -131,7 +131,8 @@
     "productCount_one": "· {{count}} prodotto",
     "productCount_other": "· {{count}} prodotti",
     "viewCart": "Vedi il carrello · {{count}} art.",
-    "share": "Condividi questo ristorante"
+    "share": "Condividi questo ristorante",
+    "categoryServedFrom": "{{categorie}} si serve dalle {{de}} alle {{a}}. Puoi guardare il menu, ma questi piatti non sono ancora ordinabili."
   },
   "conflict": {
     "title": "Cambiare ristorante?",

@@ -72,7 +72,23 @@ const JOURS: { weekday: number; label: string }[] = [
   { weekday: 0, label: 'Dimanche' },
 ];
 
-type Brouillon = Record<number, { opensAt: string; closesAt: string; isClosed: boolean }>;
+/**
+ * Le brouillon d'horaires, en memoire jusqu'a « Enregistrer ».
+ *
+ * ⚠️ Clé `weekday:service` et non `weekday` : un jour porte jusqu'a deux
+ * services (midi = 1, soir = 2). Beaucoup de restaurants de Nosy Be ferment
+ * entre 15 h et 18 h — tant qu'un jour ne portait qu'une plage, on ecrivait
+ * 11h30-22h et le restaurant paraissait ouvert en plein apres-midi.
+ *
+ * `soir` dit si le service du soir est AFFICHE : un jour sans service du soir
+ * n'a pas de deuxieme ligne a l'ecran, et n'en envoie pas.
+ */
+type PlageSaisie = { opensAt: string; closesAt: string };
+type JourSaisi = { isClosed: boolean; midi: PlageSaisie; soir: PlageSaisie | null };
+type Brouillon = Record<number, JourSaisi>;
+
+const PLAGE_VIDE: PlageSaisie = { opensAt: '', closesAt: '' };
+const JOUR_VIDE: JourSaisi = { isClosed: false, midi: PLAGE_VIDE, soir: null };
 
 /**
  * Fiche de mise à l'affiche en cours d'édition. `productId` null = création ;
@@ -114,7 +130,17 @@ function ficheDepuis(p: Product): FicheAffiche {
 function versBrouillon(weekHours: DayHours[]): Brouillon {
   const b: Brouillon = {};
   for (const h of weekHours) {
-    b[h.weekday] = { opensAt: pourSaisie(h.opensAt), closesAt: pourSaisie(h.closesAt), isClosed: h.isClosed };
+    const jour = b[h.weekday] ?? { ...JOUR_VIDE };
+    const plage = { opensAt: pourSaisie(h.opensAt), closesAt: pourSaisie(h.closesAt) };
+    if (h.service === 2) {
+      // Un service du soir vide en base n'a pas a s'ouvrir a l'ecran : il vaut
+      // « pas de service du soir », pas « service du soir a remplir ».
+      jour.soir = plage.opensAt || plage.closesAt ? plage : jour.soir;
+    } else {
+      jour.midi = plage;
+      jour.isClosed = h.isClosed;
+    }
+    b[h.weekday] = jour;
   }
   return b;
 }
@@ -327,29 +353,53 @@ export default function RestaurantSettingsScreen() {
     }
   }
 
-  function majJour(weekday: number, patch: Partial<{ opensAt: string; closesAt: string; isClosed: boolean }>) {
-    setBrouillon({ ...jours, [weekday]: { ...jours[weekday], ...patch } });
+  function majJour(weekday: number, patch: Partial<JourSaisi>) {
+    setBrouillon({ ...jours, [weekday]: { ...(jours[weekday] ?? JOUR_VIDE), ...patch } });
+  }
+
+  function majPlage(weekday: number, service: 1 | 2, patch: Partial<PlageSaisie>) {
+    const j = jours[weekday] ?? JOUR_VIDE;
+    const cle = service === 1 ? 'midi' : 'soir';
+    const actuelle = (service === 1 ? j.midi : j.soir) ?? PLAGE_VIDE;
+    majJour(weekday, { [cle]: { ...actuelle, ...patch } } as Partial<JourSaisi>);
   }
 
   async function enregistrerHoraires() {
     const days: DayHours[] = [];
-    for (const { weekday } of JOURS) {
-      const j = jours[weekday] ?? { opensAt: '', closesAt: '', isClosed: false };
+    for (const { weekday, label } of JOURS) {
+      const j = jours[weekday] ?? JOUR_VIDE;
+
+      // ⚠️ « Ferme » ferme LA JOURNEE, donc les deux services. Ne remettre a
+      // zero que le midi laisserait un service du soir actif en base sur un
+      // jour affiche ferme : le restaurant se croirait ferme et recevrait des
+      // commandes le soir.
       if (j.isClosed) {
-        days.push({ weekday, opensAt: '', closesAt: '', isClosed: true });
+        days.push({ weekday, service: 1, opensAt: '', closesAt: '', isClosed: true });
+        days.push({ weekday, service: 2, opensAt: '', closesAt: '', isClosed: true });
         continue;
       }
-      if (!j.opensAt && !j.closesAt) {
-        days.push({ weekday, opensAt: '', closesAt: '', isClosed: false });
-        continue;
+
+      const plages: { service: 1 | 2; p: PlageSaisie | null }[] = [
+        { service: 1, p: j.midi },
+        { service: 2, p: j.soir },
+      ];
+      for (const { service, p } of plages) {
+        // Un service absent ou vide s'ecrit vide : c'est ce qui EFFACE en base
+        // un service du soir que le restaurateur vient de retirer a l'ecran.
+        if (!p || (!p.opensAt && !p.closesAt)) {
+          days.push({ weekday, service, opensAt: '', closesAt: '', isClosed: false });
+          continue;
+        }
+        const o = normaliserHeure(p.opensAt);
+        const f = normaliserHeure(p.closesAt);
+        if (!o || !f) {
+          setError(
+            `Horaire du ${label} (${service === 1 ? 'midi' : 'soir'}) incompris. Écrivez par exemple 11h30 et 15h.`,
+          );
+          return;
+        }
+        days.push({ weekday, service, opensAt: o, closesAt: f, isClosed: false });
       }
-      const o = normaliserHeure(j.opensAt);
-      const f = normaliserHeure(j.closesAt);
-      if (!o || !f) {
-        setError(`Horaire du ${JOURS.find((x) => x.weekday === weekday)?.label} incompris. Écrivez par exemple 8h30 et 22h.`);
-        return;
-      }
-      days.push({ weekday, opensAt: o, closesAt: f, isClosed: false });
     }
     await run(
       'horaires',
@@ -666,7 +716,7 @@ export default function RestaurantSettingsScreen() {
 
           <View style={styles.carte}>
             {JOURS.map(({ weekday, label }, i) => {
-              const j = jours[weekday] ?? { opensAt: '', closesAt: '', isClosed: false };
+              const j = jours[weekday] ?? JOUR_VIDE;
               return (
                 <View key={weekday}>
                   {i ? <View style={styles.separateur} /> : null}
@@ -686,25 +736,73 @@ export default function RestaurantSettingsScreen() {
                         />
                       </View>
                     </View>
+
                     {!j.isClosed ? (
-                      <View style={styles.heuresRow}>
-                        <TextInput
-                          value={j.opensAt}
-                          onChangeText={(v) => majJour(weekday, { opensAt: v })}
-                          placeholder="8h30"
-                          placeholderTextColor={colors.textFaint}
-                          keyboardType="numbers-and-punctuation"
-                          style={[styles.champ, { flex: 1 }]}
-                        />
-                        <TextInput
-                          value={j.closesAt}
-                          onChangeText={(v) => majJour(weekday, { closesAt: v })}
-                          placeholder="22h"
-                          placeholderTextColor={colors.textFaint}
-                          keyboardType="numbers-and-punctuation"
-                          style={[styles.champ, { flex: 1 }]}
-                        />
-                      </View>
+                      <>
+                        {/* Le libellé « Midi » n'apparaît QUE s'il y a un soir :
+                            sur un restaurant à service unique, nommer la seule
+                            plage « midi » serait faux (un bar ouvre à 17 h). */}
+                        {j.soir ? <Text style={styles.serviceLabel}>Midi</Text> : null}
+                        <View style={styles.heuresRow}>
+                          <TextInput
+                            value={j.midi.opensAt}
+                            onChangeText={(v) => majPlage(weekday, 1, { opensAt: v })}
+                            placeholder="11h30"
+                            placeholderTextColor={colors.textFaint}
+                            keyboardType="numbers-and-punctuation"
+                            style={[styles.champ, { flex: 1 }]}
+                          />
+                          <TextInput
+                            value={j.midi.closesAt}
+                            onChangeText={(v) => majPlage(weekday, 1, { closesAt: v })}
+                            placeholder="15h"
+                            placeholderTextColor={colors.textFaint}
+                            keyboardType="numbers-and-punctuation"
+                            style={[styles.champ, { flex: 1 }]}
+                          />
+                        </View>
+
+                        {j.soir ? (
+                          <>
+                            <View style={styles.serviceEntete}>
+                              <Text style={styles.serviceLabel}>Soir</Text>
+                              <Pressable
+                                onPress={() => majJour(weekday, { soir: null })}
+                                disabled={busy === 'horaires'}
+                                hitSlop={10}
+                              >
+                                <Text style={styles.serviceRetirer}>Retirer</Text>
+                              </Pressable>
+                            </View>
+                            <View style={styles.heuresRow}>
+                              <TextInput
+                                value={j.soir.opensAt}
+                                onChangeText={(v) => majPlage(weekday, 2, { opensAt: v })}
+                                placeholder="18h"
+                                placeholderTextColor={colors.textFaint}
+                                keyboardType="numbers-and-punctuation"
+                                style={[styles.champ, { flex: 1 }]}
+                              />
+                              <TextInput
+                                value={j.soir.closesAt}
+                                onChangeText={(v) => majPlage(weekday, 2, { closesAt: v })}
+                                placeholder="22h"
+                                placeholderTextColor={colors.textFaint}
+                                keyboardType="numbers-and-punctuation"
+                                style={[styles.champ, { flex: 1 }]}
+                              />
+                            </View>
+                          </>
+                        ) : (
+                          <Pressable
+                            onPress={() => majJour(weekday, { soir: { ...PLAGE_VIDE } })}
+                            disabled={busy === 'horaires'}
+                            style={styles.ajoutService}
+                          >
+                            <Text style={styles.ajoutServiceTexte}>+ Ajouter un service du soir</Text>
+                          </Pressable>
+                        )}
+                      </>
                     ) : null}
                   </View>
                 </View>
@@ -712,7 +810,9 @@ export default function RestaurantSettingsScreen() {
             })}
 
             <Text style={styles.aide}>
-              Si vous fermez après minuit, indiquez-le tel quel — par exemple 18h et 2h.
+              Deux services ? Renseignez le midi, puis ajoutez le soir — vous serez affiché
+              fermé entre les deux. Si vous fermez après minuit, indiquez-le tel quel :
+              par exemple 18h et 2h.
             </Text>
 
             <Pressable
@@ -1042,6 +1142,11 @@ const styles = StyleSheet.create({
   jourEntete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   jourLabel: { fontFamily: fonts.bold, fontSize: 14.5, color: colors.textDark },
   fermeLabel: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
+  serviceLabel: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.textMuted, marginTop: 10, marginBottom: 4 },
+  serviceEntete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  serviceRetirer: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.dangerText, marginTop: 10, marginBottom: 4 },
+  ajoutService: { paddingVertical: 10, marginTop: 2 },
+  ajoutServiceTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.primary },
   heuresRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   champ: {
     height: 44,

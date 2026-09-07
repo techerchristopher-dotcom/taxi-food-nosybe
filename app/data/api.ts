@@ -32,6 +32,8 @@ import {
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
   weekday: number | null;
+  /** Absent de `horaires_du_jour` (fonction composite) : on retombe alors sur 1. */
+  service?: number | null;
   opens_at: string | null;
   closes_at: string | null;
   is_closed: boolean | null;
@@ -58,6 +60,8 @@ type RestaurantRow = {
   // pour cela que les trois `select` de ce fichier passent par `as unknown as`
   // — le type genere est faux, la forme decrite ici est la bonne.
   horaires_du_jour?: DayHoursRow | null;
+  /** Tous les services du jour (midi, soir), dans l'ordre. */
+  services_du_jour?: DayHoursRow[] | null;
   delivery_fee: number;
   min_order: number;
   zone_served: string | null;
@@ -69,6 +73,7 @@ function mapDayHours(h?: DayHoursRow | null): DayHours | null {
   if (!h || h.weekday === null) return null;
   return {
     weekday: h.weekday,
+    service: h.service ?? 1,
     opensAt: h.opens_at ?? '',
     closesAt: h.closes_at ?? '',
     isClosed: h.is_closed ?? false,
@@ -98,7 +103,16 @@ type ProductRow = {
 const PRODUCT_COLS =
   'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label';
 
-type CategoryRow = { id: string; restaurant_id: string; name: string; icon: string | null; sort_order: number };
+type CategoryRow = {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  icon: string | null;
+  sort_order: number;
+  serving_from?: string | null;
+  serving_to?: string | null;
+  categorie_servie_maintenant?: boolean | null;
+};
 
 type AddressRow = {
   id: string;
@@ -151,6 +165,12 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     autoOpen: r.auto_open ?? false,
     phone: r.phone ?? null,
     todayHours: mapDayHours(r.horaires_du_jour),
+    // ⚠️ TOUS les services du jour, pas seulement le premier. A 18 h, un
+    // restaurant qui sert midi ET soir affichait « Ouvert · 11h30 – 15h » :
+    // l'etat etait juste, l'horaire montrait le service deja termine.
+    todayServices: (r.services_du_jour ?? [])
+      .map((h) => mapDayHours(h))
+      .filter((h): h is DayHours => h !== null),
     etaLabel: DEFAULT_ETA,
     deliveryFee: r.delivery_fee,
     minOrder: r.min_order,
@@ -231,7 +251,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
@@ -265,7 +285,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -304,7 +324,9 @@ export async function getMenu(
   const [cats, prods] = await Promise.all([
     supabase
       .from('categories')
-      .select('id, restaurant_id, name, icon, sort_order')
+      .select(
+        'id, restaurant_id, name, icon, sort_order, serving_from, serving_to, categorie_servie_maintenant',
+      )
       .eq('restaurant_id', restaurantId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true }),
@@ -367,7 +389,19 @@ export async function getFeaturedLibrary(restaurantId: string): Promise<Product[
 }
 
 function mapCategory(c: CategoryRow): Category {
-  return { id: c.id, restaurantId: c.restaurant_id, name: c.name, icon: c.icon, sortOrder: c.sort_order };
+  return {
+    id: c.id,
+    restaurantId: c.restaurant_id,
+    name: c.name,
+    icon: c.icon,
+    sortOrder: c.sort_order,
+    servingFrom: c.serving_from ? c.serving_from.slice(0, 5) : null,
+    servingTo: c.serving_to ? c.serving_to.slice(0, 5) : null,
+    // ⚠️ Le verdict vient de la base. `?? true` couvre le seul cas où la colonne
+    // calculée n'est pas demandée (une requête plus ancienne) : on n'invente pas
+    // une fermeture, c'est `create_order` qui tranchera de toute façon.
+    servedNow: c.categorie_servie_maintenant ?? true,
+  };
 }
 
 /** Produit + restaurant + groupes d'options (pour l'écran de détail / configuration). */
@@ -1015,11 +1049,21 @@ export async function markDelivered(orderId: string, cashConfirmed: boolean): Pr
 
 // --- Espace restaurant : reglages -------------------------------------------
 
-/** Enregistre le planning des 7 jours d'un coup (un seul aller-retour reseau). */
+/**
+ * Enregistre le planning de la semaine d'un coup (un seul aller-retour reseau),
+ * services du midi ET du soir compris.
+ *
+ * ⚠️ `service` part toujours, meme a 1. La RPC le fait retomber sur 1 quand il
+ * manque — c'est ce qui laisse les versions deja installees sur les magasins
+ * continuer de piloter le service du midi sans rien casser — mais compter
+ * la-dessus depuis ici rendrait un service du soir silencieusement ecrase sur
+ * le midi.
+ */
 export async function setRestaurantWeekHours(days: DayHours[]): Promise<void> {
   const { error } = await supabase.rpc('set_restaurant_week_hours', {
     p_days: days.map((d) => ({
       weekday: d.weekday,
+      service: d.service ?? 1,
       opens_at: d.isClosed ? null : d.opensAt || null,
       closes_at: d.isClosed ? null : d.closesAt || null,
       is_closed: d.isClosed,
@@ -1124,22 +1168,25 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase
       .from('restaurant_hours')
-      .select('weekday, opens_at, closes_at, is_closed')
+      .select('weekday, service, opens_at, closes_at, is_closed')
       .eq('restaurant_id', restaurantId)
-      .order('weekday', { ascending: true }),
+      .order('weekday', { ascending: true })
+      .order('service', { ascending: true }),
   ]);
   if (error) throw error;
   if (hoursError) throw hoursError;
   if (!data) return null;
 
-  const byWeekday = new Map((hoursRows as DayHoursRow[]).map((h) => [h.weekday, h]));
-  const weekHours: DayHours[] = Array.from({ length: 7 }, (_, weekday) =>
-    mapDayHours(byWeekday.get(weekday) ?? null) ?? { weekday, opensAt: '', closesAt: '', isClosed: false },
+  // ⚠️ On rend TOUTES les lignes trouvees, pas une par jour : un jour a deux
+  // services, et n'en garder qu'un ferait disparaitre le soir de l'ecran — puis
+  // de la base, au premier enregistrement.
+  const weekHours: DayHours[] = (hoursRows as DayHoursRow[]).map(
+    (h) => mapDayHours(h) as DayHours,
   );
 
   return { ...mapRestaurant(data as unknown as RestaurantRow), weekHours };

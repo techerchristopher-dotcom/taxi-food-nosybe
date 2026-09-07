@@ -19,7 +19,7 @@ import { ProductRow } from '../../components/ProductRow';
 import { ProductThumb } from '../../components/ProductThumb';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { imageUrl, Product, Restaurant, todayHoursLabel } from '../../data/types';
+import { imageUrl, Product, Restaurant, todayServicesLabel } from '../../data/types';
 
 /** Doit rester aligné sur `styles.banner.height`. */
 const BANNER_HEIGHT = 200;
@@ -203,6 +203,7 @@ export default function RestaurantMenuScreen() {
                 >
                   <Text style={[styles.catText, { color: active ? colors.white : colors.textDark }]}>
                     {c.icon ? `${c.icon} ${c.name}` : c.name}
+                    {!c.servedNow && c.servingFrom ? ` · ${c.servingFrom}` : ''}
                   </Text>
                 </Pressable>
               );
@@ -215,6 +216,24 @@ export default function RestaurantMenuScreen() {
             {activeCategory?.icon ? `${activeCategory.icon} ` : ''}{activeCategory?.name}{' '}
             <Text style={styles.catCount}>{t('restaurant.productCount', { count: visibleProducts.length })}</Text>
           </Text>
+
+          {/* ⚠️ Se lit AVANT d'ajouter, pas au moment de payer. Les pizzas au
+              four ne sortent qu'à partir de 18 h : sans cette ligne, le client
+              composait son panier et se faisait refuser à la validation — le
+              plus mauvais moment pour l'apprendre. La base refuse de toute
+              façon (`create_order`), ceci ne fait que le dire à temps. */}
+          {activeCategory && !activeCategory.servedNow && activeCategory.servingFrom ? (
+            <View style={styles.horsService}>
+              <Text style={styles.horsServiceTexte}>
+                {t('restaurant.categoryServedFrom', {
+                  categorie: activeCategory.name,
+                  de: activeCategory.servingFrom,
+                  a: activeCategory.servingTo,
+                })}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={{ gap: 10 }}>
             {visibleProducts.map((p) => (
               <ProductRow
@@ -275,10 +294,10 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
       </View>
       <View style={styles.rMeta}>
         {/* Masqué tant que les horaires du jour ne sont pas renseignés : voir `todayHoursLabel`. */}
-        {todayHoursLabel(r.todayHours) ? (
+        {todayServicesLabel(r.todayServices, r.todayHours) ? (
           <View style={styles.rMetaItem}>
             <Icon name="schedule" size={16} color={colors.secondary} />
-            <Text style={styles.rMetaText}>{todayHoursLabel(r.todayHours)}</Text>
+            <Text style={styles.rMetaText}>{todayServicesLabel(r.todayServices, r.todayHours)}</Text>
           </View>
         ) : null}
         <View style={styles.rMetaItem}>
@@ -358,6 +377,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  horsService: {
+    backgroundColor: colors.warnBg,
+    borderRadius: radius.tile,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  horsServiceTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.warnText, lineHeight: 18 },
   featuredWrap: { backgroundColor: colors.bg, paddingTop: 14, paddingBottom: 16 },
   featuredHead: { paddingHorizontal: spacing.screen, paddingBottom: 10, gap: 1 },
   featuredTitle: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.ink },

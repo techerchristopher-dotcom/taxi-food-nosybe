@@ -32,7 +32,7 @@ import {
   setRestaurantPhoto,
   setRestaurantWeekHours,
 } from '../../data/api';
-import { Category, DayHours, Product } from '../../data/types';
+import { Category, DayHours, imageUrl, Product } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { useVisiteGuidee } from '../../store/visiteGuidee';
@@ -154,10 +154,16 @@ function PhotoEditable({
   icon,
   busy,
   onPick,
+  apercuLargeur = 72,
+  apercuHauteur = 72,
 }: {
   uri?: string | null;
   width: DimensionValue;
   height: DimensionValue;
+  /** Dimensions en points servant a demander la bonne taille au transformateur.
+      `width` peut valoir '100%' : on ne peut donc pas s'en servir pour ca. */
+  apercuLargeur?: number;
+  apercuHauteur?: number;
   radiusValue: number;
   icon: string;
   busy: boolean;
@@ -168,7 +174,15 @@ function PhotoEditable({
       <View style={[styles.photoBox, { width, height, borderRadius: radiusValue }]}>
         {uri ? (
           <Image
-            source={{ uri }}
+            // ⚠️ Jamais l'URL brute. Deux raisons, et la seconde n'est pas
+            // cosmétique : le transformateur convertit aussi les formats que les
+            // navigateurs ne savent pas afficher — une photo prise sur iPhone et
+            // déposée telle quelle est un HEIC, invisible sur Android et sur
+            // Chrome, et le partenaire ne verrait qu'un cadre vide sans jamais
+            // comprendre pourquoi. Il évite en prime de télécharger l'original en
+            // pleine résolution sur la liaison de Nosy Be, pour une vignette de
+            // 72 points de haut.
+            source={{ uri: imageUrl(uri, apercuLargeur, apercuHauteur) ?? uri }}
             contentFit="cover"
             cachePolicy="memory-disk"
             transition={220}
@@ -562,6 +576,8 @@ export default function RestaurantSettingsScreen() {
                 uri={resto?.coverUrl}
                 width="100%"
                 height={72}
+                apercuLargeur={128}
+                apercuHauteur={72}
                 radiusValue={radius.lg}
                 icon="image"
                 busy={busy === 'cover'}

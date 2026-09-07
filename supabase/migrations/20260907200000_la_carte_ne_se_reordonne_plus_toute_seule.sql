@@ -47,3 +47,25 @@ update public.products p
 
 create index if not exists products_categorie_ordre_idx
   on public.products (category_id, sort_order);
+
+-- Ordre de la carte PAPIER pour la categorie « Plat » de Chez Bidul & Truc.
+-- Releve sur la photo de sa carte (partenaire/bidul et truc/carte/) : les 18 plats
+-- s'y suivent dans cet ordre, qui n'est ni alphabetique ni par prix — c'est celui
+-- que le restaurateur a choisi, et c'est celui que le client doit retrouver.
+with carte(nom, rang) as (values
+  ('Soupe de poisson maison', 10), ('Omelette légumes', 20),
+  ('Omelette campagnarde', 30),    ('Cordon bleu', 40),
+  ('Croque-monsieur', 50),         ('Croque-madame', 60),
+  ('Poisson (filet)', 70),         ('Filet de poisson sauce au choix', 80),
+  ('Cuisse de poulet', 90),        ('Filet de zébu', 100),
+  ('Pavé de zébu piqué à l''ail', 110), ('Filet de zébu sauce au choix', 120),
+  ('Crevette ou calamar sauté', 130),   ('Crevette ou calamar sauce', 140),
+  ('Marmite du pêcheur', 150),    ('Émincé de poulet sauce estragon', 160),
+  ('Steak haché', 170),           ('Steak haché à cheval', 180)
+)
+update public.products p
+   set sort_order = c.rang
+  from carte c, public.categories cat
+ where cat.id = p.category_id and cat.name = 'Plat'
+   and p.restaurant_id = '700e8f32-e966-476a-b371-02884d08dea1'
+   and p.name = c.nom;

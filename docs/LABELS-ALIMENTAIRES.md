@@ -36,7 +36,8 @@ servir. Toujours lire la composition, jamais le nom.
 | Chez Bidul & Truc | Pizza | Paysanne | jambon **de porc** |
 | Chez Bidul & Truc | Pizza | Savoyarde | lardon |
 | Chez Bidul & Truc | Plat | Omelette campagnarde | lardon |
-| Chez Bidul & Truc | Hamburger | Le patron | bacon |
+| Chez Bidul & Truc | Hamburger | Le patron | bacon — **reconfirmé par le restaurateur le 2026-09-06** |
+| Chez Bidul & Truc | Entrée | Terrine de campagne maison | **confirmé par le restaurateur le 2026-09-06** (aucune composition à la carte) |
 | La Cabane | Burgers | Burger Bleu Cheese | bacon |
 
 ## B. À CONFIRMER — la carte ne permet pas de trancher
@@ -45,8 +46,7 @@ servir. Toujours lire la composition, jamais le nom.
 
 | Restaurant | Catégorie | Produit | Pourquoi le doute | Porc ? |
 |---|---|---|---|---|
-| Chez Bidul & Truc | Entrée | Terrine de campagne maison | aucune composition ; une terrine de campagne est classiquement au porc, mais « classiquement » ne suffit pas | ☐ |
-| Chez Bidul & Truc | Entrée | Terrine foie gras | foie gras = canard/oie, mais les terrines contiennent souvent de la gorge de porc | ☐ |
+| Chez Bidul & Truc | Entrée | Terrine foie gras | foie gras = canard/oie, mais les terrines contiennent souvent de la gorge de porc | **NON — tranché par le restaurateur le 2026-09-06**, ne pas taguer |
 | Chez Bidul & Truc | Plat | Cordon bleu | « jambon » sans préciser l'espèce | ☐ |
 | Taxi Be | Pizza | Pepperoni | garni de **chorizo** — porc en Europe, pas forcément à Madagascar | ☐ |
 | Taxi Be | Tapas | Planche de Charcuterie | « assortiment de charcuterie », contenu inconnu | ☐ |
@@ -63,6 +63,19 @@ servir. Toujours lire la composition, jamais le nom.
 ajouter (`product_options.diet_tags` + affichage dans la puce d'option) si la réponse du
 restaurateur le rend nécessaire — c'est une petite migration, mais elle n'a pas de sens
 tant qu'on ne sait pas quoi taguer.
+
+### Point du 2026-09-06 avec Chez Bidul & Truc
+
+Deux réponses obtenues, et elles ne vont PAS dans le même sens — ce qui justifie
+après coup d'avoir refusé de taguer par déduction :
+
+- **Terrine de campagne maison → porc.** Confirmée. Elle n'avait aucune composition à
+  la carte : elle serait restée sans label indéfiniment.
+- **Terrine foie gras → PAS de porc.** La déduction « une terrine de foie gras contient
+  souvent de la gorge de porc » aurait été **fausse ici**, et aurait écarté un plat à
+  29 000 Ar d'une partie de la clientèle sans raison.
+
+Restent ouverts chez ce restaurant : **Cordon bleu** (« jambon » sans espèce précisée).
 
 ## C. Confirmés SANS porc — ne jamais taguer
 

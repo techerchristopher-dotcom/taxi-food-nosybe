@@ -43,32 +43,38 @@ dégâts en exploitation.
 
 ⚠️ Le relecteur teste sur **iPad** (iPad Air 11-inch M3 sur les deux revues), en mode compatibilité iPhone puisque `supportsTablet: false`. Il a aussi passé de **vraies commandes** chez Angelo (TF-47, TF-48, depuis une adresse Apple private relay) : pendant une revue, quelqu'un doit pouvoir traiter une commande qui arrive, sinon le parcours paraît cassé.
 
-**Android — ⏳ EN REVUE DEPUIS LE 2026-09-01**, et toujours rien au 2026-09-07 (6 jours).
-Constaté moi-même en Play Console, pas rapporté :
+**Android — ✅ PUBLIÉE SUR LE PLAY STORE le 2026-09-08.** Constaté moi-même en console,
+pas rapporté : *« Last published on September 8, 2026 »*, plus aucun bloc « Changes in
+review », et la fiche répond **HTTP 200** :
+`https://play.google.com/store/apps/details?id=com.chris97416.taxifoodnosybe`
 
-| | |
-|---|---|
-| Envoyée | **1er septembre 2026, 2 h 13** |
-| Statut | *In review* — Production, Store Listing, App Content, Store settings |
-| Version en revue | **1.1.0, build 4** |
-| Notifications Google | deux seulement, du 20 et 26 août, **toutes deux positives** (identité vérifiée, propriété du site vérifiée) |
-| Infraction aux règles | aucune |
-| Politique de confidentialité | joignable, HTTP 200 sur les deux domaines |
+**La revue a duré 7 jours** (déposée le 1er septembre à 2 h 13). C'est la normale pour un
+**premier** passage : le dossier complet part en examen manuel — classification du contenu,
+sécurité des données, public cible 18 ans et plus, déclaration publicitaire, applications
+gouvernementales et **fonctionnalités financières**, cette dernière étant la plus lente.
 
-**Rien ne bloque : la revue tourne, simplement.** Google annonce « jusqu'à 7 jours, parfois
-plus », et *plus* est la règle pour un **premier** passage. Celui-ci part avec le dossier
-complet — classification du contenu, sécurité des données, public cible 18 ans et plus,
-déclaration publicitaire, applications gouvernementales et **fonctionnalités financières**,
-cette dernière étant la plus lente à examiner.
+⚠️ **Ne pas s'alarmer avant 7 jours** la prochaine fois, et **ne rien modifier pendant** :
+toucher un élément du dossier remet le compteur à zéro. Au-delà de 7 jours, le levier utile
+est *Aide → Contacter l'assistance* dans la console, bien plus efficace que d'attendre.
 
-⚠️ **Ne rien modifier tant que c'est en revue** : toucher un élément du dossier remet le
-compteur à zéro. Si rien n'arrive vers le 9-10 septembre, le levier utile est
-*Aide → Contacter l'assistance* dans la console, bien plus efficace que d'attendre.
+⚠️ **Ce qui est publié aujourd'hui, c'est encore la 1.1.0 (build 4)** — sans paiement par
+carte, sans les deux services par jour, sans le partage social, sans l'offre du jour.
+**La 1.2.0 (build 5) a été testée en interne le 2026-09-08** (paiement carte confirmé,
+Google Pay affiche son bouton mais reste bloqué par `OR_BIBED_11` tant que l'accès
+production Google Pay n'est pas approuvé — voir `docs/PAIEMENT-STRIPE.md` § 12-13), puis
+**envoyée en production le même jour** (« Promote release », sans re-téléverser le
+fichier). Statut au moment d'écrire : *Changes in review*, jusqu'à 7 jours annoncés.
 
-⚠️ **Ce qui est en revue chez Google, c'est la 1.1.0 — pas la 1.2.0.** Quand Google validera,
-l'app Android publiée sera donc l'**ancienne** : sans paiement par carte, sans les deux
-services par jour, sans le partage social, sans l'offre du jour. Il faudra enchaîner sur un
-build Android 1.2.0 — **après** la validation, jamais pendant.
+⚠️ **La règle des 12 testeurs ne s'applique pas, la question est close.** Le compte est un
+**compte d'organisation** (vu en console : « Organization account », ID
+`6682410097385681985`), pas un compte personnel. Ne plus la reposer.
+
+⚠️ **Classement IARC** — Global Rating ID `e3a3d6e9-5f88-8f8f-8ef0-3f8d89a9dc4b`, mis en
+ligne le 2026-09-08 en même temps que l'app. Le réutiliser tel quel sur tout autre magasin
+ayant licencié IARC (Amazon, Galaxy Store) évite de refaire le questionnaire. ⚠️ Une version
+qui **changerait les réponses** au questionnaire oblige à le repasser — à surveiller au dépôt
+de la 1.2.0, même si vendre des repas livrés ne devrait rien changer (le questionnaire porte
+sur le **contenu numérique**).
 
 Toute la chaîne technique était prête et testée en conditions réelles le 2026-08-19 (Google
 natif, Facebook en flux web, clé Maps, notifications FCM). Compte Google Play créé,

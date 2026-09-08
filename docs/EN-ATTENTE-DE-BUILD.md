@@ -29,21 +29,33 @@ sur les trois premiers builds Android deja soumis (1.1.0/4 en production compris
 
 ### Corrige (2026-09-08), pas encore construit
 
-Le glyphe blanc (scooter + roue-pizza) a ete extrait par programme depuis `icon.png`
-(seuil de blanc strict : `r,g,b >= 250`, sinon le contour anti-crenete pale du badge
-arrondi — `(239,244,248)`, une teinte bleu-gris, pas du blanc pur — se glissait dans le
-decoupage) puis recentre a 60 % de la zone visible, la marge de securite habituelle pour
-qu'aucun lanceur Android (rond, carre, squircle...) ne le rogne :
+⚠️ **Deux essais avant la version retenue.** Le premier reflexe — extraire seulement le
+glyphe blanc et le poser a 60 % sur un fond plat `#E8342A` — suit a la lettre la doctrine
+Android (calques separes, marge de securite), mais **rend moins bien que le vrai logo** :
+compare cote a cote, un cercle rouge uni avec un petit trait blanc dedans est bien plus
+terne que le badge degrade orange-rouge d'origine. Le porteur du projet a pointe le
+probleme (« pourquoi pas le logo officiel, comme sur iOS ? ») et fourni un second fichier,
+`logo-taxi-food-transparent_2.png` (bucket Storage `logo/logotaxifood/`), qui est le meme
+badge — degrade complet, coins arrondis — mais avec une **vraie transparence alpha aux
+coins** (contrairement a `icon.png`, dont les coins sont un aplat bleu-gris pale
+`(239,244,248)` opaque, invisible seulement parce que tout consommateur du fichier —
+l'ecran d'accueil iOS, ce chat — applique deja son propre decoupage arrondi par-dessus).
+
+**Solution retenue : le badge complet, en plein cadre (edge-to-edge), sans calque de fond
+separe.** Pas de fond `#E8342A` derriere — le degrade orange-rouge remplit lui-meme tout le
+calque de premier plan, et Android le decoupe directement a sa propre forme, exactement
+comme le fait iOS avec `icon.png`. Verifie par simulation sous masque **rond** (le plus
+severe) et **carre a coins arrondis** avant d'ecrire les fichiers definitifs : aucun artefact,
+aucune bordure parasite, rendu identique a l'icone iOS.
 
 | Fichier | Avant | Apres |
 |---|---|---|
-| `android-icon-foreground.png` | chevron Expo | glyphe Taxi Food, blanc sur transparent |
-| `android-icon-monochrome.png` | chevron Expo | meme silhouette, en noir (Android reteinte de toute facon — seul le canal alpha compte) |
-| `android-icon-background.png` | grille de guide Expo | **supprime** — `app.json` s'appuie desormais sur `backgroundColor: "#E8342A"` seul, deja pose et jamais utilise puisque `backgroundImage` primait dessus |
+| `android-icon-foreground.png` | chevron Expo | le badge Taxi Food complet (degrade + glyphe), plein cadre 512×512, source = `logo-taxi-food-transparent_2.png` |
+| `android-icon-monochrome.png` | chevron Expo | le glyphe seul, silhouette noire sur transparent, recentre a 60 % (celui-ci reste a l'echelle reduite : c'est la version qu'Android affiche reteinte en mode « icones themees », elle n'a pas besoin de reprendre le cadrage du calque normal) |
+| `android-icon-background.png` | grille de guide Expo | **supprime** — le premier plan couvre tout le cadre, aucun fond separe n'est jamais visible derriere |
 
-Verifie par simulation avant d'ecrire les fichiers : glyphe compose sur fond `#E8342A`
-puis **decoupe au cercle** (le plus severe des masques de lanceur) — le scooter reste
-entierement visible, rien de rogne.
+`app.json` garde `backgroundColor: "#E8342A"` par prudence (repli si un lanceur tres ancien
+ne sait pas composer un premier plan plein cadre), mais il ne devrait jamais s'afficher.
 
 ⚠️ **Sans effet sur le binaire deja en production** (1.1.0/4 et 1.2.0/5) : l'icone est
 compilee dans les resources natives, comme les Universal Links ci-dessous. Seul le

@@ -37,12 +37,29 @@
   var hote = document.getElementById('partenaires');
   if (!hote) return;
 
+  /**
+   * Taxi Be est `listing_status = 'visible'` EN BASE, mais uniquement parce
+   * que c'est le restaurant laisse ouvert en permanence pour le relecteur
+   * Apple (voir CLAUDE.md, § « Les vrais restaurants », et
+   * `docs/FICHE-APP-STORE.md` § 7 : a repasser en `coming_soon` APRES la
+   * validation). Passer son statut en base maintenant le FERMERAIT dans
+   * l'application (`app/data/api.ts` : `listing_status === 'coming_soon'`
+   * force `isOpen: false`) — au moment ou Apple est peut-etre justement en
+   * train d'y passer commande.
+   *
+   * Le porteur du projet veut pourtant que la vitrine, elle, dise la verite
+   * commerciale : le partenariat est encore en negociation. D'ou cette
+   * substitution d'AFFICHAGE SEULEMENT, par id (pas par nom, insensible a un
+   * renommage) — la base ne change pas, l'app reste testable.
+   */
+  var EN_NEGOCIATION = ['ac2766bb-c4d1-4f5e-9a40-3ea0febcb886']; // Taxi Be
+
   var T = {
-    fr: { bientot: 'Bientôt disponible', actif: 'Déjà dans l’aventure ✅', voir: 'Voir la carte',
+    fr: { bientot: 'Bientôt disponible', actif: 'Déjà dans l’aventure ✅', negociation: 'En négociation', voir: 'Voir la carte',
           livraison: 'Livraison', plats: 'plats en photo', fermer: 'Fermer', prec: 'Précédent', suiv: 'Suivant' },
-    en: { bientot: 'Coming soon', actif: 'Already on board ✅', voir: 'See the menu',
+    en: { bientot: 'Coming soon', actif: 'Already on board ✅', negociation: 'In talks', voir: 'See the menu',
           livraison: 'Delivery', plats: 'dishes in pictures', fermer: 'Close', prec: 'Previous', suiv: 'Next' },
-    it: { bientot: 'Presto disponibile', actif: 'Già a bordo ✅', voir: 'Vedi il menu',
+    it: { bientot: 'Presto disponibile', actif: 'Già a bordo ✅', negociation: 'In trattativa', voir: 'Vedi il menu',
           livraison: 'Consegna', plats: 'piatti in foto', fermer: 'Chiudi', prec: 'Precedente', suiv: 'Successivo' },
   };
   var t = T[(document.documentElement.lang || 'fr').slice(0, 2)] || T.fr;
@@ -160,12 +177,16 @@
   }
 
   function carte(r, photos, idx) {
-    var bientot = r.listing_status === 'coming_soon';
+    // `negociation` prime sur `listing_status` : voir le commentaire de
+    // EN_NEGOCIATION plus haut, la base ne dit pas toujours la verite
+    // commerciale a la vitrine.
+    var negociation = EN_NEGOCIATION.indexOf(r.id) !== -1;
+    var bientot = negociation || r.listing_status === 'coming_soon';
     var logo = r.logo_url
       ? '<img src="' + esc(visuel(r.logo_url, 56)) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
       : '<div style="width:56px;height:56px;border-radius:15px;flex:none;background:#1A1A1A;color:#FFC72C;display:flex;align-items:center;justify-content:center;font:800 19px/1 Archivo,sans-serif">' + esc(initiales(r.name)) + '</div>';
     var pastille = bientot
-      ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + t.bientot + '</div>'
+      ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + (negociation ? t.negociation : t.bientot) + '</div>'
       : '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#E7F6EC;color:#157F3C;font:700 11px/1 Archivo,sans-serif">' + t.actif + '</div>';
     var lien = bientot ? '' :
       '<a href="' + COMMANDE + '/restaurant/' + esc(r.id) + '" style="margin-top:14px;align-self:flex-start;height:40px;padding:0 18px;border-radius:999px;background:#1A1A1A;color:#fff;display:inline-flex;align-items:center;font:700 13px/1 Archivo,sans-serif;text-decoration:none">' + t.voir + '</a>';

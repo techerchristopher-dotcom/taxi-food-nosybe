@@ -1003,6 +1003,47 @@ du parcours de paiement à l'appui.
 C'est l'équivalent Google du montage Apple Pay, en plus lourd : Apple délivre un certificat en
 deux minutes, Google fait une revue.
 
+### Dossier d'accès production — soumis le 2026-09-08
+
+| | |
+|---|---|
+| Entreprise Google Pay | **Taxi Food**, `BCR2DN6DVL7LTMZZ` |
+| Pays du compte | **Réunion (RE)** ⚠️ définitif |
+| Identité légale | **RENTANOO**, profil de paiement `7669-2844-6310` — déjà vérifié par Google (30/08) |
+| Profil d'entreprise | ✅ Approved (MCC 5812, site, support) |
+| Type d'intégration | **Gateway** (Stripe est un PSP reconnu) |
+| Application | `com.chris97416.taxifoodnosybe`, détectée automatiquement |
+| Statut | ⏳ **en cours d'examen**, verrouillé jusqu'au verdict |
+
+⚠️ **PIÈGE DU PAYS, ET IL A COÛTÉ UNE ENTREPRISE POUR RIEN.** Google traite **« Réunion »
+comme un pays distinct de « France »**. Une première entreprise avait été créée en France
+(`BCR2DN6DVL7OHPRE`) sur le raisonnement « le compte Stripe est FR » — sauf que le profil de
+paiement RENTANOO, lui, est enregistré sous Réunion, et devenait donc inutilisable. Le pays
+ne se change pas après coup.
+
+**Le verrou porte sur l'ENTREPRISE, pas sur le compte** : la console en accepte plusieurs. La
+sortie a donc été de créer une seconde entreprise en Réunion. La première subsiste, inutilisée,
+et ne gêne rien.
+
+⚠️ **La bonne question à se poser était celle du porteur du projet** : *« si Google demande
+les documents de Taxi Food, ça n'existe pas — tout est rattaché à Rentanoo »*. Choisir le pays
+du profil de paiement qu'on veut utiliser, PAS celui du compte Stripe. Rentanoo étant déjà
+vérifiée chez Google, il n'y a eu aucun justificatif à produire.
+
+### Les cinq captures exigées
+
+Google réclame le parcours d'achat complet, **du même achat** : sélection d'un article,
+récapitulatif avant paiement, écran de choix du moyen de paiement **avec le bouton Google Pay
+visible**, la feuille Google Pay, et la confirmation de commande. 1 Mo maximum par fichier.
+
+⚠️ **Android interdit la capture de la feuille Google Pay** — il faut la photographier avec un
+autre appareil. Et Google précise qu'**une photo du message d'erreur convient** : la photo de
+`OR_BIBED_11` a donc servi de quatrième capture.
+
+⚠️ **La console refuse les dépôts de fichiers injectés** (les champs se remplissent, la page
+ne réagit pas, même en émettant `change`). Comme pour l'`.aab` du Play Store, la sélection doit
+être faite à la main.
+
 ### État au 2026-09-08
 
 | | |

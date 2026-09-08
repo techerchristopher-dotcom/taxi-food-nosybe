@@ -25,6 +25,12 @@
  * normalement mais SANS le bouton — sans la moindre erreur. C'est exactement ce
  * qui s'est passé au premier test du 2026-09-07 : aucune des trois n'existait.
  *
+ * ⚠️ GOOGLE PAY, lui, ne demande NI identifiant marchand NI certificat : il
+ * suffit de `enableGooglePay` dans `app.json` (qui ouvre l'API Wallet dans le
+ * manifeste Android) et du bloc `googlePay` plus bas. Rien de la lourdeur du
+ * montage Apple Pay n'a d'équivalent ici — ne pas aller chercher un certificat
+ * Google Pay, il n'en existe pas.
+ *
  * `merchantCountryCode` est le pays du compte Stripe, PAS celui du client :
  * compte Rentanoo immatriculé en France, donc « FR ». Un code qui ne
  * correspond pas au compte fait échouer le paiement à la confirmation.
@@ -85,9 +91,16 @@ export function FormulaireCarte({
           // Sans lui, un 3-D Secure qui sort de l'app ne saurait pas revenir.
           returnURL: 'taxifood://paiement',
           allowsDelayedPaymentMethods: false,
-          // Sur Android ce bloc est simplement ignoré par le SDK : pas de garde
-          // `Platform.OS` a ecrire, et donc pas de garde a oublier.
+          // Chaque bloc est ignoré par le SDK sur l'autre plateforme : pas de
+          // garde `Platform.OS` a ecrire, et donc pas de garde a oublier.
           applePay: { merchantCountryCode: PAYS_COMPTE_STRIPE },
+          googlePay: {
+            merchantCountryCode: PAYS_COMPTE_STRIPE,
+            currencyCode: 'EUR',
+            // ⚠️ `false` = vrai reseau bancaire. A `true`, Google ne renvoie que
+            // des cartes de test, refusees a la confirmation par Stripe.
+            testEnv: false,
+          },
         });
         if (annule || !vivant.current) return;
         if (error) setErreurPrepa(error.message);

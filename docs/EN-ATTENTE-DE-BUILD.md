@@ -12,6 +12,43 @@ ci-dessous comme « en attente »). Le chantier du 2026-09-08 ci-dessous est le 
 réellement en attente à cette date — ne pas supposer que le reste du fichier l'est aussi
 sans vérifier au cas par cas.
 
+## 🎨 L'icone Android etait celle d'EAS, pas celle de Taxi Food (2026-09-08) — EXIGE UN BUILD
+
+**Signale par le porteur du projet** : sur l'ecran d'accueil de son Android, l'icone de
+l'app est le chevron bleu par defaut d'Expo/EAS — jamais remplace par le logo Taxi Food.
+
+**Verifie dans le binaire, pas suppose.** Ouvert le `.aab` du build 5 (1.2.0) deja en
+production, `mipmap-xxxhdpi-v4/ic_launcher_foreground.webp` et
+`ic_launcher_background.webp` : c'est bien le chevron Expo, sur fond du degrade guide
+(cercles et lignes de construction). Puis remonte a la source : les trois fichiers
+`app/assets/android-icon-foreground.png`, `android-icon-background.png` et
+`android-icon-monochrome.png` **etaient encore le scaffold par defaut d'Expo**, jamais
+touches depuis `npx create-expo-app`. Seul `icon.png` (utilise par iOS) portait le vrai
+logo — d'ou un iOS correct et un Android qui a toujours affiche l'icone EAS, y compris
+sur les trois premiers builds Android deja soumis (1.1.0/4 en production comprise).
+
+### Corrige (2026-09-08), pas encore construit
+
+Le glyphe blanc (scooter + roue-pizza) a ete extrait par programme depuis `icon.png`
+(seuil de blanc strict : `r,g,b >= 250`, sinon le contour anti-crenete pale du badge
+arrondi — `(239,244,248)`, une teinte bleu-gris, pas du blanc pur — se glissait dans le
+decoupage) puis recentre a 60 % de la zone visible, la marge de securite habituelle pour
+qu'aucun lanceur Android (rond, carre, squircle...) ne le rogne :
+
+| Fichier | Avant | Apres |
+|---|---|---|
+| `android-icon-foreground.png` | chevron Expo | glyphe Taxi Food, blanc sur transparent |
+| `android-icon-monochrome.png` | chevron Expo | meme silhouette, en noir (Android reteinte de toute facon — seul le canal alpha compte) |
+| `android-icon-background.png` | grille de guide Expo | **supprime** — `app.json` s'appuie desormais sur `backgroundColor: "#E8342A"` seul, deja pose et jamais utilise puisque `backgroundImage` primait dessus |
+
+Verifie par simulation avant d'ecrire les fichiers : glyphe compose sur fond `#E8342A`
+puis **decoupe au cercle** (le plus severe des masques de lanceur) — le scooter reste
+entierement visible, rien de rogne.
+
+⚠️ **Sans effet sur le binaire deja en production** (1.1.0/4 et 1.2.0/5) : l'icone est
+compilee dans les resources natives, comme les Universal Links ci-dessous. Seul le
+prochain build la corrigera.
+
 ## 🔗 Universal Links / App Links pour le domaine de l'app (2026-09-08) — EXIGE UN BUILD
 
 **Constaté lors d'un test réel** : un restaurateur qui accepte une commande depuis Telegram

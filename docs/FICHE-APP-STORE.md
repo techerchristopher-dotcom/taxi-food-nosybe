@@ -468,11 +468,23 @@ Et beaucoup de petits ajustements : la carte ne se réorganise plus toute seule,
 ⚠️ **À rétablir dès la validation d'Apple.** Laisser ces réglages en l'état après la revue
 crée de vrais dégâts en exploitation.
 
-| Réglage | État posé le 2026-09-07 | À rétablir |
+✅ **DÉFAIT le 2026-09-08**, après validation Apple confirmée (`currentVersionReleaseDate:
+2026-09-08T09:31:35Z`, vérifié via l'API iTunes lookup, pas seulement en console) :
+
+| Réglage | État posé le 2026-09-07 | Rétabli le 2026-09-08 |
 |---|---|---|
-| Les trois restaurants visibles | `is_open = true`, `auto_open = false` — ouverts en permanence | `auto_open = true`, pour que leurs horaires reprennent la main |
-| **Taxi Be** | passé `coming_soon` → `visible` | Rendre `coming_soon` s'il n'est toujours pas exploité |
-| **Telegram de Taxi Be** | pointé sur le téléphone du porteur du projet (`7699975131`) | Le retirer, ou le brancher sur son vrai patron |
+| Chez Bidul & Truc, La Cabane | `auto_open = false` — ouverts en permanence | ✅ `auto_open = true` |
+| **Taxi Be** | passé `coming_soon` → `visible` | ✅ `coming_soon` |
+| **Telegram de Taxi Be** | pointé sur le téléphone du porteur du projet (`7699975131`) | ✅ `telegram_chat_id = null` |
+
+⚠️ **Les Siciliens n'est PAS concerné par ce tableau.** Son passage en `coming_soon` le
+2026-09-08 est une décision commerciale distincte (le partenariat est réellement en
+négociation), prise le même jour par coïncidence — ne pas la confondre avec un réglage de
+revue qui resterait à défaire.
+
+Vérifié après coup : `Chez Bidul & Truc` et `La Cabane` sont retombés à `ouvert_maintenant =
+false` dès la remise en service — hors de leurs horaires réels au moment du test, exactement
+le comportement recherché.
 
 **Pourquoi ces réglages.** Depuis le 2026-09-07, `create_order` REFUSE une commande sur un
 restaurant fermé. Le relecteur teste depuis la Californie, à n'importe quelle heure : sans

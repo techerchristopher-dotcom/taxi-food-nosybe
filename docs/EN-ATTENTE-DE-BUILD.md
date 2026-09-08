@@ -6,6 +6,70 @@ Nosy Be rendant chaque envoi coûteux (~8 min rien que pour téléverser).
 
 **À mettre à jour à chaque chantier, et à vider après chaque build.**
 
+⚠️ **Ce document n'a pas été vidé depuis plusieurs builds** (iOS 1.2.0/28 et Android
+1.2.0/5 sont déjà partis en revue le 2026-09-08 avec du contenu qui restait décrit
+ci-dessous comme « en attente »). Le chantier du 2026-09-08 ci-dessous est le seul
+réellement en attente à cette date — ne pas supposer que le reste du fichier l'est aussi
+sans vérifier au cas par cas.
+
+## 🔗 Universal Links / App Links pour le domaine de l'app (2026-09-08) — EXIGE UN BUILD
+
+**Constaté lors d'un test réel** : un restaurateur qui accepte une commande depuis Telegram
+tape le bouton de confirmation, et atterrit dans le **navigateur** au lieu de l'app installée
+— alors que le lien pointe pourtant vers la bonne adresse depuis le correctif de la veille
+(`a832364`, « Le bouton d'acceptation ramène le restaurateur à SA commande »).
+
+**Cause distincte de celle corrigée la veille.** Le bouton vise désormais
+`taxifood.distripro207.com` (l'APP), mais ce domaine n'a jamais été déclaré comme lien
+universel :
+
+- `app.json` ne le listait ni dans `ios.associatedDomains` ni dans
+  `android.intentFilters` — seuls `taxifoodnosybe.distripro207.com` (le SITE vitrine) et
+  l'ancien `taxifood.rentanoo.com` y figuraient, et seulement pour `/p/`, `/r/`, `/o/`.
+- **Pire : même en le déclarant, ça ne suffirait pas.** `taxifood.distripro207.com` ne
+  servait aucun `/.well-known/apple-app-site-association` ni `assetlinks.json` — la requête
+  tombait dans le repli SPA d'expo-router et renvoyait le HTML de l'app au lieu du JSON
+  attendu. Vérifié par `curl` avant correction : les deux fichiers renvoyaient la page
+  d'accueil de l'app, pas un JSON.
+
+Sans ces deux pièces réunies, iOS et Android ne peuvent PAS reconnaître le lien comme
+appartenant à l'app : ils ouvrent le navigateur, qui charge la vraie app (le même code,
+compilé pour le web — pas la vitrine), mais SANS lancer l'app installée sur le téléphone.
+Vu du restaurateur, ça ressemble à « ça va sur le site », alors que le contenu affiché est
+correct — c'est le canal qui est faux, pas la destination.
+
+### Ce qui a été préparé (2026-09-08), pas encore construit
+
+| Fichier | Changement |
+|---|---|
+| `app/app.json` | `applinks:taxifood.distripro207.com` ajouté à `ios.associatedDomains` ; entrée `taxifood.distripro207.com` (pathPrefix `/`) ajoutée aux `android.intentFilters` |
+| `app/public/.well-known/apple-app-site-association` | créé — `appID` identique à celui du site vitrine, `paths: ["/*"]` (ce domaine EST l'app, rien à protéger d'un lien qui l'ouvrirait) |
+| `app/public/.well-known/assetlinks.json` | créé — mêmes deux empreintes SHA-256 que sur le site vitrine (Play App Signing + keystore EAS, voir CLAUDE.md « Les deux empreintes Android ») |
+| `app/netlify.toml` | en-têtes `Content-Type: application/json` explicites sur les deux fichiers — sans ça Android refuse `assetlinks.json`, servi en `application/octet-stream` par défaut sur un fichier sans extension |
+
+⚠️ **Les fichiers `.well-known` et `netlify.toml` peuvent partir en déploiement web
+IMMÉDIATEMENT** (site continu, pas de build natif) : ils préparent le terrain pour la
+vérification que fera le prochain build, sans rien changer au fonctionnement actuel. **Seul
+`app.json` (`associatedDomains` / `intentFilters`) exige un nouveau build natif** — ces
+déclarations sont compilées dans le binaire, invisibles pour les versions déjà soumises.
+
+**Vérifié avant correction, pas supposé** :
+```
+curl https://taxifood.distripro207.com/.well-known/apple-app-site-association
+curl https://taxifood.distripro207.com/.well-known/assetlinks.json
+```
+renvoyaient tous deux le HTML de l'app (repli SPA d'expo-router), pas un JSON.
+
+### À vérifier au prochain build
+
+- `curl` des deux fichiers `.well-known` doit renvoyer un JSON avec `Content-Type:
+  application/json` (le déploiement web suffit, testable sans attendre le build natif).
+- Sur le build suivant, taper le lien d'acceptation Telegram sur un iPhone **et** un
+  Android : l'app installée doit s'ouvrir directement, sans passer par le navigateur.
+- Ne pas oublier `docs/DEPLOIEMENT.md` / `assetlinks.json` déjà documentés côté site
+  vitrine si les empreintes de signature changent un jour — les deux fichiers doivent
+  rester synchronisés.
+
 ## Dernier build sorti
 
 **n°17** — `1.0.0 (17)`, soumis à TestFlight le 2026-08-19, traitement Apple **terminé** le

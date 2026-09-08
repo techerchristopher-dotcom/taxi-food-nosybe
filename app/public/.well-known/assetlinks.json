@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.chris97416.taxifoodnosybe",
+      "sha256_cert_fingerprints": [
+        "9E:83:EC:47:51:33:B9:01:63:15:63:25:6D:E0:AD:55:DE:EF:FE:81:00:1D:F3:5C:7D:94:7B:AE:BB:CA:8C:74",
+        "02:05:17:F9:C3:DD:6E:15:1F:20:08:EC:C6:9E:85:9A:41:77:68:1A:DA:20:26:6A:FB:D4:10:9E:93:95:03:D4"
+      ]
+    }
+  }
+]

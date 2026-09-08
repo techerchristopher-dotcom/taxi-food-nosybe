@@ -51,6 +51,24 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Universal Links (iOS) / App Links (Android) pour CE domaine — celui que le
+# bouton de `repondre-commande.mjs` vise apres acceptation/refus. Sans un
+# Content-Type explicite, Netlify sert ces fichiers sans extension en
+# `application/octet-stream`, et le verifieur Digital Asset Links d'Android
+# refuse alors `assetlinks.json`. iOS est plus tolerant, mais autant poser les
+# deux la meme regle que sur le site vitrine (`landing/netlify.toml`).
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "public, max-age=3600"
+
 # Les bundles portent leur empreinte dans le nom : cache long sans risque.
 [[headers]]
   for = "/_expo/static/*"

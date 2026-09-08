@@ -949,3 +949,75 @@ CSR chez Stripe et un certificat chez Apple, en suivant cette section.
 **Aucun paiement Apple Pay n'a encore abouti.** Le montage est complet et le build 28 est signé
 avec l'entitlement — mais tant qu'un vrai débit n'est pas passé par la feuille Apple Pay sur un
 appareil, la chaîne reste théorique.
+
+---
+
+## 13. Google Pay — 2026-09-08
+
+### Le code ne coûte que deux lignes
+
+Contrairement à Apple Pay (§ 12), **ni identifiant marchand ni certificat** côté code :
+`enableGooglePay: true` dans le plugin Stripe d'`app.json` (qui ouvre l'API Wallet dans le
+manifeste Android) et le bloc `googlePay` dans `initPaymentSheet`. C'est tout.
+
+Vérifié dans l'AAB du build 5, avant de chercher ailleurs :
+
+```
+strings base/manifest/AndroidManifest.xml | grep wallet.api.enabled   → présent
+strings base/dex/*.dex | grep -c GooglePayLauncher                    → 339
+```
+
+⚠️ **Réflexe à garder** : quand un moyen de paiement n'apparaît pas, ouvrir l'AAB AVANT de
+soupçonner l'appareil. Trente secondes, et ça élimine la moitié des hypothèses.
+
+### ⚠️ Piège n°1 — le bouton était masqué par un réglage Stripe
+
+Le bouton n'apparaissait pas du tout. Cause : dans la configuration des moyens de paiement
+(`pmc_1SNuTH53bhPYA4IFkmBsgTjt`), **`google_pay` était `off`** alors qu'`apple_pay` était
+`on`. Le SDK interroge Stripe, Stripe répond « pas Google Pay », et le bouton n'est pas
+dessiné — **sans erreur, sans log**.
+
+```
+apple_pay  : available true  · on      ← Apple Pay marchait
+google_pay : available false · off     ← d'où le bouton absent
+```
+
+Corrigé dans le tableau de bord (*Paramètres → Paiements → Moyens de paiement → Default*).
+⚠️ Le `available: false` était une **conséquence** de la désactivation, pas un défaut
+d'éligibilité : il est repassé à `true` en même temps. Ne pas s'en alarmer.
+
+⚠️ **L'API du connecteur MCP est en lecture seule sur ce réglage** — la bascule se fait
+forcément dans le tableau de bord.
+
+### ⚠️ Piège n°2 — `OR_BIBED_11` : Google veut approuver l'app
+
+Une fois le bouton affiché, Google Pay s'ouvre et échoue sur :
+
+> Ce marchand ne parvient pas à accepter votre paiement pour le moment. **[OR_BIBED_11]**
+
+Ce n'est pas une erreur Stripe : elle est levée par Google avant que Stripe soit sollicité.
+Elle signifie **« le marchand n'a pas terminé son inscription à l'API Google Pay »**. Pour une
+app Android, Google exige une **approbation d'accès production**, avec examen humain — captures
+du parcours de paiement à l'appui.
+
+C'est l'équivalent Google du montage Apple Pay, en plus lourd : Apple délivre un certificat en
+deux minutes, Google fait une revue.
+
+### État au 2026-09-08
+
+| | |
+|---|---|
+| Google Pay & Wallet Console | compte créé — **Taxi Food**, `BCR2DN6DVL7OHPRE` |
+| Pays du compte | **France** ⚠️ **définitif**, Google l'annonce (« Country can't be changed later ») |
+| Profil d'entreprise | ✅ enregistré (MCC **5812**, site, support e-mail et téléphone) |
+| Profil de paiement Google | ❌ à faire — identité légale et fiscale |
+| Accès production | ❌ à demander ensuite |
+
+**Pourquoi la France et pas Madagascar**, alors que Google pré-remplissait Madagascar : le
+compte Stripe est immatriculé en France, et le code déclare déjà `merchantCountryCode: 'FR'`.
+Déclarer Madagascar chez Google aurait mis les deux bouts de la chaîne en désaccord, sur un
+choix irréversible.
+
+⚠️ **Ne pas promouvoir la 1.2.0 en production Android tant que Google n'a pas approuvé** : le
+client verrait un bouton Google Pay qui échoue à tous les coups — pire que pas de bouton. Le
+paiement par carte, lui, fonctionne déjà.

@@ -4,6 +4,12 @@ import Constants from 'expo-constants';
  * Ce que l'app affiche d'elle-même en bas du Profil.
  *
  * ⚠️ `DATE_MISE_A_JOUR` est à REMONTER À CHAQUE BUILD envoyé aux magasins.
+ * ⚠️ ET SI ON L'OUBLIE, ELLE MENT. Oublié le 2026-09-08 : le pied de page
+ * affichait encore « 7 septembre » sur un binaire du 8, ce qui a fait conclure
+ * a tort que le mauvais build etait installe — et couter une desinstallation,
+ * une reinstallation et trois echanges pour rien. Ne jamais s'en servir pour
+ * identifier un binaire : le seul repere fiable est le VERSION CODE, lu dans
+ * la console du magasin.
  * C'est la seule ligne à changer, et elle est listée dans
  * `docs/EN-ATTENTE-DE-BUILD.md` parmi les gestes de sortie.
  *
@@ -14,7 +20,7 @@ import Constants from 'expo-constants';
  * script de build pour une ligne de texte. Une constante assumée est plus
  * honnête : quand elle est fausse, ça se voit.
  */
-export const DATE_MISE_A_JOUR = '2026-09-07';
+export const DATE_MISE_A_JOUR = '2026-09-08';
 
 /** Version déclarée dans app.json, ex. « 1.0.0 ». */
 export const VERSION: string = Constants.expoConfig?.version ?? '1.0.0';

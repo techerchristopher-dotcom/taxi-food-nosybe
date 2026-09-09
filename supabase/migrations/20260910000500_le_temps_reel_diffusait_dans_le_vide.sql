@@ -1,0 +1,21 @@
+-- Le temps reel diffusait dans le vide.
+--
+-- L'ecran de pilotage s'abonne bien aux changements de `orders`
+-- (`admin/components/Realtime.tsx`), et affiche « Temps reel actif » des que le
+-- canal se connecte. Mais la publication `supabase_realtime` ne contenait
+-- AUCUNE table (verifie le 2026-09-09) : Postgres n'emettait donc rien, et
+-- l'ecran ne se mettait a jour que par son filet de securite, un
+-- rafraichissement toutes les 20 secondes.
+--
+-- Le voyant vert etait donc trompeur : `subscribe()` renvoie SUBSCRIBED des que
+-- le websocket est etabli, ce qui ne dit RIEN sur la presence de la table dans
+-- la publication. Un tuyau branche sur une source muette.
+--
+-- On publie `orders`. C'est la seule table dont un changement doit remonter
+-- instantanement : une commande qui arrive pendant le service ne peut pas
+-- attendre vingt secondes que quelqu'un s'en apercoive.
+--
+-- ⚠️ Le temps reel respecte la RLS : chaque abonne ne recoit que les lignes
+-- qu'il aurait le droit de lire. Publier cette table n'ouvre donc rien.
+
+alter publication supabase_realtime add table public.orders;

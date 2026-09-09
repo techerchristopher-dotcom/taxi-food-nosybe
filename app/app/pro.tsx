@@ -26,33 +26,42 @@ import { useSession } from '../store/session';
 export default function Pro() {
   const router = useRouter();
   const session = useSession((s) => s.session);
+  // ⚠️ `loading` EST INDISPENSABLE ICI, et son oubli a casse le parcours le
+  // 2026-09-09. Un lien Telegram ouvre l'app A FROID : la session vaut encore
+  // `null` pendant l'hydratation. Sans cette attente, la verification ci-dessous
+  // repondait « pas d'espace restaurant » et renvoyait le restaurateur vers `/`,
+  // donc cote CLIENT — le defaut meme que cet ecran devait corriger.
+  const loading = useSession((s) => s.loading);
   const setMode = useSession((s) => s.setMode);
-  // Même verrou que `app/index.tsx` : expo-router réutilise l'instance déjà montée, un
-  // effet rejoué renverrait une seconde fois et empilerait un écran de trop.
-  const dejaFait = useRef(false);
+
+  // Un espace restaurant « ouvert » exige les DEUX : le role valide ET le rattachement a
+  // un etablissement — sans `restaurantId` l'espace n'aurait aucune commande a montrer.
+  // Meme regle que `destination()` dans `app/index.tsx`, a ne pas assouplir d'un cote seul.
+  const ouvert =
+    !!session &&
+    session.roles.some((r) => r.role === 'restaurant' && r.status === 'active') &&
+    !!session.restaurantId;
+
+  // `null` tant qu'on ne sait pas encore : on n'a alors RIEN a decider.
+  // Visiteur ou compte sans espace pro : `/` sait deposer chacun au bon endroit,
+  // y compris sur le catalogue libre.
+  const href = loading ? null : ouvert ? '/(restaurant)' : '/';
+
+  // ⚠️ Le verrou porte sur la DESTINATION, jamais sur un booleen « j'ai deja navigue ».
+  // Le booleen empeche de corriger le tir quand la session arrive enfin — c'est
+  // exactement le piege documente dans `app/index.tsx`, qui y avait produit un
+  // ecran blanc. Comparer la destination regle les deux cas : aucune boucle, et une
+  // destination qui change parce que l'etat a REELLEMENT change est bien suivie.
+  const dejaNavigue = useRef<string | null>(null);
 
   useEffect(() => {
-    if (dejaFait.current) return;
-    dejaFait.current = true;
+    if (!href) return;
+    if (dejaNavigue.current === href) return;
+    dejaNavigue.current = href;
 
-    // Un espace restaurant « ouvert » exige les DEUX : le rôle validé ET le rattachement à
-    // un établissement — sans `restaurantId` l'espace n'aurait aucune commande à montrer.
-    // Même règle que `destination()`, à ne pas assouplir d'un côté seulement.
-    const ouvert =
-      !!session &&
-      session.roles.some((r) => r.role === 'restaurant' && r.status === 'active') &&
-      !!session.restaurantId;
-
-    // Visiteur, ou compte sans espace pro : on ne force rien et on laisse `/` faire son
-    // travail — il sait déposer chacun au bon endroit, y compris sur le catalogue libre.
-    if (!ouvert) {
-      router.replace('/');
-      return;
-    }
-
-    void setMode('restaurant');
-    router.replace('/(restaurant)');
-  }, [session, router, setMode]);
+    if (href === '/(restaurant)') void setMode('restaurant');
+    router.replace(href);
+  }, [href, router, setMode]);
 
   return null;
 }

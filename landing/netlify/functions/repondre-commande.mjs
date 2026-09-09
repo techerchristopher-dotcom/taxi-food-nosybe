@@ -41,7 +41,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
 function page(emoji, titre, corps, couleur = '#157F3C', cta = null) {
   // Par defaut on renvoie vers l'app : quelle que soit la situation, ce que le
   // restaurateur veut faire ensuite se passe dans son espace, pas sur le site.
-  const lien = cta ?? { libelle: 'Ouvrir mon espace', href: `${APP}/` };
+  // `/pro` et non `/` : la racine repasse par l'aiguillage de l'app, qui fait gagner le
+  // mode memorise sur les roles. Un restaurateur passe cote client la veille atterrissait
+  // dans l'app CLIENT en venant d'ici (constate le 2026-09-09). `/pro` pose le mode
+  // restaurant puis entre dans l'espace.
+  const lien = cta ?? { libelle: 'Ouvrir mon espace', href: `${APP}/pro` };
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(titre)} — Taxi Food</title>
@@ -100,7 +104,7 @@ export default async (request) => {
           ? page('✅', `Commande ${esc(d.numero)} acceptée`,
               'C’est noté. Le client vient d’être prévenu. Ouvre ton espace pour la passer en préparation, puis la marquer prête.',
               '#157F3C',
-              { libelle: `Voir la commande ${d.numero ?? ''}`.trim(), href: `${APP}/` })
+              { libelle: `Voir la commande ${d.numero ?? ''}`.trim(), href: `${APP}/pro` })
           : page('❌', `Commande ${esc(d.numero)} refusée`,
               'Le client vient d’être prévenu. Il n’a rien à payer.', '#DF3228',
               // Une commande refusee passe en « annulee » : elle est dans
@@ -114,7 +118,7 @@ export default async (request) => {
       // Ce n'est pas une erreur, et le dire ainsi evite une inquietude inutile.
       return new Response(page('👍', 'Déjà traitée',
         `Cette commande est déjà en « ${esc(d.statut)} ». Rien de plus à faire.`, '#8A827A',
-        { libelle: 'Ouvrir mon espace', href: `${APP}/` }),
+        { libelle: 'Ouvrir mon espace', href: `${APP}/pro` }),
         { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
     }
 

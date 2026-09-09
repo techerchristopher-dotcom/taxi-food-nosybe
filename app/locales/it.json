@@ -132,7 +132,9 @@
     "productCount_other": "· {{count}} prodotti",
     "viewCart": "Vedi il carrello · {{count}} art.",
     "share": "Condividi questo ristorante",
-    "categoryServedFrom": "{{categorie}} si serve dalle {{de}} alle {{a}}. Puoi guardare il menu, ma questi piatti non sono ancora ordinabili."
+    "categoryServedFrom": "{{categorie}} si serve dalle {{de}} alle {{a}}. Puoi guardare il menu, ma questi piatti non sono ancora ordinabili.",
+    "fermeBandeau": "Questo ristorante è chiuso in questo momento. Puoi consultare il menu, ma non ordinare — torna all’apertura.",
+    "bientotBandeau": "Questo ristorante arriva presto su Taxi Food. Puoi scoprire il menu, gli ordini non sono ancora aperti."
   },
   "conflict": {
     "title": "Cambiare ristorante?",
@@ -150,7 +152,9 @@
     "upTo": "Fino a {{count}} a scelta",
     "addWithPrice": "Aggiungi · {{price}}",
     "chooseOptions": "Scegli le opzioni",
-    "share": "Condividi questo piatto"
+    "share": "Condividi questo piatto",
+    "restaurantFerme": "Ristorante chiuso",
+    "restaurantBientot": "Presto disponibile"
   },
   "cart": {
     "title": "Il mio carrello",
@@ -162,7 +166,9 @@
     "suggestDessert": "Completa con un dessert",
     "suggestOther": "Ti piacerà anche",
     "subtotal": "Subtotale",
-    "order": "Ordina"
+    "order": "Ordina",
+    "restaurantFerme": "Questo ristorante è chiuso in questo momento. Il tuo carrello resta.",
+    "restaurantBientot": "Questo ristorante non accetta ancora ordini. Il tuo carrello resta."
   },
   "address": {
     "title": "Indirizzo di consegna",

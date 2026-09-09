@@ -92,6 +92,10 @@ export default function ProductDetailScreen() {
     );
   }
 
+  // Voir la carte d'un restaurant ferme est normal ; y composer un panier que
+  // `create_order` refusera ne l'est pas. Coupe l'ajout, pas la consultation.
+  const commandable = restaurant?.isOpen ?? false;
+
   const ctx: RestaurantContext | null = restaurant
     ? {
         id: restaurant.id,
@@ -289,13 +293,26 @@ export default function ProductDetailScreen() {
           <View style={styles.stepperWrap}>
             <QtyStepper value={qty} onDec={() => setQty((q) => Math.max(1, q - 1))} onInc={() => setQty((q) => Math.min(20, q + 1))} size="lg" />
           </View>
+          {/* Restaurant ferme ou pas encore ouvert : la fiche reste consultable
+              (on arrive souvent ici par un lien partage), mais l'ajout est coupe.
+              `isOpen` vaut deja faux pour un `coming_soon` (voir data/api.ts). */}
           <Pressable
             onPress={handleAdd}
-            disabled={!valid}
-            style={({ pressed }) => [styles.addBtn, !valid && styles.addBtnDisabled, pressed && valid && { opacity: 0.9 }]}
+            disabled={!valid || !commandable}
+            style={({ pressed }) => [
+              styles.addBtn,
+              (!valid || !commandable) && styles.addBtnDisabled,
+              pressed && valid && commandable && { opacity: 0.9 },
+            ]}
           >
             <Text style={styles.addText}>
-              {valid ? t('product.addWithPrice', { price: formatAr(lineTotal) }) : t('product.chooseOptions')}
+              {!commandable
+                ? restaurant?.listingStatus === 'coming_soon'
+                  ? t('product.restaurantBientot')
+                  : t('product.restaurantFerme')
+                : valid
+                  ? t('product.addWithPrice', { price: formatAr(lineTotal) })
+                  : t('product.chooseOptions')}
             </Text>
           </Pressable>
         </View>

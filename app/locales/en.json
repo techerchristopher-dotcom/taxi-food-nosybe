@@ -132,7 +132,9 @@
     "productCount_other": "· {{count}} items",
     "viewCart": "View cart · {{count}} item(s)",
     "share": "Share this restaurant",
-    "categoryServedFrom": "{{categorie}} is served from {{de}} to {{a}}. You can browse the menu, but these dishes can't be ordered yet."
+    "categoryServedFrom": "{{categorie}} is served from {{de}} to {{a}}. You can browse the menu, but these dishes can't be ordered yet.",
+    "fermeBandeau": "This restaurant is closed right now. You can browse the menu, but not order — come back when it opens.",
+    "bientotBandeau": "This restaurant is coming soon to Taxi Food. You can browse its menu, ordering is not open yet."
   },
   "conflict": {
     "title": "Switch restaurant?",
@@ -150,7 +152,9 @@
     "upTo": "Up to {{count}} to choose",
     "addWithPrice": "Add · {{price}}",
     "chooseOptions": "Choose the options",
-    "share": "Share this dish"
+    "share": "Share this dish",
+    "restaurantFerme": "Restaurant closed",
+    "restaurantBientot": "Coming soon"
   },
   "cart": {
     "title": "My cart",
@@ -162,7 +166,9 @@
     "suggestDessert": "Round it off with a dessert",
     "suggestOther": "You may also like",
     "subtotal": "Subtotal",
-    "order": "Order"
+    "order": "Order",
+    "restaurantFerme": "This restaurant is closed right now. Your cart is kept.",
+    "restaurantBientot": "This restaurant is not taking orders yet. Your cart is kept."
   },
   "address": {
     "title": "Delivery address",

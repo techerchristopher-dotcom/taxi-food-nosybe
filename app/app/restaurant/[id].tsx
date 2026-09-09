@@ -84,7 +84,14 @@ export default function RestaurantMenuScreen() {
   const qtyOf = (productId: string) =>
     cartLines.find((l) => l.key === lineKey(productId))?.quantity ?? 0;
 
+  // Un restaurant ferme, ou pas encore ouvert, ne prend pas de commande : la
+  // base refuse (`commandable_maintenant`), et l'ecran doit le dire AVANT que le
+  // client compose un panier entier pour se le voir refuser au dernier bouton.
+  // `isOpen` vaut deja faux pour un `coming_soon` (voir data/api.ts).
+  const commandable = restaurant.isOpen;
+
   function tryAdd(product: Product) {
+    if (!commandable) return;
     if (canAdd(product)) add(product, ctx);
     else setPending(product);
   }
@@ -233,6 +240,16 @@ export default function RestaurantMenuScreen() {
               composait son panier et se faisait refuser à la validation — le
               plus mauvais moment pour l'apprendre. La base refuse de toute
               façon (`create_order`), ceci ne fait que le dire à temps. */}
+          {!commandable ? (
+            <View style={styles.horsService}>
+              <Text style={styles.horsServiceTexte}>
+                {restaurant.listingStatus === 'coming_soon'
+                  ? t('restaurant.bientotBandeau')
+                  : t('restaurant.fermeBandeau')}
+              </Text>
+            </View>
+          ) : null}
+
           {activeCategory && !activeCategory.servedNow && activeCategory.servingFrom ? (
             <View style={styles.horsService}>
               <Text style={styles.horsServiceTexte}>
@@ -255,6 +272,7 @@ export default function RestaurantMenuScreen() {
                 onInc={() => (p.hasOptions ? router.push(`/product/${p.id}`) : tryAdd(p))}
                 onDec={() => setQuantity(lineKey(p.id), qtyOf(p.id) - 1)}
                 onShare={() => setAPartager(p)}
+                commandable={commandable}
               />
             ))}
           </View>

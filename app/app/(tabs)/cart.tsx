@@ -16,6 +16,7 @@ import { usePromo } from '../../store/promo';
 import { useLoad } from '../../lib/useLoad';
 import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
+import { getRestaurant } from '../../data/api';
 import { Product } from '../../data/types';
 
 /** Écran 05 — Panier (et 05b — état vide). */
@@ -45,6 +46,17 @@ export default function CartScreen() {
   // annonce un montant qui n'est plus le bon — et la remise du code promo, elle
   // calculée sur le tarif courant, creuse l'écart au lieu de le combler.
   useFraisLivraisonAJour();
+
+  // Le panier survit a la fermeture du restaurant : compose a 14 h, ouvert a
+  // 23 h. On relit donc l'etat d'ouverture ICI, et pas seulement sur la carte.
+  // Tant que la lecture n'a pas repondu on laisse commander : `create_order`
+  // reste l'autorite, et un bouton grise a tort sur un reseau lent couterait
+  // plus cher que le trajet inutile jusqu'a l'ecran d'adresse.
+  const { data: restoAJour } = useLoad(
+    () => (restaurantId ? getRestaurant(restaurantId) : Promise.resolve(null)),
+    [restaurantId],
+  );
+  const commandable = restoAJour ? restoAJour.isOpen : true;
 
   // Aperçu de la remise. `total` reste le montant plein : la remise s'en
   // retranche à l'affichage, et c'est `create_order` qui recalculera tout.
@@ -176,7 +188,10 @@ export default function CartScreen() {
         </View>
 
         {/* Suggestions d'upsell — boissons, sinon dessert, sinon autres produits */}
-        {suggestions && suggestions.items.length > 0 ? (
+        {/* Restaurant ferme : pas de suggestions. Leur bouton [+] rajoutait au
+            panier alors que « Commander » etait grise juste en dessous — on
+            proposait d'alourdir un panier qu'on refusait d'envoyer. */}
+        {commandable && suggestions && suggestions.items.length > 0 ? (
           <View style={styles.suggestWrap}>
             <Text style={styles.suggestTitle}>{suggestHeading}</Text>
             <ScrollView
@@ -254,13 +269,32 @@ export default function CartScreen() {
       </ScrollView>
 
       <BottomBar>
-        <Button label={t('cart.order')} iconRight="arrow_forward" onPress={() => router.push('/address')} />
+        {!commandable ? (
+          <Text style={styles.fermeAvis}>
+            {restoAJour?.listingStatus === 'coming_soon'
+              ? t('cart.restaurantBientot')
+              : t('cart.restaurantFerme')}
+          </Text>
+        ) : null}
+        <Button
+          label={t('cart.order')}
+          iconRight="arrow_forward"
+          disabled={!commandable}
+          onPress={() => router.push('/address')}
+        />
       </BottomBar>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fermeAvis: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   container: { flex: 1, backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.surface,

@@ -132,7 +132,9 @@
     "productCount_other": "· {{count}} produits",
     "viewCart": "Voir le panier · {{count}} art.",
     "share": "Partager ce restaurant",
-    "categoryServedFrom": "{{categorie}} sort du four à partir de {{de}} — service jusqu'à {{a}}. Vous pouvez regarder la carte, mais pas encore commander ces plats."
+    "categoryServedFrom": "{{categorie}} sort du four à partir de {{de}} — service jusqu'à {{a}}. Vous pouvez regarder la carte, mais pas encore commander ces plats.",
+    "fermeBandeau": "Ce restaurant est fermé pour le moment. Tu peux consulter la carte, mais pas commander — reviens à l'ouverture.",
+    "bientotBandeau": "Ce restaurant arrive bientôt sur Taxi Food. Tu peux découvrir sa carte, les commandes ne sont pas encore ouvertes."
   },
   "conflict": {
     "title": "Changer de restaurant ?",
@@ -150,7 +152,9 @@
     "upTo": "Jusqu'à {{count}} au choix",
     "addWithPrice": "Ajouter · {{price}}",
     "chooseOptions": "Choisis les options",
-    "share": "Partager ce plat"
+    "share": "Partager ce plat",
+    "restaurantFerme": "Restaurant fermé",
+    "restaurantBientot": "Bientôt disponible"
   },
   "cart": {
     "title": "Mon panier",
@@ -162,7 +166,9 @@
     "suggestDessert": "Complète avec un dessert",
     "suggestOther": "Tu aimeras aussi",
     "subtotal": "Sous-total",
-    "order": "Commander"
+    "order": "Commander",
+    "restaurantFerme": "Ce restaurant est fermé pour le moment. Ton panier est gardé.",
+    "restaurantBientot": "Ce restaurant n'ouvre pas encore les commandes. Ton panier est gardé."
   },
   "address": {
     "title": "Adresse de livraison",

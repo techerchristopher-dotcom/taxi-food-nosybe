@@ -11,6 +11,9 @@ import { Product } from '../data/types';
  * - disponible & absent du panier : bouton [+] rouge
  * - disponible & déjà au panier : sélecteur de quantité, carte bordée rouge
  * - indisponible : grisé + pastille « Indisponible », non cliquable
+ * - restaurant fermé (`commandable` faux) : la ligne reste lisible et
+ *   ouvrable, mais SANS bouton d'ajout — voir la carte d'un restaurant fermé
+ *   est normal, composer un panier qui sera refusé à la validation ne l'est pas.
  */
 export function ProductRow({
   product,
@@ -19,6 +22,7 @@ export function ProductRow({
   onInc,
   onDec,
   onShare,
+  commandable = true,
 }: {
   product: Product;
   qty: number;
@@ -27,6 +31,8 @@ export function ProductRow({
   onDec: () => void;
   /** Absent = pas de bouton de partage sur cette ligne. */
   onShare?: () => void;
+  /** Faux quand le restaurant est fermé ou pas encore ouvert. */
+  commandable?: boolean;
 }) {
   const { t } = useTranslation();
   const available = product.isAvailable;
@@ -77,7 +83,7 @@ export function ProductRow({
         </Pressable>
       ) : null}
 
-      {available ? (
+      {available && commandable ? (
         inCart ? (
           <QtyStepper value={qty} onDec={onDec} onInc={onInc} size="md" />
         ) : (

@@ -66,7 +66,17 @@
               "scheme": "https",
               "host": "taxifoodnosybe.distripro207.com",
               "pathPrefix": "/o/"
-            },
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
             {
               "scheme": "https",
               "host": "taxifood.rentanoo.com",
@@ -81,7 +91,17 @@
               "scheme": "https",
               "host": "taxifood.rentanoo.com",
               "pathPrefix": "/o/"
-            },
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
             {
               "scheme": "https",
               "host": "taxifood.distripro207.com",

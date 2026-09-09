@@ -785,6 +785,28 @@ cd admin && npm run build && npx netlify deploy --prod --dir=out --site=taxi-foo
   (https://taxifood.distripro207.com), `siteId` dans `app/.netlify/state.json`,
   `deploy_source: cli`. C'est exactement le piège des migrations MCP hors dépôt :
   ce qui n'est pas automatique diverge en silence.
+### 🛑 Avant de déboguer quoi que ce soit sur mobile : QUEL BINAIRE tourne ?
+
+**Un binaire tout juste déposé n'est PAS celui du magasin.** `eas submit -p android`
+dépose sur la piste **interne** ; la fiche Play publique sert la **production**.
+Sur iOS, un build soumis est dans **TestFlight**, pas sur l'App Store.
+
+Le 2026-09-09, plus d'une heure perdue là-dessus : l'appareil tournait sur le
+`versionCode 5 (1.2.0)` du 8 septembre pendant qu'on raisonnait sur des builds
+déposés en interne, et le diagnostic repartait chaque fois dans le code.
+
+- Lien de test interne Android :
+  `https://play.google.com/apps/internaltest/4700730027165144358`
+- ⚠️ **Le numéro de version ne distingue rien** : les builds 8, 9 et 10 portaient
+  tous `1.2.1`. Seul le **versionCode** (Android) ou le **build number** (iOS)
+  identifie un binaire.
+- **Si le binaire installé ne correspond pas à celui qu'on vient de déposer, il
+  n'y a rien à chercher dans le code.**
+
+⚠️ Et ne pas confondre une convention de plateforme avec un défaut : Telegram
+affiche **toujours** une confirmation « Ouvrir le lien » avant d'ouvrir un lien
+depuis un bouton de bot. Ce « double clic » touchera tous les restaurateurs.
+
 - **Corriger la base D'ABORD, toujours.** C'est la seule surface qui protège
   tout le parc immédiatement, y compris les versions anciennes qui ne recevront
   jamais l'OTA (un client resté en 1.1.0) et le web tant qu'il n'est pas

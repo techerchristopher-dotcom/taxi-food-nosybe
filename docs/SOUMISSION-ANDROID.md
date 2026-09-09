@@ -1,5 +1,42 @@
 # Soumission Android — état des lieux et plan
 
+## 🛑 AVANT DE DÉBOGUER QUOI QUE CE SOIT SUR ANDROID : QUELLE PISTE ?
+
+**`eas submit` dépose sur la piste INTERNE. La fiche publique du Play Store sert
+la PRODUCTION. Ce ne sont pas les mêmes binaires.**
+
+Réinstaller depuis la fiche Play publique redonne donc la **production** — pas
+ce qu'on vient de déposer. Le 2026-09-09, ça a coûté plus d'une heure : trois
+builds déposés en interne, un défaut « corrigé » qu'on retrouvait à chaque test,
+et un diagnostic qui partait chaque fois dans le code. La production portait le
+**versionCode 5 (1.2.0)**, du 8 septembre, pendant que la piste interne portait
+le **10 (1.2.1)**.
+
+**Le lien de test interne — le seul qui installe ce qu'on vient de déposer :**
+
+```
+https://play.google.com/apps/internaltest/4700730027165144358
+```
+
+**Le réflexe, AVANT toute hypothèse sur le code :**
+
+1. Play Console → l'app → **Test and release** → comparer :
+   - *Production* → « Latest release: N (x.y.z) »
+   - *Testing → Internal testing* → « Latest release: x.y.z »
+2. Sur le téléphone : Paramètres → Applications → Taxi Food → **versionCode**
+3. **Si les deux ne correspondent pas, il n'y a rien à déboguer dans le code.**
+
+⚠️ Le numéro de version affiché (`1.2.1`) **ne suffit pas** à distinguer : les
+builds 8, 9 et 10 le portaient tous. Seul le **versionCode** identifie un
+binaire — c'est d'ailleurs ce que dit Google quand `eas submit` refuse :
+*« Versions are identified by Android version code. »*
+
+⚠️ Et un symptôme qui n'en est pas un : Telegram affiche **toujours** une boîte
+« Ouvrir le lien · Annuler / Ouvrir » avant d'ouvrir un lien depuis un bouton de
+bot. Ce « double clic » est normal, il touchera tous les restaurateurs, et il
+n'y a rien à corriger.
+
+
 Démarré le 2026-08-19, une fois la soumission iOS envoyée à Apple. Même logique que
 [SOUMISSION-APPLE.md](SOUMISSION-APPLE.md) : ce document distingue ce qui est fait, ce qui
 est bloqué par du code, et ce qui est bloqué par un compte externe que seul le porteur du

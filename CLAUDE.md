@@ -729,7 +729,7 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 
 ⚠️ `auth.users` **n'a pas de contrainte unique sur `email`** : `ON CONFLICT (email)` échoue. Et la table `user_roles` porte `activated_at`, pas `approved_at`.
 
-## ⚠️ Une correction du client se livre sur TROIS surfaces (2026-09-09)
+## ⚠️ Une correction se livre sur QUATRE surfaces (2026-09-09)
 
 **Le même code `app/` tourne à trois endroits, qui se mettent à jour séparément.
 Corriger l'un ne corrige pas les autres.** Oublier la troisième est l'erreur
@@ -742,7 +742,8 @@ l'ancien écran ; seule la garde en base empêchait la commande de passer.
 |---|---|---|
 | **Base Supabase** | migration (MCP + fichier dans `supabase/migrations/`) | immédiat, tout le parc |
 | **Apps iOS / Android** | `eas update` sur la branche `production` | au **2ᵉ** lancement de l'app |
-| **Site web** | **déploiement Netlify À LA MAIN** | immédiat après la commande |
+| **Site web** (`app/`) | **déploiement Netlify À LA MAIN** | immédiat après la commande |
+| **Dashboard admin** (`admin/`) | **déploiement Netlify À LA MAIN**, site distinct | immédiat après la commande |
 
 ### Les deux commandes, à lancer ensemble
 
@@ -752,6 +753,9 @@ cd app && npx eas update --branch production --message "…"
 
 # 2. Web — NE PAS OUBLIER
 cd app && npx expo export -p web --output-dir dist && npx netlify deploy --prod --dir=dist
+
+# 3. Dashboard admin — SI admin/ a change (site Netlify DIFFERENT)
+cd admin && npm run build && npx netlify deploy --prod --dir=out --site=taxi-food-admin-nosybe
 ```
 
 - ⚠️ **`eas update` sans `--environment`.** EAS n'a **aucune** variable
@@ -760,7 +764,13 @@ cd app && npx expo export -p web --output-dir dist && npx netlify deploy --prod 
   `--non-interactive` publierait un bundle **sans URL Supabase**. Les variables
   viennent de `app/.env`, dont les 6 valeurs ont été confrontées une à une à
   `eas.json > build.production.env` — identiques.
-- ⚠️ **Le site web n'a AUCUN déploiement continu depuis GitHub.** Pousser sur
+- ⚠️ **L'admin est un site Netlify SÉPARÉ** (`taxi-food-admin-nosybe`, Next.js
+  exporté en statique) et se déploie à la main lui aussi. Oubli constaté le
+  2026-09-09 : il était resté sur le build du 05/09, **sans les remboursements
+  ni le pilotage du service** — le patron voyait ses commandes mais ne pouvait
+  pas agir dessus, et croyait l'outil casse. Verifier avec
+  `git log --since=<date du dernier deploiement> -- admin/`.
+- ⚠️ **Aucun des sites n'a de déploiement continu depuis GitHub.** Pousser sur
   `main` ne le met pas à jour. Site Netlify `taxi-food-commander`
   (https://taxifood.distripro207.com), `siteId` dans `app/.netlify/state.json`,
   `deploy_source: cli`. C'est exactement le piège des migrations MCP hors dépôt :

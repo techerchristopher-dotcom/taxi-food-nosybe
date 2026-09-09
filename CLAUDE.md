@@ -729,6 +729,16 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 
 ⚠️ `auth.users` **n'a pas de contrainte unique sur `email`** : `ON CONFLICT (email)` échoue. Et la table `user_roles` porte `activated_at`, pas `approved_at`.
 
+## 📓 Journal du 2026-09-09 — veille de lancement
+
+Session longue : garde « restaurant ferme », cartes coupees, comptabilite du
+rapport, temps reel, canal Telegram du patron, icones refaites, 1.2.1 soumise
+sur les deux magasins. **Tout y est consigne, avec les pieges et ce qui reste
+ouvert** : [docs/JOURNAL-2026-09-09.md](docs/JOURNAL-2026-09-09.md).
+
+⚠️ La liste « Reste ouvert » de ce journal porte des points **bloquants avant
+l'ouverture**, dont le Telegram de La Cabane qui pointe encore sur le patron.
+
 ## ⚠️ Une correction se livre sur QUATRE surfaces (2026-09-09)
 
 **Le même code `app/` tourne à trois endroits, qui se mettent à jour séparément.

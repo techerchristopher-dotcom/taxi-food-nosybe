@@ -729,6 +729,48 @@ Trois comptes e-mail + mot de passe, **rôles actifs**, un par public. Identifia
 
 ⚠️ `auth.users` **n'a pas de contrainte unique sur `email`** : `ON CONFLICT (email)` échoue. Et la table `user_roles` porte `activated_at`, pas `approved_at`.
 
+## ⚠️ Une correction du client se livre sur TROIS surfaces (2026-09-09)
+
+**Le même code `app/` tourne à trois endroits, qui se mettent à jour séparément.
+Corriger l'un ne corrige pas les autres.** Oublier la troisième est l'erreur
+commise le 2026-09-09 : la garde « restaurant fermé » avait été publiée en OTA
+et vérifiée sur mobile, pendant que **le site web restait figé sur le build du
+07/09 — 21 commits en retard**. Le client testait sur le web et voyait encore
+l'ancien écran ; seule la garde en base empêchait la commande de passer.
+
+| Surface | Comment elle se met à jour | Délai |
+|---|---|---|
+| **Base Supabase** | migration (MCP + fichier dans `supabase/migrations/`) | immédiat, tout le parc |
+| **Apps iOS / Android** | `eas update` sur la branche `production` | au **2ᵉ** lancement de l'app |
+| **Site web** | **déploiement Netlify À LA MAIN** | immédiat après la commande |
+
+### Les deux commandes, à lancer ensemble
+
+```bash
+# 1. Mobile (canal production, runtime = appVersion)
+cd app && npx eas update --branch production --message "…"
+
+# 2. Web — NE PAS OUBLIER
+cd app && npx expo export -p web --output-dir dist && npx netlify deploy --prod --dir=dist
+```
+
+- ⚠️ **`eas update` sans `--environment`.** EAS n'a **aucune** variable
+  d'environnement enregistrée côté serveur (vérifié le 2026-09-09) : passer
+  `--environment production` fait échouer la commande, et le faire avec
+  `--non-interactive` publierait un bundle **sans URL Supabase**. Les variables
+  viennent de `app/.env`, dont les 6 valeurs ont été confrontées une à une à
+  `eas.json > build.production.env` — identiques.
+- ⚠️ **Le site web n'a AUCUN déploiement continu depuis GitHub.** Pousser sur
+  `main` ne le met pas à jour. Site Netlify `taxi-food-commander`
+  (https://taxifood.distripro207.com), `siteId` dans `app/.netlify/state.json`,
+  `deploy_source: cli`. C'est exactement le piège des migrations MCP hors dépôt :
+  ce qui n'est pas automatique diverge en silence.
+- **Corriger la base D'ABORD, toujours.** C'est la seule surface qui protège
+  tout le parc immédiatement, y compris les versions anciennes qui ne recevront
+  jamais l'OTA (un client resté en 1.1.0) et le web tant qu'il n'est pas
+  redéployé. L'écran n'est jamais l'autorité : la clé anon est publique et
+  `create_order` reste appelable directement.
+
 ## Build de production (EAS) — état
 
 - **Compte Apple Developer actif** (Team « jean christopher techer », `CV2FA6NJ75`) ; certificat de distribution + provisioning profile iOS gérés par EAS (Expo server), valides jusqu'à 08/2027.

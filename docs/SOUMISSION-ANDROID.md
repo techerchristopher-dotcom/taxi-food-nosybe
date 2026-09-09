@@ -377,8 +377,30 @@ sur appareil.
 ### Ce qui reste
 
 - [ ] Fiche du magasin (textes prêts dans FICHE-PLAY-STORE.md), Data Safety, IARC
-- [ ] Clé de compte de service → `app/google-play-service-account.json`, pour que
-      `eas submit -p android` remplace le dépôt manuel du `.aab`
+- [x] **Clé de compte de service — FAIT le 2026-09-09.** `eas submit -p android`
+      remplace désormais le dépôt manuel du `.aab`, et a été validé de bout en
+      bout (1.2.1 / versionCode 8 déposé sur la piste interne).
+
+      Le compte `eas-play-submit@taxifoodnosybe.iam.gserviceaccount.com` existait
+      depuis le 21/08 dans le projet Cloud `taxifoodnosybe`, mais **sa clé
+      n'avait jamais été conservée** — et une clé Google ne se re-télécharge pas.
+      Nouvelle clé créée, posée dans `app/google-play-service-account.json`
+      (couvert par `*-service-account*.json` dans `.gitignore`).
+
+      ⚠️ Il a fallu **AUSSI l'autoriser dans le Play Console** : la clé seule ne
+      donne aucun droit. Utilisateurs et autorisations → Inviter, avec l'adresse
+      du compte de service. Droits accordés, volontairement minimaux : dépôt en
+      test **et** en production, sur la seule app Taxi Food. **Pas** de données
+      financières, **pas** d'administration — cette clé dépose des binaires, rien
+      d'autre.
+
+      ⚠️ « Accès à l'API » **n'existe plus** dans les Paramètres du Play Console
+      (cherché le 2026-09-09 dans Paramètres, Utilisateurs et autorisations et
+      Compte développeur). Le parcours passe désormais par Google Cloud pour la
+      clé, puis par l'invitation d'utilisateur côté Play.
+
+      ⚠️ **L'ancienne clé du 21/08 est toujours active** et son fichier est dans
+      la nature : à supprimer (Cloud Console → compte de service → Clés).
 - [ ] Refaire les captures d'écran (celles en stock montrent l'ancien vouvoiement)
 
 ---

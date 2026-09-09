@@ -34,14 +34,19 @@ const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.chris97416
 // appareil. C'est donc la vraie destination d'un lien partage.
 const APP = 'https://taxifood.distripro207.com';
 
-// ⚠️ TANT QUE GOOGLE N'A PAS VALIDE, LA FICHE PLAY N'EXISTE PAS.
-// Verifie le 2026-09-07 : l'URL ci-dessus repond **404 « We're sorry, the
-// requested URL was not found »**. Le bouton y envoyait pourtant tout visiteur
-// Android — c'est-a-dire la majorite des telephones a Nosy Be. Un client qui
-// recoit un plat par WhatsApp, clique, et tombe sur une page Google morte est
-// un client perdu, et personne ne le sait.
-// Passer a `true` LE JOUR de la publication, pas avant.
-const PLAY_PUBLIE = false;
+// ✅ FICHE PLAY EN LIGNE — verifie le 2026-09-09 : l'URL ci-dessus repond 200,
+// titre « Taxi Food - Apps on Google Play ». Le drapeau est donc passe a `true`.
+//
+// Il avait ete pose a `false` le 2026-09-07, quand la fiche repondait encore 404 :
+// le bouton envoyait alors tout visiteur Android — la majorite des telephones a
+// Nosy Be — sur une page Google morte. La garde etait juste ce jour-la.
+//
+// ⚠️ LA LECON, elle, reste : ce drapeau ne se met pas a jour tout seul. Il a
+// survecu deux jours a la publication, pendant lesquels aucun partage WhatsApp
+// n'a propose l'app aux clients Android, sans que rien ne le signale. Avant de
+// citer ce fichier comme source de verite sur l'etat des magasins, VERIFIER
+// l'URL — un commentaire date n'est pas un fait present.
+const PLAY_PUBLIE = true;
 const OG_DEFAUT = `${SITE}/og/taxi-food-nosy-be.jpg`;
 
 /**

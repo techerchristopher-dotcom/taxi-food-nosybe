@@ -886,18 +886,57 @@ erreur réelle :
 |---|---|
 | bas du badge Google Play **== 0 px** du bas du bloc promo | l'écart avait été *estimé* à 38 px ; mesuré au `getBoundingClientRect`, c'était **40**. D'où `COL_H = 401`. |
 | ligne d'ingrédients sur **UNE** ligne | le format story multipliait tout par k = 1,34 — faux : **une story n'agrandit rien**, même largeur qu'un carré, seule la photo grandit. À deux lignes, tout le bas du visuel se décale. |
-| **≥ 20 px** d'air croûte↔pastille et croûte↔QR | un décalage `dx` par pizza a été essayé : **2 sur 8** seulement passaient les deux contraintes. |
+| **≥ 20 px** d'air entre le plat et la pastille du logo, le QR **et** le badge promo | un décalage `dx` par pizza a été essayé : **2 sur 8** seulement passaient. Et l'air se mesure sur le **masque alpha réel**, pas sur un cercle équivalent — sur un panini de 1,95:1 l'approximation se trompait de 100 px. |
 
 💡 **Placement de série, pas placement par plat** (`DEBORD_W/CX/BAS` = 760/572/685, identiques
 pour les huit pizzas). Le `dx` au cas par cas donnait *une collection, pas une série* — huit
 tailles de pizza différentes. Le problème de fond n'était pas l'air, c'était la cohérence.
 
-💡 **Détourage par la COULEUR, pas par la forme.** Le fond studio et l'ardoise sont
-parfaitement neutres (R−B mesuré = 0,0), la nourriture reste chaude même carbonisée (R−B
-jusqu'à 100) → seuil `R − B > 12`, plus `luminance > 120` pour rattraper le fromage blanc.
-Deux méthodes échouées avant, notées pour ne pas être refaites : le **contour convexe** pontait
-la croûte brûlée vers l'ardoise (savoyarde, napolitaine, paysanne, maître coq) ; la **médiane
-polaire** mordait dans les croûtes pâles.
+💡 **Détourage par la COULEUR** (`detourage.py`) — **valable pour les pizzas seulement.** Le
+fond studio et l'ardoise sont neutres (R−B mesuré = 0,0), la nourriture reste chaude même
+carbonisée (R−B jusqu'à 100) → seuil `R − B > 12`, plus `luminance > 120` pour le fromage
+blanc. Deux méthodes échouées avant : le **contour convexe** pontait la croûte brûlée vers
+l'ardoise ; la **médiane polaire** mordait dans les croûtes pâles.
+
+⛔ **Ce détourage ne tient PAS les plats posés à plat** (burger, sandwich, tacos). Mesuré sur
+La Cabane : le résidu d'ardoise sous les frites fait **lum 36 / R−B 60**, le steak saisi
+**42 / 59**. C'est l'ombre chaude des frites sur la pierre — chromatiquement identique à de la
+viande grillée. **Aucun seuil ne les sépare** ; s'acharner sur les paramètres est une perte de
+temps.
+
+💡 **Pour tout le reste : `packshot.py`.** Trois temps. 1. `gpt_image_2` **régénère** la photo
+réelle sur fond blanc — plat identique, ardoise et accessoires retirés (prompt : « EXACT same
+dish », liste des composants à garder, puis REMOVE the slate/backdrop/props/shadows, et
+toujours no text / no logo). 2. `remove_background` de Higgsfield sort l'alpha. 3. `packshot.py`
+pose l'**ombre de contact**, tirée de la silhouette du plat lui-même (bande basse de l'alpha,
+écrasée, floutée) — pas une ellipse générique : un kebab ne se pose pas comme un burger.
+⚠️ Chaque régénération se regarde **à côté de l'original** avant d'être gardée.
+
+### Le fond et la pastille appartiennent à la SÉRIE
+
+Trois choses ne sont plus dans le gabarit mais dans la série, parce qu'elles dépendent de la
+forme des plats :
+
+| | `SERIE_PIZZA` | `SERIE_CABANE` |
+|---|---|---|
+| boîte du plat | 760 × 1000, cx 572, bas 685 | 820 × 520, cx 640, bas 600 |
+| fond | `studio` | `creme` |
+| pastille code | 186 px en (14, 20) | 206 px en (26, 40) |
+
+- ⚠️ **`SERIE_PIZZA['haut']` vaut 1000, pas 760.** À 760 les pizzas un peu plus hautes que
+  larges étaient rabotées de 12 px et la série validée changeait sous nos pieds.
+- ⚠️ **Le fond sombre est fait pour les pizzas.** Un tacos, un kebab, un panini sont beiges :
+  sur anthracite ils virent au terne, et le pain du burger s'y noie. Rouge et ambre écartés
+  aussi (le rouge noie le filet or, l'ambre est la même famille de teinte que le pain).
+- ⚠️ **La pastille du code promo est plus petite sur les pizzas** (186 contre 206) : une pizza
+  ronde de 760 px occupe déjà le coin haut-gauche et la chevauchait de 8 à 20 px. Taille
+  cherchée par balayage sur les huit, pas estimée.
+- ⚠️ **Piège du sélecteur.** La pastille contient elle aussi « 1re commande » et un
+  `border-radius` : le contrôle qui identifiait le bloc promo par son texte désignait le badge
+  — écart **−751 px** au lieu de 0. Il prend désormais le plus bas des candidats. Ne jamais
+  identifier un élément par son seul texte quand le gabarit peut le répéter ailleurs.
+
+`rendre.py` mesure maintenant **trois** distances au plat : pastille du logo, QR, et badge.
 
 ⚠️ Google Fonts doit être **bloqué** (`pg.route('**://fonts.g**', abort)`) pendant les rendus
 Playwright, sinon la page ne finit jamais de charger. Archivo est installée en local.

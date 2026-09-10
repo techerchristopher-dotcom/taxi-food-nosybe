@@ -660,3 +660,18 @@ texte désignait donc le badge, en haut — écart mesuré **−751 px** au lieu
 prenant le **plus bas** des candidats. Morale : ne jamais identifier un élément par son seul
 texte quand le gabarit peut le répéter ailleurs. Sans le contrôle automatique, les huit
 visuels partaient faux.
+
+### La pastille sur les pizzas — plus petite, et c'est mesuré
+
+À 206 px, la pastille **chevauche la pizza sur les huit**, de −8 à −20 px : une pizza ronde de
+760 px occupe déjà le coin haut-gauche. Balayage sur les huit (diamètre 140→210, x 14→38,
+y 20→58) : **186 px en (14, 20)** est la plus grande qui dégage, avec 21 px d'air.
+
+```python
+BADGE_PIZZA  = dict(d=186, x=14, y=20)
+SERIE_PIZZA  = dict(..., badge='remise', badge_geo=BADGE_PIZZA)
+SERIE_CABANE = dict(..., badge='remise')          # 206 px en (26, 40) par defaut
+```
+
+Les huit pizzas gardent leur **fond sombre** : elles sont foncées et texturées, elles s'y
+détachent. Seul le fond des plats clairs a changé.

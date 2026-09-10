@@ -68,7 +68,13 @@ DEBORD_BAS = 685      # bas du plat : 105 px de debord sur le rouge
 # haut=1000 ne mord jamais sur une pizza : c'est la largeur qui commande, comme
 # avant. Le mettre a 760 rabotait jusqu'a 12 px les pizzas un peu plus hautes que
 # larges — mesure, donc corrige.
-SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS, fond='studio')
+# Une pizza ronde de 760 px occupe deja le coin haut-gauche : a 206 px la pastille
+# la chevauche de 8 a 20 px. Taille et position cherchees par balayage, pas
+# estimees — 186 px en (14, 20) est la plus grande qui degage les huit (21 px).
+BADGE_PIZZA = dict(d=186, x=14, y=20)
+
+SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS, fond='studio',
+                    badge='remise', badge_geo=BADGE_PIZZA)
 # La Cabane : des plats HORIZONTAUX (1,6 a 1,95:1). Le QR occupe tout ce qui est
 # a droite de x=828 sous y=608, la pastille tout ce qui est a gauche de x=242
 # entre y=478 et 658. Une pizza ronde se faufile entre les deux parce qu'elle est
@@ -108,7 +114,7 @@ def debord(src_w, src_h, bbox, cadrage=46, ph=PHOTO_H, dx=0, dy=0):
 # Mesure sur les huit plats de La Cabane : le plat ne descend jamais sous
 # x = 238 dans la bande y 30-300, et il ne reste que 51 px a droite. La pastille
 # va donc en HAUT A GAUCHE, et sa taille est bornee par cette mesure.
-BADGE_D = 206          # diametre : 24 px de marge au bord, 24 px au plat
+BADGE_D = 206          # La Cabane : plats horizontaux, 61 a 137 px d'air
 BADGE_X = 26
 BADGE_Y = 40
 
@@ -288,7 +294,7 @@ def mode_emploi(resto, sous_titre, logo, etapes, faits, bas_promo=1009,
 
 
 def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
-           cadrage=46, h=1080, h_col=COL_H, plat=None, fond=None, badge=None, code='TAXIFOOD50'):
+           cadrage=46, h=1080, h_col=COL_H, plat=None, fond=None, badge=None, code='TAXIFOOD50', d=None, x=None, y=None):
     """Le gabarit. Seuls les textes, la photo et le logo changent."""
     k = 1.0
     f = lambda v: round(v*k)
@@ -299,7 +305,7 @@ def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
 
   <div style="position: absolute; top: {ph}px; left: 0; width: 1080px; height: {FILET}px; background: {OR};"></div>
 {_debord(plat)}
-{_badge_code(badge, code)}
+{_badge_code(badge, code, d, x, y)}
 
   <div style="position: absolute; top: {ph - round(logo_d*0.52)}px; left: {PAD_H}px; z-index: 10; width: {logo_d}px; height: {logo_d}px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 14px 36px rgba(0,0,0,0.45); overflow: hidden;">
     <img src="{logo}" alt="Logo" style="width: {logo_d}px; height: {logo_d}px; object-fit: cover; display: block;">

@@ -25,7 +25,10 @@ g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
 AIR_MINI = 20.0
 PASTILLE = (g.PAD_H + g.LOGO_D/2, g.PHOTO_H - round(g.LOGO_D*0.52) + g.LOGO_D/2)
 QR_X, QR_Y = 828, 608          # bord gauche et haut du bloc QR
-BADGE = (g.BADGE_X + g.BADGE_D/2, g.BADGE_Y + g.BADGE_D/2, g.BADGE_D/2)   # cx, cy, rayon
+def geo_badge(p):
+    """cx, cy, rayon de la pastille pour cette serie."""
+    b = serie(p).get('badge_geo') or dict(d=g.BADGE_D, x=g.BADGE_X, y=g.BADGE_Y)
+    return b['x'] + b['d']/2, b['y'] + b['d']/2, b['d']/2
 
 
 def cadre(p):
@@ -57,7 +60,8 @@ def air(p, pas=4):
     a_logo = np.hypot(X-PASTILLE[0], Y-PASTILLE[1]).min() - g.LOGO_D/2
     sous_qr = Y >= QR_Y
     a_qr = (QR_X - X[sous_qr]).min() if sous_qr.any() else 999.0
-    a_badge = np.hypot(X-BADGE[0], Y-BADGE[1]).min() - BADGE[2]
+    bx, by, br = geo_badge(p)
+    a_badge = np.hypot(X-bx, Y-by).min() - br if serie(p).get('badge') else 999.0
     return round(float(a_logo), 1), round(float(a_qr), 1), round(float(a_badge), 1)
 
 
@@ -68,7 +72,7 @@ def html(slug, web=False):
                     ligne_lieu=p['lieu'], logo=p['logo'], h=1080,
                     plat=dict(img=p['detour_web'] if web else p['detour'], **place(p)),
                     fond=g.FONDS[serie(p).get('fond', 'studio')],
-                    badge=serie(p).get('badge'))
+                    badge=serie(p).get('badge'), **(serie(p).get('badge_geo') or {}))
 
 
 async def rendre(slugs):

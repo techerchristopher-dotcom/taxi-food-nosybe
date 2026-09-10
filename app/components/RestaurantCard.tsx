@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { CategoryTag, Restaurant, formatTime } from '../data/types';
+import { CategoryTag, Restaurant, formatTime, todayServicesLabel } from '../data/types';
 import { formatAr } from '../theme/tokens';
 
 /** Ligne « meta » : délai estimé + frais de livraison. */
@@ -19,6 +19,32 @@ function Meta({ eta, fee }: { eta: string; fee: number }) {
         <Text style={styles.metaText}>{formatAr(fee)}</Text>
       </View>
     </View>
+  );
+}
+
+/**
+ * Horaires du jour, collés au badge « Ouvert ».
+ *
+ * Affichés UNIQUEMENT quand le restaurant est ouvert, et jamais pour un « bientôt
+ * disponible » : quand c'est fermé, la ligne « Ouvre à 11h » juste en dessous répond
+ * déjà à la question, et mieux — empiler une plage horaire, un badge « Fermé » et une
+ * heure d'ouverture ferait trois informations de temps pour une seule question.
+ *
+ * ⚠️ `todayServicesLabel` et pas `todayHoursLabel` : Chez Bidul & Truc sert midi ET
+ * soir. Le libellé rend « 11h30 – 15h · 18h – 22h ». N'afficher que le premier service
+ * donnerait, à 19 h, un horaire déjà terminé à côté d'un badge « Ouvert » juste.
+ *
+ * Chaîne vide si aucun horaire n'est renseigné — on masque, on n'affiche pas un tiret
+ * solitaire.
+ */
+function HorairesDuJour({ r, sombre }: { r: Restaurant; sombre?: boolean }) {
+  if (!r.isOpen || r.listingStatus === 'coming_soon') return null;
+  const label = todayServicesLabel(r.todayServices, r.todayHours);
+  if (!label) return null;
+  return (
+    <Text style={[styles.horaires, sombre && styles.horairesSombre]} numberOfLines={1}>
+      {label}
+    </Text>
   );
 }
 
@@ -48,7 +74,10 @@ export function FeaturedRestaurantCard({
   return (
     <Pressable onPress={onPress} style={styles.featured}>
       <View style={styles.banner}>
-        <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
+        <View style={styles.bannerGauche}>
+          <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
+          <HorairesDuJour r={r} sombre />
+        </View>
         {r.popular ? (
           <View style={styles.popular}>
             <Text style={styles.popularText}>{t('restaurantCard.popular')}</Text>
@@ -86,6 +115,7 @@ export function RestaurantRow({
         <View style={styles.rowHead}>
           <Text style={styles.rowName}>{r.name}</Text>
           <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
+          <HorairesDuJour r={r} />
         </View>
         <Text style={styles.sub}>
           {r.cuisineType} — {r.zone}
@@ -139,7 +169,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadow.card,
   },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // ⚠️ `flexWrap` : le nom, le badge et l'horaire ne tiennent pas toujours sur une
+  // ligne (« Chez Bidul & Truc » + « Ouvert » + « 11h30 – 15h · 18h – 22h »). Sans lui,
+  // le nom du restaurant se ferait tronquer pour laisser la place a l'horaire — le nom
+  // compte plus. Avec, l'horaire passe simplement a la ligne.
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  bannerGauche: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  horaires: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, flexShrink: 1 },
+  // Sur le bandeau photo de la carte vedette, le gris clair devient illisible.
+  horairesSombre: { fontFamily: fonts.semibold, color: colors.textDark },
   name: { fontFamily: fonts.semibold, fontSize: 16, color: colors.ink },
   rowName: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink, flexShrink: 1 },
   sub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },

@@ -675,3 +675,50 @@ SERIE_CABANE = dict(..., badge='remise')          # 206 px en (26, 40) par defau
 
 Les huit pizzas gardent leur **fond sombre** : elles sont foncées et texturées, elles s'y
 détachent. Seul le fond des plats clairs a changé.
+
+---
+
+## 12. Les treize pizzas — ce que les cinq dernières ont changé (2026-09-10)
+
+La série ne comptait que **8 des 13 pizzas** de la carte. Les cinq manquantes — Reine,
+Toscane, Carnivore, Végétarienne, Margherita — ont demandé trois corrections.
+
+### Elles étaient photographiées de trois quarts
+
+Les huit premières sont vues **du dessus**. Les cinq nouvelles étaient prises de trois quarts :
+les découper telles quelles donnait cinq ellipses au milieu de huit cercles. Régénérées en vue
+de dessus (`gpt_image_2`), matées, posées sans ombre.
+
+⚠️ **Les pizzas n'ont PAS d'ombre de contact** (`packshot(..., opacite=0)`). Vue du dessus, une
+pizza ne pose sur rien : une ombre sous un disque à plat sonne faux. C'est le seul plat dans ce
+cas.
+
+### Deux dérives attrapées au contrôle visuel
+
+- **La Reine avait perdu sa base tomate** et ressortait en pizza blanche, alors que la carte
+  dit « Tomate, gouda, mozzarella ». Relancée avec une consigne explicite : « CRITICAL: this is
+  a RED TOMATO SAUCE pizza… It is NOT a white or cream based pizza ».
+- **La Végétarienne était elliptique** (1983 × 1791, ratio 1,107, contre 1,00 pour les autres) :
+  la caméra n'était pas perpendiculaire. Relancée avec « the camera must be EXACTLY
+  perpendicular… a PERFECT CIRCLE — not an ellipse ».
+
+Aucune des deux n'aurait été vue sans la comparaison systématique avec l'original.
+
+### La pastille a dû rétrécir encore
+
+Les cinq nouvelles pizzas sont un peu **plus hautes que larges**, donc elles montent plus haut
+dans le coin. À 186 px l'air tombait à **11,7 px**. Re-résolu par balayage sur les **treize** :
+
+```python
+BADGE_PIZZA = dict(d=184, x=10, y=10)     # air minimale 21,1 px (la Vegetarienne)
+```
+
+💡 **Une géométrie résolue sur un sous-ensemble se re-résout quand la série s'agrandit.** Le
+186 px n'était pas faux, il était valable pour huit pizzas. Ajouter cinq plats a changé la
+contrainte — et seul le contrôle automatique l'a signalé.
+
+### Ce qu'il faut savoir sur les sources
+
+⚠️ **Quatre des cinq photos venaient du dossier `produits/taxi-be/`**, pas de celui de Bidul &
+Truc : `pizza-reine.png`, `pizza-bolognaise.png` (pour la « Carnivore »), `pizza-vegetarienne.png`,
+`pizza-margherita.png`. Seule la Toscane avait sa photo dans `chez-bidul-truc/`.

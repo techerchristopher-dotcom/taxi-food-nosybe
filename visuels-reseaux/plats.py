@@ -56,6 +56,17 @@ PLATS = {
  'maitrecoq': _pizza('maitrecoq', 'Maître Coq', 'Tomate, mozzarella, poulet', '27 000 Ar',
     'Tomate, gouda, mozzarella, poulet'),
 
+ 'reine': _pizza('reine', 'Reine', 'Jambon, champignons, olives noires', '29 000 Ar',
+    'Tomate, gouda, mozzarella, jambon de porc, champignons, olive noire'),
+ 'toscane': _pizza('toscane', 'Toscane', 'Crème, lardon, champignon, œuf', '29 000 Ar',
+    'Crème, lardon, champignon, mozzarella, œuf'),
+ 'carnivore': _pizza('carnivore', 'Carnivore', 'Viande hachée, oignon, mozzarella', '27 000 Ar',
+    'Tomate, gouda, mozzarella, viande hachée, oignon'),
+ 'vegetarienne': _pizza('vegetarienne', 'Végétarienne', 'Aubergine, poivron, courgette, oignon', '27 000 Ar',
+    'Tomate, aubergine, poivron, courgette, gouda, mozzarella, oignon, herbes de Provence'),
+ 'margherita': _pizza('margherita', 'Margherita', 'Tomate, mozzarella, olive, origan', '25 000 Ar',
+    'Tomate, mozzarella, olive, origan'),
+
  # ---------- La Cabane — Ambatoloaka ----------
  # Pas de milkshake ici : un verre transparent sur fond neutre est invisible pour
  # un detourage par la couleur (le pied du verre disparait). Les boissons se

@@ -70,8 +70,10 @@ DEBORD_BAS = 685      # bas du plat : 105 px de debord sur le rouge
 # larges — mesure, donc corrige.
 # Une pizza ronde de 760 px occupe deja le coin haut-gauche : a 206 px la pastille
 # la chevauche de 8 a 20 px. Taille et position cherchees par balayage, pas
-# estimees — 186 px en (14, 20) est la plus grande qui degage les huit (21 px).
-BADGE_PIZZA = dict(d=186, x=14, y=20)
+# estimees. Re-resolu sur les TREIZE pizzas (les cinq dernieres sont un peu plus
+# hautes que larges, elles montent donc plus haut dans le coin) : 184 px en
+# (10, 10), air minimale 21,1 px, la Vegetarienne etant la plus serree.
+BADGE_PIZZA = dict(d=184, x=10, y=10)
 
 SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS, fond='studio',
                     badge='remise', badge_geo=BADGE_PIZZA)

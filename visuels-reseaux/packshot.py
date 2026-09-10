@@ -25,10 +25,19 @@ ENCRE   = 6      # l'ombre n'est jamais noir pur
 
 
 def packshot(src, out, bande=BANDE, ecras=ECRAS, opacite=OPACITE, flou=FLOU, dy=0.0):
-    """dy : decale l'ombre vers le bas, en part de la hauteur (pour un plat en hauteur)."""
+    """dy : decale l'ombre vers le bas, en part de la hauteur (pour un plat en hauteur).
+    opacite=0 : aucune ombre. C'est le cas des pizzas — vues du dessus, elles ne
+    « posent » sur rien, et une ombre de contact sous un disque vu a plat sonne faux."""
     net = Image.open(src).convert('RGBA')
     net = net.crop(net.getbbox())
     W, H = net.size
+    if not opacite:
+        net.save(out)
+        json.dump({'bbox': [0, 0, W, H], 'src': [W, H]},
+                  open(out.rsplit('.', 1)[0] + '.json', 'w'))
+        web = net.copy(); web.thumbnail((1000, 1000))
+        web.save(out.replace('det-', 'web-').rsplit('.', 1)[0] + '.webp', 'WEBP', quality=84, method=6)
+        return net.size
 
     al = np.asarray(net)[:, :, 3]
     y0 = int(H * (1 - bande))

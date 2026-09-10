@@ -7,7 +7,9 @@ Aucun reglage au cas par cas : le placement est celui de la serie
   2. la ligne secondaire tient sur UNE ligne
   3. >= 20 px d'air entre la croute et la pastille, et entre la croute et le QR
 """
-import asyncio, importlib.util, json, math, os, sys
+import asyncio, importlib.util, json, os, sys
+import numpy as np
+from PIL import Image
 D = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, D)
 # Dossier de travail : la ou vivent les det-<slug>.png/.json et ou tombent les
@@ -22,20 +24,35 @@ spec = importlib.util.spec_from_file_location('g', os.path.join(D, 'gabarit.py')
 g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
 AIR_MINI = 20.0
 PASTILLE = (g.PAD_H + g.LOGO_D/2, g.PHOTO_H - round(g.LOGO_D*0.52) + g.LOGO_D/2)
+QR_X, QR_Y = 828, 608          # bord gauche et haut du bloc QR
 
 
 def cadre(p):
     return json.load(open(p['detour'].rsplit('.', 1)[0] + '.json'))['bbox']
 
 
-def air(p):
-    bb = cadre(p); pos = g.debord_serie(bb)
-    h = pos['width'] * (bb[3]-bb[1]) / (bb[2]-bb[0])
-    cx, cy, r = pos['left']+pos['width']/2, pos['top']+h/2, pos['width']/2
-    a_logo = math.hypot(cx-PASTILLE[0], cy-PASTILLE[1]) - r - g.LOGO_D/2
-    dy = 608 - cy
-    a_qr = 828 - (cx + math.sqrt(max(r*r - dy*dy, 0)))
-    return round(a_logo, 1), round(a_qr, 1)
+def place(p):
+    return g.debord_boite(cadre(p), getattr(g, 'SERIE_' + p['serie']))
+
+
+def air(p, pas=4):
+    """Air reelle, mesuree sur le masque du plat — pas sur un cercle equivalent.
+
+    Le cercle marchait pour huit pizzas rondes. Un panini de 1,95:1 n'est pas un
+    cercle : approximer, c'est se mentir de 100 px. On lit donc l'alpha du PNG
+    detoure, on le place, et on mesure la vraie distance.
+    """
+    pos = place(p)
+    im = Image.open(p['detour']).convert('RGBA')
+    ech = pos['width'] / im.width
+    al = np.asarray(im.resize((max(1, round(im.width*ech/pas)),
+                               max(1, round(im.height*ech/pas))), Image.BILINEAR))[:, :, 3]
+    ys, xs = np.nonzero(al > 96)
+    X = pos['left'] + xs*pas; Y = pos['top'] + ys*pas
+    a_logo = np.hypot(X-PASTILLE[0], Y-PASTILLE[1]).min() - g.LOGO_D/2
+    sous_qr = Y >= QR_Y
+    a_qr = (QR_X - X[sous_qr]).min() if sous_qr.any() else 999.0
+    return round(float(a_logo), 1), round(float(a_qr), 1)
 
 
 def html(slug, web=False):
@@ -43,8 +60,7 @@ def html(slug, web=False):
     return g.visuel(photo=None, alt=p['titre'], titre=p['titre'],
                     secondaire=p['secondaire'], prix=p['prix'],
                     ligne_lieu=p['lieu'], logo=p['logo'], h=1080,
-                    plat=dict(img=p['detour_web'] if web else p['detour'],
-                              **g.debord_serie(cadre(p))))
+                    plat=dict(img=p['detour_web'] if web else p['detour'], **place(p)))
 
 
 async def rendre(slugs):

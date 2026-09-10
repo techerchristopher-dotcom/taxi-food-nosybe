@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Detourage d'un plat rond sur fond sombre.
+"""Detourage d'un plat sur fond studio sombre (pizza, burger, sandwich, crepe...).
 
 Deux essais rates avant celui-ci, et la raison est la meme : on separait le
 plat du fond par la LUMINOSITE. Or une croute brulee est aussi sombre que
@@ -12,6 +12,12 @@ chaude meme quand elle est noire (R - B jusqu'a 100). Le seuil porte donc sur
 R - B, avec un rattrapage sur la luminosite pour le fromage blanc, neutre mais
 lumineux. Le median polaire ne sert plus qu'a lisser le bord.
 
+Et il ne lisse QUE les formes rondes. Reconstruire un masque en etoile depuis
+le centre marche sur une pizza ; sur un sandwich allongé pose sur l'ardoise, le
+rayon balaye la pierre sous le pain et la ramene avec. La regle n'est pas « rond
+ou pas » a l'oeil : on compare l'aire avant et apres. Si le lissage GAGNE plus de
+ENFLURE %, c'est qu'il enjambe — on garde le masque brut, deja ferme et bouche.
+
 Sortie : PNG a fond transparent + .json du cadre.
 """
 from PIL import Image, ImageFilter
@@ -22,6 +28,21 @@ ANGLES  = 1440
 FENETRE = 15          # ~2 degres de chaque cote : on lisse, on ne redessine pas
 CHROMA  = 12          # R - B : le fond et l'ardoise sont neutres, la nourriture non
 CLAIR   = 120         # fromage blanc : neutre mais lumineux
+ENFLURE = 0.04        # au-dela de +4 % d'aire, le lissage polaire enjambe : on l'annule
+CHROMA_FORT = 32      # « c'est de la nourriture, sans discussion »
+PORTEE  = 6           # de combien de pixels le sur (fort) peut recruter du douteux (faible)
+RABOT   = 1           # la fermeture invente de la matiere sur des pixels neutres : on la rabote
+
+# L'ardoise recoit un rebond chaud de la nourriture : elle passe le seuil CHROMA
+# et se retrouve collee au plat. Deux garde-fous, tous deux mesures sur les
+# photos de La Cabane (sandwichs et burgers poses a plat, ou l'ardoise est
+# largement visible sous l'aliment) :
+#   - reconstruction geodesique : on part du certain (CHROMA_FORT ou tres clair)
+#     et on ne recrute le douteux que sur PORTEE pixels. L'ardoise, reliee au
+#     plat par sa seule ligne de contact, ne se propage pas.
+#   - rabot : apres la fermeture morphologique, on intersecte avec le douteux
+#     dilate de RABOT pixels. Sans ca, une fermeture 9x9 x3 enjambe le plat vers
+#     l'ardoise voisine et « bouche le trou » entre les deux.
 
 def _profil_polaire(m):
     ys, xs = np.nonzero(m)
@@ -54,16 +75,27 @@ def detoure_plat(src, out, seuil=80, flou=1.4, marge=2):
     lum = a.mean(axis=2)
     # le fond studio et l'ardoise sont parfaitement neutres (R = B) ; la croute,
     # meme brulee, reste chaude. C'est ce qui les separe, pas la luminosite.
-    m = ((a[:, :, 0] - a[:, :, 2]) > CHROMA) | (lum > CLAIR)
+    ch = a[:, :, 0] - a[:, :, 2]
+    fort   = (ch > CHROMA_FORT) | (lum > CLAIR)     # certainement de la nourriture
+    faible = (ch > CHROMA)      | (lum > CLAIR)     # douteux : bord du plat, ou ardoise eclairee
+    m = fort.copy()
+    for _ in range(PORTEE):
+        m = ndimage.binary_dilation(m, np.ones((3, 3))) & faible
     lab, n = ndimage.label(m)
     m = lab == int(np.argmax(ndimage.sum(m, lab, range(1, n+1)))) + 1
-    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, np.ones((9, 9)), iterations=3))
+    m = ndimage.binary_fill_holes(ndimage.binary_closing(m, np.ones((9, 9))))
     m = ndimage.binary_opening(m, np.ones((5, 5)), iterations=2)
+    m = ndimage.binary_fill_holes(m & ndimage.binary_dilation(faible, np.ones((3, 3)), iterations=RABOT))
     lab, n = ndimage.label(m)
     m = ndimage.binary_fill_holes(lab == int(np.argmax(ndimage.sum(m, lab, range(1, n+1)))) + 1)
 
     centre, rayons = _profil_polaire(m)
-    m = _masque_depuis_profil(m.shape, centre, rayons)
+    lisse = _masque_depuis_profil(m.shape, centre, rayons)
+    aire = m.sum()
+    gain = (lisse.sum() - aire) / aire
+    if gain <= ENFLURE:
+        m = lisse                       # forme ronde : le lissage nettoie le bord
+    # sinon : forme allongee, on garde le masque brut
 
     ys, xs = np.nonzero(m)
     alpha = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(flou))
@@ -72,8 +104,10 @@ def detoure_plat(src, out, seuil=80, flou=1.4, marge=2):
     res.crop(boite).save(out)
     json.dump({'bbox': list(boite), 'src': list(im.size)},
               open(out.rsplit('.', 1)[0] + '.json', 'w'))
-    return boite, im.size
+    return boite, im.size, round(gain * 100, 1)
 
 if __name__ == '__main__':
     import sys
-    print(detoure_plat(sys.argv[1], sys.argv[2]))
+    b, taille, gain = detoure_plat(sys.argv[1], sys.argv[2])
+    print(f"{sys.argv[2]}  cadre {b}  source {taille}  "
+          f"lissage polaire {'applique' if gain <= ENFLURE*100 else f'ANNULE (+{gain} %)'}")

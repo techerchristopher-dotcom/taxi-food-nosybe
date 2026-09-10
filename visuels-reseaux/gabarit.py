@@ -46,13 +46,37 @@ DEBORD_W   = 760      # largeur du plat, quelle que soit la photo source
 DEBORD_CX  = 572      # centre horizontal : equilibre l'air pastille / l'air QR
 DEBORD_BAS = 685      # bas du plat : 105 px de debord sur le rouge
 
-def debord_serie(bbox):
-    """Ou poser le plat detoure. Aucun reglage : la serie impose la place."""
+# Une serie = une BOITE, pas une largeur. Imposer la largeur marche tant que les
+# plats ont la meme forme (huit pizzas rondes), et casse des qu'ils ne l'ont plus :
+# un panini de 1,95:1 sort du cadre, un milkshake de 0,50:1 fait 1 500 px de haut.
+# Le plat s'inscrit donc dans une boite, cale en bas sur la ligne de fuite et
+# centre. Pour une pizza carree la boite redonne exactement 760 px : la serie
+# pizza est inchangee (verifie, ecart 0 px sur les huit).
+# haut=1000 ne mord jamais sur une pizza : c'est la largeur qui commande, comme
+# avant. Le mettre a 760 rabotait jusqu'a 12 px les pizzas un peu plus hautes que
+# larges — mesure, donc corrige.
+SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS)
+# La Cabane : des plats HORIZONTAUX (1,6 a 1,95:1). Le QR occupe tout ce qui est
+# a droite de x=828 sous y=608, la pastille tout ce qui est a gauche de x=242
+# entre y=478 et 658. Une pizza ronde se faufile entre les deux parce qu'elle est
+# etroite en bas ; un panini, non. C'est la HAUTEUR qui commande donc ici, et la
+# largeur ne mord jamais. Cherche par balayage, pas estime.
+SERIE_CABANE = dict(larg=820, haut=520, cx=640, bas=600)
+
+
+def debord_boite(bbox, serie=None):
+    """Ou poser le plat detoure. Aucun reglage par plat : la serie impose la place."""
+    s = serie or SERIE_PIZZA
     w = bbox[2] - bbox[0]; h = bbox[3] - bbox[1]
-    haut = DEBORD_W * h / w
-    return {'left': round(DEBORD_CX - DEBORD_W/2, 1),
-            'top': round(DEBORD_BAS - haut, 1),
-            'width': float(DEBORD_W)}
+    k = min(s['larg'] / w, s['haut'] / h)
+    return {'left': round(s['cx'] - w*k/2, 1),
+            'top': round(s['bas'] - h*k, 1),
+            'width': round(w*k, 1)}
+
+
+def debord_serie(bbox):
+    """Compatibilite : la serie pizza."""
+    return debord_boite(bbox, SERIE_PIZZA)
 
 
 def debord(src_w, src_h, bbox, cadrage=46, ph=PHOTO_H, dx=0, dy=0):

@@ -490,3 +490,87 @@ mêmes polices, même colonne droite**, seule la partie gauche diffère :
 Trois restaurants sur cinq n'ont aucun horaire enregistré. C'est le trou le plus coûteux :
 sans horaires, le post ne peut pas dire quand on peut commander, et c'est la première question
 que se pose quelqu'un qui voit passer l'annonce.
+
+---
+
+## 9. La série La Cabane — ce que huit plats plats ont appris au gabarit (2026-09-10)
+
+Les huit visuels de La Cabane sont sortis du même gabarit que les pizzas. Trois choses ont dû
+changer, et aucune n'était prévisible depuis les pizzas seules.
+
+### Une série, c'est une BOÎTE, pas une largeur
+
+`DEBORD_W = 760` marchait tant que les plats avaient la même forme. Huit pizzas font toutes
+1,00:1. Les plats de La Cabane font 1,63 à 1,95:1 — un panini à 760 px de large sort du cadre,
+un milkshake à 760 px de large ferait 1 520 px de haut.
+
+Le plat s'inscrit donc dans une **boîte**, calé en bas sur la ligne de fuite et centré :
+
+```python
+SERIE_PIZZA  = dict(larg=760, haut=1000, cx=572, bas=685)   # haut ne mord jamais
+SERIE_CABANE = dict(larg=820, haut=520,  cx=640, bas=600)   # c'est la hauteur qui commande
+```
+
+⚠️ `SERIE_PIZZA['haut']` vaut **1000, pas 760**. À 760, les pizzas un peu plus hautes que larges
+étaient rabotées de 12 px et la série validée changeait sous nos pieds. Mesuré : avec 1000,
+l'écart aux huit visuels d'origine est de **0,00 px**.
+
+### Pourquoi La Cabane a sa propre boîte
+
+La pastille du logo occupe x 62–242 entre y 478 et 658. Le QR occupe tout ce qui est à droite
+de x 828 sous y 608. **Une pizza ronde se faufile entre les deux parce qu'elle est étroite en
+bas. Un panini, non** : à y 608 il fait encore toute sa largeur.
+
+Cherché par balayage, pas estimé — 5 tailles × 4 hauteurs × 17 centres × 15 lignes de fuite,
+chaque combinaison mesurée sur le vrai masque alpha. Deux familles de solutions :
+
+| | boîte | air | ce que ça donne |
+|---|---|---|---|
+| A | 900×280, bas 700 | 45 / 40 | gros débord, mais **420 px de fond gris vide** en haut |
+| **B** | **820×520, bas 600** | **26 / libre** | plat plein cadre, débord de 28 px — **retenu** |
+
+A était conforme et laid. Le contrôle automatique ne voit pas le vide : il vérifie les
+collisions, pas la composition. **Regarder le rendu reste obligatoire.**
+
+### L'air se mesure sur le masque, pas sur un cercle équivalent
+
+`air()` approximait le plat par un cercle de diamètre = largeur. Sur une pizza c'est juste ;
+sur un panini de 1,95:1 **on se ment de 100 px**. `air()` lit maintenant l'alpha du PNG
+détouré, le place, et mesure la vraie distance à la pastille et au QR.
+
+### Le détourage : deux garde-fous de plus
+
+L'ardoise reçoit un rebond chaud de la nourriture : elle passe le seuil `CHROMA` et se
+retrouve collée au plat. Invisible sur les pizzas (rondes, peu de pierre visible), massif sur
+les sandwichs posés à plat.
+
+- **Reconstruction géodésique** — on part du certain (`R−B > 32`, ou très clair) et on ne
+  recrute le douteux (`R−B > 12`) que sur `PORTEE = 6` pixels. L'ardoise, reliée au plat par sa
+  seule ligne de contact, ne se propage pas.
+- **Rabot** — après la fermeture morphologique, on intersecte avec le douteux dilaté de 1 px.
+  Sans ça, une fermeture 9×9 ×3 enjambe le plat vers l'ardoise voisine et « bouche le trou »
+  entre les deux. La fermeture est passée de 3 itérations à 1.
+- **Le lissage polaire ne s'applique plus qu'aux formes rondes** : si reconstruire le masque en
+  étoile depuis le centre fait GAGNER plus de 4 % d'aire, c'est qu'il enjambe — on garde le
+  masque brut. Déclenché tout seul sur le milkshake (+15,8 %).
+
+Non-régression vérifiée : les huit pizzas ressortent à **±1 px** du cadre d'origine.
+
+### Ce que ce détourage ne sait pas faire
+
+- ⛔ **Un verre transparent.** Le milkshake Oreo perd le pied de son verre : du verre sur fond
+  neutre est neutre. Les boissons se traitent en **packshot** (comme les canettes), pas avec ce
+  gabarit. Le milkshake a été retiré de la série et remplacé par le Double Cheese Burger.
+- ⚠️ **Une ardoise très éclairée** passe le rattrapage `lum > 120`, prévu pour le fromage blanc.
+  Visible sur la Crêpe Ultra Gourmande : un coin de pierre grise reste collé. Écarter la photo,
+  ou baisser `CLAIR` pour ce plat-là.
+- ⚠️ **Un bol sombre** (Salade Tenders, Bowl Frites) est neutre : il part avec le fond et la
+  garniture flotte. Non testé jusqu'au bout — à regarder avant de les mettre en série.
+
+### La série retenue
+
+Burger Montagnard 35 000 · Burger Tenders 35 000 · Double Cheese Burger 29 000 · Américain
+30 000 · Tacos 30 000 · Kebab 25 000 · Panini 25 000 · Crêpe Nutella 18 000.
+
+Huit plats, de 18 000 à 35 000 Ar, salé et sucré. `La Cabane · Ambatoloaka · burgers, tacos,
+crêpes` en ligne de lieu.

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  ⚠️ GABARIT HTML DE L'APP WEB. Ce fichier REMPLACE celui d'Expo.
+
+  Le CLI (`webTemplate.js` : « Attempt to read the index.html from the local project
+  before falling back on the template ») lit `public/index.html` s'il existe. C'est le
+  SEUL point d'entrée pour poser du HTML visible avant le JavaScript quand
+  `web.output = "single"` — un fichier `app/+html.tsx` n'est PAS lu dans ce mode, il ne
+  sert qu'au rendu statique. Essayé le 2026-09-10 : sans effet, index.html inchangé.
+
+  ⚠️ Il vit dans `public/` et NON dans `dist/` : `expo export` recrée `dist` à chaque
+  construction. Même piège que `_redirects`, déjà payé sur ce projet.
+
+  ⚠️ La langue et le titre sont écrits EN DUR, pas via `%LANG_ISO_CODE%` / `%WEB_TITLE%`.
+  Le chemin d'export de cette version ne substitue PAS ces marqueurs — vérifié le
+  2026-09-10 : l'onglet affichait littéralement « %WEB_TITLE% ». Seuls les scripts du
+  bundle sont bien ajoutés automatiquement à la fin de `<body>`. Si le titre doit changer,
+  c'est ici, pas dans app.json.
+
+  POURQUOI CE VOILE EXISTE. Le gabarit d'Expo ne pose aucun fond. Un téléphone en mode
+  sombre peignait donc la page en NOIR pendant tout le téléchargement du bundle — 2,6 Mo,
+  plusieurs secondes sur la liaison de Nosy Be — sans logo, sans texte, sans rien. La
+  personne croyait l'app plantée, tapait, rechargeait. Signalé en test terrain le
+  2026-09-10 : « j'ai l'écran noir, je clique, je clique, et ensuite ça atterrit ».
+
+  Le lien de validation d'e-mail rendait la chose pire : on y arrive par un clic depuis sa
+  boîte mail, donc TOUJOURS à froid, jamais avec le bundle en cache.
+
+  `app/_layout.tsx` retire `#tf-boot` au premier rendu de React et enchaîne sur son propre
+  <Splash />, de la même couleur : la transition ne se voit pas. Ce code existait déjà et
+  ne trouvait rien à retirer.
+
+  ⚠️ Aucune image ici, volontairement : un <img> est une requête de plus, et c'est
+  précisément la requête qu'on n'a pas le temps d'attendre. Le logo est dessiné en CSS.
+-->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- Sans ceci, un navigateur en mode sombre peint ses fonds en noir.
+         `userInterfaceStyle: "light"` d'app.json ne vaut QUE pour le natif. -->
+    <meta name="color-scheme" content="light" />
+    <title>Taxi Food</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <style id="tf-boot-style">
+      html, body { background-color: #E8342A; }
+      #tf-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background-color: #E8342A;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      #tf-boot-logo {
+        width: 84px;
+        height: 84px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #tf-boot-nom {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 3px;
+      }
+      #tf-boot-rotative {
+        width: 22px;
+        height: 22px;
+        margin-top: 6px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: tf-tourne 0.8s linear infinite;
+      }
+      @keyframes tf-tourne { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { #tf-boot-rotative { animation: none; } }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- Voile de démarrage : visible avant le premier octet de JavaScript.
+         Retiré par app/_layout.tsx au premier rendu de React. -->
+    <div id="tf-boot">
+      <div id="tf-boot-logo">TF</div>
+      <div id="tf-boot-nom">TAXI FOOD</div>
+      <div id="tf-boot-rotative"></div>
+    </div>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>

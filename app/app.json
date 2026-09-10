@@ -118,7 +118,9 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "lang": "fr",
+      "themeColor": "#E8342A"
     },
     "plugins": [
       "expo-router",

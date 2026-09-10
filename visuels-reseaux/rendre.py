@@ -25,6 +25,7 @@ g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
 AIR_MINI = 20.0
 PASTILLE = (g.PAD_H + g.LOGO_D/2, g.PHOTO_H - round(g.LOGO_D*0.52) + g.LOGO_D/2)
 QR_X, QR_Y = 828, 608          # bord gauche et haut du bloc QR
+BADGE = (g.BADGE_X + g.BADGE_D/2, g.BADGE_Y + g.BADGE_D/2, g.BADGE_D/2)   # cx, cy, rayon
 
 
 def cadre(p):
@@ -56,7 +57,8 @@ def air(p, pas=4):
     a_logo = np.hypot(X-PASTILLE[0], Y-PASTILLE[1]).min() - g.LOGO_D/2
     sous_qr = Y >= QR_Y
     a_qr = (QR_X - X[sous_qr]).min() if sous_qr.any() else 999.0
-    return round(float(a_logo), 1), round(float(a_qr), 1)
+    a_badge = np.hypot(X-BADGE[0], Y-BADGE[1]).min() - BADGE[2]
+    return round(float(a_logo), 1), round(float(a_qr), 1), round(float(a_badge), 1)
 
 
 def html(slug, web=False):
@@ -65,7 +67,8 @@ def html(slug, web=False):
                     secondaire=p['secondaire'], prix=p['prix'],
                     ligne_lieu=p['lieu'], logo=p['logo'], h=1080,
                     plat=dict(img=p['detour_web'] if web else p['detour'], **place(p)),
-                    fond=g.FONDS[serie(p).get('fond', 'studio')])
+                    fond=g.FONDS[serie(p).get('fond', 'studio')],
+                    badge=serie(p).get('badge'))
 
 
 async def rendre(slugs):
@@ -85,7 +88,11 @@ async def rendre(slugs):
             await pg.wait_for_timeout(450)
             v = await pg.evaluate("""() => {
               const q=s=>[...document.querySelectorAll(s)];
-              const pr=q('div').find(d=>d.textContent.trim().startsWith('1re commande')&&d.style.borderRadius);
+              // La pastille du code contient AUSSI « 1re commande » et un border-radius :
+              // identifier par le texte seul designait le badge, en haut, au lieu du bloc
+              // promo, en bas (ecart mesure -751 px). On prend le plus BAS des candidats.
+              const cands=q('div').filter(d=>d.textContent.trim().startsWith('1re commande')&&d.style.borderRadius);
+              const pr=cands.sort((a,b)=>b.getBoundingClientRect().bottom-a.getBoundingClientRect().bottom)[0];
               const gp=q('img').find(i=>(i.alt||'').includes('Google Play'));
               const se=q('div').find(d=>d.style.lineHeight==='1.26');
               const B=e=>Math.round(e.getBoundingClientRect().bottom);
@@ -93,11 +100,12 @@ async def rendre(slugs):
             }""")
             await pg.screenshot(path=p['fichier'], clip={'x':0,'y':0,'width':1080,'height':1080})
             ec, lignes = v[0]-v[1], (1 if v[2] < 45 else 2)
-            al, aq = air(p)
-            ok = ec == 0 and lignes == 1 and min(al, aq) >= AIR_MINI
+            al, aq, ab = air(p)
+            ok = ec == 0 and lignes == 1 and min(al, aq, ab) >= AIR_MINI
             if not ok: rates.append(slug)
-            print(f"{p['fichier']:16s} ecart {ec:3d}  secondaire {lignes} ligne"
-                  f"  air {al:5.1f}/{aq:5.1f}  ->  {'CONFORME' if ok else 'A CORRIGER'}")
+            print(f"{p['fichier']:28s} ecart {ec:3d}  secondaire {lignes} ligne"
+                  f"  air pastille {al:6.1f}  QR {aq:6.1f}  badge {ab:6.1f}"
+                  f"  ->  {'CONFORME' if ok else 'A CORRIGER'}")
         await b.close()
     print(f"\n{len(slugs)-len(rates)}/{len(slugs)} conformes"
           + (f"  ·  a corriger : {', '.join(rates)}" if rates else ""))

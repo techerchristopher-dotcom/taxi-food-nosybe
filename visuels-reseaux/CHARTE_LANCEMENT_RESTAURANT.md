@@ -627,3 +627,36 @@ Quatre fonds essayés côte à côte sur le burger et le tacos. **Crème retenu*
 
 **Le fond appartient donc à la série**, pas au gabarit : `SERIE_PIZZA` garde `'studio'`,
 `SERIE_CABANE` prend `'creme'`. Les huit pizzas de Bidul & Truc ne bougent pas.
+
+---
+
+## 11. La pastille du code promo (2026-09-10)
+
+Le bloc promo du bas ne suffisait pas : le code passait inaperçu. Une **pastille ronde or** a
+été ajoutée dans la zone photo, **et le bloc du bas est conservé**. Le visuel dit donc la même
+chose deux fois — c'est voulu, sur un geste que personne à Nosy Be ne connaît encore.
+
+### Où, et pourquoi là
+
+En **haut à gauche**, `BADGE_D = 206`, `BADGE_X = 26`, `BADGE_Y = 40`, inclinée de −7°.
+
+Ce n'est pas un choix d'œil. Emprise des huit plats de La Cabane mesurée dans la bande
+y 30–300 : ils ne descendent **jamais sous x = 238** à gauche, et il ne reste que **51 px** à
+droite. La gauche était le seul côté possible, et 206 px le plus grand diamètre qui garde de
+l'air.
+
+`rendre.py` mesure désormais **trois** distances au plat, pas deux : pastille du logo, QR, et
+badge. Air constatée sur les huit : **61 à 137 px**.
+
+### Contenu — la remise en héros
+
+`SERIE_CABANE['badge'] = 'remise'` : « 1RE COMMANDE », **−50 %** en très gros, « SUR LA
+LIVRAISON », puis **TAXIFOOD50** dans une pilule encre sur or. La variante `'code'` existe
+(le code en gros, la remise en pilule) et se change par un mot.
+
+⚠️ **Piège attrapé par le contrôle, à ne pas réintroduire.** La pastille contient elle aussi
+« 1re commande » **et** un `border-radius`. Le sélecteur qui identifiait le bloc promo par son
+texte désignait donc le badge, en haut — écart mesuré **−751 px** au lieu de 0. Corrigé en
+prenant le **plus bas** des candidats. Morale : ne jamais identifier un élément par son seul
+texte quand le gabarit peut le répéter ailleurs. Sans le contrôle automatique, les huit
+visuels partaient faux.

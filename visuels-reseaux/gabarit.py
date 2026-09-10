@@ -74,7 +74,7 @@ SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS, fond='stu
 # entre y=478 et 658. Une pizza ronde se faufile entre les deux parce qu'elle est
 # etroite en bas ; un panini, non. C'est la HAUTEUR qui commande donc ici, et la
 # largeur ne mord jamais. Cherche par balayage, pas estime.
-SERIE_CABANE = dict(larg=820, haut=520, cx=640, bas=600, fond='creme')
+SERIE_CABANE = dict(larg=820, haut=520, cx=640, bas=600, fond='creme', badge='remise')
 
 
 def debord_boite(bbox, serie=None):
@@ -102,6 +102,54 @@ def debord(src_w, src_h, bbox, cadrage=46, ph=PHOTO_H, dx=0, dy=0):
     return {'left': round(ox + x0*ech + dx, 1),
             'top':  round(oy + y0*ech + dy, 1),
             'width': round((x1-x0)*ech, 1)}
+
+
+# ---- pastille code promo, dans la zone photo -------------------------------
+# Mesure sur les huit plats de La Cabane : le plat ne descend jamais sous
+# x = 238 dans la bande y 30-300, et il ne reste que 51 px a droite. La pastille
+# va donc en HAUT A GAUCHE, et sa taille est bornee par cette mesure.
+BADGE_D = 206          # diametre : 24 px de marge au bord, 24 px au plat
+BADGE_X = 26
+BADGE_Y = 40
+
+
+def _badge_code(variante='code', code='TAXIFOOD50', d=None, x=None, y=None):
+    """La pastille qui met le code en avant. Deux variantes :
+       'code'  -> le code est le heros, la remise est la mention
+       'remise'-> -50 % est le heros, le code est la mention
+    """
+    if not variante:
+        return ''
+    d = d or BADGE_D; x = BADGE_X if x is None else x; y = BADGE_Y if y is None else y
+    f = lambda v: round(v * d / 206)
+    if variante == 'code':
+        corps = (f'<div style="font-size: {f(13)}px; font-weight: 800; letter-spacing: {f(1.6)}px; '
+                 f'text-transform: uppercase; opacity: 0.72;">Code promo</div>'
+                 f'<div style="font-size: {f(25)}px; font-weight: 900; letter-spacing: {f(-0.4)}px; '
+                 f'line-height: 1; margin: {f(5)}px 0 {f(6)}px;">{code}</div>'
+                 f'<div style="background: {ENCRE}; color: {OR}; font-size: {f(14)}px; font-weight: 900; '
+                 f'padding: {f(4)}px {f(11)}px {f(5)}px; border-radius: {f(20)}px; line-height: 1;">'
+                 f'&minus;50 % livraison</div>')
+    else:
+        # Le code reste le geste a faire : sa pilule est dimensionnee pour rester
+        # lisible sous le -50 %, pas reduite a une mention.
+        corps = (f'<div style="font-size: {f(12)}px; font-weight: 800; letter-spacing: {f(1.5)}px; '
+                 f'text-transform: uppercase; opacity: 0.72;">1re commande</div>'
+                 f'<div style="font-size: {f(45)}px; font-weight: 900; letter-spacing: {f(-1.6)}px; '
+                 f'line-height: 1; margin: {f(1)}px 0 0;">&minus;50 %</div>'
+                 f'<div style="font-size: {f(11)}px; font-weight: 800; letter-spacing: {f(0.9)}px; '
+                 f'text-transform: uppercase; margin-bottom: {f(7)}px;">sur la livraison</div>'
+                 f'<div style="background: {ENCRE}; color: {OR}; font-size: {f(17)}px; font-weight: 900; '
+                 f'letter-spacing: {f(0.2)}px; padding: {f(5)}px {f(12)}px {f(6)}px; '
+                 f'border-radius: {f(20)}px; line-height: 1;">{code}</div>')
+    return f'''  <div style="position: absolute; top: {y}px; left: {x}px; z-index: 12;
+       width: {d}px; height: {d}px; border-radius: 50%; background: {OR};
+       box-shadow: 0 {f(12)}px {f(30)}px rgba(0,0,0,0.30), inset 0 0 0 {f(4)}px rgba(19,19,19,0.92);
+       transform: rotate(-7deg); display: flex; flex-direction: column;
+       align-items: center; justify-content: center; text-align: center;
+       color: {ENCRE}; font-family: Archivo, sans-serif; box-sizing: border-box;
+       padding: {f(16)}px;">{corps}</div>
+'''
 
 
 def _col(k=1.0, h_col=None):
@@ -240,7 +288,7 @@ def mode_emploi(resto, sous_titre, logo, etapes, faits, bas_promo=1009,
 
 
 def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
-           cadrage=46, h=1080, h_col=COL_H, plat=None, fond=None):
+           cadrage=46, h=1080, h_col=COL_H, plat=None, fond=None, badge=None, code='TAXIFOOD50'):
     """Le gabarit. Seuls les textes, la photo et le logo changent."""
     k = 1.0
     f = lambda v: round(v*k)
@@ -251,6 +299,7 @@ def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
 
   <div style="position: absolute; top: {ph}px; left: 0; width: 1080px; height: {FILET}px; background: {OR};"></div>
 {_debord(plat)}
+{_badge_code(badge, code)}
 
   <div style="position: absolute; top: {ph - round(logo_d*0.52)}px; left: {PAD_H}px; z-index: 10; width: {logo_d}px; height: {logo_d}px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 14px 36px rgba(0,0,0,0.45); overflow: hidden;">
     <img src="{logo}" alt="Logo" style="width: {logo_d}px; height: {logo_d}px; object-fit: cover; display: block;">

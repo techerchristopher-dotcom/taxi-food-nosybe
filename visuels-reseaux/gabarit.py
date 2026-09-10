@@ -33,6 +33,19 @@ LOGO_D  = 180
 DECAL   = 102          # decalage de la colonne gauche sous la pastille
 COL_W   = 190          # QR et badges : meme largeur
 COL_H   = 401          # hauteur colonne droite : bas des badges = bas du bloc promo
+FONDS = {
+ # Le fond studio sombre a ete concu pour les pizzas : une pizza est foncee et
+ # texturee, elle se detache. Un tacos, un kebab, un panini sont BEIGES — sur du
+ # gris fonce ils virent au terne. Le fond se choisit donc par serie.
+ 'studio': ("radial-gradient(ellipse 55% 68% at 50% 34%, #909090 0%, #6A6A6A 45%, "
+            "#3A3A3A 72%, #0A0A0A 96%)"),
+ 'rouge':  ("radial-gradient(ellipse 62% 74% at 50% 30%, #F5493C 0%, #E8342A 46%, "
+            "#B62119 100%)"),
+ 'creme':  ("radial-gradient(ellipse 60% 70% at 50% 30%, #FFFDFB 0%, #F4EDE4 44%, "
+            "#DCCFBF 76%, #C6B4A0 100%)"),
+ 'ambre':  ("radial-gradient(ellipse 62% 74% at 50% 30%, #FFEFD4 0%, #F6D296 48%, "
+            "#D9A254 100%)"),
+}
 FOND_STUDIO = ("radial-gradient(ellipse 55% 68% at 50% 34%, #909090 0%, #6A6A6A 45%, "
                "#3A3A3A 72%, #0A0A0A 96%)")
 
@@ -55,13 +68,13 @@ DEBORD_BAS = 685      # bas du plat : 105 px de debord sur le rouge
 # haut=1000 ne mord jamais sur une pizza : c'est la largeur qui commande, comme
 # avant. Le mettre a 760 rabotait jusqu'a 12 px les pizzas un peu plus hautes que
 # larges — mesure, donc corrige.
-SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS)
+SERIE_PIZZA  = dict(larg=760, haut=1000, cx=DEBORD_CX, bas=DEBORD_BAS, fond='studio')
 # La Cabane : des plats HORIZONTAUX (1,6 a 1,95:1). Le QR occupe tout ce qui est
 # a droite de x=828 sous y=608, la pastille tout ce qui est a gauche de x=242
 # entre y=478 et 658. Une pizza ronde se faufile entre les deux parce qu'elle est
 # etroite en bas ; un panini, non. C'est la HAUTEUR qui commande donc ici, et la
 # largeur ne mord jamais. Cherche par balayage, pas estime.
-SERIE_CABANE = dict(larg=820, haut=520, cx=640, bas=600)
+SERIE_CABANE = dict(larg=820, haut=520, cx=640, bas=600, fond='creme')
 
 
 def debord_boite(bbox, serie=None):
@@ -117,12 +130,12 @@ def _promo(k=1.0):
         <span style="margin-top: 3px; font-size: {f(16)}px; font-weight: 500; color: rgba(255,255,255,0.6);">au moment de payer</span>
       </div>'''
 
-def _bandeau(photo, alt, ph, cadrage, degrade_h):
+def _bandeau(photo, alt, ph, cadrage, degrade_h, fond=None):
     """Le haut du visuel. Soit une photo pleine, soit le fond studio nu quand
     le plat est detoure et posé par-dessus (variante debord)."""
     if photo is None:
         return (f'<div style="position: absolute; top: 0; left: 0; width: 1080px; '
-                f'height: {ph}px; background: {FOND_STUDIO};"></div>')
+                f'height: {ph}px; background: {fond or FOND_STUDIO};"></div>')
     return f'''<div style="position: absolute; top: 0; left: 0; width: 1080px; height: {ph}px; overflow: hidden; background: {ENCRE};">
     <img src="{photo}" alt="{alt}" style="width: 1080px; height: {ph}px; object-fit: cover; object-position: center {cadrage}%; display: block;">
     <div style="position: absolute; left: 0; bottom: 0; width: 1080px; height: {degrade_h}px; background: linear-gradient(to bottom, rgba(19,19,19,0), rgba(19,19,19,0.5) 60%, rgba(19,19,19,0.88));"></div>
@@ -227,14 +240,14 @@ def mode_emploi(resto, sous_titre, logo, etapes, faits, bas_promo=1009,
 
 
 def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
-           cadrage=46, h=1080, h_col=COL_H, plat=None):
+           cadrage=46, h=1080, h_col=COL_H, plat=None, fond=None):
     """Le gabarit. Seuls les textes, la photo et le logo changent."""
     k = 1.0
     f = lambda v: round(v*k)
     red = f(RED_H); ph = h - red - FILET; logo_d = f(LOGO_D)
     return HEAD + f'''<div style="position: relative; width: 1080px; height: {h}px; background: {ROUGE}; overflow: hidden;">
 
-  {_bandeau(photo, alt, ph, cadrage, f(180))}
+  {_bandeau(photo, alt, ph, cadrage, f(180), fond)}
 
   <div style="position: absolute; top: {ph}px; left: 0; width: 1080px; height: {FILET}px; background: {OR};"></div>
 {_debord(plat)}

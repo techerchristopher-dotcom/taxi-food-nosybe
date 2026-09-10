@@ -574,3 +574,56 @@ Burger Montagnard 35 000 · Burger Tenders 35 000 · Double Cheese Burger 29 000
 
 Huit plats, de 18 000 à 35 000 Ar, salé et sucré. `La Cabane · Ambatoloaka · burgers, tacos,
 crêpes` en ligne de lieu.
+
+---
+
+## 10. Le fond se choisit par série, et la photo se régénère (2026-09-10, après refus)
+
+Les huit visuels La Cabane de la première passe ont été refusés : « ça fait vraiment travail
+grossier, bricolage ». Deux causes, distinctes, toutes deux réelles.
+
+### Cause 1 — le détourage par seuil ne pouvait pas gagner
+
+Sous les frites du burger restait un morceau d'ardoise. Mesuré : **luminosité 36 et R−B 60,
+contre 42 et 59 pour le steak saisi.** C'est l'ombre chaude que les frites dorées projettent
+sur la pierre. Chromatiquement identique à de la viande grillée. Aucun seuil ne les sépare, et
+s'acharner sur les paramètres était une perte de temps.
+
+**La chaîne est donc devenue** (`packshot.py`) :
+
+1. `gpt_image_2` **régénère** la photo réelle sur fond blanc, plat identique, sans ardoise.
+   Prompt : « EXACT same dish », liste explicite des composants à conserver, puis REMOVE the
+   slate / backdrop / props / cast shadows. Et toujours : no text, no logo, no lettering.
+2. Le **matteur de Higgsfield** (`remove_background`) sort l'alpha. Bord propre, 35 000 pixels
+   de transition douce là où le seuil faisait une marche.
+3. `packshot.py` pose l'**ombre de contact**, tirée de la silhouette du plat lui-même : bande
+   basse de l'alpha, écrasée, floutée. Pas d'ellipse générique — un kebab ne se pose pas comme
+   un burger, et l'ombre s'y adapte sans réglage.
+
+⚠️ **Contrôle obligatoire** : chaque régénération se regarde à côté de l'original avant d'être
+gardée. Le plat doit rester reconnaissable — c'est ce que le client commande. Sur les huit de
+La Cabane, huit ont passé le contrôle du premier coup.
+
+### Cause 2 — le fond studio sombre était fait pour les pizzas
+
+Une pizza est foncée et texturée : elle se détache sur du gris anthracite. **Un tacos, un
+kebab, un panini sont beiges** — sur fond sombre ils virent au terne. Et le burger n'allait pas
+mieux : le pain se noyait dans le noir.
+
+Quatre fonds essayés côte à côte sur le burger et le tacos. **Crème retenu** :
+
+```python
+'creme': "radial-gradient(ellipse 60% 70% at 50% 30%, #FFFDFB 0%, #F4EDE4 44%,
+          #DCCFBF 76%, #C6B4A0 100%)"
+```
+
+- **studio** — la cause du refus, écarté.
+- **rouge** — très marque, mais tout le visuel devient rouge : le filet or ne sépare plus rien
+  et l'œil n'a pas de point de repos.
+- **ambre** — chaud, mais un tacos beige sur de l'ambre, c'est la même famille de teinte : pas
+  de séparation.
+- **crème** — le plat se détache, la lumière reste appétissante, et le bandeau rouge redevient
+  un accent au lieu d'occuper la moitié du visuel.
+
+**Le fond appartient donc à la série**, pas au gabarit : `SERIE_PIZZA` garde `'studio'`,
+`SERIE_CABANE` prend `'creme'`. Les huit pizzas de Bidul & Truc ne bougent pas.

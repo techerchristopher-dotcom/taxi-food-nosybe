@@ -31,8 +31,12 @@ def cadre(p):
     return json.load(open(p['detour'].rsplit('.', 1)[0] + '.json'))['bbox']
 
 
+def serie(p):
+    return getattr(g, 'SERIE_' + p['serie'])
+
+
 def place(p):
-    return g.debord_boite(cadre(p), getattr(g, 'SERIE_' + p['serie']))
+    return g.debord_boite(cadre(p), serie(p))
 
 
 def air(p, pas=4):
@@ -60,7 +64,8 @@ def html(slug, web=False):
     return g.visuel(photo=None, alt=p['titre'], titre=p['titre'],
                     secondaire=p['secondaire'], prix=p['prix'],
                     ligne_lieu=p['lieu'], logo=p['logo'], h=1080,
-                    plat=dict(img=p['detour_web'] if web else p['detour'], **place(p)))
+                    plat=dict(img=p['detour_web'] if web else p['detour'], **place(p)),
+                    fond=g.FONDS[serie(p).get('fond', 'studio')])
 
 
 async def rendre(slugs):

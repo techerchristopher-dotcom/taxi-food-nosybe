@@ -866,6 +866,114 @@ Le formulaire écrit réellement en base (`waitlist`), vérifié en soumettant l
 - ⚠️ **La limitation de débit lisait la MAUVAISE valeur de `x-forwarded-for`.** Elle prenait la **première**, que le client contrôle : il suffisait d'envoyer une fausse IP à chaque requête pour ne jamais être limité. Elle lit maintenant la **dernière** (celle posée par le proxy). Vérifié : 7 requêtes avec 7 fausses IP, bloquées dès la 4ᵉ.
 - ⚠️ **La normalisation des téléphones laissait passer des doublons** : `+261 34 11 111 11` et `0261341111111` donnaient deux clés différentes. `normaliser_telephone()` traite le préfixe `00`, le `0` national et la forme à 9 chiffres. L'index unique a **refusé de se construire** tant que les doublons de test n'étaient pas purgés — ce qui prouve la correction.
 
+## 🎨 Visuels réseaux, boissons et série animée (2026-09-09/10)
+
+**Toute la communication visuelle sort d'un seul gabarit Python, versionné dans
+[`visuels-reseaux/`](visuels-reseaux/LISEZ-MOI.md).** Un visuel = une entrée dans `plats.py` +
+`python3 rendre.py <slug>`. Rien ne se dessine à la main, rien ne se règle au cas par cas.
+
+⚠️ **La chaîne a d'abord vécu dans le conteneur éphémère d'une session Claude** — donc à un
+effacement près de disparaître avec les 8 visuels déjà produits. Versionnée le 2026-09-10.
+`partenaire /` et `motion design /` sont **hors dépôt** (`.gitignore`) : tout document de
+travail qui doit survivre va dans `visuels-reseaux/`, pas à côté des photos.
+
+### Le gabarit, et pourquoi il se vérifie tout seul
+
+`rendre.py` refuse de dire CONFORME tant que trois mesures ne passent pas, chacune née d'une
+erreur réelle :
+
+| Contrôle | L'erreur qu'il empêche |
+|---|---|
+| bas du badge Google Play **== 0 px** du bas du bloc promo | l'écart avait été *estimé* à 38 px ; mesuré au `getBoundingClientRect`, c'était **40**. D'où `COL_H = 401`. |
+| ligne d'ingrédients sur **UNE** ligne | le format story multipliait tout par k = 1,34 — faux : **une story n'agrandit rien**, même largeur qu'un carré, seule la photo grandit. À deux lignes, tout le bas du visuel se décale. |
+| **≥ 20 px** d'air croûte↔pastille et croûte↔QR | un décalage `dx` par pizza a été essayé : **2 sur 8** seulement passaient les deux contraintes. |
+
+💡 **Placement de série, pas placement par plat** (`DEBORD_W/CX/BAS` = 760/572/685, identiques
+pour les huit pizzas). Le `dx` au cas par cas donnait *une collection, pas une série* — huit
+tailles de pizza différentes. Le problème de fond n'était pas l'air, c'était la cohérence.
+
+💡 **Détourage par la COULEUR, pas par la forme.** Le fond studio et l'ardoise sont
+parfaitement neutres (R−B mesuré = 0,0), la nourriture reste chaude même carbonisée (R−B
+jusqu'à 100) → seuil `R − B > 12`, plus `luminance > 120` pour rattraper le fromage blanc.
+Deux méthodes échouées avant, notées pour ne pas être refaites : le **contour convexe** pontait
+la croûte brûlée vers l'ardoise (savoyarde, napolitaine, paysanne, maître coq) ; la **médiane
+polaire** mordait dans les croûtes pâles.
+
+⚠️ Google Fonts doit être **bloqué** (`pg.route('**://fonts.g**', abort)`) pendant les rendus
+Playwright, sinon la page ne finit jamais de charger. Archivo est installée en local.
+
+### Les quatre gestes du mode d'emploi
+
+Ordre arrêté par le porteur du projet, **le code promo est le 3ᵉ** (il se tape à la commande,
+avant la livraison) : 1. tu choisis le restaurant et tes plats · 2. **tu te géolocalises** ·
+3. **tu tapes ton code** · 4. on te livre, tu paies à l'arrivée.
+
+Les gestes 2 et 3 sont les seuls que personne à Nosy Be ne connaît — ce sont eux qu'on montre
+le plus longtemps. Le bloc promo **tutoie** (« Tape le code »), comme tout le reste des
+visuels. Textes prêts : `visuels-reseaux/TEXTES_RESEAUX_BIDUL_TRUC.md`. **La nouveauté ouvre
+toujours le post** (« Nouveau à Nosy Be : … »), trois blocs, jamais cinq.
+
+### Numéro de téléphone — changé le 2026-09-10
+
+**`+261 36 15 74 521`** (composé `036 15 74 521`). Remplace `+261 37 34 379 12` **partout sur
+le site**, déployé le 2026-09-10.
+
+⚠️ **Le site écrit le numéro de TROIS façons**, pas deux : `tel:+261361574521`,
+`wa.me/261361574521`, et l'affichage espacé **2-2-2-3** (`+261 36 15 74 521`). La première
+passe en a raté 10 en n'anticipant que deux formes. Et les **`landing/i18n/*.json`** portaient
+encore l'ancien numéro à 3 clés × 3 langues (`client.noscript.whatsappLink`,
+`resto.noscript.phoneLink`, `resto.contact.phone`) : ces fichiers ne sont **pas** chargés au
+runtime, mais ils sont la source des pages — corrigés le 2026-09-10.
+
+⚠️ `perl -pi` sur le dossier monté laisse des orphelins **`.fuse_hidden…`** qui portent
+l'ANCIEN contenu et qu'on ne peut ni supprimer ni déplacer sur le moment (ils s'effacent seuls
+plus tard). Ils sont désormais dans `.gitignore` : sans ça, un `git add .` publie une copie du
+fichier d'avant correction.
+
+### Boissons — tout passer en canette
+
+**11 packshots** générés à partir de photos réelles prises au bar (Higgsfield `gpt_image_2`,
+2048², fond blanc), dans `partenaire /bidul et truc /pub /boissons-packshots/`.
+
+- ✅ **Chez Bidul & Truc : ses 10 boissons sont déjà nommées en canettes** (« THB 50 cl »,
+  « Beaufort 33 cl », « Caprice Grenadine 33 cl »…) → correspondance 10/10, **aucun renommage**.
+  4 n'avaient aucune image, 3 en avaient une fausse.
+- ⛔ **Angelo, La Cabane, Taxi Be gardent leurs images** : leurs produits s'appellent « THB PM »
+  / « GM » = *petit* et *grand modèle*, donc des **bouteilles**. Y coller une canette 50 cl,
+  c'est remplacer une image fausse par une autre. Renommer leurs produits en formats canette
+  supposerait de revoir les prix — décision commerciale, **en attente**.
+- ⚠️ **`thb-pm.jpg` est un verre vide**, et il illustre le THB PM en vente chez Angelo, La
+  Cabane et Taxi Be entre 6 000 et 7 000 Ar. Pire visuel du catalogue. Il faut une photo de la
+  **bouteille 33 cl**. `caprice-grenadine.png` est une **bouteille de sirop** — autre produit.
+- Le téléversement demande `is_admin()` sur le bucket `boissons` : il revient à Claude Code ou
+  au tableau de bord. Prompt prêt : `visuels-reseaux/PROMPT_CLAUDE_CODE_CANETTES.md`.
+
+### Série animée « Maki » — Story / TikTok
+
+Un mini dessin animé par épisode, un maki livreur Taxi Food comme personnage récurrent.
+Gabarit d'épisode en 8 plans : `visuels-reseaux/SERIE_MAKI_GABARIT_EPISODE.md`. Registre des
+éléments Higgsfield (le maki, la famille, les 11 canettes, le top-case, le sticker) :
+`visuels-reseaux/ELEMENTS_HIGGSFIELD.md`.
+
+Règles arrêtées, valables aussi hors série :
+
+- ⚠️ **L'IA ne dessine JAMAIS un logo ni du texte.** La marque vient des éléments validés
+  (top-case, sticker) et du **carton de fin en Remotion**. Appliqué au refus du Coca-Cola, au
+  casque du maki, au carton de pizza (on écrit **MATSIRO**, « délicieux » en malgache) et au
+  tee-shirt du petit garçon — une première génération avait inventé un écusson de football
+  illisible, qui aurait changé à chaque plan.
+- **Le monde est dessiné, la vraie photo n'arrive qu'au carton de fin** (le visuel produit
+  existant, animé). C'est ce qui résout le problème d'appétit sans casser le cartoon.
+- **Deux images pour une vidéo** : générer l'image B *à partir de* l'image A, sinon le décor se
+  transforme entre les plans. Trois images = deux clips, raccordés en Remotion.
+- 💡 **Modèle vidéo : Wan 3.0 (`wan3_0`)**, 1080p, `start_image` + `end_image`. **MiniMax H3 a
+  échoué deux fois** sur les mêmes jobs, crédits disponibles — ce n'était pas un problème de
+  quota. Limite du plan : **8 jobs simultanés** maximum.
+- ⚠️ Le maki est un **maki catta** (face blanche, triangles noirs sur les yeux, museau court,
+  queue annelée noir et blanc tenue en S). Une première version disait « museau de renard » et
+  interdisait la queue annelée : il ressemblait à un renard. Ne pas réintroduire ces deux
+  formulations.
+
 ## Conventions
 
 - Dépôt git **isolé** dans `taxi-food-nosybe/`. GitHub : https://github.com/techerchristopher-dotcom/taxi-food-nosybe . **Commit + push (HTTPS, pas SSH) après chaque étape.**

@@ -58,3 +58,8 @@ carte de visite flyer 1/
 # Scratch du CLI Supabase (jamais a committer)
 supabase/.temp/
 .apercu/
+
+# Orphelins laisses par `perl -pi` sur le dossier monte : ils portent le contenu
+# AVANT correction, ne peuvent ni etre supprimes ni deplaces sur le moment, et
+# disparaissent seuls plus tard. Un `git add .` en publierait une copie perimee.
+.fuse_hidden*

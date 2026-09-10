@@ -739,6 +739,31 @@ ouvert** : [docs/JOURNAL-2026-09-09.md](docs/JOURNAL-2026-09-09.md).
 ⚠️ La liste « Reste ouvert » de ce journal porte des points **bloquants avant
 l'ouverture**, dont le Telegram de La Cabane qui pointe encore sur le patron.
 
+## 📓 Journal du 2026-09-10 — jour de lancement
+
+Boissons de Chez Bidul & Truc, puis **trois defauts remontes par de vrais
+testeurs** : la route `/auth/callback` inexistante (personne ne pouvait creer de
+compte), une adresse enregistree **en pleine mer**, et l'ecran noir de plusieurs
+secondes au chargement du web. Plus la conformite DSA qui rendait l'app
+**invisible dans toute l'Union europeenne**.
+[docs/JOURNAL-2026-09-10.md](docs/JOURNAL-2026-09-10.md).
+
+⚠️ **Le fil rouge de cette journee : trois fois, le defaut n'etait pas la ou on
+le croyait.** Ce qui a tranche a chaque fois, c'est une verification — le DOM, le
+code d'Expo, `git log --all`, le catalogue Apple pays par pays — jamais une
+hypothese. Avant d'accuser un correctif, verifier ce qui tourne vraiment.
+
+⚠️ **`runtimeVersion: appVersion`** : une mise a jour OTA ne rejoint QUE les
+appareils portant le meme numero de version. Un magasin reste sur 1.2.0 pendant
+qu'on publie en 1.2.1 = ces utilisateurs ne recevront **jamais** ces correctifs.
+Verifier la version reellement servie par chaque magasin avant de promettre
+qu'une correction est arrivee.
+
+⚠️ **Le pied de page du Profil ne ment plus** : il lit `Updates.createdAt`, la
+date du paquet JavaScript en cours d'execution. C'est desormais un repere
+FIABLE pour savoir si une mise a jour est arrivee. L'ancienne constante ecrite a
+la main avait induit en erreur deux fois.
+
 ## ⚠️ Une correction se livre sur QUATRE surfaces (2026-09-09)
 
 **Le même code `app/` tourne à trois endroits, qui se mettent à jour séparément.

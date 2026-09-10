@@ -7,13 +7,13 @@ import { formatAr } from '../lib/util';
 type Category = { id: string; name: string; icon: string | null; sort_order: number; is_active: boolean };
 type Product = {
   id: string; category_id: string | null; name: string; description: string | null;
-  price: number; photo_url: string | null; is_available: boolean;
+  price: number; photo_url: string | null; is_available: boolean; listing_status?: string | null;
 };
 type ProductForm = {
-  id: string | null; category_id: string; name: string; description: string; price: string; photo_url: string; is_available: boolean;
+  id: string | null; category_id: string; name: string; description: string; price: string; photo_url: string; is_available: boolean; listing_status: string;
 };
 
-const EMPTY_PROD: ProductForm = { id: null, category_id: '', name: '', description: '', price: '', photo_url: '', is_available: true };
+const EMPTY_PROD: ProductForm = { id: null, category_id: '', name: '', description: '', price: '', photo_url: '', is_available: true, listing_status: 'visible' };
 
 export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; name: string }; onBack: () => void }) {
   const [cats, setCats] = useState<Category[]>([]);
@@ -26,7 +26,7 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
   const load = useCallback(async () => {
     const [c, p] = await Promise.all([
       supabase.from('categories').select('id, name, icon, sort_order, is_active').eq('restaurant_id', restaurant.id).order('sort_order'),
-      supabase.from('products').select('id, category_id, name, description, price, photo_url, is_available').eq('restaurant_id', restaurant.id).order('name'),
+      supabase.from('products').select('id, category_id, name, description, price, photo_url, is_available, listing_status').eq('restaurant_id', restaurant.id).order('name'),
     ]);
     if (c.error || p.error) { setErr(c.error?.message || p.error?.message || 'Erreur'); return; }
     setErr(null);
@@ -64,6 +64,7 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
       p_id: pform.id, p_restaurant_id: restaurant.id, p_category_id: pform.category_id || null,
       p_name: pform.name, p_description: pform.description, p_price: parseInt(pform.price, 10),
       p_photo_url: pform.photo_url, p_is_available: pform.is_available,
+      p_listing_status: pform.listing_status,
     });
     if (ok) setPform(null);
   };
@@ -97,6 +98,17 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
             <label><div className="muted" style={lbl}>Description (composition)</div><input style={inp} value={pform.description} onChange={(e) => setPform({ ...pform, description: e.target.value })} /></label>
             <label><div className="muted" style={lbl}>Photo (URL — laisser vide affiche les initiales)</div><input style={inp} value={pform.photo_url} onChange={(e) => setPform({ ...pform, photo_url: e.target.value })} placeholder="https://…" /></label>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={pform.is_available} onChange={(e) => setPform({ ...pform, is_available: e.target.checked })} /> Disponible</label>
+            {/* « Bientot de retour » raconte une rupture ; « Bientot disponible » annonce
+                un plat jamais servi. Choisir « Annonce » coupe la commande cote base
+                (is_available passe a false dans admin_upsert_product) : le plat se voit,
+                il ne se commande pas. */}
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              Affichage
+              <select value={pform.listing_status} onChange={(e) => setPform({ ...pform, listing_status: e.target.value })}>
+                <option value="visible">Normal</option>
+                <option value="coming_soon">Annonce — « Bientot disponible »</option>
+              </select>
+            </label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button className="btn" onClick={saveProd} disabled={busy === 'saveprod'}>Enregistrer</button>
@@ -122,7 +134,7 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
                         {p.is_available ? 'Oui' : 'Non'}
                       </button>
                     </td>
-                    <td className="num"><button className="btn ghost" style={sm} onClick={() => setPform({ id: p.id, category_id: p.category_id ?? '', name: p.name, description: p.description ?? '', price: String(p.price), photo_url: p.photo_url ?? '', is_available: p.is_available })}>Éditer</button></td>
+                    <td className="num"><button className="btn ghost" style={sm} onClick={() => setPform({ id: p.id, category_id: p.category_id ?? '', name: p.name, description: p.description ?? '', price: String(p.price), photo_url: p.photo_url ?? '', is_available: p.is_available, listing_status: p.listing_status ?? 'visible' })}>Éditer</button></td>
                   </tr>
                 ))}
               </tbody>

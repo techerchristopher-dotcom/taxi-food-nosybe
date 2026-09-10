@@ -154,7 +154,9 @@
     "chooseOptions": "Choisis les options",
     "share": "Partager ce plat",
     "restaurantFerme": "Restaurant fermé",
-    "restaurantBientot": "Bientôt disponible"
+    "restaurantBientot": "Bientôt disponible",
+    "produitBientot": "Bientôt disponible",
+    "produitIndisponible": "Bientôt de retour"
   },
   "cart": {
     "title": "Mon panier",

@@ -1058,9 +1058,11 @@ export default function RestaurantSettingsScreen() {
           <Text style={styles.section}>Votre carte</Text>
           <Text style={styles.intro}>
             Un produit en rupture reste visible par vos clients, avec la mention
-            « Bientôt de retour ». Il n'est simplement plus commandable. L'étoile met un plat
-            de votre carte en avant, sans le sortir de sa catégorie. Les flèches rangent votre
-            carte : l'ordre que vous posez ici est celui que voit le client.
+            « Bientôt de retour ». Il n'est simplement plus commandable. Un plat qui n'a jamais
+            été servi porte, lui, la mention « Bientôt disponible » : c'est une annonce, et
+            l'allumer suffit à la lever. L'étoile met un plat de votre carte en avant, sans le
+            sortir de sa catégorie. Les flèches rangent votre carte : l'ordre que vous posez
+            ici est celui que voit le client.
           </Text>
 
           {menu?.categories.map((cat: Category) => {
@@ -1086,7 +1088,11 @@ export default function RestaurantSettingsScreen() {
                           </Text>
                           <Text style={styles.produitPrix}>
                             {formatAr(p.price)}
-                            {dispo ? '' : '  ·  Bientôt de retour'}
+                            {dispo
+                              ? ''
+                              : p.listingStatus === 'coming_soon'
+                                ? '  ·  Bientôt disponible'
+                                : '  ·  Bientôt de retour'}
                           </Text>
                         </View>
                         {/* Rangement de la carte. Un cran par tap, plutôt qu'un

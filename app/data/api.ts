@@ -88,6 +88,7 @@ type ProductRow = {
   description: string | null;
   price: number;
   is_available: boolean;
+  listing_status?: string | null;
   photo_url: string | null;
   stock_quantity?: number | null;
   is_featured?: boolean | null;
@@ -102,7 +103,7 @@ type ProductRow = {
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
+  'id, restaurant_id, category_id, name, description, price, is_available, listing_status, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
 
 type CategoryRow = {
   id: string;
@@ -195,6 +196,10 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     description: p.description ?? '',
     price: p.price,
     isAvailable: p.is_available,
+    // ⚠️ Ne vaut QUE le libellé du badge — la commande reste coupée par `isAvailable`.
+    // Si `listing_status` manquait à PRODUCT_COLS, on lirait `undefined` et tout
+    // retomberait sur 'visible' sans lever la moindre erreur : erreur silencieuse type.
+    listingStatus: (p.listing_status as Product['listingStatus']) ?? 'visible',
     photoUrl: p.photo_url,
     hasOptions,
     stockQuantity: p.stock_quantity ?? null,

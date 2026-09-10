@@ -193,7 +193,11 @@ export default function RestaurantMenuScreen() {
                       </Text>
                       <Text style={styles.featuredPrice}>{formatAr(p.price)}</Text>
                       {epuise ? (
-                        <Text style={styles.featuredSoldOut}>{t('restaurantCard.unavailable')}</Text>
+                        <Text style={styles.featuredSoldOut}>
+                          {t(p.listingStatus === 'coming_soon'
+                            ? 'restaurantCard.comingSoon'
+                            : 'restaurantCard.unavailable')}
+                        </Text>
                       ) : p.stockQuantity != null ? (
                         <Text style={styles.featuredStock}>
                           {p.stockQuantity} restant{p.stockQuantity > 1 ? 's' : ''}

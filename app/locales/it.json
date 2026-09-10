@@ -154,7 +154,9 @@
     "chooseOptions": "Scegli le opzioni",
     "share": "Condividi questo piatto",
     "restaurantFerme": "Ristorante chiuso",
-    "restaurantBientot": "Presto disponibile"
+    "restaurantBientot": "Presto disponibile",
+    "produitBientot": "Presto disponibile",
+    "produitIndisponible": "Presto di nuovo"
   },
   "cart": {
     "title": "Il mio carrello",

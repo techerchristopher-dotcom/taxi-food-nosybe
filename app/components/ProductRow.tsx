@@ -66,7 +66,14 @@ export function ProductRow({
           <View style={styles.unavailRow}>
             <Text style={styles.priceMuted}>{formatAr(product.price)}</Text>
             <View style={styles.unavailBadge}>
-              <Text style={styles.unavailText}>{t('restaurantCard.unavailable')}</Text>
+              {/* ⚠️ « Bientôt de retour » raconte une RUPTURE — un plat qui revient.
+                  Les milkshakes de La Cabane n'ont jamais été servis : ils s'annoncent.
+                  D'où deux mots pour deux situations, et non un seul par paresse. */}
+              <Text style={styles.unavailText}>
+                {t(product.listingStatus === 'coming_soon'
+                  ? 'restaurantCard.comingSoon'
+                  : 'restaurantCard.unavailable')}
+              </Text>
             </View>
           </View>
         )}

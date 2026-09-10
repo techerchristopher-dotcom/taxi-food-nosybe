@@ -54,6 +54,19 @@ export type Product = {
   description: string;
   price: number; // ariary
   isAvailable: boolean;
+  /**
+   * Libellé de l'indisponibilité — RIEN D'AUTRE.
+   *
+   * `coming_soon` = le plat s'annonce (badge « Bientôt disponible ») ; `visible` = plat
+   * normal, et si `isAvailable` est faux le badge dit « Bientôt de retour », qui raconte
+   * une rupture de stock. Les milkshakes de La Cabane n'ont jamais été servis : ils
+   * s'annoncent, ils ne reviennent pas.
+   *
+   * ⚠️ Ce champ ne coupe RIEN. C'est `isAvailable` qui interdit la commande, et lui seul.
+   * Mélanger « ce qu'on affiche » et « ce qu'on autorise » est ce qui a produit la faille
+   * du 2026-09-09 sur `restaurants.listing_status`.
+   */
+  listingStatus?: 'visible' | 'coming_soon';
   photoUrl?: string | null; // URL photo produit (Supabase Storage), null si absente
   hasOptions?: boolean; // true si le produit a des groupes d'options (→ passer par le détail)
   tags?: string[]; // cosmétique — non stocké en base

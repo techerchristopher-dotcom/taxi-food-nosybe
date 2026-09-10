@@ -94,7 +94,17 @@ export default function ProductDetailScreen() {
 
   // Voir la carte d'un restaurant ferme est normal ; y composer un panier que
   // `create_order` refusera ne l'est pas. Coupe l'ajout, pas la consultation.
-  const commandable = restaurant?.isOpen ?? false;
+  //
+  // ⚠️ `product.isAvailable` MANQUAIT ICI, et ce n'etait pas theorique. Cette fiche
+  // n'est pas atteignable depuis la carte quand le produit est indisponible — la ligne
+  // n'est meme pas cliquable (`ProductRow`). Mais elle l'est PAR UN LIEN DE PARTAGE, et
+  // l'app en fabrique elle-meme (`PartageSheet`, `lienProduit`). Un lien vers un
+  // milkshake permettait donc de l'ajouter au panier, pendant que la carte le montrait
+  // grise. « Non commandable » etait faux des que quelqu'un partageait le lien.
+  //
+  // Meme famille que la faille du 2026-09-09 : une regle qui ne vit que dans UN ecran
+  // se contourne par le lien qui saute cet ecran.
+  const commandable = (restaurant?.isOpen ?? false) && product.isAvailable;
 
   const ctx: RestaurantContext | null = restaurant
     ? {
@@ -306,10 +316,17 @@ export default function ProductDetailScreen() {
             ]}
           >
             <Text style={styles.addText}>
-              {!commandable
+              {/* Le bouton doit dire POURQUOI il est mort, et le restaurant passe
+                  avant le produit : un restaurant ferme ne sert rien du tout, annoncer
+                  « Bientot disponible » sur le plat serait alors trompeur. */}
+              {!(restaurant?.isOpen ?? false)
                 ? restaurant?.listingStatus === 'coming_soon'
                   ? t('product.restaurantBientot')
                   : t('product.restaurantFerme')
+                : !product.isAvailable
+                  ? t(product.listingStatus === 'coming_soon'
+                      ? 'product.produitBientot'
+                      : 'product.produitIndisponible')
                 : valid
                   ? t('product.addWithPrice', { price: formatAr(lineTotal) })
                   : t('product.chooseOptions')}

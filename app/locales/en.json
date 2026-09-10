@@ -154,7 +154,9 @@
     "chooseOptions": "Choose the options",
     "share": "Share this dish",
     "restaurantFerme": "Restaurant closed",
-    "restaurantBientot": "Coming soon"
+    "restaurantBientot": "Coming soon",
+    "produitBientot": "Coming soon",
+    "produitIndisponible": "Back soon"
   },
   "cart": {
     "title": "My cart",

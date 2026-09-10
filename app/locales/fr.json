@@ -195,7 +195,8 @@
     "gpsTimeout": "La position met trop de temps à arriver. Réessaie, ou approche-toi d'une fenêtre si tu es à l'intérieur.",
     "gpsUnavailable": "Position indisponible sur cet appareil. Vérifie que la localisation est activée.",
     "gpsWebHowTo": "Sur iPhone il y a DEUX autorisations. 1) Réglages → Confidentialité et sécurité → Service de localisation → Safari : mets « Lorsque l'app est active ». 2) Dans Safari, touche « aA » à gauche de l'adresse → Réglages du site → Localisation → Autoriser. Reviens ensuite ici et touche Réessayer.",
-    "noteHint": "Il n'y a pas d'adressage postal à Nosy Be : c'est ta position qui guide le livreur. Ces précisions l'aident à te trouver plus vite."
+    "noteHint": "Il n'y a pas d'adressage postal à Nosy Be : c'est ta position qui guide le livreur. Ces précisions l'aident à te trouver plus vite.",
+    "accuracyPoor": "Position approximative (± {{m}} m). Le livreur risque de ne pas te trouver : sors à l'air libre, attends quelques secondes et touche « Actualiser ma position »."
   },
   "checkout": {
     "title": "Valider ma commande",
@@ -455,5 +456,15 @@
     "plus": "Autre application…",
     "fermer": "Fermer",
     "surLabel": "Partager sur :"
+  },
+  "authCallback": {
+    "working": "Validation en cours…",
+    "failedTitle": "Ce lien n'est plus valable",
+    "failedBody": "Il a peut-être déjà servi, ou il a expiré. Recommence depuis l'écran de connexion — un nouveau lien part immédiatement.",
+    "backToSignIn": "Retour à la connexion",
+    "browse": "Voir les restaurants sans compte",
+    "newPasswordTitle": "Nouveau mot de passe",
+    "newPasswordSubtitle": "Choisis ton nouveau mot de passe. Il remplacera l'ancien immédiatement.",
+    "savePassword": "Enregistrer le mot de passe"
   }
 }

@@ -88,7 +88,7 @@ function AddressForm() {
   const [error, setError] = useState<string | null>(null);
 
   // Position GPS — OBLIGATOIRE pour valider.
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number; capturedAt: string } | null>(null);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number; capturedAt: string; accuracy: number | null } | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   // Cause de l'echec, pour dire au client quoi faire plutot qu'un message fourre-tout.
   const [gpsCause, setGpsCause] = useState<EchecPosition | null>(null);
@@ -123,9 +123,11 @@ function AddressForm() {
  *    sur `navigator.geolocation.getCurrentPosition`, qui, sans `timeout`, peut
  *    attendre pour toujours — cas courant sur un ordinateur de bureau sans GPS,
  *    où le navigateur interroge un service de géolocalisation qui ne répond pas.
- * 2. `Accuracy.High` demande `enableHighAccuracy`, qui sur un ordinateur force le
- *    navigateur à chercher une précision qu'il ne peut pas atteindre. On demande
- *    donc la précision réseau, largement suffisante pour livrer.
+ * 2. `Accuracy.High` demande `enableHighAccuracy`. On a d'abord cru pouvoir s'en passer
+ *    et se contenter de la précision réseau — c'était l'erreur, et elle a coûté une
+ *    adresse en pleine mer le 2026-09-10. La précision réseau suffit à situer une VILLE,
+ *    pas une maison. Voir `positionWeb` ci-dessous : haute précision, et on garde la
+ *    meilleure prise plutôt que la première.
  *
  * On distingue aussi les trois causes d'échec : refus, délai dépassé, position
  * indisponible. Un message unique « refusée ou indisponible » envoyait le client
@@ -133,19 +135,91 @@ function AddressForm() {
  */
 type EchecPosition = 'refus' | 'delai' | 'indisponible';
 
-function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp: number }> {
+type PriseGps = { latitude: number; longitude: number; timestamp: number; accuracy: number | null };
+
+/** Au-delà, la position ne désigne plus une maison mais un quartier — voire la mer. */
+const PRECISION_ACCEPTABLE_M = 200;
+
+/**
+ * ⚠️ On prend la MEILLEURE position, pas la PREMIÈRE.
+ *
+ * `getCurrentPosition` rend la première réponse venue. Sur un téléphone, cette première
+ * réponse est presque toujours celle du réseau (antenne / Wi-Fi), pas celle du GPS : à
+ * Nosy Be, où la couverture est éparse, elle peut tomber à plusieurs kilomètres. Constaté
+ * en test terrain le 2026-09-10 — une adresse enregistrée en PLEINE MER, à l'ouest de
+ * l'île, sur des coordonnées que l'app a acceptées sans un mot.
+ *
+ * `watchPosition` continue d'émettre à mesure que le GPS s'accroche, chaque relevé étant
+ * plus précis que le précédent. On garde le meilleur, on s'arrête dès qu'il est bon, et on
+ * rend la main au plus tard au bout de `MS_MAX`.
+ *
+ * `maximumAge: 0` est indispensable : sans lui, le navigateur a le droit de resservir un
+ * relevé réseau vieux d'une minute et le suivi s'arrête là, sur la mauvaise valeur.
+ */
+function positionWeb(): Promise<PriseGps> {
+  const MS_MAX = 15000;
+  const MS_MIN = 2500; // on ne s'arrête jamais avant : la 1re réponse est la moins bonne
+
   return new Promise((resolve, reject) => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       reject('indisponible' as EchecPosition);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, timestamp: pos.timestamp }),
+
+    let meilleure: PriseGps | null = null;
+    let fini = false;
+    const depart = Date.now();
+
+    const arreter = () => {
+      if (fini) return;
+      fini = true;
+      navigator.geolocation.clearWatch(id);
+      clearTimeout(minuteur);
+      if (meilleure) resolve(meilleure);
+      else reject('delai' as EchecPosition);
+    };
+
+    const minuteur = setTimeout(arreter, MS_MAX);
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const prise: PriseGps = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          timestamp: pos.timestamp,
+          accuracy: typeof pos.coords.accuracy === 'number' ? pos.coords.accuracy : null,
+        };
+        // Une prise sans précision connue ne remplace jamais une prise mesurée.
+        const mieux =
+          !meilleure ||
+          (prise.accuracy != null &&
+            (meilleure.accuracy == null || prise.accuracy < meilleure.accuracy));
+        if (mieux) meilleure = prise;
+
+        const retenue = meilleure as PriseGps;
+        if (
+          retenue.accuracy != null &&
+          retenue.accuracy <= PRECISION_ACCEPTABLE_M &&
+          Date.now() - depart >= MS_MIN
+        ) {
+          arreter();
+        }
+      },
       (err) => {
+        // ⚠️ Une erreur qui arrive APRÈS une bonne prise ne l'annule pas : le GPS peut
+        // décrocher une fois accroché, et jeter ce qu'on tient serait une régression.
+        if (meilleure) {
+          arreter();
+          return;
+        }
+        if (fini) return;
+        fini = true;
+        navigator.geolocation.clearWatch(id);
+        clearTimeout(minuteur);
         // 1 = refus, 2 = position indisponible, 3 = delai depasse
         reject((err.code === 1 ? 'refus' : err.code === 3 ? 'delai' : 'indisponible') as EchecPosition);
       },
-      { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: MS_MAX, maximumAge: 0 },
     );
   });
 }
@@ -159,6 +233,7 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
       let latitude: number;
       let longitude: number;
       let horodatage: number;
+      let precision: number | null;
 
       if (Platform.OS === 'web') {
         // Pas de demande de permission séparée : c'est l'appel lui-même qui fait
@@ -169,6 +244,7 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
         latitude = p.latitude;
         longitude = p.longitude;
         horodatage = p.timestamp;
+        precision = p.accuracy;
       } else {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
@@ -177,13 +253,19 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
           setGpsStatus('error');
           return;
         }
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        // `BestForNavigation` plutôt que `High` : même raison que le suivi web ci-dessus,
+        // c'est le seul niveau qui attend une vraie accroche satellite au lieu de se
+        // contenter du premier relevé réseau.
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.BestForNavigation,
+        });
         latitude = pos.coords.latitude;
         longitude = pos.coords.longitude;
         horodatage = pos.timestamp;
+        precision = pos.coords.accuracy ?? null;
       }
 
-      setCoords({ latitude, longitude, capturedAt: new Date(horodatage).toISOString() });
+      setCoords({ latitude, longitude, capturedAt: new Date(horodatage).toISOString(), accuracy: precision });
       setGpsStatus('ok');
       // Quartier deduit automatiquement (reverse geocoding — natif uniquement).
       // On ne deduit plus de « rue » : le champ a ete retire, Nosy Be n'ayant pas
@@ -301,6 +383,18 @@ function positionWeb(): Promise<{ latitude: number; longitude: number; timestamp
               </View>
             </View>
             <MapPreview latitude={coords.latitude} longitude={coords.longitude} label={autoZone} />
+            {/* ⚠️ La précision est AFFICHÉE, jamais avalée. Une prise à 3 km s'enregistrait
+                sans un mot et donnait une adresse en pleine mer (test terrain 2026-09-10).
+                On ne bloque pas pour autant : une position approximative reste meilleure
+                que pas de commande du tout, et « Actualiser » est juste au-dessous. */}
+            {coords.accuracy != null && coords.accuracy > PRECISION_ACCEPTABLE_M ? (
+              <View style={styles.precisionBox}>
+                <Icon name="gps_not_fixed" size={18} color={colors.dangerText} />
+                <Text style={styles.precisionText}>
+                  {t('address.accuracyPoor', { m: Math.round(coords.accuracy) })}
+                </Text>
+              </View>
+            ) : null}
             <Text style={styles.mapHint}>{t('address.mapHint')}</Text>
             <Pressable onPress={captureLocation} hitSlop={6} style={{ alignSelf: 'flex-start' }}>
               <Text style={styles.gpsLink}>{t('address.refresh')}</Text>
@@ -463,6 +557,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   gpsOkTop: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  precisionBox: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+    backgroundColor: colors.dangerBg,
+    borderRadius: radius.input,
+    padding: 10,
+    marginTop: 10,
+  },
+  precisionText: { flex: 1, fontFamily: fonts.regular, fontSize: 12, color: colors.dangerText, lineHeight: 17 },
   gpsOkTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.successDark },
   gpsOkZone: { fontFamily: fonts.regular, fontSize: 12, color: colors.textDark, marginTop: 2 },
   gpsErrorBox: { marginTop: 12 },

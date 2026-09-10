@@ -195,7 +195,8 @@
     "gpsTimeout": "Your location is taking too long. Try again, or move near a window if you are indoors.",
     "gpsUnavailable": "Location unavailable on this device. Check that location services are on.",
     "gpsWebHowTo": "On iPhone there are TWO permissions. 1) Settings → Privacy & Security → Location Services → Safari: set it to “While Using the App”. 2) In Safari, tap “aA” left of the address → Website Settings → Location → Allow. Then come back and tap Retry.",
-    "noteHint": "There are no street addresses in Nosy Be: your location is what guides the courier. These details help them find you faster."
+    "noteHint": "There are no street addresses in Nosy Be: your location is what guides the courier. These details help them find you faster.",
+    "accuracyPoor": "Approximate position (± {{m}} m). The courier may not find you: step outside, wait a few seconds and tap “Refresh my position”."
   },
   "checkout": {
     "title": "Confirm my order",
@@ -455,5 +456,15 @@
     "plus": "Other app…",
     "fermer": "Close",
     "surLabel": "Share on:"
+  },
+  "authCallback": {
+    "working": "Verifying…",
+    "failedTitle": "This link is no longer valid",
+    "failedBody": "It may already have been used, or it has expired. Start again from the sign-in screen — a new link is sent right away.",
+    "backToSignIn": "Back to sign in",
+    "browse": "Browse restaurants without an account",
+    "newPasswordTitle": "New password",
+    "newPasswordSubtitle": "Choose your new password. It replaces the old one immediately.",
+    "savePassword": "Save password"
   }
 }

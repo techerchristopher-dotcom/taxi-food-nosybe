@@ -606,6 +606,23 @@ export async function signUpWithEmail(
   return { session: await buildSession(), needsConfirmation: false };
 }
 
+/**
+ * Change le mot de passe du compte CONNECTÉ.
+ *
+ * Le lien de réinitialisation reçu par e-mail ouvre une session valide : c'est cette
+ * session qui autorise `updateUser`. La fonction n'a donc de sens qu'appelée depuis
+ * `app/auth/callback.tsx`, juste après le retour du lien — ailleurs, il n'y a rien à
+ * réinitialiser.
+ *
+ * ⚠️ `sendPasswordReset` existait depuis le début, mais AUCUN écran ne permettait de
+ * saisir le nouveau mot de passe : le lien renvoyait vers `/auth/callback`, qui n'existait
+ * pas non plus. La réinitialisation était donc morte de bout en bout.
+ */
+export async function updatePassword(password: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new AuthError(authErrorCode(error));
+}
+
 /** Envoie l'e-mail de réinitialisation de mot de passe. */
 export async function sendPasswordReset(email: string): Promise<void> {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {

@@ -722,3 +722,44 @@ contrainte — et seul le contrôle automatique l'a signalé.
 ⚠️ **Quatre des cinq photos venaient du dossier `produits/taxi-be/`**, pas de celui de Bidul &
 Truc : `pizza-reine.png`, `pizza-bolognaise.png` (pour la « Carnivore »), `pizza-vegetarienne.png`,
 `pizza-margherita.png`. Seule la Toscane avait sa photo dans `chez-bidul-truc/`.
+
+## 13. Le visuel « annonce » — une scène pleine largeur (2026-09-10)
+
+Les douze premières sections décrivent le **visuel produit** : un plat détouré posé sur le
+rouge. Le visuel d'annonce est une autre bête — toute la gamme d'un coup, dans une scène — mais
+il **réutilise la bande rouge, le filet or, la pastille du restaurant, le bloc promo et la
+colonne QR sans en changer un pixel**. `pub_milkshake.py` ne réinvente que le haut.
+
+### La bande vaut ce que le contenu demande
+
+`RED_H = 500` a été calé sur un visuel produit, où la ligne secondaire tient sur **une** ligne.
+L'annonce en met deux (huit parfums) : le bloc promo descend de 94 px, et la bande déborde du
+cadre — sans que le contrôle « écart promo / Google Play » ne s'en aperçoive, puisque les deux
+descendent ensemble.
+
+```
+mesuré : bas du bloc promo à 533 px sous le haut de bande, + 28 px de padding  ->  red = 594
+```
+
+💡 **Deux blocs alignés entre eux peuvent sortir du cadre tous les deux.** Le contrôle d'écart
+ne remplace pas un contrôle de débord. Les deux sont dans `rendre_pub.py`.
+
+### La scène est recadrée avant, pas par `object-fit`
+
+`object-fit: cover` recadre au rendu, donc la carte d'occupation calculée sur le fichier source
+ne correspond plus à ce qu'on voit — et la mesure d'air autour de la pastille devient fausse.
+La scène est donc **découpée au pixel près à la hauteur de la photo** (1080 × 748) avant d'être
+posée. `object-fit` n'a alors plus rien à couper, et la mesure porte sur l'image réelle.
+
+### La pastille se pose dans le vide mesuré
+
+Le vide n'est pas un défaut de la scène : c'est l'emplacement du message. On le **mesure**
+(écart-type local sur une grille de 20 px), on y pose la pastille, et on vérifie l'air :
+
+```
+pastille d=235 en (800, 470)   ->   air 29,2 px   (mini 20)
+```
+
+La pastille ne porte plus la remise mais l'annonce : « LES MILKSHAKES / **BIENTÔT** / 8 PARFUMS ».
+Même cercle or, même filet encre, même rotation −7°. La remise reste dans le bloc promo, à sa
+place habituelle. **Le slot est fixe, le message change.**

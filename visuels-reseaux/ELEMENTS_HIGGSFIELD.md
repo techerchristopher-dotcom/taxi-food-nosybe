@@ -34,6 +34,43 @@ vente chez Angelo et La Cabane.
 
 Reste aussi à corriger `thb-pm.jpg`, **qui est un verre vide**, en vente chez trois restaurants.
 
+## Les milkshakes de La Cabane — huit parfums, 10/09/2026
+
+Un parfum = un element. C'est la seule facon d'obtenir huit gobelets qu'on
+distingue a l'oeil : sans eux, le moteur redessine huit fois le meme beige et
+deforme le sticker. Le gobelet ne change jamais, seuls la couleur du shake, la
+garniture et l'ingredient au pied changent.
+
+| Element | id |
+|---|---|
+| LaCabane-logo | `2ff4df25-1701-463a-aaa8-816ae0cf9923` |
+| LaCabane-gobelet-milkshake | `4e840637-5f65-44de-823b-77ffadad0099` |
+| Milkshake-Fraise-LaCabane | `202b6eb0-1056-46de-9a1d-9fcb4a635200` |
+| Milkshake-Vanille-LaCabane | `a21897e1-6135-4228-a4f6-178645aceccd` |
+| Milkshake-Chocolat-LaCabane | `0e5c06cb-9802-4978-bce0-f552a3474931` |
+| Milkshake-Oreo-LaCabane | `0fdb9699-0a77-4286-b346-6c6112cb190c` |
+| Milkshake-Twix-LaCabane | `7d75da60-b3e4-4165-82d0-75c3eeefaf41` |
+| Milkshake-Speculoos-LaCabane | `9d481493-f5ca-4f87-9e61-96a5f287d5a3` |
+| Milkshake-KinderBueno-LaCabane | `f8185445-92a4-45ad-8361-e3a05c62f4db` |
+| Milkshake-Snickers-LaCabane | `b23f2a96-e55e-43ee-8604-37c96c59f1f5` |
+
+**Les parfums qui portent un nom de marque se representent par la MATIERE seule** :
+morceaux de biscuit, eclats de chocolat, cacahuetes, brisures noires. Aucun
+emballage, aucun logo tiers, aucun lettrage. Le seul lettrage autorise dans
+l'image est le sticker rond LA CABANE, qui vient de l'element, jamais du modele.
+
+### Ce qui rate quand on demande huit gobelets en une image
+
+Mesure sur cinq generations : **le moteur en produit neuf des que la scene se
+charge** — vague, creme, decor. Sur les cinq essais, une seule a rendu huit
+gobelets. La parade n'est pas de reformuler : c'est de **compter sur le rendu**
+avant de valider, et de garder celle qui compte juste.
+
+Corollaire : quand une generation est bonne mais rognee au bord, on ne la
+relance pas — on l'**outpaint** (`outpaint_image`, 5:4). L'image validee est
+conservee telle quelle et le moteur ne rajoute que du fond. Relancer, c'est
+rejouer la loterie des neuf gobelets.
+
 ## La série Maki
 
 | Élément | id |

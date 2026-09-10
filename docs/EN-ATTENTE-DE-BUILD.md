@@ -306,8 +306,18 @@ automatique, bascule manuelle, et mise en rupture produit par produit.
 
 `app/lib/version.ts` remplace le « v1.0 MVP » codé en dur.
 
-⚠️ **`DATE_MISE_A_JOUR` est à remonter À CHAQUE BUILD envoyé aux magasins.**
-C'est une ligne, et c'est le seul geste de sortie manuel du projet.
+⚠️ ~~`DATE_MISE_A_JOUR` est à remonter À CHAQUE BUILD~~ — **supprimé le 2026-09-10.
+Il n'y a plus AUCUN geste de sortie manuel.**
+
+Cette constante a menti deux fois, et les deux fois elle a fait conclure l'inverse de la
+vérité : « 7 septembre » sur un binaire du 8 (le 2026-09-08, conclusion « le mauvais build
+est installé »), puis « 8 septembre » sur un binaire du 9 ayant reçu une mise à jour du 10
+(le 2026-09-10, conclusion « rien n'est arrivé » — alors que tout était arrivé).
+
+Le pied de page lit désormais `Updates.createdAt`, la date de publication du paquet
+JavaScript **réellement en train de tourner**. Elle est vraie par construction et ne dépend
+de la vigilance de personne. Elle affiche « version du magasin » tant qu'aucune mise à jour
+à distance n'a été appliquée — ce qui est, là aussi, exactement l'information utile.
 
 ## Mises à jour OTA activées (2026-09-05)
 

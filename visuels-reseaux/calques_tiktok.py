@@ -9,10 +9,9 @@ video et la publication ne disent plus la meme chose au pixel pres.
 Chaque calque fait 1080 x 1920 avec fond transparent. Dans Remotion ils se
 posent tous en (0,0) : aucun calcul de decalage, donc aucune derive possible.
 
-  L1-bande.png     le rouge sous le filet or
-  L2-texte.png     la colonne : titre, prix, lieu, promo, stores, url
-  L3-pastille.png  le disque du restaurant, a cheval sur le filet
-  L4-badge.png     la pastille -50 %
+  L01 bande · L02 pastille resto · L03 titre · L04 description · L05 prix
+  L06 ligne resto · L07 disque or · L08 « -50 % » · L09 pastille du code
+  L10 bloc noir · L11 stores · L12 url
 
 Le plat et le fond ne sont dans aucun calque : ils viennent du clip.
 """
@@ -27,32 +26,56 @@ from mesure import standalone
 spec = importlib.util.spec_from_file_location('g', os.path.join(D, 'gabarit.py'))
 g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
 
-# Les enfants du conteneur sont designes par ce qu'ils SONT, pas par leur rang :
-# avec plat=None il n'y a pas d'image de plat, tous les index glissent d'un cran,
-# et on exporte le mauvais calque sans la moindre erreur.
+# Chaque element animable porte un ROLE, grave une fois dans le DOM. Les roles
+# du premier niveau se deduisent du style ; ceux du badge et de la colonne se
+# deduisent du rang, parce que ce sont des suites ordonnees que le gabarit ecrit
+# toujours dans le meme ordre.
+#
+# La visibilite est HERITEE : masquer la colonne puis rendre le titre visible
+# donne bien le titre seul, sans son contexte. C'est ce qui permet de sortir le
+# « -50 % » sans son disque, et le disque sans son « -50 % ».
+ROLES_BADGE   = ['badge-commande', 'badge-remise', 'badge-livraison', 'badge-code']
+ROLES_COLONNE = ['eyebrow', 'titre', 'desc', 'prix', 'lieu', 'promo', 'liens']
+ROLES_LIENS   = ['stores', 'url']
+
+
 def _js():
     """Masquage par role, avec les vraies mesures du gabarit."""
     return f"""(garder) => {{
   const box = document.querySelector('x-dc > div') || document.body.querySelector('div');
   const vieux = document.getElementById('_bande'); if (vieux) vieux.remove();
-  // Le role est calcule UNE fois et grave dans l'element. Toucher a e.style
-  // reserialise l'attribut et convertit #FFFFFF en rgb(255, 255, 255) : au
-  // deuxieme appel la pastille devenait un badge, et sans la moindre erreur.
-  const role = e => {{
-    const s = e.getAttribute('style') || '';
-    const blanc = s.includes('#FFFFFF') || s.includes('rgb(255, 255, 255)');
-    if (s.includes('border-radius: 50%') && blanc) return 'pastille';
-    if (s.includes('border-radius: 50%')) return 'badge';
-    if (s.includes('flex-direction: column')) return 'colonne';
-    if (s.includes('height: {g.FILET}px')) return 'filet';
-    return 'fond';
-  }};
-  const vus = [];
-  [...box.children].forEach(e => {{
-    if (!e.dataset.role) e.dataset.role = role(e);
-    vus.push(e.dataset.role);
+
+  if (!box.dataset.etiquete) {{
+    // Le role est calcule UNE fois. Toucher a e.style reserialise l'attribut
+    // et convertit #FFFFFF en rgb(255, 255, 255) : au deuxieme appel la
+    // pastille devenait un badge, et sans la moindre erreur.
+    const haut = e => {{
+      const s = e.getAttribute('style') || '';
+      const blanc = s.includes('#FFFFFF') || s.includes('rgb(255, 255, 255)');
+      if (s.includes('border-radius: 50%') && blanc) return 'pastille';
+      if (s.includes('border-radius: 50%')) return 'badge';
+      if (s.includes('flex-direction: column')) return 'colonne';
+      if (s.includes('height: {g.FILET}px')) return 'filet';
+      return 'fond';
+    }};
+    const suite = (parent, noms) =>
+      [...parent.children].forEach((e, i) => {{ if (noms[i]) e.dataset.role = noms[i]; }});
+
+    [...box.children].forEach(e => {{ e.dataset.role = haut(e); }});
+    const badge   = [...box.children].find(e => e.dataset.role === 'badge');
+    const colonne = [...box.children].find(e => e.dataset.role === 'colonne');
+    if (badge)   suite(badge,   {ROLES_BADGE});
+    if (colonne) suite(colonne, {ROLES_COLONNE});
+    const liens = colonne && [...colonne.children].find(e => e.dataset.role === 'liens');
+    if (liens)  suite(liens, {ROLES_LIENS});
+    box.dataset.etiquete = '1';
+  }}
+
+  const tous = [...box.querySelectorAll('[data-role]')];
+  tous.forEach(e => {{
     e.style.visibility = garder.includes(e.dataset.role) ? 'visible' : 'hidden';
   }});
+
   // Le rouge est le fond du CONTENEUR, pas un enfant : il couvrirait la scene.
   box.style.background = 'transparent';
   if (garder.includes('filet')) {{
@@ -63,8 +86,29 @@ def _js():
                     + 'background:{g.ROUGE}; z-index:0;';
     box.insertBefore(d, box.firstChild);
   }}
-  return vus;
+  return tous.map(e => e.dataset.role);
 }}"""
+
+
+# Douze calques, douze gestes. L'ordre du plan n'est pas l'ordre de la page :
+# le titre arrive avant le badge, parce qu'on dit ce que c'est avant de dire
+# combien on enleve.
+PLAN = [
+    ('L01-bande',    ['filet']),
+    ('L02-pastille', ['pastille']),
+    ('L03-titre',    ['eyebrow', 'titre']),
+    ('L04-desc',     ['desc']),
+    ('L05-prix',     ['prix']),
+    ('L06-lieu',     ['lieu']),
+    # le disque et son contexte, SANS le nombre ni le code : ils atterrissent
+    # dans une phrase deja posee (« 1re commande ... sur la livraison »)
+    ('L07-disque',   ['badge', 'badge-commande', 'badge-livraison']),
+    ('L08-remise',   ['badge-remise']),
+    ('L09-code',     ['badge-code']),
+    ('L10-promo',    ['promo']),
+    ('L11-stores',   ['stores']),
+    ('L12-url',      ['url']),
+]
 
 
 async def calques(slug, titre, secondaire, prix, lieu, logo):
@@ -78,13 +122,7 @@ async def calques(slug, titre, secondaire, prix, lieu, logo):
     open(f'sa-calq-{slug}.html', 'w').write(standalone(f'calq-{slug}.dc.html'))
     js = _js()
 
-    # Quatre calques, quatre gestes. La bande et le texte sont separes : une
-    # bande qui monte avec son texte deja dessus arrive d'un bloc, et on ne lit
-    # plus rien. Le texte suit, une fois la bande posee.
-    plan = [('L1-bande',    ['filet']),
-            ('L2-texte',    ['colonne']),
-            ('L3-pastille', ['pastille']),
-            ('L4-badge',    ['badge'])]
+    plan = PLAN
 
     async with async_playwright() as pw:
         b = await pw.chromium.launch()

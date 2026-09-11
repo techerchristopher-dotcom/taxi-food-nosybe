@@ -363,6 +363,25 @@ SERIE_TIKTOK = dict(larg=700, haut=760, cx=540, bas=900, fond='studio',
                     badge='remise', badge_geo=TT_BADGE)
 
 
+def _promo_tiktok(k=1.0):
+    """Le bloc noir, version video. Il ne REPETE plus l'offre, il dit le geste.
+
+    Sur le carre, badge et bloc disent tous deux « 1re commande, -50 %, code » :
+    l'oeil prend tout d'un coup, la redondance ne coute rien. En video elle
+    coute l'attention au moment precis ou il faut retenir une seule chose. Le
+    badge dit QUOI, le bloc dit COMMENT. On ne touche pas a _promo() : les
+    treize visuels carres deja publies ne bougent pas.
+    """
+    f = lambda v: round(v*k)
+    return (f'<div style="display: inline-flex; flex-direction: column; background: {ENCRE}; '
+            f'border-radius: {f(12)}px; padding: {f(14)}px {f(24)}px {f(15)}px;">'
+            f'<span style="font-size: {f(24)}px; font-weight: 800; color: #FFFFFF;">'
+            f'Tape le code <span style="font-weight: 900; color: {OR};">TAXIFOOD50</span></span>'
+            f'<span style="margin-top: {f(4)}px; font-size: {f(18)}px; font-weight: 500; '
+            f'color: rgba(255,255,255,0.62);">au moment de payer</span>'
+            f'</div>')
+
+
 def _stores_tiktok(k=1.0):
     """Les deux badges stores, cote a cote. Pas de QR : voir l'en-tete de la serie."""
     f = lambda v: round(v*k)
@@ -407,7 +426,7 @@ def visuel_tiktok(titre, secondaire, prix, ligne_lieu, logo, plat=None,
     <div style="margin-top: 16px; font-size: 30px; font-weight: 400; line-height: 1.26; color: rgba(255,255,255,0.92);">{secondaire}</div>
     <div style="margin-top: 8px; font-size: 46px; font-weight: 900; color: {OR}; letter-spacing: -0.8px;">{prix}</div>
     <div style="margin-top: 12px; font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.88);">{ligne_lieu}</div>
-    <div style="margin-top: 28px; width: {TT_SAFE['x1'] - TT_PAD_L}px;">{_promo(1.15)}</div>
+    <div style="margin-top: 28px; width: {TT_SAFE['x1'] - TT_PAD_L}px;">{_promo_tiktok(1.15)}</div>
     <!-- L'URL n'est pas une mention legale : sur TikTok aucun lien n'est cliquable,
          c'est la SEULE porte d'entree. On la trouve, on arrive sur le site, on
          telecharge de la. Elle se lit donc en blanc, pas en gris a 72 %. -->

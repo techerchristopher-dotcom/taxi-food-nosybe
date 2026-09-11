@@ -41,7 +41,7 @@ audio = subprocess.run(['ffprobe','-v','error','-select_streams','a:0',
                        capture_output=True, text=True).stdout.strip()
 
 # 1. format
-c1 = (w, h) == (1080, 1920) and abs(fps - 30) < 0.01 and abs(duree - 11) <= 0.2
+c1 = (w, h) == (1080, 1920) and abs(fps - 30) < 0.01 and abs(duree - 14) <= 0.2
 
 # 2. la pizza est-elle arrivee ou la carte l'attend
 #    Mesure sur le rendu NU : dans la video finie la bande couvre le bas du plat
@@ -57,12 +57,13 @@ cont = []
 #    alpha > 160 : on juge le CONTENU, pas les ombres portees. Une ombre qui
 #    deborde de la zone sure ne gene personne — c'est elle qui detache la
 #    pastille de la bande.
-for n in ('L1-bande','L2-texte','L3-pastille','L4-badge'):
-    al = np.asarray(Image.open(f'/tmp/merge/t/{n}-oriental.png'))[:, :, 3]
+import glob
+for n in sorted(glob.glob('/tmp/merge/t/L[01]*-oriental.png')):
+    al = np.asarray(Image.open(n))[:, :, 3]
     ys, xs = np.nonzero(al > 160)
     cont.append((xs.min(), ys.min(), xs.max(), ys.max()))
 # la bande deborde volontairement jusqu'aux bords : on ne juge que ce qui se lit
-lus = cont[1:]                      # texte, pastille, badge
+lus = cont[1:]                      # tout sauf la bande, qui deborde volontairement
 gx0 = min(c[0] for c in lus); gx1 = max(c[2] for c in lus)
 gy0 = min(c[1] for c in lus); gy1 = max(c[3] for c in lus)
 c3 = gx0 >= SAFE['x0'] and gx1 <= SAFE['x1'] and gy1 <= SAFE['y1']
@@ -78,12 +79,41 @@ c4 = max(saut(133), saut(948)) <= 6.0
 # 5. le son
 c5 = audio == 'aac'
 
-ok = all((c1, c2, c3, c4, c5))
+# 6. le badge bat-il vraiment ? On lit la largeur du disque or image par image.
+#    Une animation « ajoutee » qui ne se voit pas dans les pixels n'existe pas.
+def largeur_or(a):
+    z = a[900:1270, 560:980]
+    m = (z[:, :, 0] > 190) & (z[:, :, 1] > 150) & (z[:, :, 2] < 130)
+    xs = np.nonzero(m.any(0))[0]
+    return int(xs.max() - xs.min()) if len(xs) else 0
+
+larg = []
+for n in range(int(11.4 * fps), min(nb, int(13.9 * fps)), 2):
+    larg.append(largeur_or(np.asarray(image(n)).astype(float)))
+repos = min(larg)
+pics = [w for w in larg if w >= repos * 1.035]
+c6 = repos > 0 and max(larg) >= repos * 1.045 and len(pics) >= 2
+
+# 7. rien ne bouge pendant qu'on lit. On compare la colonne de texte a
+#    elle-meme, de la derniere arrivee jusqu'a la fin. x < 560 : l'ombre du
+#    badge commence a 589 et son battement polluerait la mesure. Centile 99,9
+#    et pas maximum : le bruit de compression h264 n'est pas un mouvement.
+FIGE = int(11.6 * fps)
+ref = np.asarray(image(FIGE)).astype(float)[1000:1580, 80:560]
+bouge = 0.0
+for n in range(FIGE + 6, nb, 12):
+    d = np.asarray(image(n)).astype(float)[1000:1580, 80:560]
+    bouge = max(bouge, float(np.percentile(np.abs(d - ref), 99.9)))
+c7 = bouge <= 4.0
+
+ok = all((c1, c2, c3, c4, c5, c6, c7))
 print(f"{F}")
 print(f"  1. format            {w}x{h}  {fps:.0f} i/s  {duree:.2f} s        {'OK' if c1 else 'NON'}")
 print(f"  2. derive du plat    x {b[0]}..{b[2]}  y {b[1]}..{b[3]}  -> {derive} px (max 12)   {'OK' if c2 else 'NON'}")
 print(f"  3. zone sure         x {gx0}..{gx1}  y {gy0}..{gy1}  / {SAFE['x0']}..{SAFE['x1']}, bas {SAFE['y1']}   {'OK' if c3 else 'NON'}")
 print(f"  4. raccord des bords saut max {max(saut(133), saut(948)):.2f} (max 6)             {'OK' if c4 else 'NON'}")
 print(f"  5. son               {audio or 'aucun'}                              {'OK' if c5 else 'NON'}")
+print(f"  6. battement badge   repos {repos} px, pic {max(larg)} px (+{100*(max(larg)/repos-1):.1f} %), {len(pics)} pulsations   {'OK' if c6 else 'NON'}")
+print(f"  7. texte immobile    a partir de 11,6 s : {bouge:.1f} / 255 (max 4)        {'OK' if c7 else 'NON'}")
 print(f"  ->  {'CONFORME' if ok else 'A CORRIGER'}")
 

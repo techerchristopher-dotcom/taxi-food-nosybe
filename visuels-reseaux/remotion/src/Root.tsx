@@ -1,8 +1,8 @@
 import React from 'react';
 import {Composition} from 'remotion';
-import {Pizza, W, H, FPS} from './Pizza';
+import {Pizza, W, H, FPS, DUREE} from './Pizza';
 
-const commun = {component: Pizza, durationInFrames: Math.round(11 * FPS),
+const commun = {component: Pizza, durationInFrames: Math.round(DUREE * FPS),
                 fps: FPS, width: W, height: H} as const;
 
 export const RemotionRoot: React.FC = () => (

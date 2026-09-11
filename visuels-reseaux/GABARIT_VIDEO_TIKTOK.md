@@ -14,7 +14,7 @@ Validé le 2026-09-11. Test de référence : **l'Oriental, Chez Bidul & Truc, 31
 | | |
 |---|---|
 | Résolution | **1080 × 1920** (9:16) |
-| Durée | **13 s** en production · 11 s pour le test sans main |
+| Durée | **14 s** — 10 s de clip, puis la dernière image gelée sous la carte |
 | Images/s | 30 |
 | Codec | H.264, AAC, `.mp4` |
 | Son | **audio natif du modèle**, ASMR. Aucune musique ajoutée. |
@@ -122,12 +122,73 @@ raccord : **0,74** sur 255.
 pres. Le laisser viser la composition, et corriger la geometrie au montage. C'est gratuit,
 c'est exact, et ca ne depend pas de la chance.
 
-## 5. La carte est une SURIMPRESSION, pas une suite
+## 5. La carte est une SURIMPRESSION, et elle s'anime
 
-Elle arrive **par-dessus la vidéo qui tourne encore**. C'est ce qui permet à la main d'entrer
-après le prix sans payer un second clip.
+Elle arrive **par-dessus la vidéo qui tourne encore**.
 
----
+Elle sort du gabarit en **douze calques transparents** (`calques_tiktok.py`), pas en une image.
+Une bande qui monte avec tout son texte déjà dessus arrive d'un bloc, et on ne lit rien.
+
+Deux règles gouvernent l'animation :
+
+1. **Une arrivée à la fois.** Jamais deux gestes simultanés.
+2. **Rien ne bouge pendant qu'on lit.** Dès la dernière arrivée posée, tout se fige — sauf
+   les deux choses qu'il faut retenir : le badge et le code.
+
+### Les deux animations qui portent le sens
+
+**Le battement du badge.** Pas un clignotement : ça lit comme une alerte. Un battement de
+cœur — `1 → 1,06 → 1 → 1,03 → 1` sur 0,7 s, deux pulsations, la seconde plus faible, et la
+rotation respire avec (−7° → −5,5°). Il bat **après** s'être posé. Deux fois.
+
+**Le code.** Le badge tombe avec sa phrase incomplète (« 1re commande … sur la livraison »),
+puis **« −50 % »** arrive sec dans le trou, puis **un silence de 0,3 s**, puis la pastille
+**TAXIFOOD50** tamponne dessous. C'est le silence qui fait lire la phrase : *moins cinquante
+pour cent… avec ce code.* Sans lui, ce sont deux objets qui apparaissent.
+
+Le TAXIFOOD50 du bloc noir n'est **pas** animé. Deux codes qui bougent ensemble, on n'en
+retient aucun.
+
+### Le bloc noir ne répète plus l'offre
+
+`_promo_tiktok()` remplace `_promo()` dans la série vidéo : le badge dit **quoi**, le bloc dit
+**comment** (« Tape le code TAXIFOOD50 / au moment de payer »). Sur un carré lu d'un coup
+d'œil la redondance ne coûte rien ; en vidéo elle coûte l'attention au moment précis où il
+faut retenir une seule chose. **Les treize visuels carrés publiés ne sont pas touchés.**
+
+### Le déroulé, en secondes
+
+| s | |
+|---|---|
+| 8,2 | la bande rouge monte |
+| 8,5 | la pastille du restaurant se pose |
+| 8,7 | un éclat traverse le filet or |
+| 8,8 | **Oriental**, seul |
+| 9,05 | la description |
+| 9,25 | **31 000 Ar**, en tampon depuis 1,15 |
+| 9,45 | la ligne du restaurant |
+| 9,7 | le disque or tombe |
+| 9,95 | **−50 %** arrive sec |
+| 10,25 | **TAXIFOOD50** tamponne |
+| 10,6 | le bloc noir |
+| 10,85 | les stores |
+| 11,05 | l'URL, puis un trait or se dessine dessous |
+| **11,6** | **tout est posé, plus rien ne bouge** |
+| 11,6 · 13,0 | les deux battements |
+| 12,5 | le zoom du code |
+
+⚠️ **Les ressorts sont bornés** (`durationInFrames: 14`). Un ressort libre a une queue
+asymptotique qui traîne 30 images : au premier rendu le texte bougeait encore à 12,0 s alors
+que le badge battait depuis 11,6. Mesuré, donc corrigé.
+
+### Le son
+
+`son_tiktok.sh`. Deux choses que le clip ne donne pas :
+
+- **il s'arrête à 10 s** et la vidéo dure 14. On prolonge le grésillement — 2,5 s de la fin,
+  bouclées en fondu croisé, à 42 % du niveau.
+- **il sort à −36,7 dB de moyenne**, inaudible sur un téléphone. `loudnorm` le remonte à
+  −14 LUFS, la cible des réseaux. **20 dB de remontée** : ce n'est pas une finition.
 
 ## 6. Le déroulé
 

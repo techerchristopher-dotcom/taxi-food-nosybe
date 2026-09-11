@@ -156,7 +156,9 @@
     "restaurantFerme": "Restaurant fermé",
     "restaurantBientot": "Bientôt disponible",
     "produitBientot": "Bientôt disponible",
-    "produitIndisponible": "Bientôt de retour"
+    "produitIndisponible": "Bientôt de retour",
+    "servedFrom": "Servi à partir de {{de}}",
+    "horsService": "Pas servi pour le moment"
   },
   "cart": {
     "title": "Mon panier",

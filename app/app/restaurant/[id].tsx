@@ -90,8 +90,19 @@ export default function RestaurantMenuScreen() {
   // `isOpen` vaut deja faux pour un `coming_soon` (voir data/api.ts).
   const commandable = restaurant.isOpen;
 
+  // ⚠️ Ouvert ne veut pas dire que TOUT se commande. Chez Bidul & Truc ouvre a
+  // midi, mais ses pizzas ne sortent du four qu'a 18 h : le bandeau le disait, et
+  // le bouton d'ajout restait actif juste en dessous. Le client remplissait son
+  // panier pour se le faire refuser au paiement (signale le 2026-09-11). Le
+  // verdict `servedNow` vient de la base ; une categorie inconnue n'est pas
+  // bloquee ici, c'est `create_order` qui tranche.
+  const servieMaintenant = (categoryId: string) =>
+    categories.find((c) => c.id === categoryId)?.servedNow ?? true;
+  const commandableProduit = (product: Product) =>
+    commandable && servieMaintenant(product.categoryId);
+
   function tryAdd(product: Product) {
-    if (!commandable) return;
+    if (!commandableProduit(product)) return;
     if (canAdd(product)) add(product, ctx);
     else setPending(product);
   }
@@ -276,7 +287,7 @@ export default function RestaurantMenuScreen() {
                 onInc={() => (p.hasOptions ? router.push(`/product/${p.id}`) : tryAdd(p))}
                 onDec={() => setQuantity(lineKey(p.id), qtyOf(p.id) - 1)}
                 onShare={() => setAPartager(p)}
-                commandable={commandable}
+                commandable={commandableProduit(p)}
               />
             ))}
           </View>

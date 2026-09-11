@@ -156,7 +156,9 @@
     "restaurantFerme": "Ristorante chiuso",
     "restaurantBientot": "Presto disponibile",
     "produitBientot": "Presto disponibile",
-    "produitIndisponible": "Presto di nuovo"
+    "produitIndisponible": "Presto di nuovo",
+    "servedFrom": "Servito dalle {{de}}",
+    "horsService": "Non servito al momento"
   },
   "cart": {
     "title": "Il mio carrello",

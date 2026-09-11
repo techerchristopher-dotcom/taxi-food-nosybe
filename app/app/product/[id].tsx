@@ -38,6 +38,7 @@ export default function ProductDetailScreen() {
   const { data, loading } = useLoad(() => getProductDetail(id!), [id]);
   const product = data?.product ?? null;
   const restaurant = data?.restaurant ?? null;
+  const category = data?.category ?? null;
   const groups = useMemo(() => data?.groups ?? [], [data]);
 
   const add = useCart((s) => s.add);
@@ -104,7 +105,15 @@ export default function ProductDetailScreen() {
   //
   // Meme famille que la faille du 2026-09-09 : une regle qui ne vit que dans UN ecran
   // se contourne par le lien qui saute cet ecran.
-  const commandable = (restaurant?.isOpen ?? false) && product.isAvailable;
+  //
+  // ⚠️ ET L'HORAIRE DE LA CATEGORIE. Chez Bidul & Truc est ouvert a midi, mais ses
+  // pizzas ne sortent du four qu'a partir de 18 h. Sans cette ligne, une pizza
+  // s'ajoutait au panier a 12 h, et le client se faisait refuser au paiement —
+  // signale le 2026-09-11. `servedNow` vient de la base, jamais de l'horloge du
+  // telephone ; absent (categorie illisible), on ne bloque pas : la base tranche.
+  const categorieServie = category?.servedNow ?? true;
+  const commandable =
+    (restaurant?.isOpen ?? false) && product.isAvailable && categorieServie;
 
   const ctx: RestaurantContext | null = restaurant
     ? {
@@ -327,6 +336,10 @@ export default function ProductDetailScreen() {
                   ? t(product.listingStatus === 'coming_soon'
                       ? 'product.produitBientot'
                       : 'product.produitIndisponible')
+                : !categorieServie
+                  ? category?.servingFrom
+                    ? t('product.servedFrom', { de: category.servingFrom })
+                    : t('product.horsService')
                 : valid
                   ? t('product.addWithPrice', { price: formatAr(lineTotal) })
                   : t('product.chooseOptions')}

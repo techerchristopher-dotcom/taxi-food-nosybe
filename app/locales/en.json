@@ -156,7 +156,9 @@
     "restaurantFerme": "Restaurant closed",
     "restaurantBientot": "Coming soon",
     "produitBientot": "Coming soon",
-    "produitIndisponible": "Back soon"
+    "produitIndisponible": "Back soon",
+    "servedFrom": "Served from {{de}}",
+    "horsService": "Not served right now"
   },
   "cart": {
     "title": "My cart",

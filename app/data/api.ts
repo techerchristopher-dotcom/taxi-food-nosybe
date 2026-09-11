@@ -424,6 +424,14 @@ function mapCategory(c: CategoryRow): Category {
 export async function getProductDetail(id: string): Promise<{
   product: Product;
   restaurant: Restaurant | null;
+  /**
+   * ⚠️ La catégorie porte l'HORAIRE DE SERVICE (pizzas de 18 h à 22 h chez Chez
+   * Bidul & Truc). Sans elle, la fiche ne pouvait savoir que si le restaurant était
+   * ouvert — et laissait ajouter une pizza à midi. Or cette fiche est la porte d'un
+   * lien partagé ET de toute pizza à options : c'était la voie directe pour
+   * contourner la carte.
+   */
+  category: Category | null;
   groups: OptionGroup[];
 } | null> {
   const { data, error } = await supabase
@@ -436,15 +444,28 @@ export async function getProductDetail(id: string): Promise<{
   if (error) throw error;
   if (!data) return null;
 
-  const [groupsRes, restaurant] = await Promise.all([
+  const categoryId = (data as ProductRow).category_id;
+  const [groupsRes, restaurant, categoryRes] = await Promise.all([
     supabase
       .from('product_option_groups')
       .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, photo_url )')
       .eq('product_id', id)
       .order('sort_order', { ascending: true }),
     getRestaurant((data as ProductRow).restaurant_id),
+    // Même colonnes que la carte, `categorie_servie_maintenant` comprise : le
+    // verdict vient de la base, jamais de l'horloge du téléphone.
+    categoryId
+      ? supabase
+          .from('categories')
+          .select('id, restaurant_id, name, icon, sort_order, serving_from, serving_to, categorie_servie_maintenant')
+          .eq('id', categoryId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
   if (groupsRes.error) throw groupsRes.error;
+  // Une catégorie illisible ne doit pas rendre la fiche illisible : on la traite
+  // comme absente, et `create_order` tranchera de toute façon.
+  const category = categoryRes.data ? mapCategory(categoryRes.data as CategoryRow) : null;
 
   const groups = (groupsRes.data as unknown as OptionGroupRow[])
     .map(mapOptionGroup)
@@ -453,7 +474,7 @@ export async function getProductDetail(id: string): Promise<{
       return a.sortOrder - b.sortOrder;
     });
   const product = mapProduct(data as ProductRow, groups.length > 0);
-  return { product, restaurant, groups };
+  return { product, restaurant, category, groups };
 }
 
 // --- Adresses ---------------------------------------------------------------

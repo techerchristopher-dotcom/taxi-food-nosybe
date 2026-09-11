@@ -329,3 +329,91 @@ def visuel(photo, alt, titre, secondaire, prix, ligne_lieu, logo, titre_px=60,
   </div>
 </div>
 ''' + FOOT
+
+
+# ============================================================================
+# SERIE_TIKTOK — le vertical 1080 x 1920. Troisieme serie, meme logique que les
+# deux autres : une BOITE, pas une largeur.
+#
+# Ce qui la distingue, et pourquoi ce n'est pas un simple recadrage du carre :
+#
+# 1. L'interface de TikTok recouvre les bords. Zone reellement visible :
+#    x 86..940, y 200..1586. Le bas, 334 px, porte la legende et le pseudo.
+#    L'image deborde jusqu'aux bords, LE CONTENU JAMAIS.
+# 2. Le QR est retire. Le spectateur tient deja le telephone : il ne peut pas
+#    le scanner avec lui-meme. Sur le carre il sert (Facebook se lit aussi sur
+#    un ordinateur, et le visuel sert de flyer) ; ici c'est un carre blanc qui
+#    mange la place dont le prix a besoin.
+# 3. La boite du plat est contrainte par le haut : sommet >= 200. Avec bas=900
+#    la hauteur maximale est 700, donc la largeur aussi (une pizza est ronde).
+# ============================================================================
+TT_W, TT_H   = 1080, 1920
+TT_SAFE      = dict(x0=86, x1=940, y0=200, y1=1586)
+TT_SCENE_H   = 880            # bas de la scene
+TT_PAD_L     = 86             # = bord gauche de la zone sure
+TT_PAD_R     = 140            # colonne de boutons TikTok
+TT_LOGO_D    = 190
+# La rotation de -7 deg elargit la boite du badge : d*(cos7+sin7), soit ~5,7 % de d
+# de debord de chaque cote. Mesure sur le rendu, pas deduit apres coup.
+# d=310 : le badge est le geste commercial, il se lit avant le texte.
+# y=925 le garde sous le plat (air mesuree) et au-dessus du bloc promo (1330).
+TT_BADGE     = dict(d=310, x=TT_W - 140 - 310 - 18, y=925)
+
+SERIE_TIKTOK = dict(larg=700, haut=760, cx=540, bas=900, fond='studio',
+                    badge='remise', badge_geo=TT_BADGE)
+
+
+def _stores_tiktok(k=1.0):
+    """Les deux badges stores, cote a cote. Pas de QR : voir l'en-tete de la serie."""
+    f = lambda v: round(v*k)
+    return (f'<div style="display: flex; gap: {f(14)}px; align-items: center;">'
+            f'<img src="appstore.png" alt="App Store" style="height: {f(58)}px; width: auto; display: block;">'
+            f'<img src="googleplay.png" alt="Google Play" style="height: {f(58)}px; width: auto; display: block;">'
+            f'</div>')
+
+
+def visuel_tiktok(titre, secondaire, prix, ligne_lieu, logo, plat=None,
+                  fond=None, badge='remise', code='TAXIFOOD50', titre_px=84,
+                  eyebrow='Nouveau sur Taxi&nbsp;Food'):
+    """Le visuel produit en 9:16. Memes tokens, memes regles, autre boite."""
+    ph  = TT_SCENE_H
+    red = TT_H - ph - FILET
+    b   = TT_BADGE
+    return HEAD + f'''<div style="position: relative; width: {TT_W}px; height: {TT_H}px; background: {ROUGE}; overflow: hidden;">
+
+  <div style="position: absolute; top: 0; left: 0; width: {TT_W}px; height: {ph}px; background: {fond or FONDS['studio']};"></div>
+
+  <div style="position: absolute; top: {ph}px; left: 0; width: {TT_W}px; height: {FILET}px; background: {OR};"></div>
+{_debord(plat)}
+{_badge_code(badge, code, b['d'], b['x'], b['y'])}
+
+  <div style="position: absolute; top: {ph - round(TT_LOGO_D*0.52)}px; left: {TT_PAD_L}px; z-index: 10;
+       width: {TT_LOGO_D}px; height: {TT_LOGO_D}px; border-radius: 50%; background: #FFFFFF;
+       box-shadow: 0 14px 36px rgba(0,0,0,0.45); overflow: hidden;">
+    <img src="{logo}" alt="Logo" style="width: {TT_LOGO_D}px; height: {TT_LOGO_D}px; object-fit: cover; display: block;">
+  </div>
+
+  <!-- UNE SEULE colonne qui coule. Le bloc promo etait positionne a part, en
+       absolu : des que la composition passait a deux lignes, la ligne du
+       restaurant disparaissait dessous. Deux blocs poses independamment
+       finissent toujours par se rencontrer. -->
+  <div style="position: absolute; top: {ph+FILET+126}px; left: {TT_PAD_L}px; width: {TT_BADGE['x'] - TT_PAD_L - 30}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 46px; height: auto; display: block; border-radius: 10px;">
+      <span style="font-size: 24px; font-weight: 700; letter-spacing: 3.2px; color: {OR}; text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+    </div>
+    <div style="margin-top: 14px; font-size: {titre_px}px; font-weight: 900; line-height: 0.97; color: #FFFFFF; letter-spacing: -2.2px;">{titre}</div>
+    <div style="margin-top: 16px; font-size: 30px; font-weight: 400; line-height: 1.26; color: rgba(255,255,255,0.92);">{secondaire}</div>
+    <div style="margin-top: 8px; font-size: 46px; font-weight: 900; color: {OR}; letter-spacing: -0.8px;">{prix}</div>
+    <div style="margin-top: 12px; font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.88);">{ligne_lieu}</div>
+    <div style="margin-top: 28px; width: {TT_SAFE['x1'] - TT_PAD_L}px;">{_promo(1.15)}</div>
+    <!-- L'URL n'est pas une mention legale : sur TikTok aucun lien n'est cliquable,
+         c'est la SEULE porte d'entree. On la trouve, on arrive sur le site, on
+         telecharge de la. Elle se lit donc en blanc, pas en gris a 72 %. -->
+    <div style="margin-top: 16px; display: flex; align-items: center; gap: 24px;">
+      {_stores_tiktok(0.85)}
+      <span style="font-size: 28px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; white-space: nowrap;">taxifoodnosybe.distripro207.com</span>
+    </div>
+  </div>
+''' + FOOT

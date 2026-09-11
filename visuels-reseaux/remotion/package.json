@@ -1,0 +1,1 @@
+{"name":"taxifood-tiktok","version":"1.0.0","private":true,"type":"module","dependencies":{"@remotion/bundler":"^4.0.523","@remotion/cli":"^4.0.523","@remotion/renderer":"^4.0.523","react":"^19.3.0","react-dom":"^19.3.0","remotion":"^4.0.523"}}

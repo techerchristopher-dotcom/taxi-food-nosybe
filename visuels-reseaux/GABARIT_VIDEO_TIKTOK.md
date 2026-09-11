@@ -76,14 +76,51 @@ promo dès que la composition passait à deux lignes.
 
 ## 4. Le pivot : le plat ne bouge pas
 
-**L'image de fin donnée au modèle n'est pas la photo produit : c'est la carte finale sans son
-texte** — le plat déjà posé à sa place définitive, sur le fond de la carte.
+**L'image de fin donnee au modele n'est pas la photo produit : c'est la carte finale sans son
+texte** — le plat deja pose a sa place definitive, sur le fond de la carte.
 
-La dernière image du clip **est** donc la première image de la carte. Il n'y a rien à
-raccorder : le décor change, le texte arrive, le plat ne bouge pas d'un pixel. La transition
-n'est pas réussie, elle est supprimée.
+La derniere image du clip **est** donc la premiere image de la carte. Il n'y a rien a
+raccorder : le decor change, le texte arrive, le plat ne bouge pas d'un pixel.
 
----
+### Ce que `end_image` fait vraiment — mesure du 11/09
+
+**Seedance 2.0 Mini traite l'image de fin comme une cible de composition, pas comme une
+derniere image imposee.** Sur l'Oriental il a rendu la bonne pizza, la bonne orientation, le
+bon cadrage — et **32 % trop gros**, avec un disque 8 % plus haut que large (la camera ne
+finit pas tout a fait a la verticale).
+
+Mesure sur l'image 240 du clip, contre la cible :
+
+| | x | y | taille | rapport |
+|---|---|---|---|---|
+| clip, derniere image | 81..998 | 420..1415 | 917 × 995 | 0,922 |
+| cible (la carte) | 194..886 | 205..896 | 692 × 691 | 1,001 |
+
+**Ce n'est pas un echec du clip, et ca ne se regenere pas.** La correction est geometrique et
+se fait au montage, pour **0 credit** : une mise a l'echelle non uniforme plus une
+translation, etalees en fondu sur la course de la camera.
+
+```
+KX 0,75463   KY 0,69447   DX +0,4   DY −380,0      derive residuelle 0,00 px
+```
+
+L'echelle est **non uniforme** parce que le disque rendu est elliptique : une echelle uniforme
+laisse 15 px d'erreur, au-dessus de la tolerance. Corriger l'ellipse rend la pizza *plus*
+ronde, pas moins.
+
+La correction epouse la deceleration du modele — mesuree image par image : la camera bouge
+encore a 7,0 s, se pose vers 9,4 s, ne bouge plus apres. La correction court sur exactement
+cette fenetre, donc elle ne s'ajoute pas au mouvement, elle le prolonge. Vitesse mesuree sur
+le rendu : 0 → −9,7 px/image → 0. Monotone, sans a-coup.
+
+**Le prix a payer :** a 75 % d'echelle le clip laisse 133 px vides de chaque cote. Ils sont
+remplis par le fond `FONDS['studio']` du gabarit, et le bord du clip est fondu sur 70 px
+(la pizza va jusqu'a x = 998, le fondu s'arrete a 1010). Saut de luminance mesure au
+raccord : **0,74** sur 255.
+
+**A retenir pour les treize autres :** ne pas chercher a faire atterrir le modele au pixel
+pres. Le laisser viser la composition, et corriger la geometrie au montage. C'est gratuit,
+c'est exact, et ca ne depend pas de la chance.
 
 ## 5. La carte est une SURIMPRESSION, pas une suite
 

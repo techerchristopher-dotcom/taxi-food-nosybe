@@ -183,12 +183,22 @@ que le badge battait depuis 11,6. Mesuré, donc corrigé.
 
 ### Le son
 
-`son_tiktok.sh`. Deux choses que le clip ne donne pas :
+`son_tiktok.py`. Trois choses que le clip ne donne pas :
 
-- **il s'arrête à 10 s** et la vidéo dure 14. On prolonge le grésillement — 2,5 s de la fin,
-  bouclées en fondu croisé, à 42 % du niveau.
-- **il sort à −36,7 dB de moyenne**, inaudible sur un téléphone. `loudnorm` le remonte à
-  −14 LUFS, la cible des réseaux. **20 dB de remontée** : ce n'est pas une finition.
+- **il s'arrête à 10 s** et la vidéo dure 14. Pire : le modèle ne sonorise pas toujours tout
+  le clip — sur la 4 Fromages il s'est tu **après 4 secondes**. On pose donc un lit sonore
+  continu sous les quatorze secondes.
+- **le lit ne se prend pas à la fin.** La première version bouclait les 2,5 dernières
+  secondes : sur la 4 Fromages, du silence. On **cherche** le meilleur extrait — la fenêtre
+  dont le centile 20 est le plus élevé, donc un grésillement soutenu et non un accident
+  isolé — et on en superpose **deux copies décalées d'une demi-période**, pour qu'un son fait
+  d'événements séparés ne s'entende pas boucler.
+- **il sort à −37 dB de moyenne**, inaudible sur un téléphone. `loudnorm` le remonte à
+  −14 LUFS, la cible des réseaux, suivi d'un limiteur à −1 dBFS : en une passe loudnorm est
+  approximatif, la 4 Fromages ressortait à **+0,1 dBTP**, donc écrêtée.
+
+Mesure sur les deux vidéos : **−16,5 LUFS intégrés** toutes les deux. Elles sonnent au même
+niveau dans un fil, même si leurs formes d'onde n'ont rien à voir.
 
 ## 6. Le déroulé
 
@@ -206,6 +216,34 @@ que le badge battait depuis 11,6. Mesuré, donc corrigé.
 **La main : à moitié hors cadre, toujours.** Des doigts et un bout de paume, entrant par le
 bas-droite, en mouvement — le flou couvre les défauts. Jamais une main entière, jamais un
 visage. C'est le pire échec des modèles vidéo et elle arrive juste après le prix.
+
+---
+
+## 6 bis. La grammaire des plans — se ressembler sans être identiques
+
+Le client ne doit pas avoir l'impression de revoir la même pub. Mais si chaque
+vidéo invente son propre langage, il n'y a plus de série. On fixe donc ce qui fait
+la signature, et on fait varier le voyage.
+
+**Ce qui ne varie jamais :** la carte et son animation, le pivot, le fond studio,
+la zone sûre, les 14 s. **Toutes les vidéos atterrissent de la même façon** — la
+pizza vue du dessus, à la même place, au pixel près. C'est ça, la signature.
+
+**Ce qui varie :** le chemin pour y arriver. Quatre axes dominants, quatre lumières.
+
+| Pizza | Le plan | Axe dominant | La lumière | Le geste sonore |
+|---|---|---|---|---|
+| **Oriental** | la **grue** — départ au ras de la croûte, montée verticale, bascule | vertical | contre-jour arrière, vapeur en colonne | le jaune d'œuf qui se perce |
+| **4 Fromages** | l'**orbite** — départ oblique à 30°, arc de 120° autour du plat, puis redressement | rotation | latérale rasante, relief du fromage fondu | la bulle qui crève, le fil qui s'étire |
+| **Gargantua** | le **plongeon** — vertical mais très haut, descente, freinage juste au-dessus | profondeur | dure du dessus, ombres courtes | la croûte qui craque sous la charge |
+| **Océane** | le **glissement** — verticale décentrée, balayage latéral, recentrage | latéral | froide diffuse, un seul éclat chaud | la vapeur marine, les crevettes luisantes |
+
+La couleur aide autant que la caméra : l'Oriental est rouge et vert, la 4 Fromages
+est **blanche** (crème, gouda, raclette, bleu). Dans un fil, elles ne peuvent pas
+se confondre.
+
+⚠️ **Une seule nouveauté à la fois.** La main qui arrache une part n'entre pas sur
+la même vidéo qu'un nouvel angle : si ça rate, on ne sait pas laquelle a échoué.
 
 ---
 

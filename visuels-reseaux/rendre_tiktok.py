@@ -20,6 +20,7 @@ sys.path.insert(0, D)
 TRAVAIL = os.path.abspath(os.environ.get('TF_TRAVAIL', D))
 os.chdir(TRAVAIL)
 from mesure import standalone
+from tiktok import plat
 
 spec = importlib.util.spec_from_file_location('g', os.path.join(D, 'gabarit.py'))
 g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
@@ -47,6 +48,44 @@ def air_badge(detour, pas=4):
     b = g.TT_BADGE
     d = np.hypot(X - (b['x']+b['d']/2), Y - (b['y']+b['d']/2)).min() - b['d']/2
     return round(float(d), 1), round(float(Y.min()), 1)
+
+
+async def image_de_fin(slug, detour, sortie=None):
+    """L'image que le modele doit viser en derniere image du clip.
+
+    Ce n'est PAS la photo produit : c'est le plat deja pose a sa place
+    definitive, sur le fond EXACT de la carte, sans bande ni texte. La derniere
+    image du clip devient ainsi la premiere image de la carte.
+
+    Sous y = 880 la carte pose sa bande rouge, le modele n'a donc rien a y
+    apprendre — mais un bord franc lui enseignerait une ligne d'horizon qui
+    n'existe pas. On prolonge donc vers le noir. La premiere version recopiait
+    la derniere ligne de la scene : sur l'Oriental cette ligne CONTIENT de la
+    pizza (le plat descend jusqu'a y = 896), et la pizza coulait en trainees
+    verticales jusqu'en bas. On prolonge le FOND, pas la scene.
+    """
+    from playwright.async_api import async_playwright
+    sortie = sortie or f'IMAGE-DE-FIN-{slug}.png'
+    pos = place(detour)
+    html = (g.HEAD + f'''<div style="position: relative; width: {g.TT_W}px; height: {g.TT_H}px; overflow: hidden; background: #050505;">
+  <div style="position: absolute; left: 0; top: {g.TT_SCENE_H}px; width: {g.TT_W}px; height: {g.TT_H - g.TT_SCENE_H}px;
+       background: linear-gradient(to bottom, #0A0A0A 0%, #050505 55%);"></div>
+  <div style="position: absolute; left: 0; top: 0; width: {g.TT_W}px; height: {g.TT_SCENE_H}px;
+       background: {g.FONDS[g.SERIE_TIKTOK["fond"]]};"></div>
+{g._debord(dict(img=detour, **pos))}
+</div>''' + g.FOOT)
+    open(f'fin-{slug}.dc.html', 'w').write(html)
+    open(f'sa-fin-{slug}.html', 'w').write(standalone(f'fin-{slug}.dc.html'))
+    async with async_playwright() as pw:
+        b = await pw.chromium.launch()
+        pg = await b.new_page(viewport={'width': g.TT_W, 'height': g.TT_H}, device_scale_factor=1)
+        await pg.route('**://fonts.g**', lambda r: r.abort())
+        await pg.goto(f'file://{os.path.abspath(f"sa-fin-{slug}.html")}', wait_until='load')
+        await pg.wait_for_timeout(400)
+        await pg.screenshot(path=sortie, clip={'x': 0, 'y': 0, 'width': g.TT_W, 'height': g.TT_H})
+        await b.close()
+    print(f"{sortie}  plat pose x {pos['left']:.0f}..{pos['left']+pos['width']:.0f}  sommet {pos['top']:.0f}")
+    return sortie
 
 
 async def rendre(slug, detour, titre, secondaire, prix, lieu, logo, sortie=None):
@@ -100,10 +139,10 @@ async def rendre(slug, detour, titre, secondaire, prix, lieu, logo, sortie=None)
     return ok
 
 
-ORIENTAL = dict(
-    slug='oriental', detour='det-oriental.png', titre='Oriental',
-    secondaire='Merguez, viande hachée, poivron, œuf', prix='31 000 Ar',
-    lieu='Chez Bidul &amp; Truc · au feu de bois · le soir, 7 j/7', logo='bidul.jpg')
-
 if __name__ == '__main__':
-    asyncio.run(rendre(**ORIENTAL))
+    for slug in sys.argv[1:] or ['oriental']:
+        p = plat(slug)
+        asyncio.run(rendre(slug=p['slug'], detour=p['detour'], titre=p['titre'],
+                           secondaire=p['secondaire'], prix=p['prix'],
+                           lieu=p['lieu'], logo=p['logo']))
+        asyncio.run(image_de_fin(slug=p['slug'], detour=p['detour']))

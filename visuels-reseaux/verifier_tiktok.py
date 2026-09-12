@@ -5,9 +5,12 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-F  = sys.argv[1] if len(sys.argv) > 1 else 'remotion/out/VIDEO-oriental.mp4'
-NU = sys.argv[2] if len(sys.argv) > 2 else 'remotion/out/NU-oriental.mp4'
-CIBLE = (194, 205, 886, 896)      # ou la pizza doit finir, mesure sur la carte
+SLUG = sys.argv[1] if len(sys.argv) > 1 else 'oriental'
+F  = sys.argv[2] if len(sys.argv) > 2 else f'remotion/out/VIDEO-{SLUG}.mp4'
+NU = sys.argv[3] if len(sys.argv) > 3 else f'remotion/out/NU-{SLUG}.mp4'
+import json
+CIBLES = {p['slug']: p for p in json.load(open('remotion/src/plats.json'))}
+
 SAFE  = dict(x0=86, x1=940, y0=200, y1=1586)
 
 def sonde(*champs):
@@ -47,6 +50,7 @@ c1 = (w, h) == (1080, 1920) and abs(fps - 30) < 0.01 and abs(duree - 14) <= 0.2
 #    Mesure sur le rendu NU : dans la video finie la bande couvre le bas du plat
 #    a partir de y = 880, et la cible descend a 896. Un controle qui ne voit pas
 #    ce qu'il mesure ne controle rien.
+CIBLE = disque(Image.open(f'/tmp/merge/t/IMAGE-DE-FIN-{SLUG}.png').convert('RGB'))
 b = disque(image(nb - 1, NU))
 derive = max(abs(a - c) for a, c in zip(b, CIBLE))
 c2 = derive <= 12
@@ -58,7 +62,7 @@ cont = []
 #    deborde de la zone sure ne gene personne — c'est elle qui detache la
 #    pastille de la bande.
 import glob
-for n in sorted(glob.glob('/tmp/merge/t/L[01]*-oriental.png')):
+for n in sorted(glob.glob(f'/tmp/merge/t/L[01]*-{SLUG}.png')):
     al = np.asarray(Image.open(n))[:, :, 3]
     ys, xs = np.nonzero(al > 160)
     cont.append((xs.min(), ys.min(), xs.max(), ys.max()))
@@ -74,7 +78,10 @@ im = image(nb - 1); a = np.asarray(im).astype(float).mean(2)
 def saut(x):
     bande = a[100:820, x-14:x+14]
     return float(np.abs(np.diff(bande.mean(0))).max())
-c4 = max(saut(133), saut(948)) <= 6.0
+p = CIBLES[SLUG]
+bordG = round(540 + (0 - 540) * p['kx'] + p['dx'])
+bordD = round(540 + (1080 - 540) * p['kx'] + p['dx'])
+c4 = max(saut(bordG), saut(bordD)) <= 6.0
 
 # 5. le son
 c5 = audio == 'aac'
@@ -111,7 +118,7 @@ print(f"{F}")
 print(f"  1. format            {w}x{h}  {fps:.0f} i/s  {duree:.2f} s        {'OK' if c1 else 'NON'}")
 print(f"  2. derive du plat    x {b[0]}..{b[2]}  y {b[1]}..{b[3]}  -> {derive} px (max 12)   {'OK' if c2 else 'NON'}")
 print(f"  3. zone sure         x {gx0}..{gx1}  y {gy0}..{gy1}  / {SAFE['x0']}..{SAFE['x1']}, bas {SAFE['y1']}   {'OK' if c3 else 'NON'}")
-print(f"  4. raccord des bords saut max {max(saut(133), saut(948)):.2f} (max 6)             {'OK' if c4 else 'NON'}")
+print(f"  4. raccord des bords x {bordG} et {bordD} : saut max {max(saut(bordG), saut(bordD)):.2f} (max 6)   {'OK' if c4 else 'NON'}")
 print(f"  5. son               {audio or 'aucun'}                              {'OK' if c5 else 'NON'}")
 print(f"  6. battement badge   repos {repos} px, pic {max(larg)} px (+{100*(max(larg)/repos-1):.1f} %), {len(pics)} pulsations   {'OK' if c6 else 'NON'}")
 print(f"  7. texte immobile    a partir de 11,6 s : {bouge:.1f} / 255 (max 4)        {'OK' if c7 else 'NON'}")

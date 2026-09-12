@@ -359,7 +359,11 @@ TT_LOGO_D    = 190
 # y=925 le garde sous le plat (air mesuree) et au-dessus du bloc promo (1330).
 TT_BADGE     = dict(d=310, x=TT_W - 140 - 310 - 18, y=925)
 
-SERIE_TIKTOK = dict(larg=700, haut=760, cx=540, bas=900, fond='studio',
+# haut=700 et pas 760 : l'en-tete de la serie le disait deja — « avec bas=900 la
+# hauteur maximale est 700 ». Le code disait 760, et la 4 Fromages, un peu plus
+# haute que large, posait son sommet a y=190, dix pixels sous la barre de
+# recherche de TikTok. Le commentaire avait raison, pas le code.
+SERIE_TIKTOK = dict(larg=700, haut=700, cx=540, bas=900, fond='studio',
                     badge='remise', badge_geo=TT_BADGE)
 
 
@@ -422,7 +426,7 @@ def visuel_tiktok(titre, secondaire, prix, ligne_lieu, logo, plat=None,
       <img src="taxifood.png" alt="Taxi Food" style="width: 46px; height: auto; display: block; border-radius: 10px;">
       <span style="font-size: 24px; font-weight: 700; letter-spacing: 3.2px; color: {OR}; text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
     </div>
-    <div style="margin-top: 14px; font-size: {titre_px}px; font-weight: 900; line-height: 0.97; color: #FFFFFF; letter-spacing: -2.2px;">{titre}</div>
+    <div id="tt-titre" style="margin-top: 14px; font-size: {titre_px}px; font-weight: 900; line-height: 0.97; color: #FFFFFF; letter-spacing: -2.2px; white-space: nowrap;">{titre}</div>
     <div style="margin-top: 16px; font-size: 30px; font-weight: 400; line-height: 1.26; color: rgba(255,255,255,0.92);">{secondaire}</div>
     <div style="margin-top: 8px; font-size: 46px; font-weight: 900; color: {OR}; letter-spacing: -0.8px;">{prix}</div>
     <div style="margin-top: 12px; font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.88);">{ligne_lieu}</div>
@@ -435,4 +439,21 @@ def visuel_tiktok(titre, secondaire, prix, ligne_lieu, logo, plat=None,
       <span style="font-size: 28px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; white-space: nowrap;">taxifoodnosybe.distripro207.com</span>
     </div>
   </div>
+
+  <!-- Le titre s'ajuste a la colonne, dans la PAGE. « 4 Fromages » a 84 px
+       passait a deux lignes : coupe en « 4 / Fromages », et tout le bloc
+       descendait de 82 px, jusqu'a 1602 — seize pixels sous la legende TikTok.
+       La regle vit ici et pas dans les scripts : la carte et les douze calques
+       sortent du meme html, ils ne peuvent donc pas tomber sur deux tailles
+       differentes. Une regle appliquee a deux endroits finit par diverger. -->
+  <script>(function () {{
+    var e = document.getElementById('tt-titre');
+    if (!e) return;
+    var px = {titre_px}, mini = 54;
+    while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+      px -= 2;
+      e.style.fontSize = px + 'px';
+      e.style.letterSpacing = (-2.2 * px / {titre_px}) + 'px';
+    }}
+  }})();</script>
 ''' + FOOT

@@ -1,48 +1,44 @@
 # Le montage — Remotion
 
 La carte n'est **pas** redessinee ici. Elle vient de `gabarit.py`, decoupee en
-quatre PNG transparents par `calques_tiktok.py`. Ce projet ne fait que les faire
+douze PNG transparents par `calques_tiktok.py`. Ce projet ne fait que les faire
 entrer par-dessus le clip. Redessiner la carte en React, c'est se garantir qu'un
 jour la video et la publication ne diront plus la meme chose.
 
-## La chaine
-
-```
-gabarit.py  ──►  rendre_tiktok.py     la carte fixe, mesuree
-            └─►  calques_tiktok.py    L1 bande · L2 texte · L3 pastille · L4 badge
-                        │
-   clip Seedance ───────┴──►  remotion  ──►  verifier_tiktok.py
-```
-
-## Preparer un plat
+## La chaine, pour un plat
 
 ```bash
 cd visuels-reseaux
-TF_TRAVAIL=<dossier de travail> python3 calques_tiktok.py      # les 4 calques
-cp L1-bande-<slug>.png    remotion/public/L1.png
-cp L2-texte-<slug>.png    remotion/public/L2.png
-cp L3-pastille-<slug>.png remotion/public/L3.png
-cp L4-badge-<slug>.png    remotion/public/L4.png
-cp <clip>.mp4             remotion/public/clip.mp4
-ffmpeg -i remotion/public/clip.mp4 -vf "select=eq(n\,<derniere>)" -vsync 0 -frames:v 1 remotion/public/gel.png
+export TF_TRAVAIL=<dossier de travail>     # les .png sources y vivent
+
+python3 rendre_tiktok.py   <slug>          # la carte + l'image de fin, mesurees
+python3 calques_tiktok.py  <slug>          # les douze calques transparents
+#   -> deposer IMAGE-DE-FIN-<slug>.png dans Higgsfield, generer le clip
+
+python3 son_tiktok.py    clip.mp4 remotion/public/<slug>/son.m4a 14.0
+python3 calculer_correction.py <slug> clip.mp4 IMAGE-DE-FIN-<slug>.png \
+        remotion/src/plats.json
+
+cd remotion
+npx remotion render <slug>    out/VIDEO-<slug>.mp4 --codec=h264 --crf=18
+npx remotion render <slug>-nu out/NU-<slug>.mp4    --codec=h264 --crf=20
+python3 ../verifier_tiktok.py <slug>
 ```
 
-## Les quatre nombres a remesurer a chaque clip
+**Rien n'est ecrit a la main.** `calculer_correction.py` mesure la derniere image
+du clip contre l'image de fin et ecrit `plats.json` ; Remotion declare ses
+compositions a partir de ce manifeste. Un clip regenere = un fichier remesure,
+pas une constante retouchee a l'oeil.
 
-`KX KY DX DY` en tete de `Pizza.tsx` corrigent le cadrage d'arrivee du modele.
-Ils sont **mesures**, jamais retouches a l'oeil : boite du plat sur la derniere
-image du clip, boite du plat sur l'image de fin, meme detecteur pour les deux.
-Voir le bloc de commentaire dans `Pizza.tsx`.
+## Pourquoi un rendu « nu »
 
-## Rendre
+Le rendu sans la carte n'est pas un brouillon : c'est le seul endroit ou la
+derive du plat se mesure. Dans la video finie la bande rouge couvre le bas du
+plat a partir de y = 880, et la cible descend a 896. Un controle qui ne peut pas
+voir ce qu'il mesure ne controle rien.
 
-```bash
-export PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
-npx remotion render pizza-oriental    out/VIDEO-<slug>.mp4 --codec=h264 --crf=18
-npx remotion render pizza-oriental-nu out/NU-<slug>.mp4    --codec=h264 --crf=20
-python3 ../verifier_tiktok.py out/VIDEO-<slug>.mp4 out/NU-<slug>.mp4
-```
+## Le dossier public/
 
-Le rendu **nu** (sans la carte) n'est pas un brouillon : c'est le seul endroit ou
-la derive du plat se mesure. Dans la video finie la bande rouge couvre le bas du
-plat a partir de y = 880, et la cible descend a 896.
+Un sous-dossier par plat : `public/<slug>/` avec `L01..L12.png`, `clip.mp4`,
+`gel.png` (la derniere image du clip, qui tient le cadre apres 10 s) et
+`son.m4a`. Il n'est pas versionne — ce sont des dizaines de Mo.

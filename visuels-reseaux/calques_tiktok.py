@@ -22,6 +22,7 @@ sys.path.insert(0, D)
 TRAVAIL = os.path.abspath(os.environ.get('TF_TRAVAIL', D))
 os.chdir(TRAVAIL)
 from mesure import standalone
+from tiktok import plat
 
 spec = importlib.util.spec_from_file_location('g', os.path.join(D, 'gabarit.py'))
 g = importlib.util.module_from_spec(spec); spec.loader.exec_module(g)
@@ -150,10 +151,9 @@ async def calques(slug, titre, secondaire, prix, lieu, logo):
     print(f'  geo-{slug}.json  {geo}')
 
 
-ORIENTAL = dict(slug='oriental', titre='Oriental',
-                secondaire='Merguez, viande hachée, poivron, œuf', prix='31 000 Ar',
-                lieu='Chez Bidul &amp; Truc · au feu de bois · le soir, 7 j/7',
-                logo='bidul.jpg')
-
 if __name__ == '__main__':
-    asyncio.run(calques(**ORIENTAL))
+    for slug in sys.argv[1:] or ['oriental']:
+        p = plat(slug)
+        asyncio.run(calques(slug=p['slug'], titre=p['titre'],
+                            secondaire=p['secondaire'], prix=p['prix'],
+                            lieu=p['lieu'], logo=p['logo']))

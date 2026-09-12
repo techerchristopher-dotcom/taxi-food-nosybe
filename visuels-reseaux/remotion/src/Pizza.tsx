@@ -23,22 +23,26 @@ const STUDIO =
   '#3A3A3A 72%, #0A0A0A 96%)';
 const OR = '#FFC72C';
 
-/* --- La correction de cadrage (mesuree, jamais retouchee a l'oeil) ---------
-   clip, derniere image : x  81..998   y 420..1415
-   cible (la carte)     : x 194..886   y 205..896
-   L'echelle est NON UNIFORME parce que le disque rendu est elliptique : une
-   echelle uniforme laisse 15 px, au-dessus de la tolerance.
---------------------------------------------------------------------------- */
-const KX = 0.75463, KY = 0.69447, DX = 0.4, DY = -380.0;
-const COR_DEBUT = Math.round(7.0 * FPS);   // la camera du modele bouge encore
-const COR_FIN = Math.round(9.4 * FPS);     // elle se pose ici, la correction aussi
-const CLIP_IMAGES = Math.round(10.0416 * FPS);
+/* --- Ce qui change d'un plat a l'autre -------------------------------------
+   Rien n'est ecrit a la main ici. calculer_correction.py mesure la derniere
+   image du clip contre l'image de fin, mesure l'alpha des douze calques, et
+   ecrit plats.json. Un clip regenere = un fichier remesure, pas une constante
+   retouchee a l'oeil.
 
-/* --- Geometrie des calques, lue sur leur alpha ----------------------------- */
-const BADGE = {cx: 766.5, cy: 1079.5};     // L07 : x 612..921, y 925..1234
-const CODE = {cx: 774, cy: 1139.5};        // L09 : x 666..882, y 1108..1171
-const URL = {x0: 452, x1: 905, bas: 1556}; // L12 : x 452..905, y 1523..1547
-const PRIX = {x: 88, y: 1280};             // L05 : ancre du tampon
+   La correction est NON UNIFORME (kx != ky) parce que le disque rendu par le
+   modele est elliptique : une echelle uniforme laisse 15 px, au-dessus de la
+   tolerance.
+--------------------------------------------------------------------------- */
+export type Plat = {
+  slug: string;
+  kx: number; ky: number; dx: number; dy: number;
+  corDebut: number; corFin: number;   // en secondes : la course de la camera du modele
+  clipSecondes: number;
+  badge: {cx: number; cy: number};
+  code: {cx: number; cy: number};
+  url: {x0: number; x1: number; bas: number};
+  prix: {x: number; y: number};
+};
 
 /* --- Le deroule. Une arrivee a la fois, jamais deux ensemble. --------------- */
 const T = (s: number) => Math.round(s * FPS);
@@ -71,7 +75,13 @@ const battement = (f: number, t0: number) => {
   return {k, rot: (k - 1) * 25};   // la rotation respire avec : -7deg -> -5,5deg
 };
 
-export const Pizza: React.FC<{carte?: boolean}> = ({carte = true}) => {
+export const Pizza: React.FC<{plat: Plat; carte?: boolean}> = ({plat, carte = true}) => {
+  const {slug, kx: KX, ky: KY, dx: DX, dy: DY, badge: BADGE, code: CODE,
+         url: URL, prix: PRIX} = plat;
+  const COR_DEBUT = Math.round(plat.corDebut * FPS);
+  const COR_FIN = Math.round(plat.corFin * FPS);
+  const CLIP_IMAGES = Math.round(plat.clipSecondes * FPS);
+  const f = (n: string) => staticFile(`${slug}/${n}`);
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
 
@@ -125,7 +135,7 @@ export const Pizza: React.FC<{carte?: boolean}> = ({carte = true}) => {
 
   return (
     <AbsoluteFill style={{backgroundColor: '#0A0A0A'}}>
-      <Audio src={staticFile('son.m4a')} />
+      <Audio src={f('son.m4a')} />
 
       <AbsoluteFill style={{background: STUDIO, height: SCENE}} />
 
@@ -138,10 +148,10 @@ export const Pizza: React.FC<{carte?: boolean}> = ({carte = true}) => {
       >
         {/* l'image gelee tient le cadre apres la fin du clip ; a l'image 301
             les deux sont identiques, il n'y a donc pas de saut */}
-        <Img src={staticFile('gel.png')} style={{width: W, height: H, display: 'block'}} />
+        <Img src={f('gel.png')} style={{width: W, height: H, display: 'block'}} />
         {frame < CLIP_IMAGES && (
           <OffthreadVideo
-            src={staticFile('clip.mp4')} muted
+            src={f('clip.mp4')} muted
             style={{...plein, objectFit: 'fill'}}
           />
         )}
@@ -149,7 +159,7 @@ export const Pizza: React.FC<{carte?: boolean}> = ({carte = true}) => {
 
       {carte && (<>
         {/* 1. la bande rouge monte, le filet or avec elle */}
-        <Img src={staticFile('L01.png')}
+        <Img src={f('L01.png')}
           style={{...plein, transform: `translateY(${interpolate(gBande, [0, 1], [H - SCENE, 0])}px)`}} />
 
         {/* un eclat traverse le filet, une fois : il relie la scene a la bande */}
@@ -161,47 +171,47 @@ export const Pizza: React.FC<{carte?: boolean}> = ({carte = true}) => {
         </div>
 
         {/* 2. la pastille du restaurant se pose a cheval sur le filet */}
-        <Img src={staticFile('L02.png')} style={{...plein, opacity: gPastille,
+        <Img src={f('L02.png')} style={{...plein, opacity: gPastille,
           transform: `scale(${interpolate(gPastille, [0, 1], [0.84, 1])})`,
           transformOrigin: '180px 876px'}} />
 
         {/* 3. le titre, seul : c'est le plus gros mot, il merite son temps */}
-        <Img src={staticFile('L03.png')} style={{...plein, ...monte(gTitre, 20)}} />
-        <Img src={staticFile('L04.png')} style={{...plein, ...monte(gDesc, 14)}} />
+        <Img src={f('L03.png')} style={{...plein, ...monte(gTitre, 20)}} />
+        <Img src={f('L04.png')} style={{...plein, ...monte(gDesc, 14)}} />
 
         {/* le prix ne se fond pas, il se tamponne : il doit peser */}
-        <Img src={staticFile('L05.png')} style={{...plein, opacity: gPrix,
+        <Img src={f('L05.png')} style={{...plein, opacity: gPrix,
           transform: `scale(${interpolate(gPrix, [0, 1], [1.15, 1])})`,
           transformOrigin: `${PRIX.x}px ${PRIX.y}px`}} />
 
-        <Img src={staticFile('L06.png')} style={{...plein, ...monte(gLieu, 12)}} />
+        <Img src={f('L06.png')} style={{...plein, ...monte(gLieu, 12)}} />
 
         {/* 4. le badge. Les trois calques battent ENSEMBLE, autour du meme
                centre : le disque, le nombre et le code sont un seul objet. */}
         <div style={{...plein,
           transform: `rotate(${bat.rot}deg) scale(${bat.k})`,
           transformOrigin: `${BADGE.cx}px ${BADGE.cy}px`}}>
-          <Img src={staticFile('L07.png')} style={{...plein, opacity: gDisque,
+          <Img src={f('L07.png')} style={{...plein, opacity: gDisque,
             transform: `translateY(${interpolate(gDisque, [0, 1], [-70, 0])}px) scale(${interpolate(gDisque, [0, 1], [0.72, 1])})`,
             transformOrigin: `${BADGE.cx}px ${BADGE.cy}px`}} />
           {/* « -50 % » arrive sec, dans une phrase deja posee */}
-          <Img src={staticFile('L08.png')} style={{...plein, opacity: gRemise,
+          <Img src={f('L08.png')} style={{...plein, opacity: gRemise,
             transform: `scale(${interpolate(gRemise, [0, 1], [1.35, 1])})`,
             transformOrigin: `${BADGE.cx}px ${BADGE.cy}px`}} />
           {/* puis, apres un silence de 0,3 s, le code tamponne dessous.
               C'est ce silence qui fait lire la phrase : moins cinquante
               pour cent... AVEC ce code. */}
-          <Img src={staticFile('L09.png')} style={{...plein, opacity: gCode,
+          <Img src={f('L09.png')} style={{...plein, opacity: gCode,
             transform: `scale(${interpolate(gCode, [0, 1], [0.6, 1]) * zoomCode})`,
             transformOrigin: `${CODE.cx}px ${CODE.cy}px`}} />
         </div>
 
         {/* 5. le bloc noir : l'instruction, pas l'offre */}
-        <Img src={staticFile('L10.png')} style={{...plein, ...monte(gPromo, 16)}} />
+        <Img src={f('L10.png')} style={{...plein, ...monte(gPromo, 16)}} />
 
         {/* 6. les stores, puis l'url — la seule porte d'entree */}
-        <Img src={staticFile('L11.png')} style={{...plein, ...monte(gStores, 12)}} />
-        <Img src={staticFile('L12.png')} style={{...plein, ...monte(gUrl, 12)}} />
+        <Img src={f('L11.png')} style={{...plein, ...monte(gStores, 12)}} />
+        <Img src={f('L12.png')} style={{...plein, ...monte(gUrl, 12)}} />
         {/* un trait or se dessine dessous : « c'est ici que tu vas » */}
         <div style={{position: 'absolute', left: URL.x0, top: URL.bas, height: 4,
           width: (URL.x1 - URL.x0) * trait, background: OR, borderRadius: 2}} />

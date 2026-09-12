@@ -96,3 +96,51 @@ table, les autres canettes, l'ordinateur, les mains, les gens.
 identiques ; Wan 3.0 a réussi du premier coup, en 1080p vertical, avec image de début et image de
 fin. Les deux images se génèrent **en chaîne** — la seconde à partir de la première — sinon le
 décor morphe entre les deux.
+
+## Le décor pizza — Chez Bidul & Truc (12/09/2026)
+
+Cinq éléments, pensés pour se recombiner : le four et le plan de travail font le lieu, le
+carton, la pizza et la pelle font l'action.
+
+| Élément | id | ce que c'est |
+|---|---|---|
+| `carton-pizza-taxifood` | `3b215647-d052-4c13-b7d1-2e09f700b0a0` | la photo du vrai carton, kraft vierge |
+| `TF-four-a-bois` | `afec4ce8-e57e-481a-911f-8a068635052d` | le four validé, feu à droite |
+| `TF-decor-plan-four` | `216cc47e-5a61-4864-b7b2-c2a7ff25cf25` | plan de travail marbre + bouche du four |
+| `TF-Pizza-Reine-Bidul` | `e5e17d66-e4e4-4f79-9346-0c5d2c80cc04` | la Reine, fond transparent |
+| `TF-pelle-a-pizza` | `9a639ad7-406a-431b-994f-9d462702d401` | la pelle, fond transparent |
+
+## Le piège des `<<<élément>>>` — corrigé le 12/09/2026
+
+La documentation dit d'écrire `<<<id-de-l-élément>>>` dans le prompt, le serveur étant censé
+y substituer l'image. **Il ne le fait pas sur cette route.** La réponse de Higgsfield le prouve :
+
+```
+"prompt": "... inside the pizzeria <<<216cc47e-5a61-...>>> ..."
+"aspect_ratio": "9:16"          <-- aucun champ reference_images
+```
+
+Le modèle reçoit les UUID comme du texte brut et fabrique un décor de son invention à partir
+de la description écrite autour. C'est ce qui a produit un four industriel là où on avait
+validé un four à coupole, et un carton sans couvercle.
+
+**La règle : on passe les éléments en `medias` / `image_references`, jamais en placeholder.**
+Et on vérifie, dans la réponse du serveur, que `reference_images` est bien rempli avant
+d'attendre quoi que ce soit du résultat. Un prompt qui part sans ses images ne rate pas
+bruyamment : il rend une belle image du mauvais sujet.
+
+## Étendre plutôt que régénérer
+
+Pour passer le four validé du 16:9 au 9:16, `outpaint_image` coûte **2 crédits** et garde les
+pixels d'origine — le modèle n'invente que ce qu'il ajoute. Ici il a prolongé la sole en terre
+cuite du four vers l'avant : le plan de travail est harmonieux parce qu'il sort littéralement
+du four, ce qu'aucune génération séparée n'obtenait.
+
+Mesure de contrôle : écart moyen de **6/255** entre la plaque validée et le rendu final sur la
+zone du four. Une régénération donnait 30 à 90.
+
+## Le fond transparent se génère, il ne se découpe pas
+
+`seedream_v5_pro` avec `remove_bg: true` sort directement la pizza détourée, sans ardoise ni
+assiette. Le détourage a posteriori (`remove_background` sur la photo) gardait le support noir
+sous la croûte et demandait une reprise au masque.

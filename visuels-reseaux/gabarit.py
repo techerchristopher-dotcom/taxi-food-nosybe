@@ -457,3 +457,128 @@ def visuel_tiktok(titre, secondaire, prix, ligne_lieu, logo, plat=None,
     }}
   }})();</script>
 ''' + FOOT
+
+
+# ============================================================================
+# SERIE_TIKTOK_DECOR — la meme carte, posee sur un DECOR photographique.
+#
+# Sur la carte studio, la bande rouge occupe le bas : le plat est detoure sur un
+# fond fabrique, il n'y a rien a montrer sous y=880. Sur un decor, si : la pizza
+# est dans son carton, le carton sur le plan de travail, le four derriere. Poser
+# la bande en bas masque le produit. On ne vend pas des fours ni des cartons,
+# mais on ne vend pas non plus du rouge : la pizza doit rester entiere.
+#
+# La bande passe donc EN HAUT, et devient TRANSLUCIDE. Trois mesures, pas trois
+# impressions, prises sur la Reine validee (reine-carton-four-2) :
+#
+#   1. le disque de la pizza occupe y 945..1600. Au-dessus, y 0..930, le decor
+#      est flou : nettete 4 a 32 contre 570 sur la pizza. Il n'y a rien a y
+#      perdre, c'est deja du bokeh.
+#   2. rouge OPAQUE, blanc dessus (les 13 visuels carres publies) : 4,24:1.
+#   3. rouge 78 % + voile noir 15 % sur ce decor : mediane 5,0:1, p95 4,5:1.
+#
+# Le bandeau translucide se lit donc MIEUX que le rouge plein — le decor qui
+# transparait est plus sombre que le rouge, il ne l'eclaircit pas, il le fonce.
+# Le voile noir n'est pas cosmetique : sans lui les flammes font tomber le pire
+# pixel a 3,4:1, avec lui il remonte a 3,7:1 et la p95 passe la barre des 4,5.
+#
+# Le filet or reste FRANC et OPAQUE : c'est la signature de la serie, et c'est
+# lui qui dit ou finit le message et ou commence le produit.
+# ============================================================================
+TT_DECOR_BAS   = 878          # bas du bandeau ; la croute la plus haute est a 945
+TT_DECOR_ROUGE = 0.78         # opacite du rouge
+TT_DECOR_VOILE = 0.15         # voile noir dessous, contre les flammes
+TT_DECOR_COL_Y = 200          # sommet de la colonne = limite haute de la zone sure
+TT_DECOR_BADGE = dict(d=310, x=TT_W - 140 - 310 - 18, y=228)
+
+
+def _rgba(hexa, a):
+    h = hexa.lstrip('#')
+    return f'rgba({int(h[0:2],16)}, {int(h[2:4],16)}, {int(h[4:6],16)}, {a})'
+
+
+def visuel_tiktok_decor(titre, secondaire, prix, ligne_lieu, logo, decor,
+                        produit_haut=945, badge='remise', code='TAXIFOOD50',
+                        titre_px=84, eyebrow='Nouveau sur Taxi&nbsp;Food'):
+    """La carte 9:16 posee sur une photo de decor. Memes tokens, meme colonne,
+    bandeau en haut et translucide."""
+    ph = TT_DECOR_BAS
+    b  = TT_DECOR_BADGE
+    chevauche = round(TT_LOGO_D*0.52)
+    return HEAD + f'''<div style="position: relative; width: {TT_W}px; height: {TT_H}px; background: #000000; overflow: hidden;">
+
+  <img src="{decor}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {TT_W}px; height: {TT_H}px; object-fit: cover; display: block;">
+
+  <!-- Le bandeau : voile noir dessous, rouge dessus. Deux couches empilees dans
+       une seule propriete, pour que l'ordre soit lisible et non reconstitue. -->
+  <div id="tt-bande" style="position: absolute; z-index: 2; left: 0; top: 0; width: {TT_W}px; height: {ph}px;
+       background: linear-gradient({_rgba(ROUGE, TT_DECOR_ROUGE)}, {_rgba(ROUGE, TT_DECOR_ROUGE)}),
+                   linear-gradient(rgba(0,0,0,{TT_DECOR_VOILE}), rgba(0,0,0,{TT_DECOR_VOILE}));"></div>
+
+  <div id="tt-filet" style="position: absolute; z-index: 3; top: {ph}px; left: 0; width: {TT_W}px; height: {FILET}px; background: {OR};"></div>
+
+  <div style="position: relative; z-index: 4;">
+{_badge_code(badge, code, b['d'], b['x'], b['y'])}
+  </div>
+
+  <div id="tt-pastille" style="position: absolute; z-index: 6; top: {ph - round(TT_LOGO_D*0.52)}px; left: {TT_PAD_L}px;
+       width: {TT_LOGO_D}px; height: {TT_LOGO_D}px; border-radius: 50%; background: #FFFFFF;
+       box-shadow: 0 14px 36px rgba(0,0,0,0.45); overflow: hidden;">
+    <img src="{logo}" alt="Logo" style="width: {TT_LOGO_D}px; height: {TT_LOGO_D}px; object-fit: cover; display: block;">
+  </div>
+
+  <div id="tt-col" style="position: absolute; z-index: 5; top: {TT_DECOR_COL_Y}px; left: {TT_PAD_L}px; width: {b['x'] - TT_PAD_L - 30}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 46px; height: auto; display: block; border-radius: 10px;">
+      <span style="font-size: 24px; font-weight: 700; letter-spacing: 3.2px; color: {OR}; text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+    </div>
+    <div id="tt-titre" style="margin-top: 12px; font-size: {titre_px}px; font-weight: 900; line-height: 0.97; color: #FFFFFF; letter-spacing: -2.2px; white-space: nowrap;">{titre}</div>
+    <div style="margin-top: 14px; font-size: 30px; font-weight: 400; line-height: 1.26; color: rgba(255,255,255,0.94);">{secondaire}</div>
+    <div style="margin-top: 6px; font-size: 46px; font-weight: 900; color: {OR}; letter-spacing: -0.8px;">{prix}</div>
+    <div id="tt-lieu" style="margin-top: 10px; font-size: 26px; font-weight: 500; color: rgba(255,255,255,0.90); white-space: nowrap;">{ligne_lieu}</div>
+    <div style="margin-top: 22px; width: {TT_SAFE['x1'] - TT_PAD_L}px;">{_promo_tiktok(1.15)}</div>
+    <div style="margin-top: 14px; display: flex; align-items: center; gap: 24px;">
+      {_stores_tiktok(0.85)}
+      <span style="font-size: 28px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; white-space: nowrap;">taxifoodnosybe.distripro207.com</span>
+    </div>
+  </div>
+
+  <script>(function () {{
+    // Deux lignes peuvent deborder la colonne, pas une seule. « Chez Bidul &
+    // Truc · au feu de bois · le soir, 7 j/7 » fait 50 signes : a 26 px il
+    // passait a la ligne et poussait tout le bloc de 33 px vers le bas.
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1;
+        e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    tenir('tt-titre', {titre_px}, 54, -2.2);
+    tenir('tt-lieu', 26, 19, 0);
+
+    // Le bandeau ne se DECIDE pas, il se DEDUIT. Sa hauteur etait fixee a 878 :
+    // la colonne finissait a 725 et laissait 153 px de rouge vide, et un plat
+    // au titre plus long l'aurait au contraire fait deborder. On mesure la
+    // colonne une fois le texte ajuste, et on cale la bande dessus.
+    //
+    // Deux butees :
+    //   - la pastille du restaurant est a cheval sur le filet et deborde de
+    //     {chevauche} px vers le haut : le bandeau doit la loger sous la colonne.
+    //   - le filet ne doit jamais atteindre le produit. Sur ce decor la croute
+    //     la plus haute est a {produit_haut} : on s'arrete 40 px avant.
+    var col = document.getElementById('tt-col');
+    var bas = col.getBoundingClientRect().bottom;
+    var ph  = Math.round(bas + {chevauche} + 26);
+    ph = Math.max(ph, 560);
+    ph = Math.min(ph, {produit_haut} - 40);
+    document.getElementById('tt-bande').style.height = ph + 'px';
+    document.getElementById('tt-filet').style.top = ph + 'px';
+    document.getElementById('tt-pastille').style.top = (ph - {chevauche}) + 'px';
+  }})();</script>
+''' + FOOT

@@ -582,3 +582,110 @@ def visuel_tiktok_decor(titre, secondaire, prix, ligne_lieu, logo, decor,
     document.getElementById('tt-pastille').style.top = (ph - {chevauche}) + 'px';
   }})();</script>
 ''' + FOOT
+
+
+# ============================================================================
+# SERIE_CARRE_DECOR — la meme carte decor, en 1080 x 1080 pour Facebook.
+#
+# Ce n'est pas le vertical recadre : le carre est PLUS SERRE, et c'est mesure.
+# Sur reine-carton-four-carre, la pizza commence a y=522 — il reste 490 px de
+# bandeau, contre 786 en 9:16. La colonne du vertical en demande 461 a elle
+# seule, plus 99 pour la pastille a cheval sur le filet : 560, ca ne rentre pas.
+#
+# Trois consequences, toutes tirees de cette contrainte :
+#
+#   1. La pastille du restaurant ne chevauche plus le filet, elle passe dans
+#      l'EN-TETE, a gauche de « Nouveau sur Taxi Food ». Elle y gagne d'ailleurs :
+#      un disque a cheval sur une photo de carton se lit comme un autocollant
+#      colle dessus, ce que le fond fabrique du carre studio ne produisait pas.
+#   2. Le QR disparait, comme sur le vertical. Sur les treize carres studio il
+#      se justifie — le visuel sert de flyer et Facebook se lit aussi sur un
+#      ordinateur. Ici il faudrait 200 px de blanc plein milieu d'une photo :
+#      il mange la place dont le prix a besoin et troue le decor. L'URL en
+#      toutes lettres fait le meme travail sans percer l'image.
+#   3. Les stores et l'URL passent a DROITE, sous le badge, pour raccourcir la
+#      colonne de gauche d'une ligne entiere.
+#
+# Le reste ne change pas : rouge 78 %, voile noir 15 %, filet or franc, hauteur
+# du bandeau deduite du contenu dans la page.
+# ============================================================================
+CA_W = CA_H    = 1080
+CA_PAD         = 62
+CA_COL_Y       = 40
+CA_LOGO_D      = 108
+CA_BADGE       = dict(d=250, x=1080 - 62 - 250, y=40)
+CA_TITRE_PX    = 78
+CA_DROITE_X    = 600          # l'URL fait ~300 px : 260 sous le badge ne suffisaient pas
+
+
+def visuel_carre_decor(titre, secondaire, prix, ligne_lieu, logo, decor,
+                       produit_haut=522, badge='remise', code='TAXIFOOD50',
+                       titre_px=CA_TITRE_PX, eyebrow='Nouveau sur Taxi&nbsp;Food'):
+    """La carte carree posee sur une photo de decor. 1080 x 1080, Facebook."""
+    b = CA_BADGE
+    return HEAD + f'''<div style="position: relative; width: {CA_W}px; height: {CA_H}px; background: #000000; overflow: hidden;">
+
+  <img src="{decor}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {CA_W}px; height: {CA_H}px; object-fit: cover; display: block;">
+
+  <div id="ca-bande" style="position: absolute; z-index: 2; left: 0; top: 0; width: {CA_W}px; height: 490px;
+       background: linear-gradient({_rgba(ROUGE, TT_DECOR_ROUGE)}, {_rgba(ROUGE, TT_DECOR_ROUGE)}),
+                   linear-gradient(rgba(0,0,0,{TT_DECOR_VOILE}), rgba(0,0,0,{TT_DECOR_VOILE}));"></div>
+
+  <div id="ca-filet" style="position: absolute; z-index: 3; top: 490px; left: 0; width: {CA_W}px; height: {FILET}px; background: {OR};"></div>
+
+  <div style="position: relative; z-index: 4;">
+{_badge_code(badge, code, b['d'], b['x'], b['y'])}
+  </div>
+
+  <!-- colonne de droite : les stores et l'URL, sous le badge -->
+  <div id="ca-droite" style="position: absolute; z-index: 5; top: {b['y'] + b['d'] + 34}px; left: {CA_DROITE_X}px;
+       width: {CA_W - CA_PAD - CA_DROITE_X}px; align-items: flex-end; display: flex; flex-direction: column; align-items: flex-start;">
+    {_stores_tiktok(0.78)}
+    <span style="margin-top: 12px; font-size: 21px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.2px; white-space: nowrap;">taxifoodnosybe.distripro207.com</span>
+  </div>
+
+  <div id="ca-col" style="position: absolute; z-index: 5; top: {CA_COL_Y}px; left: {CA_PAD}px; width: {b['x'] - CA_PAD - 28}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="width: {CA_LOGO_D}px; height: {CA_LOGO_D}px; border-radius: 50%; background: #FFFFFF;
+           box-shadow: 0 10px 26px rgba(0,0,0,0.42); overflow: hidden; flex: 0 0 auto;">
+        <img src="{logo}" alt="Logo" style="width: {CA_LOGO_D}px; height: {CA_LOGO_D}px; object-fit: cover; display: block;">
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="taxifood.png" alt="Taxi Food" style="width: 42px; height: auto; display: block; border-radius: 9px;">
+        <span style="font-size: 22px; font-weight: 700; letter-spacing: 3px; color: {OR}; text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+      </div>
+    </div>
+    <div id="ca-titre" style="margin-top: 10px; font-size: {titre_px}px; font-weight: 900; line-height: 0.97; color: #FFFFFF; letter-spacing: -2.1px; white-space: nowrap;">{titre}</div>
+    <div style="margin-top: 12px; font-size: 29px; font-weight: 400; line-height: 1.26; color: rgba(255,255,255,0.94);">{secondaire}</div>
+    <div style="margin-top: 5px; font-size: 44px; font-weight: 900; color: {OR}; letter-spacing: -0.8px;">{prix}</div>
+    <div id="ca-lieu" style="margin-top: 8px; font-size: 25px; font-weight: 500; color: rgba(255,255,255,0.90); white-space: nowrap;">{ligne_lieu}</div>
+    <div style="margin-top: 20px;">{_promo_tiktok(1.08)}</div>
+  </div>
+
+  <script>(function () {{
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1;
+        e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    tenir('ca-titre', {titre_px}, 52, -2.1);
+    tenir('ca-lieu', 25, 18, 0);
+
+    // Meme regle qu'en 9:16 : la bande se deduit du contenu. Ici les deux
+    // colonnes comptent, et la butee du produit est a {produit_haut}.
+    var g = document.getElementById('ca-col').getBoundingClientRect().bottom;
+    var d = document.getElementById('ca-droite').getBoundingClientRect().bottom;
+    var ph = Math.round(Math.max(g, d) + 24);
+    ph = Math.max(ph, 340);
+    ph = Math.min(ph, {produit_haut} - 24);
+    document.getElementById('ca-bande').style.height = ph + 'px';
+    document.getElementById('ca-filet').style.top = ph + 'px';
+  }})();</script>
+''' + FOOT

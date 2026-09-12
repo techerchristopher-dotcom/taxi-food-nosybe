@@ -183,27 +183,39 @@ que le badge battait depuis 11,6. Mesuré, donc corrigé.
 
 ### Le son
 
-`son_tiktok.py`. Trois choses que le clip ne donne pas :
+`son_tiktok.py`.
 
-- **il s'arrête à 10 s** et la vidéo dure 14. Pire : le modèle ne sonorise pas toujours tout
-  le clip — sur la 4 Fromages il s'est tu **après 4 secondes**. On pose donc un lit sonore
-  continu sous les quatorze secondes.
-- **le lit ne se prend pas à la fin.** La première version bouclait les 2,5 dernières
-  secondes : sur la 4 Fromages, du silence. On **cherche** le meilleur extrait — la fenêtre
-  dont le centile 20 est le plus élevé, donc un grésillement soutenu et non un accident
-  isolé — et on en superpose **deux copies décalées d'une demi-période**, pour qu'un son fait
-  d'événements séparés ne s'entende pas boucler.
-- **il sort à −37 dB de moyenne**, inaudible sur un téléphone. `loudnorm` le remonte à
-  −14 LUFS, la cible des réseaux, suivi d'un limiteur à −1 dBFS : en une passe loudnorm est
-  approximatif, la 4 Fromages ressortait à **+0,1 dBTP**, donc écrêtée.
+### Ce que le clip donne — et ce que je croyais à tort
 
-Mesure sur les deux vidéos : **−16,5 LUFS intégrés** toutes les deux. Elles sonnent au même
-niveau dans un fil, même si leurs formes d'onde n'ont rien à voir.
+**Il donne dix secondes de son, en entier.** J'avais conclu le contraire sur la 4 Fromages :
+j'avais mesuré la *moyenne* d'un grésillement clairsemé, vu un chiffre bas, et décidé que le
+modèle s'était tu après quatre secondes. C'était faux. On ne touche donc **pas** au son du
+clip sur ses dix secondes : un lit posé dessous n'y ajoute rien et finit par s'entendre.
 
-## 6. Le déroulé
+### Les trois choses qu'il ne donne pas
 
-| Temps | Ce qui se passe |
-|---|---|
+**1. Les quatre dernières secondes.** Et une boucle s'entend. La version bouclée — 2,5 s en
+fondu croisé, doublées d'une copie décalée — est partie en diffusion avec un motif qui
+revenait **chaque seconde**. Autocorrélation mesurée après coup : **0,547 au retard 1,05 s.**
+La texture se synthétise donc par **grains** : des fragments de 60 ms tirés au hasard dans les
+zones calmes, posés à des instants aléatoires avec recouvrement. Ça ne peut pas se répéter,
+et ça garde le grain du grésillement qu'un bruit filtré perdrait.
+
+**2. Un son propre.** Sur la 4 Fromages le modèle a produit un transitoire à 3,26 s à **1,336
+d'amplitude — 80 fois la médiane, au-dessus du zéro dB**, donc écrêté. Ce n'était pas une
+bulle de fromage, c'était une saturation. On le remplace par de la texture : mieux vaut un
+grésillement continu qu'un faux bruit qu'on remarque.
+
+⚠️ **Conséquence pour les prompts.** Ne pas demander **un** événement sonore dramatique — le
+modèle le rend en saturant. Demander une texture continue (« cheese bubbling and quietly
+popping », pas « a bubble bursts »). Un bruitage précis et juste, ce modèle ne sait pas le
+faire ; ce qu'il réussit, c'est la matière.
+
+**3. Du niveau.** Il sort autour de −37 dB de moyenne, inaudible sur un téléphone.
+`loudnorm` remonte à −15 LUFS puis un limiteur ferme à −1,5 dBFS : en une passe loudnorm est
+approximatif et laissait passer +0,5 dBTP.
+
+---|---|
 | **0 → 3,5 s** | Très gros plan, légère rotation. Caméra **basse, regardant vers le haut**. Contre-jour sur la vapeur. Profondeur de champ très courte. Son : grésillement, croûte. |
 | **3,5 → 5,5 s** | **Le geste sonore**, propre à la pizza (table §7). Son : l'étirement, la coulée. |
 | **5,5 → 8 s** | La caméra recule. Le plat se pose exactement dans le cadre de la carte. |
@@ -300,6 +312,13 @@ Et deux contrôles propres au montage, à la sortie de la vidéo :
 5. **Le plat n'a pas bougé** entre la dernière image du clip et la première de la carte.
    **Tolérance 12 px.** Au-delà, le clip est rejeté.
 6. **Format exact** : 1080 × 1920, 30 i/s, durée ± 0,2 s.
+7. **Le badge bat vraiment** — largeur du disque or mesurée image par image : un pic ≥ 4 %
+   puis retour, deux fois. Une animation qu'on ajoute sans la mesurer dans les pixels
+   n'existe pas.
+8. **Le son ne boucle pas** — autocorrélation de l'enveloppe, aucun pic au-dessus de 0,35
+   entre 0,3 et 6 s de retard. **Ce contrôle manquait**, et c'est l'oreille du patron qui a
+   trouvé le défaut. Aucun des sept autres ne regardait le son autrement que pour vérifier
+   qu'il existait.
 
 ---
 

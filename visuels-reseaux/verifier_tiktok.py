@@ -113,7 +113,17 @@ for n in range(FIGE + 6, nb, 12):
     bouge = max(bouge, float(np.percentile(np.abs(d - ref), 99.9)))
 c7 = bouge <= 4.0
 
-ok = all((c1, c2, c3, c4, c5, c6, c7))
+# 8. le son ne boucle pas. C'est le controle qui manquait : la 4 Fromages est
+#    partie en diffusion avec un pic d'autocorrelation a 0,547 au retard
+#    1,05 s — un motif qui revenait chaque seconde. L'oreille l'a entendu
+#    avant moi, et aucun de mes sept controles ne regardait le son autrement
+#    que pour verifier qu'il existait.
+sys.path.insert(0, '/tmp/merge')
+from son_tiktok import repetition
+retard, pic = repetition(F)
+c8 = pic <= 0.35
+
+ok = all((c1, c2, c3, c4, c5, c6, c7, c8))
 print(f"{F}")
 print(f"  1. format            {w}x{h}  {fps:.0f} i/s  {duree:.2f} s        {'OK' if c1 else 'NON'}")
 print(f"  2. derive du plat    x {b[0]}..{b[2]}  y {b[1]}..{b[3]}  -> {derive} px (max 12)   {'OK' if c2 else 'NON'}")
@@ -122,5 +132,6 @@ print(f"  4. raccord des bords x {bordG} et {bordD} : saut max {max(saut(bordG),
 print(f"  5. son               {audio or 'aucun'}                              {'OK' if c5 else 'NON'}")
 print(f"  6. battement badge   repos {repos} px, pic {max(larg)} px (+{100*(max(larg)/repos-1):.1f} %), {len(pics)} pulsations   {'OK' if c6 else 'NON'}")
 print(f"  7. texte immobile    a partir de 11,6 s : {bouge:.1f} / 255 (max 4)        {'OK' if c7 else 'NON'}")
+print(f"  8. son sans boucle   autocorrelation {pic:.3f} au retard {retard:.2f} s (max 0.35)   {'OK' if c8 else 'NON'}")
 print(f"  ->  {'CONFORME' if ok else 'A CORRIGER'}")
 

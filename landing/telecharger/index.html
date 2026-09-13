@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Commander — Taxi Food</title>
+<meta name="robots" content="noindex,follow">
+<meta name="description" content="Commande sur Taxi Food directement depuis le site, ou télécharge l'application.">
+<link rel="icon" href="/assets/favicon-32.png">
+<!--
+  Page de passage entre les boutons « App Store » du site et Apple.
+
+  ⚠️ POURQUOI ELLE EXISTE. Les boutons App Store du site menaient directement a
+  apps.apple.com. Or l'application est ABSENTE des 27 boutiques de l'Union
+  europeenne tant qu'Apple n'a pas valide la declaration de commercant (DSA,
+  deposee le 2026-09-10). Et l'App Store ne regarde pas ou se trouve le
+  telephone : il regarde le PAYS DU COMPTE APPLE. Un Reunionnais ou un Francais
+  en vacances a Nosy Be voyait donc « pas disponible dans votre pays », alors
+  qu'il etait physiquement a Madagascar. Signale plusieurs fois par des clients.
+
+  Une fois chez Apple, on ne peut plus rien faire : cette page est a eux. Il faut
+  donc agir AVANT, sur nos propres liens.
+
+  ⚠️ PAS DE REDIRECTION AUTOMATIQUE, volontairement. Il faudrait connaitre le pays
+  du compte Apple, et un navigateur n'a aucun moyen de le lire. Deviner par la
+  langue du telephone enverrait sur le site un Malgache regle en francais, pour
+  qui l'application fonctionne tres bien. Le choix affiche est la seule solution
+  fiable : au pire, le client voit le message d'Apple, revient, et trouve la
+  reponse ecrite ici.
+
+  Le bouton PRINCIPAL mene au site, qui marche pour tout le monde sans rien
+  installer. L'application est le choix secondaire — meme logique que les pages
+  de partage /p/ et /r/, et que la regle « le QR mene au site, jamais au store »
+  de la charte.
+
+  Parametres :
+    ?l=en | ?l=it   langue (defaut : francais)
+    ?pour=pro       variante restaurateur : le bouton principal ouvre l'espace
+                    partenaire au lieu de la commande
+
+  Le jour ou la validation DSA arrive, cette page peut rester : elle ne coute
+  qu'un tap a ceux pour qui l'App Store fonctionne.
+-->
+<style>
+  :root{
+    --rouge:#DF3228; --encre:#1A1A1A; --gris:#8A827A;
+    --fond:#F5F2EF; --carte:#FFFFFF; --filet:#EDE8E2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--fond); color:var(--encre);
+    font-family:Archivo,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px 16px;
+  }
+  .carte{
+    background:var(--carte); border-radius:24px; padding:32px 28px 30px;
+    max-width:420px; width:100%; text-align:center;
+    box-shadow:0 1px 2px rgba(26,26,26,.05), 0 18px 40px -20px rgba(26,26,26,.25);
+  }
+  .icone{width:76px; height:76px; border-radius:19px; margin:0 auto; display:block}
+  h1{font:800 25px/1.25 inherit; margin:18px 0 0; letter-spacing:-.02em}
+  p{margin:10px 0 0; color:var(--gris); font-size:15px}
+  .btn{
+    display:block; margin-top:24px; padding:16px 22px; border-radius:999px;
+    background:var(--rouge); color:#fff; text-decoration:none;
+    font:700 16px/1 inherit; letter-spacing:-.01em;
+  }
+  .btn.second{background:#fff; color:var(--encre); border:1.5px solid #E3DDD6; margin-top:12px}
+  .note{margin-top:22px; padding-top:18px; border-top:1px solid var(--filet);
+        font-size:13.5px; color:var(--encre); text-align:left; line-height:1.55}
+  .note strong{font-weight:700}
+  .retour{display:inline-block; margin-top:18px; font-size:13px; color:var(--gris)}
+  @media (prefers-color-scheme: dark){
+    :root{--fond:#141210; --carte:#1E1B19; --encre:#F2EEEA; --gris:#A29A92; --rouge:#FF6B5E; --filet:#2E2A27}
+    .btn.second{background:transparent; color:var(--encre); border-color:#3A3531}
+  }
+</style>
+</head>
+<body>
+<main class="carte">
+  <img class="icone" src="/assets/icon-512.png" alt="Taxi Food" width="76" height="76">
+  <h1 id="titre">Commander sur Taxi Food</h1>
+  <p id="intro">Le plus simple : commande directement sur le site. Rien à installer.</p>
+
+  <a class="btn" id="principal" href="https://taxifood.distripro207.com">Commander tout de suite</a>
+  <a class="btn second" id="secondaire" href="https://apps.apple.com/app/id6802418114">Télécharger l’application</a>
+
+  <div class="note" id="note">
+    L’App Store te répond <strong>« pas disponible dans ton pays »</strong> ?
+    C’est que ton compte Apple est européen — même si tu es à Nosy Be.
+    L’application y arrive bientôt. <strong>En attendant, le site fait exactement la même chose.</strong>
+  </div>
+
+  <a class="retour" id="retour" href="/">Retour au site</a>
+</main>
+
+<script>
+(function () {
+  var APP_STORE = 'https://apps.apple.com/app/id6802418114';
+  var PLAY = 'https://play.google.com/store/apps/details?id=com.chris97416.taxifoodnosybe';
+  var WEB = 'https://taxifood.distripro207.com';
+
+  var q = new URLSearchParams(location.search);
+  var l = q.get('l');
+  if (l !== 'en' && l !== 'it') l = 'fr';
+  var pro = q.get('pour') === 'pro';
+
+  // Le client est tutoye, le restaurateur vouvoye : c'est la regle de l'app
+  // (Reglages de l'espace partenaire) et de la charte.
+  var T = {
+    fr: {
+      client: {
+        titre: 'Commander sur Taxi Food',
+        intro: 'Le plus simple : commande directement sur le site. Rien à installer.',
+        principal: 'Commander tout de suite',
+        note: 'L’App Store te répond <strong>« pas disponible dans ton pays »</strong> ? C’est que ton compte Apple est européen — même si tu es à Nosy Be. L’application y arrive bientôt. <strong>En attendant, le site fait exactement la même chose.</strong>'
+      },
+      pro: {
+        titre: 'Votre espace restaurant',
+        intro: 'Ouvrez-le directement dans le navigateur. Rien à installer.',
+        principal: 'Ouvrir mon espace',
+        note: 'L’App Store vous répond <strong>« pas disponible dans votre pays »</strong> ? C’est que votre compte Apple est européen — même à Nosy Be. L’application y arrive bientôt. <strong>En attendant, l’espace s’utilise pleinement depuis le navigateur.</strong>'
+      },
+      secondaire: 'Télécharger l’application',
+      retour: 'Retour au site',
+      doc: 'Commander — Taxi Food'
+    },
+    en: {
+      client: {
+        titre: 'Order on Taxi Food',
+        intro: 'Easiest: order straight from the website. Nothing to install.',
+        principal: 'Order now',
+        note: 'The App Store says <strong>“not available in your country”</strong>? Your Apple account is registered in Europe — even if you are in Nosy Be. The app is coming there soon. <strong>Meanwhile, the website does exactly the same.</strong>'
+      },
+      pro: {
+        titre: 'Your restaurant space',
+        intro: 'Open it straight in your browser. Nothing to install.',
+        principal: 'Open my space',
+        note: 'The App Store says <strong>“not available in your country”</strong>? Your Apple account is registered in Europe — even in Nosy Be. The app is coming there soon. <strong>Meanwhile, your space works fully in the browser.</strong>'
+      },
+      secondaire: 'Download the app',
+      retour: 'Back to the website',
+      doc: 'Order — Taxi Food'
+    },
+    it: {
+      client: {
+        titre: 'Ordina su Taxi Food',
+        intro: 'La via più semplice: ordina direttamente dal sito. Niente da installare.',
+        principal: 'Ordina subito',
+        note: 'L’App Store dice <strong>«non disponibile nel tuo paese»</strong>? Il tuo account Apple è europeo — anche se sei a Nosy Be. L’app arriva presto. <strong>Nel frattempo, il sito fa esattamente la stessa cosa.</strong>'
+      },
+      pro: {
+        titre: 'Il tuo spazio ristorante',
+        intro: 'Aprilo direttamente nel browser. Niente da installare.',
+        principal: 'Apri il mio spazio',
+        note: 'L’App Store dice <strong>«non disponibile nel tuo paese»</strong>? Il tuo account Apple è europeo — anche a Nosy Be. L’app arriva presto. <strong>Nel frattempo, lo spazio funziona pienamente dal browser.</strong>'
+      },
+      secondaire: 'Scarica l’app',
+      retour: 'Torna al sito',
+      doc: 'Ordina — Taxi Food'
+    }
+  };
+
+  var t = T[l], v = pro ? t.pro : t.client;
+  document.documentElement.lang = l;
+  document.title = t.doc;
+  document.getElementById('titre').textContent = v.titre;
+  document.getElementById('intro').textContent = v.intro;
+  document.getElementById('note').innerHTML = v.note;
+
+  var principal = document.getElementById('principal');
+  principal.textContent = v.principal;
+  principal.href = pro ? WEB + '/login' : WEB;
+
+  var secondaire = document.getElementById('secondaire');
+  secondaire.textContent = t.secondaire;
+
+  document.getElementById('retour').textContent = t.retour;
+  document.getElementById('retour').href = pro
+    ? (l === 'fr' ? '/restaurants-partenaires/' : l === 'en' ? '/en/restaurant-partners/' : '/it/ristoranti-partner/')
+    : (l === 'fr' ? '/' : '/' + l + '/');
+
+  // Sur Android, le blocage n'existe pas et l'App Store ne sert a rien : le
+  // bouton secondaire mene a Google Play, et la note n'a pas lieu d'etre.
+  var ua = navigator.userAgent || '';
+  if (/android/i.test(ua)) {
+    secondaire.href = PLAY;
+    document.getElementById('note').hidden = true;
+  } else {
+    secondaire.href = APP_STORE;
+  }
+})();
+</script>
+</body>
+</html>

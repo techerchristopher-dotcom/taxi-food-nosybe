@@ -689,3 +689,289 @@ def visuel_carre_decor(titre, secondaire, prix, ligne_lieu, logo, decor,
     document.getElementById('ca-filet').style.top = ph + 'px';
   }})();</script>
 ''' + FOOT
+
+
+# ============================================================================
+# PUB PHOTO — une photo de vie, le message pose DANS l'image, sans bandeau.
+#
+# Les deux series decor posent un bandeau rouge translucide parce que le sujet
+# occupe tout le cadre et qu'il n'y a nulle part ou ecrire. Sur une photo de
+# scene, il y a souvent une SURFACE VIDE, et ici c'en est une belle : le
+# plafond, eclaire par le plafonnier, lisse et chaud.
+#
+# On a mesure avant de decider :
+#   blanc pose directement sur ce plafond           6,37:1
+#   plafond + rouge 72 % + voile 28 % (le mieux)    5,49:1
+#   rouge opaque des treize carres publies          4,24:1
+#
+# Le bandeau ferait donc PERDRE du contraste, en plus de recouvrir la lueur de
+# la lampe, qui est tout le sujet du soir. On ecrit donc a meme le plafond. La
+# marque tient par le reste : l'or sur l'accent, les deux logos, la typo.
+#
+# La regle generale, celle qu'il faut retenir : le bandeau n'est pas la marque,
+# c'est un OUTIL contre un fond illisible. Quand le fond se lit, on s'en passe.
+# ============================================================================
+PP_MARGE   = 90
+PP_COL_Y   = 130
+PP_LOGO_D  = 158        # pastille du restaurant
+PP_APP_D   = 108        # icone Taxi Food
+
+
+def visuel_photo_pub(photo, titre1, titre2, accent, sous_titre, logo,
+                     larg=1350, haut=1800, eyebrow=None, titre_px=100,
+                     bas_sujet=600):
+    """Le message pose sur une zone vide de la photo.
+
+    `bas_sujet` : la ligne sous laquelle le sujet commence. Le bloc de texte
+    doit finir au-dessus, et le rendeur le verifie.
+    """
+    eye = (f'<div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">'
+           f'<span style="font-size: 26px; font-weight: 700; letter-spacing: 4px; color: {OR}; '
+           f'text-transform: uppercase; white-space: nowrap;">{eyebrow}</span></div>') if eyebrow else ''
+    return HEAD + f'''<div style="position: relative; width: {larg}px; height: {haut}px; background: #000000; overflow: hidden;">
+
+  <img src="{photo}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {larg}px; height: {haut}px; object-fit: cover; display: block;">
+
+  <!-- Un voile tres leger, seulement sous le texte, et en degrade vers le bas :
+       il assoit les lettres sans faire une boite. Mesure : il fait passer le
+       pire pixel du bloc de 5,1 a 6,0 pour un cout visuel nul. -->
+  <div style="position: absolute; z-index: 1; left: 0; top: 0; width: {larg}px; height: {bas_sujet + 60}px;
+       background: linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.22) 55%, rgba(0,0,0,0) 100%);"></div>
+
+  <div id="pp-col" style="position: absolute; z-index: 4; top: {PP_COL_Y}px; left: {PP_MARGE}px;
+       width: {larg - 2*PP_MARGE}px; display: flex; flex-direction: column; align-items: flex-start;">
+    {eye}
+    <div id="pp-t1" style="font-size: {titre_px}px; font-weight: 900; line-height: 0.98; color: #FFFFFF;
+         letter-spacing: -2.6px; white-space: nowrap;">{titre1}</div>
+    <div id="pp-t2" style="font-size: {titre_px}px; font-weight: 900; line-height: 0.98; color: #FFFFFF;
+         letter-spacing: -2.6px; white-space: nowrap;">{titre2} <span style="color: {OR};">{accent}</span></div>
+    <div id="pp-st" style="margin-top: 26px; font-size: 34px; font-weight: 500; color: rgba(255,255,255,0.95);
+         white-space: nowrap;">{sous_titre}</div>
+    <div style="margin-top: 22px;">{_stores_tiktok(1.05)}</div>
+  </div>
+
+  <!-- Les deux logos en bas a droite : le restaurant, puis l'application. -->
+  <div id="pp-logos" style="position: absolute; z-index: 4; right: {PP_MARGE}px; bottom: {PP_MARGE}px;
+       display: flex; align-items: center; gap: 22px;">
+    <div style="width: {PP_LOGO_D}px; height: {PP_LOGO_D}px; border-radius: 50%; background: #FFFFFF;
+         box-shadow: 0 12px 30px rgba(0,0,0,0.55); overflow: hidden;">
+      <img src="{logo}" alt="Logo restaurant" style="width: {PP_LOGO_D}px; height: {PP_LOGO_D}px; object-fit: cover; display: block;">
+    </div>
+    <img src="taxifood.png" alt="Taxi Food" style="width: {PP_APP_D}px; height: auto; display: block;
+         border-radius: 24px; box-shadow: 0 12px 30px rgba(0,0,0,0.55);">
+  </div>
+
+  <script>(function () {{
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1;
+        e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    // Les deux lignes du titre s'ajustent ENSEMBLE, sinon elles sortent a des
+    // corps differents et le bloc se casse.
+    var e1 = document.getElementById('pp-t1'), e2 = document.getElementById('pp-t2');
+    var px = {titre_px}, lp = e1.parentElement.clientWidth;
+    while (px > 56 && (e1.scrollWidth > lp || e2.scrollWidth > lp)) {{
+      px -= 1;
+      [e1, e2].forEach(function (e) {{
+        e.style.fontSize = px + 'px';
+        e.style.letterSpacing = (-2.6 * px / {titre_px}) + 'px';
+      }});
+    }}
+    tenir('pp-st', 34, 24, 0);
+  }})();</script>
+''' + FOOT
+
+
+# ============================================================================
+# PUB PHOTO, DEUX ZONES — pour une photo produit sur fond de couleur claire.
+#
+# La variante precedente ecrit en blanc sur un plafond sombre. Sur le packshot
+# orange de La Cabane, le blanc tombe a 2,6:1 : illisible. Le NOIR y donne
+# 8,1:1 — et ce n'est pas un pis-aller, c'est leur charte : le logo La Cabane
+# est un disque NOIR a lettrage orange. On ecrit donc en noir.
+#
+# La photo laisse deux zones vides, mesurees sur le fond (tolerance 26/255) :
+#   y 0 a 450        : 100 % de fond libre, sur toute la largeur
+#   y 1080 a 1800    : 100 % de fond libre sur la MOITIE GAUCHE
+# Le burger et la main occupent le centre-droit. Le message se scinde donc en
+# deux : l'accroche en haut, tout ce qui sert a commander en bas a gauche.
+#
+# Pas de bandeau : le fond est deja un aplat lisible. Le bandeau est un outil
+# contre un fond illisible, pas une signature.
+# ============================================================================
+PD_MARGE   = 90
+PD_LOGO_D  = 150
+PD_APP_D   = 100
+
+
+# Les deux couleurs sont RELEVEES sur le logo La Cabane, pas choisies :
+# le lettrage orange y mesure #F76C07, le disque #090201. Un badge « fait
+# maison » doit avoir l air d etre de la maison, pas d avoir ete pose dessus.
+CABANE_OR   = '#F76C07'
+CABANE_NOIR = '#0B0503'
+
+
+def _badge_maison(d=176, x=0, y=0, rot=-8, or_=CABANE_OR, noir=CABANE_NOIR,
+                  h1='Fait', h2='maison'):
+    """Le tampon « fait maison ». Disque noir, lisere et lettrage orange —
+    la construction du logo du restaurant, a une autre echelle."""
+    f = lambda v: round(v * d / 176)
+    return (f'<div style="position: absolute; z-index: 6; left: {x}px; top: {y}px; '
+            f'width: {d}px; height: {d}px; border-radius: 50%; background: {noir}; '
+            f'transform: rotate({rot}deg); box-shadow: 0 {f(10)}px {f(26)}px rgba(0,0,0,0.28); '
+            f'display: flex; align-items: center; justify-content: center;">'
+            f'<div style="width: {d - f(18)}px; height: {d - f(18)}px; border-radius: 50%; '
+            f'border: {f(3)}px solid {or_}; display: flex; flex-direction: column; '
+            f'align-items: center; justify-content: center; line-height: 0.92;">'
+            f'<span style="font-size: {f(30)}px; font-weight: 900; color: {or_}; '
+            f'text-transform: uppercase; letter-spacing: {f(1)}px;">{h1}</span>'
+            f'<span style="font-size: {f(38)}px; font-weight: 900; color: {or_}; '
+            f'text-transform: uppercase; letter-spacing: {f(-0.5)}px;">{h2}</span>'
+            f'</div></div>')
+
+
+def visuel_photo_deux_zones(photo, titre, secondaire, prix, ligne_lieu, logo,
+                            larg=1350, haut=1800, eyebrow='Nouveau sur Taxi&nbsp;Food',
+                            titre_px=104, encre='#141414', bas_y=1150,
+                            code='TAXIFOOD50', badges=()):
+    """Accroche en haut, bloc de commande en bas a gauche, texte en noir."""
+    M = PD_MARGE
+    return HEAD + f'''<div style="position: relative; width: {larg}px; height: {haut}px; background: #000000; overflow: hidden;">
+
+  <img src="{photo}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {larg}px; height: {haut}px; object-fit: cover; display: block;">
+
+{"".join(_badge_maison(**b) for b in badges)}
+  <div id="pd-haut" style="position: absolute; z-index: 4; top: {M}px; left: {M}px; width: {larg - 2*M}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 42px; height: auto; display: block; border-radius: 9px;">
+      <span style="font-size: 25px; font-weight: 800; letter-spacing: 3.6px; color: {encre};
+            text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+    </div>
+    <div id="pd-titre" style="margin-top: 12px; font-size: {titre_px}px; font-weight: 900; line-height: 0.96;
+         color: {encre}; letter-spacing: -3px; white-space: nowrap;">{titre}</div>
+    <div id="pd-desc" style="margin-top: 14px; font-size: 32px; font-weight: 500; color: rgba(20,20,20,0.86);
+         white-space: nowrap;">{secondaire}</div>
+    <div style="margin-top: 10px; font-size: 56px; font-weight: 900; color: {encre}; letter-spacing: -1.4px;">{prix}</div>
+  </div>
+
+  <div id="pd-bas" style="position: absolute; z-index: 4; top: {bas_y}px; left: {M}px; width: {round(larg*0.44)}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div id="pd-lieu" style="font-size: 24px; font-weight: 600; color: rgba(20,20,20,0.88); white-space: nowrap;">{ligne_lieu}</div>
+    <div style="margin-top: 18px;">{_promo_tiktok(1.0)}</div>
+    <div style="margin-top: 18px;">{_stores_tiktok(0.80)}</div>
+    <div id="pd-url" style="margin-top: 12px; font-size: 24px; font-weight: 800; color: {encre};
+         letter-spacing: -0.2px; white-space: nowrap;">taxifoodnosybe.distripro207.com</div>
+    <div id="pd-logos" style="margin-top: 26px; display: flex; align-items: center; gap: 20px;">
+      <img src="{logo}" alt="Logo restaurant" style="width: {PD_LOGO_D}px; height: {PD_LOGO_D}px;
+           object-fit: contain; display: block;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: {PD_APP_D}px; height: auto; display: block;
+           border-radius: 22px; box-shadow: 0 10px 26px rgba(0,0,0,0.30);">
+    </div>
+  </div>
+
+  <script>(function () {{
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1;
+        e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    tenir('pd-titre', {titre_px}, 58, -3);
+    tenir('pd-desc', 32, 22, 0);
+    tenir('pd-lieu', 24, 17, 0);
+    tenir('pd-url', 24, 17, 0);
+  }})();</script>
+''' + FOOT
+
+
+# ============================================================================
+# PUB PHOTO, BLOC HAUT — quand le produit tient tout le cadre.
+#
+# La variante « deux zones » supposait une colonne laterale libre. Des que le
+# heros grossit — et il DOIT grossir, c est lui qu on vend — cette colonne
+# disparait. Mesure sur le Tenders a 67 % de largeur : le bas-gauche tombe a
+# 48 % de fond libre, l avant-bras le traverse. Le message n y tient plus.
+#
+# Ce qui reste propre, mesure par bandes de 120 px :
+#   y 0 a 480    : 100 % libre sur TOUTE la largeur
+#   y 1600-1760 a droite : 100 % libre
+#
+# Tout le message se serre donc dans la bande haute — accroche, prix, code,
+# stores, URL : 423 px mesures, pour 470 disponibles. Les deux logos descendent
+# dans le coin bas-droit. Le milieu du cadre appartient au produit, entier.
+# ============================================================================
+PH_MARGE = 90
+
+
+def visuel_photo_bloc_haut(photo, titre, secondaire, prix, ligne_lieu, logo,
+                           larg=1350, haut=1800, eyebrow='Nouveau sur Taxi&nbsp;Food',
+                           titre_px=100, encre='#141414', badges=(), col_larg=0.68):
+    """Tout le message en haut, les logos en bas a droite, le produit au milieu."""
+    M = PH_MARGE
+    return HEAD + f'''<div style="position: relative; width: {larg}px; height: {haut}px; background: #000000; overflow: hidden;">
+
+  <img src="{photo}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {larg}px; height: {haut}px; object-fit: cover; display: block;">
+
+{"".join(_badge_maison(**b) for b in badges)}
+
+  <div id="ph-col" style="position: absolute; z-index: 4; top: {M}px; left: {M}px; width: {round(larg*col_larg)}px;
+       display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 13px;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 40px; height: auto; display: block; border-radius: 9px;">
+      <span style="font-size: 24px; font-weight: 800; letter-spacing: 3.4px; color: {encre};
+            text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+    </div>
+    <div id="ph-titre" style="margin-top: 8px; font-size: {titre_px}px; font-weight: 900; line-height: 0.95;
+         color: {encre}; letter-spacing: -2.9px; white-space: nowrap;">{titre}</div>
+    <div id="ph-desc" style="margin-top: 8px; font-size: 29px; font-weight: 500; color: rgba(20,20,20,0.86);
+         white-space: nowrap;">{secondaire}</div>
+    <div style="margin-top: 4px; display: flex; align-items: baseline; gap: 22px;">
+      <span style="font-size: 54px; font-weight: 900; color: {encre}; letter-spacing: -1.4px;">{prix}</span>
+      <span id="ph-lieu" style="font-size: 22px; font-weight: 700; color: rgba(20,20,20,0.80);
+            white-space: nowrap;">{ligne_lieu}</span>
+    </div>
+    <div style="margin-top: 12px;">{_promo_tiktok(0.95)}</div>
+    <div style="margin-top: 12px; display: flex; align-items: center; gap: 20px;">
+      {_stores_tiktok(0.72)}
+      <span id="ph-url" style="font-size: 22px; font-weight: 800; color: {encre};
+            letter-spacing: -0.2px; white-space: nowrap;">taxifoodnosybe.distripro207.com</span>
+    </div>
+  </div>
+
+  <div id="ph-logos" style="position: absolute; z-index: 4; right: {M}px; bottom: {M}px;
+       display: flex; align-items: center; gap: 20px;">
+    <img src="{logo}" alt="Logo restaurant" style="width: 138px; height: 138px; object-fit: contain; display: block;">
+    <img src="taxifood.png" alt="Taxi Food" style="width: 96px; height: auto; display: block;
+         border-radius: 21px; box-shadow: 0 10px 26px rgba(0,0,0,0.30);">
+  </div>
+
+  <script>(function () {{
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1; e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    tenir('ph-titre', {titre_px}, 54, -2.9);
+    tenir('ph-desc', 29, 20, 0);
+    tenir('ph-lieu', 22, 15, 0);
+    tenir('ph-url', 22, 15, 0);
+  }})();</script>
+''' + FOOT

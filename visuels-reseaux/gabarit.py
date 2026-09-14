@@ -975,3 +975,97 @@ def visuel_photo_bloc_haut(photo, titre, secondaire, prix, ligne_lieu, logo,
     tenir('ph-url', 22, 15, 0);
   }})();</script>
 ''' + FOOT
+
+
+# =========================================================================
+# PUB PHOTO CARTE — quand la photo est pleine bord a bord.
+#
+# Le plan editorial (une fille qui mord dans le Tenders) n a AUCUNE zone libre :
+# mesure par bandes de 64 px sur 1024, le fond calme tombe a 25,8 % et les seuls
+# carres a 100 % sont le coin haut-gauche et une languette de veste en bas a
+# gauche. Aucun des deux ne tient le bloc de commande, et tout le reste est soit
+# le burger, soit son visage, soit le tatouage qu on vient de poser.
+#
+# On ne recouvre donc rien : on AGRANDIT le cadre. La photo garde sa composition
+# entiere, la bande porte le message. Bande ORANGE #F76C07 — celle du lettrage
+# La Cabane, relevee sur leur logo, deja validee comme fond de la serie — et
+# encre NOIRE : 8,1:1, contre 2,6:1 pour du blanc sur ce meme orange.
+#
+# Le recadrage est contraint par le BAS : le tatouage descend a 86,6 % de la
+# hauteur source. Bande de 400 px => zone photo de 1400 px => le tatouage
+# s arrete a 1212, soit 188 px au-dessus de la bande. Verifie sur le rendu.
+# ============================================================================
+BC_BANDE  = 400
+BC_PAD_V  = 58
+BC_PAD_H  = 66
+BC_ORANGE = CABANE_OR
+BC_ENCRE  = CABANE_NOIR
+
+
+def visuel_photo_carte(photo, titre, secondaire, prix, ligne_lieu, logo,
+                       larg=1350, haut=1800, bande=BC_BANDE,
+                       eyebrow='Nouveau sur Taxi&nbsp;Food', titre_px=82,
+                       fond=BC_ORANGE, encre=BC_ENCRE, col_g=0.65):
+    """Photo pleine largeur en haut, carte de commande sur bande de marque en bas."""
+    PV, PH = BC_PAD_V, BC_PAD_H
+    ph_h = haut - bande
+    corps = f'''<div style="position: relative; width: {larg}px; height: {haut}px; background: {fond}; overflow: hidden;">
+
+  <img src="{photo}" alt="" style="position: absolute; z-index: 0; left: 0; top: 0;
+       width: {larg}px; height: {ph_h}px; object-fit: cover; object-position: 50% 0%; display: block;">
+
+  <div id="bc-bande" style="position: absolute; z-index: 2; left: 0; top: {ph_h}px;
+       width: {larg}px; height: {bande}px; background: {fond}; display: flex;
+       align-items: center; justify-content: space-between;
+       padding: {PV}px {PH}px; box-sizing: border-box;">
+
+  <div id="bc-col" style="z-index: 4;
+       width: {round((larg - 2*PH) * col_g)}px; display: flex; flex-direction: column; align-items: flex-start;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 36px; height: auto; display: block; border-radius: 8px;">
+      <span style="font-size: 22px; font-weight: 800; letter-spacing: 3.2px; color: {encre};
+            text-transform: uppercase; white-space: nowrap;">{eyebrow}</span>
+    </div>
+    <div id="bc-titre" style="margin-top: 8px; font-size: {titre_px}px; font-weight: 900; line-height: 0.95;
+         color: {encre}; letter-spacing: -2.6px; white-space: nowrap;">{titre}</div>
+    <div id="bc-desc" style="margin-top: 8px; font-size: 26px; font-weight: 500; color: rgba(11,5,3,0.82);
+         white-space: nowrap;">{secondaire}</div>
+    <div style="margin-top: 10px; display: flex; align-items: baseline; gap: 20px;">
+      <span style="font-size: 52px; font-weight: 900; color: {encre}; letter-spacing: -1.3px;">{prix}</span>
+      <span id="bc-lieu" style="font-size: 21px; font-weight: 800; letter-spacing: 1.4px; color: rgba(11,5,3,0.78);
+            text-transform: uppercase; white-space: nowrap;">{ligne_lieu}</span>
+    </div>
+  </div>
+
+  <div id="bc-droite" style="z-index: 4;
+       display: flex; flex-direction: column; align-items: flex-end;">
+    <div>{_promo_tiktok(0.86)}</div>
+    <div style="margin-top: 14px;">{_stores_tiktok(0.68)}</div>
+    <div id="bc-url" style="margin-top: 10px; font-size: 21px; font-weight: 800; color: {encre};
+         letter-spacing: -0.2px; white-space: nowrap;">taxifoodnosybe.distripro207.com</div>
+    <div style="margin-top: 16px; display: flex; align-items: center; gap: 18px;">
+      <img src="{logo}" alt="Logo restaurant" style="width: 88px; height: 88px; object-fit: contain; display: block;">
+      <img src="taxifood.png" alt="Taxi Food" style="width: 72px; height: auto; display: block;
+           border-radius: 16px; box-shadow: 0 8px 20px rgba(11,5,3,0.32);">
+    </div>
+  </div>
+
+  </div>
+
+  <script>(function () {{
+    function tenir(id, px, mini, ls) {{
+      var e = document.getElementById(id);
+      if (!e) return;
+      var p0 = px;
+      while (px > mini && e.scrollWidth > e.parentElement.clientWidth) {{
+        px -= 1; e.style.fontSize = px + 'px';
+        if (ls) e.style.letterSpacing = (ls * px / p0) + 'px';
+      }}
+    }}
+    tenir('bc-titre', {titre_px}, 46, -2.6);
+    tenir('bc-desc', 26, 18, 0);
+    tenir('bc-lieu', 21, 14, 0);
+    tenir('bc-url', 21, 14, 0);
+  }})();</script>
+'''
+    return HEAD + corps + FOOT

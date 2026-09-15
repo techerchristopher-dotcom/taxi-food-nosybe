@@ -161,7 +161,10 @@ restaurants » ; c'est daté.
   catégorie, `in_menu = false`). Photos branchées le même jour (migration
   `20260915083553_chez_bidul_plats_du_jour_photos`, fichiers `produits/chez-bidul-truc/plat-*.png`,
   sources dans `visuels-reseaux/photos/`), déposées via la fonction Edge jetable
-  `upload-plats-du-jour-bidul`, **neutralisée (410)** — ⚠️ à supprimer depuis le tableau de bord. Enseigne, logo et visuels branchés depuis
+  `upload-plats-du-jour-bidul`, **neutralisée (410)** — ⚠️ à supprimer depuis le tableau de bord. Accompagnements
+  identiques aux plats de la carte (migration `20260915084147_chez_bidul_plats_du_jour_accompagnements`,
+  copiés depuis « Cuisse de poulet ») : « Accompagnement (1 au choix, inclus) » obligatoire +
+  « 2e accompagnement (+5 000 Ar) » facultatif — Frites, Légumes sautés, Pâtes, Riz, Purée. Enseigne, logo et visuels branchés depuis
   `produits/chez-bidul-truc/divers`. ⚠️ **Sa couverture est un HEIC**, photo iPhone déposée
   telle quelle : Chrome et Android ne savent pas l'afficher, Safari si. Elle passe côté client
   parce que la fiche restaurant appelle `imageUrl()`, qui réécrit vers le **transformateur

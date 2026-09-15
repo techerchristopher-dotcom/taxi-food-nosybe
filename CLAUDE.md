@@ -152,7 +152,16 @@ restaurants » ; c'est daté.
 - **Chez Bidul & Truc** (`700e8f32-…`) — **visible**, et le seul en `auto_open = true` : son
   ouverture est déduite de ses horaires, pas d'un interrupteur. Deux services par jour, midi et
   soir, et une catégorie « Pizza » servie de 18 h à 22 h seulement — c'est lui qui a fait naître
-  tout le chantier « heures de service » plus bas. Enseigne, logo et visuels branchés depuis
+  tout le chantier « heures de service » plus bas. **Carte entière ouverte le 2026-09-15**
+  (migration `20260915074237_chez_bidul_ouvre_toute_sa_carte`) : les 6 catégories coupées le
+  09/09 (Entrée, Plat, Pâtes, Tapas, Hamburger, Dessert) sont réactivées, `food_types` =
+  Pizza, Pâtes, Burger, Tapas ; plage Pizza 18–22 h inchangée. **Offre du jour** (migration
+  `20260915082305_chez_bidul_trois_plats_du_jour`) : Poulet basquaise, Blanquette de poisson,
+  Tartare de zébu — 30 000 Ar, étiquette « Plat du jour », créations « À l'affiche » (sans
+  catégorie, `in_menu = false`). Photos branchées le même jour (migration
+  `20260915083553_chez_bidul_plats_du_jour_photos`, fichiers `produits/chez-bidul-truc/plat-*.png`,
+  sources dans `visuels-reseaux/photos/`), déposées via la fonction Edge jetable
+  `upload-plats-du-jour-bidul`, **neutralisée (410)** — ⚠️ à supprimer depuis le tableau de bord. Enseigne, logo et visuels branchés depuis
   `produits/chez-bidul-truc/divers`. ⚠️ **Sa couverture est un HEIC**, photo iPhone déposée
   telle quelle : Chrome et Android ne savent pas l'afficher, Safari si. Elle passe côté client
   parce que la fiche restaurant appelle `imageUrl()`, qui réécrit vers le **transformateur

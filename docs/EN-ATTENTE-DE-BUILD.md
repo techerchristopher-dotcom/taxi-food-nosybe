@@ -12,6 +12,26 @@ ci-dessous comme « en attente »). Le chantier du 2026-09-08 ci-dessous est le 
 réellement en attente à cette date — ne pas supposer que le reste du fichier l'est aussi
 sans vérifier au cas par cas.
 
+
+## 🔥 Partager les plats du jour en UNE publication (2026-09-15) — EXIGE UN BUILD POUR LE BOUTON
+
+**Demande du porteur du projet** : au lieu de partager chaque plat, un bouton qui publie les
+plats du jour ensemble (objectif : une publication avec les 3 plats de Chez Bidul & Truc).
+
+- **Ce qui marche SANS build** (en ligne dès le déploiement de la vitrine et de la fonction Edge) :
+  le lien `https://taxifoodnosybe.distripro207.com/j/<restaurant>` — page listant les plats du
+  jour + aperçu WhatsApp/Facebook `/j/<id>/apercu.jpg`, image 1200×630 qui assemble les photos,
+  noms et prix (fonction Edge `apercu-plats-du-jour`, lecture seule, re-servie par
+  `landing/netlify/functions/partage.mjs`). Et la **version web** de l'app après
+  `expo export` + déploiement.
+- **Ce qui attend le build iOS/Android** :
+  - le bouton « Partager » du bandeau « Offre du jour » (`app/restaurant/[id].tsx`) ;
+  - le bloc « Partager vos plats du jour » dans Réglages du partenaire (`app/(restaurant)/reglages.tsx`) ;
+  - l'ouverture du lien `/j/` DANS l'app : route `app/j/[id].tsx` + `pathPrefix "/j/"` dans
+    `app.json` (Android). Côté iOS, `/j/*` est déjà dans `apple-app-site-association`, mais
+    le binaire actuel ne connaît pas la route : il ouvrirait l'accueil. Sans build, un lien
+    `/j/` s'ouvre donc dans le navigateur (page + bouton Commander), ce qui reste correct.
+
 ## 🎨 L'icone Android etait celle d'EAS, pas celle de Taxi Food (2026-09-08) — EXIGE UN BUILD
 
 **Signale par le porteur du projet** : sur l'ecran d'accueil de son Android, l'icone de

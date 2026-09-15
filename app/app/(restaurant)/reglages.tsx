@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { ProductThumb } from '../../components/ProductThumb';
+import { PartageEnLigne } from '../../components/PartageSheet';
+import { lienPlatsDuJour, textePartagePlatsDuJour, titrePlatsDuJour } from '../../lib/partage';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import {
   archiveProduct,
@@ -877,6 +879,26 @@ export default function RestaurantSettingsScreen() {
             Vos plats mis en avant en haut de votre page. Retirer un plat ne l'efface pas :
             il retourne dans votre bibliothèque, prêt à être remis à l'affiche en un tap.
           </Text>
+
+          {/* Partage des plats du jour en UNE publication (WhatsApp, page Facebook…).
+              Le lien suit ce qui est à l'affiche : pas besoin de le refaire demain. */}
+          {resto && alAffiche.some((p) => p.isAvailable && p.stockQuantity !== 0) ? (
+            <View style={[styles.carte, { gap: 10 }]}>
+              <Text style={styles.categorie}>Partager vos plats du jour</Text>
+              <Text style={styles.ligneSous}>
+                Une seule publication avec tous vos plats à l'affiche : une image qui les
+                assemble, leurs noms et leurs prix.
+              </Text>
+              <PartageEnLigne
+                titre={titrePlatsDuJour(resto.name)}
+                texte={textePartagePlatsDuJour({
+                  restaurantName: resto.name,
+                  plats: alAffiche.filter((p) => p.isAvailable && p.stockQuantity !== 0),
+                })}
+                url={lienPlatsDuJour(resto.id)}
+              />
+            </View>
+          ) : null}
 
           {alAffiche.length ? (
             <View style={styles.carte}>

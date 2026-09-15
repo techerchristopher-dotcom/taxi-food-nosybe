@@ -1,5 +1,6 @@
 import { Linking, Platform, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { formatAr } from '../theme/tokens';
 
 /**
  * Partage social — produits et restaurants.
@@ -33,6 +34,19 @@ export function lienProduit(productId: string) {
 
 export function lienRestaurant(restaurantId: string) {
   return `${SITE}/r/${restaurantId}`;
+}
+
+/**
+ * Les PLATS DU JOUR d'un restaurant, en une seule publication.
+ *
+ * Le lien `/j/<restaurant>` lit les plats à l'affiche AU MOMENT où on l'ouvre : le même
+ * bouton partage les nouveaux plats demain, et un lien d'hier renvoie vers la page du
+ * restaurant quand plus rien n'est à l'affiche. L'aperçu (image qui assemble les photos)
+ * est fabriqué par la fonction Edge `apercu-plats-du-jour`, re-servie par
+ * `landing/netlify/functions/partage.mjs`.
+ */
+export function lienPlatsDuJour(restaurantId: string) {
+  return `${SITE}/j/${restaurantId}`;
 }
 
 /**
@@ -84,6 +98,23 @@ export function partagerRestaurant(r: { id: string; name: string }) {
 export function textePartageProduit(p: { name: string; restaurantName?: string | null }) {
   const chez = p.restaurantName ? ` chez ${p.restaurantName}` : '';
   return `${p.name}${chez} — à commander sur Taxi Food`;
+}
+
+/**
+ * Le texte des plats du jour : un plat par ligne, avec son prix. Lisible tel quel dans
+ * WhatsApp, où il accompagne le lien (Facebook, lui, n'affiche que l'aperçu).
+ */
+/** « Plats du jour chez La Cabane », mais « Plats du jour de Chez Bidul & Truc » (pas « chez Chez »). */
+export function titrePlatsDuJour(restaurantName: string) {
+  return `Plats du jour ${/^chez\s/i.test(restaurantName) ? 'de' : 'chez'} ${restaurantName}`;
+}
+
+export function textePartagePlatsDuJour(r: {
+  restaurantName: string;
+  plats: { name: string; price: number }[];
+}) {
+  const lignes = r.plats.map((p) => `• ${p.name} — ${formatAr(p.price)}`);
+  return [`🔥 ${titrePlatsDuJour(r.restaurantName)}`, ...lignes, 'À commander sur Taxi Food 👉'].join('\n');
 }
 
 /**

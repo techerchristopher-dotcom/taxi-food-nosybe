@@ -1,5 +1,6 @@
 /**
- * Pages de partage : /p/<id> (un produit) et /r/<id> (un restaurant).
+ * Pages de partage : /p/<id> (un produit), /r/<id> (un restaurant) et /j/<id> (les
+ * plats du jour d'un restaurant, en UNE publication — image `/j/<id>/apercu.jpg`).
  *
  * ── Pourquoi une fonction et pas une page statique ────────────────────────────
  * L'aperçu affiché par WhatsApp, Messenger ou Facebook est construit par un
@@ -95,6 +96,14 @@ function apercuImage(url) {
     + '&w=1200&h=630&fit=cover&fm=jpg&q=75';
 }
 
+/** Vignette carrée légère d'une photo du stockage (liste des plats du jour). */
+function apercuVignette(url) {
+  const u = String(url ?? '');
+  const i = u.indexOf(OBJET);
+  if (i < 0) return u;
+  return `${u.slice(0, i)}${RENDU}${u.slice(i + OBJET.length)}?width=160&height=160&resize=cover`;
+}
+
 const echapper = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -102,6 +111,16 @@ const echapper = (s) =>
 /** 12 000 → « 12 000 Ar ». Même présentation que `formatAr` dans l'app. */
 const formatAr = (n) =>
   typeof n === 'number' ? `${n.toLocaleString('fr-FR').replace(/ | /g, ' ')} Ar` : '';
+
+/** Même requête, mais la liste entière (plats du jour). */
+async function supabaseListe(chemin) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${chemin}`, {
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  });
+  if (!r.ok) throw new Error(`supabase ${r.status}`);
+  const j = await r.json();
+  return Array.isArray(j) ? j : [];
+}
 
 async function supabase(chemin) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${chemin}`, {
@@ -129,7 +148,7 @@ function versAccueil() {
   });
 }
 
-function page({ titre, description, image, lien, prix, commander }) {
+function page({ titre, description, image, lien, prix, commander, plats }) {
   const t = echapper(titre);
   const d = echapper(description);
   return `<!doctype html>
@@ -197,6 +216,12 @@ function page({ titre, description, image, lien, prix, commander }) {
     a.occupe::after { animation:none; border-top-color:currentColor; }
   }
   footer { margin-top:32px; font-size:12px; color:#8A827A; text-align:center; }
+  /* Plats du jour : la liste des plats sous l'image assemblee. */
+  ul.plats { list-style:none; padding:0; margin:0 0 24px; display:flex; flex-direction:column; gap:10px; }
+  ul.plats li { display:flex; align-items:center; gap:12px; background:#fff; border-radius:14px; padding:8px 12px 8px 8px; }
+  ul.plats img { width:56px; height:56px; border-radius:10px; object-fit:cover; background:#F0E6DA; flex:none; }
+  ul.plats .nom { flex:1; font-weight:600; }
+  ul.plats .px { color:#E8590C; font-weight:700; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -204,7 +229,9 @@ function page({ titre, description, image, lien, prix, commander }) {
   <img class="visuel" src="${echapper(image)}" alt="${t}">
   <h1>${t}</h1>
   ${prix ? `<p class="prix">${echapper(prix)}</p>` : ''}
-  <p>${d}</p>
+  ${Array.isArray(plats) && plats.length
+    ? `<ul class="plats">${plats.map((x) => `<li><img src="${echapper(x.image)}" alt=""><span class="nom">${echapper(x.nom)}</span><span class="px">${echapper(x.prix)}</span></li>`).join('')}</ul>`
+    : `<p>${d}</p>`}
   <a class="cta" href="${echapper(commander)}"><span class="txt">Commander maintenant</span></a>
   <a class="cta2" id="app" href="${APP_STORE}" hidden><span class="txt">Télécharger l’application</span></a>
   <a class="sec" href="${SITE}/">Découvrir Taxi Food</a>
@@ -257,13 +284,14 @@ function page({ titre, description, image, lien, prix, commander }) {
 
 export default async (request) => {
   const url = new URL(request.url);
-  const m = url.pathname.match(/^\/(p|r)\/([0-9a-f-]{36})\/?$/i);
+  const m = url.pathname.match(/^\/(p|r|j)\/([0-9a-f-]{36})(\/apercu\.jpg)?\/?$/i);
 
   // Identifiant absent ou mal formé : on renvoie sur l'accueil du site plutôt
   // que d'afficher une erreur — un lien tronqué dans une conversation reste
   // ainsi utile.
   if (!m) return versAccueil();
-  const [, genre, id] = m;
+  const [, genre, id, apercu] = m;
+  if (apercu && genre !== 'j') return versAccueil();
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
@@ -271,8 +299,50 @@ export default async (request) => {
   }
 
   try {
+    // ── Image assemblée des plats du jour ──────────────────────────────────────
+    // Fabriquée par la fonction Edge Supabase `apercu-plats-du-jour`, et re-servie ICI :
+    // un aperçu WhatsApp ne s'affiche de façon fiable qu'en JPEG servi par le même
+    // domaine que la page (voir `apercuImage`).
+    if (apercu) {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/apercu-plats-du-jour?r=${id}`);
+      if (!r.ok) {
+        return new Response(null, { status: 302, headers: { location: OG_DEFAUT, 'cache-control': 'no-store, max-age=0' } });
+      }
+      return new Response(await r.arrayBuffer(), {
+        headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=600, s-maxage=600' },
+      });
+    }
+
     let vue;
-    if (genre === 'p') {
+    if (genre === 'j') {
+      // Plats du jour : les plats À L'AFFICHE et commandables, dans l'ordre de l'app.
+      const [r, plats] = await Promise.all([
+        supabase(`restaurants?id=eq.${id}&select=id,name`),
+        supabaseListe(`products?restaurant_id=eq.${id}&is_featured=eq.true&is_archived=eq.false&is_available=eq.true`
+          + '&select=id,name,price,photo_url&order=sort_order.asc,name.asc'),
+      ]);
+      if (!r) return versAccueil();
+      // Plus aucun plat à l'affiche (le lien a été partagé hier) : la page du restaurant
+      // reste utile, un lien mort non.
+      if (!plats.length) {
+        return new Response(null, { status: 302, headers: { location: `${SITE}/r/${id}`, 'cache-control': 'no-store, max-age=0' } });
+      }
+      const noms = plats.map((x) => x.name);
+      const liste = noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0];
+      vue = {
+        titre: `Plats du jour ${/^chez\s/i.test(r.name) ? 'de' : 'chez'} ${r.name}`,
+        prix: '',
+        description: `${liste} — à commander sur Taxi Food.`,
+        image: `${SITE}/j/${id}/apercu.jpg`,
+        lien: `${SITE}/j/${id}`,
+        commander: `${APP}/restaurant/${id}`,
+        plats: plats.map((x) => ({
+          nom: x.name,
+          prix: formatAr(x.price),
+          image: x.photo_url ? apercuVignette(x.photo_url) : OG_DEFAUT,
+        })),
+      };
+    } else if (genre === 'p') {
       const p = await supabase(
         `products?id=eq.${id}&is_available=eq.true&select=id,name,description,price,photo_url,restaurants(name)`);
       if (!p) return versAccueil();
@@ -317,4 +387,4 @@ export default async (request) => {
   }
 };
 
-export const config = { path: ['/p/:id', '/r/:id'] };
+export const config = { path: ['/p/:id', '/r/:id', '/j/:id', '/j/:id/apercu.jpg'] };

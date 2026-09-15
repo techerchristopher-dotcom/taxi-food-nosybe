@@ -128,6 +128,8 @@
     "minOrder": "Min. {{amount}}",
     "featuredTitle": "Offre du jour",
     "featuredSub": "Ce que le restaurant met en avant aujourd'hui",
+    "shareFeatured": "Partager",
+    "shareFeaturedA11y": "Partager les plats du jour",
     "productCount_one": "· {{count}} produit",
     "productCount_other": "· {{count}} produits",
     "viewCart": "Voir le panier · {{count}} art.",

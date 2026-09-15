@@ -1,5 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { lienProduit, lienRestaurant, textePartageProduit } from '../../lib/partage';
+import {
+  lienPlatsDuJour,
+  lienProduit,
+  lienRestaurant,
+  textePartagePlatsDuJour,
+  textePartageProduit,
+  titrePlatsDuJour,
+} from '../../lib/partage';
 import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
 import { useRef, useState } from 'react';
 import {
@@ -41,6 +48,8 @@ export default function RestaurantMenuScreen() {
   const categories = menu?.categories ?? [];
   const productsByCat = menu?.products ?? [];
   const featured = menu?.featured ?? [];
+  // Ce que le partage « plats du jour » annonce : uniquement ce qui se commande.
+  const platsDuJour = featured.filter((p) => p.isAvailable && p.stockQuantity !== 0);
 
   const cartLines = useCart((s) => s.lines);
   const add = useCart((s) => s.add);
@@ -55,6 +64,8 @@ export default function RestaurantMenuScreen() {
   const [pending, setPending] = useState<Product | null>(null);
   // Ce qu'on partage : un plat précis, ou le restaurant lui-même (null).
   const [aPartager, setAPartager] = useState<Product | null | undefined>(undefined);
+  // Les plats du jour, partagés ENSEMBLE en une seule publication.
+  const [partageJour, setPartageJour] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   if (loading && !restaurant) {
@@ -177,8 +188,24 @@ export default function RestaurantMenuScreen() {
                 son propre libellé « À l'affiche » : c'est le même contenu, vu
                 des deux côtés du comptoir. */}
             <View style={styles.featuredHead}>
-              <Text style={styles.featuredTitle}>🔥 {t('restaurant.featuredTitle')}</Text>
-              <Text style={styles.featuredSub}>{t('restaurant.featuredSub')}</Text>
+              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                <Text style={styles.featuredTitle}>🔥 {t('restaurant.featuredTitle')}</Text>
+                <Text style={styles.featuredSub}>{t('restaurant.featuredSub')}</Text>
+              </View>
+              {/* Un seul tap pour partager TOUS les plats du jour : une publication avec
+                  une image qui les assemble, au lieu d'un partage par plat. */}
+              {platsDuJour.length ? (
+                <Pressable
+                  onPress={() => setPartageJour(true)}
+                  style={styles.featuredShare}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('restaurant.shareFeaturedA11y')}
+                >
+                  <Icon name="ios_share" size={16} color={colors.ink} />
+                  <Text style={styles.featuredShareText}>{t('restaurant.shareFeatured')}</Text>
+                </Pressable>
+              ) : null}
             </View>
             <ScrollView
               horizontal
@@ -321,6 +348,14 @@ export default function RestaurantMenuScreen() {
         onClose={() => setAPartager(undefined)}
       />
 
+      <PartageSheet
+        visible={partageJour}
+        titre={titrePlatsDuJour(restaurant.name)}
+        texte={textePartagePlatsDuJour({ restaurantName: restaurant.name, plats: platsDuJour })}
+        url={lienPlatsDuJour(restaurant.id)}
+        onClose={() => setPartageJour(false)}
+      />
+
       <ConflictSheet
         visible={pending !== null}
         currentName={cartRestaurantName}
@@ -456,7 +491,25 @@ const styles = StyleSheet.create({
   },
   horsServiceTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.warnText, lineHeight: 18 },
   featuredWrap: { backgroundColor: colors.bg, paddingTop: 14, paddingBottom: 16 },
-  featuredHead: { paddingHorizontal: spacing.screen, paddingBottom: 10, gap: 1 },
+  featuredHead: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featuredShare: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  featuredShareText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   featuredTitle: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.ink },
   featuredSub: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted },
   featuredCard: { width: 148 },

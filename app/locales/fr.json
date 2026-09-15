@@ -268,8 +268,11 @@
     "retirer": "Retirer",
     "applique": "Code {{code}} appliqué",
     "economie": "Tu économises {{amount}} sur la livraison.",
+    "economieRepas": "Tu économises {{amount}} sur ton repas.",
+    "aideRepas": "La livraison reste à ta charge.",
+    "remiseALaValidation": "Ta remise s'applique quand tu valides ta commande.",
     "ligne": "Code {{code}}",
-    "surLivraison": "La remise porte sur les frais de livraison.",
+    "aideSaisie": "La remise s'affiche dans le total dès que ton code est validé.",
     "enAttente": "Code {{code}} enregistré",
     "enAttenteDetail": "On le vérifie dès ta connexion. Appuie sur « {{bouton}} » : la remise s'affichera avant le paiement.",
     "rejeteALaValidation": "Le code n'a pas pu être appliqué. Ta commande n'a pas été envoyée : vérifie le message ci-dessus, puis valide à nouveau.",
@@ -282,7 +285,7 @@
       "deja_utilise": "Tu as déjà utilisé ce code. Il n'est valable qu'une fois par client.",
       "non_connecte": "Connecte-toi pour utiliser un code promo.",
       "restaurant_inconnu": "Ce code ne s'applique pas à ce restaurant.",
-      "sans_effet": "Ce code ne change rien à cette commande : la livraison est déjà offerte ici. Garde-le pour une prochaine fois.",
+      "sans_effet": "Ce code ne change rien à cette commande. Garde-le pour une prochaine fois.",
       "reseau": "Vérification impossible pour l'instant. Vérifie ta connexion et réessaie."
     }
   },

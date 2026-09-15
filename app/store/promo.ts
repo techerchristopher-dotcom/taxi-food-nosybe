@@ -12,23 +12,36 @@
  *  - le CODE SAISI vit avec le panier (`store/cart.ts`, persisté dans
  *    AsyncStorage) : il disparaît quand le panier disparaît, jamais avant ;
  *  - la VÉRIFICATION vit ici, en mémoire, et porte les ENTRÉES sur lesquelles
- *    elle a été faite (code, restaurant, compte, sous-total). Dès qu'une de ces
- *    entrées change, le résultat est périmé : la remise affichée retombe à zéro
- *    le temps d'un nouvel aller-retour. Jamais de montant périmé à l'écran.
+ *    elle a été faite (code, restaurant, compte, sous-total, composition du
+ *    panier). Dès qu'une de ces entrées change, le résultat est périmé : la
+ *    remise affichée retombe à zéro le temps d'un nouvel aller-retour. Jamais de
+ *    montant périmé à l'écran.
  *
- * ⚠️ Ce qui s'affiche avant validation est un APERÇU. Le montant qui fait foi est
- * celui que `create_order` recalcule en base — c'est elle qui relit le barème et
- * les frais de livraison, et c'est elle qui consomme le code. Si les deux
- * divergent, c'est l'aperçu qui a tort.
+ * La vérification passe d'abord par `apercu_code_promo`, qui voit les lignes et
+ * calcule la remise avec les règles de `create_order` (un repas offert exclut
+ * les bières et les softs). `verifier_code_promo` ne sert plus que de repli.
+ *
+ * ⚠️ Le montant qui fait foi reste celui que `create_order` recalcule en base —
+ * c'est elle qui relit les prix, le barème et les frais de livraison, et c'est
+ * elle qui consomme le code. Si les deux divergent, c'est l'aperçu qui a tort.
  */
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
-import { RaisonPromo, verifierCodePromo } from '../data/api';
-import { useCart } from './cart';
+import {
+  apercuCodePromo,
+  CreateOrderItem,
+  RaisonPromo,
+  VerificationPromo,
+  verifierCodePromo,
+} from '../data/api';
+import { CartLine, useCart } from './cart';
 import { useSession } from './session';
 
 /** Raisons de refus de la base, plus l'échec réseau qui n'en vient pas. */
 export type MotifPromo = RaisonPromo | 'reseau';
+
+/** Sur quoi porte une remise confirmée : les frais de livraison ou le repas. */
+export type PorteeCodePromo = 'livraison' | 'sous_total';
 
 /** Ce sur quoi une vérification a été faite. Changez-en une, elle est périmée. */
 type Entrees = {
@@ -37,34 +50,114 @@ type Entrees = {
   /** null = visiteur non connecté (la base répond alors `non_connecte`). */
   userId: string | null;
   sousTotal: number;
+  /**
+   * Composition du panier : produit, options et quantités de chaque ligne.
+   *
+   * ⚠️ Le sous-total ne suffit pas. Un repas offert exclut les bières et les
+   * softs : remplacer une bière par un plat au même prix laisse le sous-total
+   * intact et fait passer la remise de 0 au prix du plat. Sans l'empreinte,
+   * l'écran garderait l'ancienne remise.
+   */
+  empreinte: string;
 };
 
 type Resultat = Entrees & {
   /** null quand le code a été refusé : on ne sait alors pas sur quoi il portait. */
-  porteSur: 'livraison' | 'sous_total' | null;
+  porteSur: PorteeCodePromo | null;
   remise: number;
   raison: MotifPromo | null;
 };
 
 /**
- * Un résultat est-il périmé pour les entrées courantes ?
- *
- * Le sous-total n'est comparé que pour un code qui porte DESSUS : la remise d'un
- * code « livraison » est calculée sur `restaurants.delivery_fee` relu en base et
- * ne bouge pas d'un iota quand on ajoute une bière au panier. Sans cette nuance,
- * chaque tap sur [+] déclencherait un aller-retour réseau pour rien — sur la
- * liaison de Nosy Be, ça se voit.
+ * Les lignes du panier au format de `create_order`, le même que construit
+ * `validate()` dans `app/checkout.tsx`. L'aperçu doit porter sur le panier qui
+ * sera commandé, sinon sa remise n'est pas celle de la facture.
  */
+export function lignesCommande(lines: CartLine[]): CreateOrderItem[] {
+  return lines.map((l) => ({
+    productId: l.product.id,
+    quantity: l.quantity,
+    options: l.options.map((o) => ({ optionId: o.optionId, quantity: o.quantity })),
+  }));
+}
+
+/**
+ * Empreinte des lignes telles qu'elles partent à la base. Triée : réordonner le
+ * panier ne change pas la remise, et ne doit pas relancer d'aller-retour.
+ */
+function empreinteDe(lignes: CreateOrderItem[]): string {
+  return lignes
+    .map(
+      (l) =>
+        l.productId +
+        '[' +
+        l.options.map((o) => o.optionId + 'x' + o.quantity).sort().join(',') +
+        ']x' +
+        l.quantity,
+    )
+    .sort()
+    .join(';');
+}
+
+/**
+ * Le verdict dépend-il du contenu du panier ?
+ *
+ *  - remise confirmée sur le repas : oui, elle se calcule sur les lignes ;
+ *  - remise confirmée sur la livraison : non, elle est calculée sur
+ *    `restaurants.delivery_fee` relu en base et ne bouge pas d'un iota quand on
+ *    ajoute une bière. Sans cette nuance, chaque tap sur [+] déclencherait un
+ *    aller-retour pour rien — sur la liaison de Nosy Be, ça se voit ;
+ *  - `sans_effet` : oui. Un repas offert tapé sur un panier de bières devient
+ *    bon dès qu'on ajoute un plat. Figé, le refus empêchait l'envoi du code à
+ *    `create_order` et le client payait son plat plein tarif ;
+ *  - `reseau` : oui, la question est restée sans réponse et un changement de
+ *    panier est l'occasion de la reposer ;
+ *  - tout autre refus (inconnu, expiré, déjà utilisé…) : non, il tient au code
+ *    et au client, pas au panier.
+ */
+function dependDuPanier(r: Resultat): boolean {
+  if (r.raison === null) return r.porteSur === 'sous_total';
+  return r.raison === 'sans_effet' || r.raison === 'reseau';
+}
+
+/** Un résultat est-il périmé pour les entrées courantes ? */
 function perime(r: Resultat | null, e: Entrees): boolean {
   if (!r) return true;
   if (r.code !== e.code || r.restaurantId !== e.restaurantId || r.userId !== e.userId) return true;
-  return r.porteSur === 'sous_total' && r.sousTotal !== e.sousTotal;
+  if (!dependDuPanier(r)) return false;
+  return r.sousTotal !== e.sousTotal || r.empreinte !== e.empreinte;
+}
+
+/**
+ * `apercu_code_promo` absente de la base (PostgREST répond PGRST202) : inutile
+ * de la redemander à chaque changement de panier, on passe directement au
+ * repli jusqu'au prochain lancement.
+ */
+let apercuAbsent = false;
+
+/**
+ * L'aperçu exact d'abord, l'ancienne vérification en repli.
+ *
+ * Repli quand l'aperçu échoue — base pas encore migrée, aller-retour perdu :
+ * `verifier_code_promo` connaît tous les codes et n'annonce jamais plus que la
+ * facture (au pire « valide, remise 0 » pour un repas hors boissons). Si elle
+ * échoue aussi, l'erreur remonte : c'est l'état `reseau`.
+ */
+async function verificationLaPlusJuste(e: Entrees, lignes: CreateOrderItem[]): Promise<VerificationPromo> {
+  if (lignes.length > 0 && !apercuAbsent) {
+    try {
+      return await apercuCodePromo(e.code, e.restaurantId, lignes);
+    } catch (err) {
+      if ((err as { code?: string } | null)?.code === 'PGRST202') apercuAbsent = true;
+    }
+  }
+  return verifierCodePromo(e.code, e.restaurantId, e.sousTotal);
 }
 
 type PromoState = {
   resultat: Resultat | null;
   enCours: boolean;
-  verifier: (e: Entrees) => Promise<void>;
+  verifier: (e: Entrees, lignes: CreateOrderItem[]) => Promise<void>;
   /**
    * Refus prononcé par `create_order` au moment de valider (plafond atteint,
    * code consommé entre-temps depuis un autre appareil). On garde l'identité du
@@ -85,8 +178,8 @@ type PromoState = {
  * encore. Boucle sans issue pour le client.
  *
  * On repère un verdict par CODE + COMPTE, pas par la signature complète : le
- * sous-total peut avoir bougé entre la vérification et la validation, ça ne
- * change rien au fait que ce code-là est refusé à ce client-là.
+ * panier peut avoir bougé entre la vérification et la validation, ça ne change
+ * rien au fait que ce code-là est refusé à ce client-là.
  */
 let verdictValidation: string | null = null;
 
@@ -103,19 +196,20 @@ const cleVerdict = (e: Entrees) => e.code + '|' + (e.userId ?? '');
  */
 let enVol: string | null = null;
 
-const signature = (e: Entrees) => [e.code, e.restaurantId, e.userId ?? '', e.sousTotal].join('|');
+const signature = (e: Entrees) =>
+  [e.code, e.restaurantId, e.userId ?? '', e.sousTotal, e.empreinte].join('|');
 
 export const usePromoStore = create<PromoState>((set) => ({
   resultat: null,
   enCours: false,
 
-  verifier: async (e) => {
+  verifier: async (e, lignes) => {
     const sig = signature(e);
     if (enVol === sig) return;
     enVol = sig;
     set({ enCours: true });
     try {
-      const r = await verifierCodePromo(e.code, e.restaurantId, e.sousTotal);
+      const r = await verificationLaPlusJuste(e, lignes);
       if (verdictValidation === cleVerdict(e)) return;
       set({
         resultat: r.valide
@@ -154,6 +248,7 @@ export const usePromoStore = create<PromoState>((set) => ({
         restaurantId: panier.restaurantId,
         userId: useSession.getState().session?.userId ?? null,
         sousTotal: panier.subtotal(),
+        empreinte: empreinteDe(lignesCommande(panier.lines)),
       };
       verdictValidation = cleVerdict(entrees);
       return { resultat: { ...entrees, porteSur: null, remise: 0, raison } };
@@ -186,10 +281,23 @@ export type Promo = {
    * confirmée. On peut donc facturer moins que le montant annoncé, jamais plus.
    */
   aEnvoyer: string | null;
-  /** Remise en ariary, 0 tant que la base ne l'a pas confirmée POUR CES ENTRÉES. */
+  /**
+   * Remise en ariary, 0 tant que la base ne l'a pas confirmée POUR CES ENTRÉES.
+   *
+   * ⚠️ `valide` avec une remise à 0 existe : seul le repli `verifier_code_promo`
+   * a répondu, pour un repas offert hors boissons. Le vrai montant sera appliqué
+   * par `create_order` ; l'écran ne doit annoncer aucun chiffre.
+   */
   remise: number;
   /** true quand la base a validé le code : seul cas où on l'envoie à la commande. */
   valide: boolean;
+  /**
+   * Sur quoi porte la remise confirmée : la livraison, ou le repas. Le détail du
+   * repas (boissons, emballage) dépend du code et n'est pas dans la réponse de
+   * la base. null tant que le code n'est pas validé — un code refusé ne dit pas
+   * sur quoi il aurait porté.
+   */
+  porteSur: PorteeCodePromo | null;
   /** Raison du refus, ou null. `non_connecte` n'est pas un refus, voir ci-dessous. */
   raison: MotifPromo | null;
   /**
@@ -208,11 +316,13 @@ export type Promo = {
  * pour l'état courant du panier, et de quoi le poser ou le retirer.
  *
  * C'est ce hook qui redéclenche la vérification quand une entrée change —
- * connexion, changement de restaurant, sous-total pour un code qui en dépend.
+ * connexion, changement de restaurant, contenu du panier pour un verdict qui en
+ * dépend.
  */
 export function usePromo(): Promo {
   const code = useCart((s) => s.promoCode);
   const restaurantId = useCart((s) => s.restaurantId);
+  const lines = useCart((s) => s.lines);
   const sousTotal = useCart((s) => s.subtotal());
   const setPromoCode = useCart((s) => s.setPromoCode);
   const userId = useSession((s) => s.session?.userId ?? null);
@@ -222,26 +332,35 @@ export function usePromo(): Promo {
   const verifier = usePromoStore((s) => s.verifier);
   const oublier = usePromoStore((s) => s.oublier);
 
-  const entrees: Entrees | null = code && restaurantId ? { code, restaurantId, userId, sousTotal } : null;
+  // `lines` garde son identité tant que le panier ne bouge pas : lignes et
+  // empreinte ne se recalculent qu'à un vrai changement.
+  const lignes = useMemo(() => lignesCommande(lines), [lines]);
+  const empreinte = useMemo(() => empreinteDe(lignes), [lignes]);
+
+  const entrees: Entrees | null =
+    code && restaurantId ? { code, restaurantId, userId, sousTotal, empreinte } : null;
   const aJour = entrees && !perime(resultat, entrees) ? resultat : null;
 
   useEffect(() => {
     if (!entrees) return;
     if (!perime(usePromoStore.getState().resultat, entrees)) return;
-    void verifier(entrees);
-    // `entrees` est recomposé à chaque rendu : on dépend de ses champs, pas de l'objet.
+    void verifier(entrees, lignes);
+    // `entrees` est recomposé à chaque rendu : on dépend de ses champs, pas de
+    // l'objet. `lignes` suit `empreinte` et `sousTotal`, déjà dans la liste.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, restaurantId, userId, sousTotal, resultat, verifier]);
+  }, [code, restaurantId, userId, sousTotal, empreinte, resultat, verifier]);
 
   // Un refus vient de la BASE ; « reseau » n'est pas un refus, c'est une
   // question restée sans réponse — et c'est à `create_order` d'y répondre.
   const refuseParLaBase = !!aJour && aJour.raison !== null && aJour.raison !== 'reseau';
+  const valide = !!aJour && aJour.raison === null;
 
   return {
     code,
     aEnvoyer: code && !refuseParLaBase ? code : null,
-    remise: aJour?.raison === null ? aJour.remise : 0,
-    valide: !!aJour && aJour.raison === null,
+    remise: valide ? aJour.remise : 0,
+    valide,
+    porteSur: valide ? aJour.porteSur : null,
     raison: aJour?.raison === 'non_connecte' ? null : (aJour?.raison ?? null),
     enAttenteConnexion: aJour?.raison === 'non_connecte',
     enCours,

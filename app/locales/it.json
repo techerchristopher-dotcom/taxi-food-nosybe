@@ -268,8 +268,11 @@
     "retirer": "Rimuovi",
     "applique": "Codice {{code}} applicato",
     "economie": "Risparmi {{amount}} sulla consegna.",
+    "economieRepas": "Risparmi {{amount}} sul tuo pasto.",
+    "aideRepas": "La consegna resta a carico tuo.",
+    "remiseALaValidation": "Lo sconto si applica quando confermi l'ordine.",
     "ligne": "Codice {{code}}",
-    "surLivraison": "Lo sconto si applica alle spese di consegna.",
+    "aideSaisie": "Lo sconto compare nel totale appena il tuo codice è confermato.",
     "enAttente": "Codice {{code}} salvato",
     "enAttenteDetail": "Lo verifichiamo appena accedi. Tocca «{{bouton}}»: lo sconto apparirà prima del pagamento.",
     "rejeteALaValidation": "Non è stato possibile applicare il codice. Il tuo ordine non è stato inviato: controlla il messaggio qui sopra, poi conferma di nuovo.",
@@ -282,7 +285,7 @@
       "deja_utilise": "Hai già usato questo codice. È valido una sola volta per cliente.",
       "non_connecte": "Accedi per usare un codice promo.",
       "restaurant_inconnu": "Questo codice non si applica a questo ristorante.",
-      "sans_effet": "Questo codice non cambia nulla su questo ordine: qui la consegna è già gratuita. Tienilo per la prossima volta.",
+      "sans_effet": "Questo codice non cambia nulla su questo ordine. Tienilo per la prossima volta.",
       "reseau": "Per ora non è possibile verificare il codice. Controlla la connessione e riprova."
     }
   },

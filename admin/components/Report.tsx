@@ -3,25 +3,28 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatAr, todayNosyBe } from '../lib/util';
+import {
+  additionnerCumuls, bornesPeriode, CUMUL_VIDE, cumulerCommande, ecartCaisse, margeTaxiFood,
+} from '../lib/reversement';
+import type { CommandeLivree, Cumul, RegleDuCode, ReglesDesCodes } from '../lib/reversement';
 
-type DeliveredRow = {
-  restaurant_id: string;
-  subtotal: number;
+type DeliveredRow = CommandeLivree & {
   /** Emballages (boite a pizza...). Reverses au restaurant, commission comprise. */
   packaging_fee: number | null;
-  delivery_fee: number;
-  /** Remise deja deduite du total. Elle sort de NOTRE marge, pas de celle du resto. */
-  promo_discount: number | null;
   /**
-   * Sur quoi portait la remise : « livraison » ou « produits ». Fige sur la
+   * Sur quoi portait la remise : « livraison » ou « sous_total ». Fige sur la
    * commande a sa creation — surtout PAS relu depuis `promo_codes`, sinon
    * modifier un code changerait un rapport deja cloture.
    */
   promo_porte_sur: string | null;
-  total: number;
+  /**
+   * Part de la remise offerte par le RESTAURANT (code offert « repas »), figee
+   * elle aussi. Le client ne l'a pas payee : elle sort du du au restaurant, pas
+   * de notre marge.
+   */
+  remise_charge_restaurant: number | null;
   payment_method: string;
   courier_id: string | null;
-  commission_amount: number | null;
   commission_rate: number | null;
 };
 type Resto = { id: string; name: string; commission_rate: number };
@@ -35,24 +38,15 @@ type Settlement = {
   paid_at: string;
 };
 
-type Line = {
+type Line = Cumul & {
   restaurantId: string;
   name: string;
-  count: number;
-  /** Ce que le client a paye en tout : plats + emballages + livraison - remise. */
-  encaisse: number;
-  caPlats: number;
-  emballages: number;
-  commission: number;
-  net: number;
-  /** Livraison REELLEMENT encaissee : brute moins les remises portant dessus. */
-  deliveryFees: number;
-  deliveryBrut: number;
-  /** Les deux remises separees : elles ne se soustraient PAS au meme endroit. */
-  remiseLivraison: number;
-  remisePlats: number;
   settled: boolean;
 };
+
+const COLONNES = 'order_number, restaurant_id, subtotal, packaging_fee, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
+
+const AUCUNE_REGLE: ReglesDesCodes = new Map();
 
 export function Report() {
   const [start, setStart] = useState(todayNosyBe());
@@ -60,6 +54,7 @@ export function Report() {
   const [rows, setRows] = useState<DeliveredRow[]>([]);
   const [restos, setRestos] = useState<Resto[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [regles, setRegles] = useState<ReglesDesCodes>(AUCUNE_REGLE);
   const [courierNames, setCourierNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,25 +63,58 @@ export function Report() {
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
-    const startISO = `${start}T00:00:00+03:00`;
-    const endISO = `${end}T23:59:59.999+03:00`;
-    const [o, r, s] = await Promise.all([
+    const { debut, finExclue } = bornesPeriode(start, end);
+    const [o, oSansDate, r, s] = await Promise.all([
       supabase
         .from('orders')
-        .select('restaurant_id, subtotal, packaging_fee, delivery_fee, promo_discount, promo_porte_sur, total, payment_method, courier_id, commission_amount, commission_rate')
+        .select(COLONNES)
         .eq('status', 'livree')
-        .gte('delivered_at', startISO)
-        .lte('delivered_at', endISO),
+        .gte('delivered_at', debut)
+        .lt('delivered_at', finExclue),
+      // `record_settlement` date une commande par `coalesce(delivered_at,
+      // created_at)`. Une commande passee en « livree » par le pilotage
+      // (`admin_set_order_status`) n'a pas de `delivered_at` : sans cette
+      // seconde lecture, la base la devrait au restaurant et le rapport ne la
+      // montrerait pas — « Marquer reverse » proposerait moins que le du enregistre.
+      supabase
+        .from('orders')
+        .select(COLONNES)
+        .eq('status', 'livree')
+        .is('delivered_at', null)
+        .gte('created_at', debut)
+        .lt('created_at', finExclue),
       supabase.from('restaurants').select('id, name, commission_rate'),
       supabase
         .from('restaurant_settlements')
         .select('id, restaurant_id, period_start, period_end, amount_due, paid_amount, paid_at')
         .order('paid_at', { ascending: false }),
     ]);
-    if (o.error || r.error || s.error) {
-      setErr(o.error?.message || r.error?.message || s.error?.message || 'Erreur');
+    if (o.error || oSansDate.error || r.error || s.error) {
+      setErr(o.error?.message || oSansDate.error?.message || r.error?.message || s.error?.message || 'Erreur');
     } else {
-      const orderRows = (o.data ?? []) as DeliveredRow[];
+      const orderRows = [...(o.data ?? []), ...(oSansDate.data ?? [])] as DeliveredRow[];
+      // La règle de chaque code appliqué (qui paie, sur quoi). Elle ne sert pas
+      // au calcul — les montants figés sur la commande priment — mais à le
+      // contredire : une part « offerte par le restaurant » faussée ne se voit
+      // dans aucun total, seulement face au code qui l'a produite. Lien par
+      // `promo_code` (= `code_normalise`, unique) plutôt que par
+      // `promo_redemptions`, qu'une annulation peut effacer.
+      const codes = Array.from(new Set(orderRows.map((x) => x.promo_code).filter(Boolean) as string[]));
+      const pc = codes.length
+        ? await supabase.from('promo_codes').select('code_normalise, pris_en_charge_par, porte_sur').in('code_normalise', codes)
+        : { data: [], error: null };
+      if (pc.error) {
+        // Sans ces règles, les contrôles par commande crieraient « code
+        // introuvable » partout, ou pire, se tairaient : on n'affiche rien.
+        setErr(`Règles des codes promo illisibles : ${pc.error.message}`);
+        setLoading(false);
+        return;
+      }
+      const map = new Map<string, RegleDuCode>();
+      for (const x of (pc.data ?? []) as (RegleDuCode & { code_normalise: string })[]) {
+        map.set(x.code_normalise, { pris_en_charge_par: x.pris_en_charge_par, porte_sur: x.porte_sur });
+      }
+      setRegles(map);
       setRows(orderRows);
       setRestos((r.data ?? []) as Resto[]);
       setSettlements((s.data ?? []) as Settlement[]);
@@ -105,6 +133,8 @@ export function Report() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Le taux ACTUEL du restaurant, comme le calcul de secours de
+  // `record_settlement` : il ne sert qu'aux commandes sans commission memorisee.
   const rateOf = useCallback(
     (id: string) => restos.find((x) => x.id === id)?.commission_rate ?? 0,
     [restos],
@@ -113,77 +143,37 @@ export function Report() {
   const lines: Line[] = useMemo(() => {
     const map = new Map<string, Line>();
     for (const row of rows) {
-      const emballage = row.packaging_fee ?? 0;
-      // La commission MEMORISEE prime : c'est le montant convenu le jour de la
-      // commande. Le calcul de secours ne sert qu'aux lignes anciennes, et porte
-      // sur plats + emballages comme `create_order` depuis le 2026-09-09.
-      const commission = row.commission_amount
-        ?? Math.round((row.subtotal + emballage) * (row.commission_rate ?? rateOf(row.restaurant_id)));
-
-      // ⚠️ Une remise ne se soustrait pas au meme endroit selon ce qu'elle
-      // couvre. Sur la livraison, elle ampute la livraison encaissee ; sur les
-      // plats, elle ne touche PAS a la livraison — elle sort de la marge, le
-      // restaurant etant paye plein tarif dans les deux cas. Confondre les deux
-      // rendait « frais de livraison nets » faux des le premier code sur les
-      // plats (constate le 2026-09-09).
-      const remise = row.promo_discount ?? 0;
-      const surLivraison = row.promo_porte_sur === 'livraison' ? remise : 0;
-      const surPlats = remise - surLivraison;
-
+      // Toute l'arithmetique vit dans `lib/reversement.ts` : c'est elle qui decide
+      // d'un virement, elle doit s'eprouver sans React et rester alignee sur
+      // `record_settlement`. Une remise ne s'y soustrait pas au meme endroit selon
+      // qui la paie — livraison ou plats offerts par Taxi Food : notre marge ;
+      // repas offert par le restaurant : son du.
       const cur = map.get(row.restaurant_id) ?? {
+        ...CUMUL_VIDE,
         restaurantId: row.restaurant_id,
         name: restos.find((x) => x.id === row.restaurant_id)?.name ?? '—',
-        count: 0, encaisse: 0, caPlats: 0, emballages: 0, commission: 0, net: 0,
-        deliveryFees: 0, deliveryBrut: 0, remiseLivraison: 0, remisePlats: 0,
         settled: settlements.some((st) => st.restaurant_id === row.restaurant_id && st.period_start === start && st.period_end === end),
       };
-      cur.count += 1;
-      cur.encaisse += row.total;
-      cur.caPlats += row.subtotal;
-      cur.emballages += emballage;
-      cur.commission += commission;
-      // L'emballage revient au restaurant (il achete les boites), commission
-      // comprise. Avant le 2026-09-09 il n'apparaissait NULLE PART : ni ici, ni
-      // dans la marge — 2 000 Ar par boite a pizza sortaient du tableau.
-      cur.net += row.subtotal + emballage - commission;
-      cur.deliveryBrut += row.delivery_fee;
-      cur.deliveryFees += row.delivery_fee - surLivraison;
-      cur.remiseLivraison += surLivraison;
-      cur.remisePlats += surPlats;
-      map.set(row.restaurant_id, cur);
+      map.set(row.restaurant_id, { ...cur, ...cumulerCommande(cur, row, rateOf(row.restaurant_id), regles) });
     }
     return Array.from(map.values()).sort((a, b) => b.net - a.net);
-  }, [rows, restos, settlements, start, end, rateOf]);
+  }, [rows, restos, settlements, start, end, rateOf, regles]);
 
-  const totals = useMemo(
-    () => lines.reduce(
-      (t, l) => ({
-        count: t.count + l.count,
-        encaisse: t.encaisse + l.encaisse,
-        caPlats: t.caPlats + l.caPlats,
-        emballages: t.emballages + l.emballages,
-        commission: t.commission + l.commission,
-        net: t.net + l.net,
-        deliveryFees: t.deliveryFees + l.deliveryFees,
-        deliveryBrut: t.deliveryBrut + l.deliveryBrut,
-        remiseLivraison: t.remiseLivraison + l.remiseLivraison,
-        remisePlats: t.remisePlats + l.remisePlats,
-      }),
-      { count: 0, encaisse: 0, caPlats: 0, emballages: 0, commission: 0, net: 0, deliveryFees: 0, deliveryBrut: 0, remiseLivraison: 0, remisePlats: 0 },
-    ),
-    [lines],
-  );
+  const totals = useMemo(() => lines.reduce<Cumul>((t, l) => additionnerCumuls(t, l), CUMUL_VIDE), [lines]);
 
   // Livreurs salariés → ils te remettent 100 % du cash encaissé (salaires hors app).
   //
-  // Ta marge = commission + livraison encaissée − remises accordées sur les plats.
-  // Une remise sur les plats sort d'ici : le restaurant est payé plein tarif,
-  // c'est nous qui offrons. Le compte se boucle exactement :
+  // Ta marge = commission + livraison facturée − remises que Taxi Food finance
+  // (sur la livraison, et sur les plats quand le code n'est pas offert par le
+  // restaurant). Un repas offert par le restaurant n'y figure pas : il sort de
+  // son reversement. Le compte se boucle exactement :
   //     encaissé − net à reverser = marge
-  const margin = totals.commission + totals.deliveryFees - totals.remisePlats;
+  const margin = margeTaxiFood(totals);
   // Garde-fou d'affichage : si l'égalité ci-dessus se rompt un jour, on préfère
-  // le voir à l'écran qu'imprimer un rapport faux en silence.
-  const ecart = totals.encaisse - totals.net - margin;
+  // le voir à l'écran qu'imprimer un rapport faux en silence. La marge n'est
+  // jamais calculée par différence : voir `ecartCaisse` pour ce que l'écart
+  // détecte, et ce qu'il ne peut pas voir.
+  const ecart = ecartCaisse(totals);
 
   const courierCash = useMemo(() => {
     const map = new Map<string, { count: number; cash: number }>();
@@ -198,7 +188,21 @@ export function Report() {
   }, [rows]);
 
   async function settle(l: Line) {
-    const input = window.prompt(`Montant réellement versé à ${l.name} (net calculé : ${l.net}) :`, String(l.net));
+    // La valeur proposée est le dû que `record_settlement` va enregistrer, à la
+    // même formule : plats + emballage − commission − part offerte par le
+    // restaurant. Proposer davantage, c'était verser au restaurant le repas
+    // qu'il venait lui-même d'offrir.
+    //
+    // Une commande douteuse fausse ce dû ET celui de `record_settlement` de la
+    // même façon : la base n'arrêtera rien. L'arrêt se fait donc ici, avant la saisie.
+    if (l.incoherentes > 0 && !window.confirm(
+      `${l.name} : ${l.incoherentes} commande${l.incoherentes > 1 ? 's' : ''} à vérifier, le dû calculé peut être faux.\n\n`
+      + `${l.aVerifier.join('\n')}\n\nEnregistrer quand même un reversement ?`,
+    )) return;
+    const offert = l.offertRestaurant > 0
+      ? `, après déduction de ${formatAr(l.offertRestaurant)} offerts par le restaurant`
+      : '';
+    const input = window.prompt(`Montant réellement versé à ${l.name} (dû calculé : ${l.net}${offert}) :`, String(l.net));
     if (input === null) return;
     const paid = parseInt(input, 10);
     if (Number.isNaN(paid)) return;
@@ -215,9 +219,9 @@ export function Report() {
   }
 
   function exportCsv() {
-    const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats'];
-    const body = lines.map((l) => [l.name, l.count, l.encaisse, l.caPlats, l.emballages, l.commission, l.net, l.deliveryBrut, l.remiseLivraison, l.deliveryFees, l.remisePlats].join(';'));
-    const totalRow = ['TOTAL', totals.count, totals.encaisse, totals.caPlats, totals.emballages, totals.commission, totals.net, totals.deliveryBrut, totals.remiseLivraison, totals.deliveryFees, totals.remisePlats].join(';');
+    const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Offert par le restaurant', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats payee par Taxi Food'];
+    const body = lines.map((l) => [l.name, l.count, l.encaisse, l.caPlats, l.emballages, l.commission, l.offertRestaurant, l.net, l.deliveryBrut, l.remiseLivraison, l.deliveryFees, l.remisePlats].join(';'));
+    const totalRow = ['TOTAL', totals.count, totals.encaisse, totals.caPlats, totals.emballages, totals.commission, totals.offertRestaurant, totals.net, totals.deliveryBrut, totals.remiseLivraison, totals.deliveryFees, totals.remisePlats].join(';');
     const csv = [`Periode;${start};${end}`, '', header.join(';'), ...body, '', totalRow].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -225,6 +229,10 @@ export function Report() {
     a.download = `rapport-taxifood-${start}_${end}.csv`;
     a.click();
   }
+
+  // La colonne n'apparaît que si un restaurant a offert quelque chose sur la
+  // période : une colonne de zéros n'apprend rien et élargit le tableau.
+  const avecOffert = totals.offertRestaurant > 0;
 
   return (
     <>
@@ -261,6 +269,7 @@ export function Report() {
               <tr><td>CA plats</td><td className="num">{formatAr(totals.caPlats)}</td></tr>
               <tr><td>+ Emballages <span className="muted">(boîtes à pizza…)</span></td><td className="num">{formatAr(totals.emballages)}</td></tr>
               <tr><td>− Ma commission</td><td className="num">−{formatAr(totals.commission)}</td></tr>
+              <tr><td>− Offert par le restaurant <span className="muted">(codes offerts, à sa charge)</span></td><td className="num">−{formatAr(totals.offertRestaurant)}</td></tr>
               <tr><td style={{ fontWeight: 700 }}>= Net à reverser</td><td className="num" style={{ fontWeight: 700, color: 'var(--accent)' }}>{formatAr(totals.net)}</td></tr>
             </tbody>
           </table>
@@ -270,8 +279,8 @@ export function Report() {
             <tbody>
               <tr><td>Ma commission</td><td className="num">{formatAr(totals.commission)}</td></tr>
               <tr><td>+ Livraison facturée</td><td className="num">{formatAr(totals.deliveryBrut)}</td></tr>
-              <tr><td>− Remises sur la livraison</td><td className="num">−{formatAr(totals.remiseLivraison)}</td></tr>
-              <tr><td>− Remises sur les plats <span className="muted">(offertes par toi)</span></td><td className="num">−{formatAr(totals.remisePlats)}</td></tr>
+              <tr><td>− Remises sur la livraison <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remiseLivraison)}</td></tr>
+              <tr><td>− Remises sur les plats <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remisePlats)}</td></tr>
               <tr><td style={{ fontWeight: 700 }}>= Ma marge</td><td className="num" style={{ fontWeight: 700, color: 'var(--green)' }}>{formatAr(margin)}</td></tr>
             </tbody>
           </table>
@@ -279,10 +288,22 @@ export function Report() {
         <div className="muted" style={{ fontSize: 12, marginTop: 10 }}>
           Livraison réellement encaissée : {formatAr(totals.deliveryFees)}
           {totals.remiseLivraison > 0 ? ` (${formatAr(totals.deliveryBrut)} facturés, ${formatAr(totals.remiseLivraison)} offerts en codes promo)` : ''}.
+          {avecOffert
+            ? ` Les repas offerts par un restaurant (${formatAr(totals.offertRestaurant)}) sortent de son reversement, pas de ta marge ; ta commission ne porte pas sur cette part.`
+            : ''}
         </div>
         {ecart !== 0 ? (
           <div style={{ marginTop: 10, color: 'var(--red)', fontWeight: 600 }}>
             ⚠️ Écart de {formatAr(ecart)} : encaissé − reversé ne retombe pas sur la marge. À signaler, ce rapport est à vérifier.
+          </div>
+        ) : null}
+        {totals.incoherentes > 0 ? (
+          <div style={{ marginTop: 10, color: 'var(--red)', fontWeight: 600 }}>
+            ⚠️ {totals.incoherentes} commande{totals.incoherentes > 1 ? 's' : ''} à vérifier : le dû proposé peut être faux,
+            et l&apos;écart ci-dessus ne le montrerait pas. Ne reverse pas avant d&apos;avoir vérifié.
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontWeight: 400 }}>
+              {totals.aVerifier.map((a) => <li key={a}>{a}</li>)}
+            </ul>
           </div>
         ) : null}
       </div>
@@ -301,6 +322,7 @@ export function Report() {
               <tr>
                 <th>Restaurant</th><th className="num">Livrées</th><th className="num">CA plats</th>
                 <th className="num">Emballages</th><th className="num">Commission</th>
+                {avecOffert ? <th className="num">Offert par le resto</th> : null}
                 <th className="num">Net à reverser</th><th></th>
               </tr>
             </thead>
@@ -312,6 +334,7 @@ export function Report() {
                   <td className="num">{formatAr(l.caPlats)}</td>
                   <td className="num">{l.emballages > 0 ? formatAr(l.emballages) : '—'}</td>
                   <td className="num">{formatAr(l.commission)}</td>
+                  {avecOffert ? <td className="num">{l.offertRestaurant > 0 ? `−${formatAr(l.offertRestaurant)}` : '—'}</td> : null}
                   <td className="num" style={{ fontWeight: 700 }}>{formatAr(l.net)}</td>
                   <td className="num">
                     {l.settled ? (

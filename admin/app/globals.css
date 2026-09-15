@@ -102,12 +102,48 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   padding: 9px 11px; border-radius: 9px; font-size: 14px; width: 100%; font-family: inherit;
 }
 
+/* Codes offerts. Les pastilles d'état sont préfixées `code-` : « actif » ou
+   « expiré » ne doivent pas hériter par hasard d'un statut de commande ou de
+   remboursement du même nom. */
+.grid.moitie { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .grid.moitie { grid-template-columns: 1fr; } }
+.choix { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; font-size: 14px; }
+.payeur {
+  margin: 10px 0 12px; padding: 10px 12px; border-radius: 10px; font-size: 13px;
+  border: 1px solid var(--border); background: var(--panel-2);
+}
+.payeur.restaurant strong { color: var(--accent); }
+.payeur.taxi-food strong { color: var(--green); }
+.resultat { display: flex; gap: 10px; align-items: center; padding: 9px 4px; border-bottom: 1px solid var(--border); }
+.puce {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 6px 4px 12px;
+}
+.puce button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
+.recap {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px; margin: 14px 0; font-size: 14px; line-height: 1.7;
+}
+.pied { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+.gestes { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.defile { overflow-x: auto; }
+.pill.code-actif { background: #10281a; color: #58d68d; }
+.pill.code-utilise { background: #12233b; color: #7cc0ff; }
+.pill.code-expire { background: #22262f; color: var(--muted); }
+.pill.code-desactive { background: #3b1414; color: #ff7a7a; }
+
 .badge-late { background: var(--red); color: white; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 8px; }
 .dot-avail { width: 9px; height: 9px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 8px; }
 
 .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn:disabled { opacity: 0.5; cursor: default; }
+/* Le lien WhatsApp est un vrai <a> habillé en bouton : sans ceci il garde le
+   soulignement et la mise en ligne d'un lien. Placé APRÈS .btn.ghost, et plus
+   précis que lui, sinon le fantôme repeindrait « Désactiver » en blanc. */
+a.btn { display: inline-block; text-decoration: none; text-align: center; }
+.btn.petit { padding: 6px 11px; font-size: 12px; }
+.btn.ghost.danger { color: #ff9a9a; border-color: #5b2020; }
 
 .center { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
 .muted { color: var(--muted); }

@@ -43,10 +43,79 @@ de service dans un outil tiers serait une clé de tout le système, pour
 `n8n/taxifood-notifications.json` — créé sur l'instance sous l'identifiant
 **`T7uXG7Lwwjro6Ds8`**, webhook `POST /webhook/taxifood-commande`.
 
-⚠️ **À RÉIMPORTER SUR L'INSTANCE — DEUX CHANGEMENTS EN ATTENTE (2026-09-06).** Le fichier
-versionné est en avance sur l'instance. **Partir de ce fichier, jamais de la version en
-ligne.** **Volontairement non déployé** — la mise en ligne est laissée au porteur du projet,
-qui relit avant.
+> ⛔ **MISE À JOUR DU 2026-09-15 — RÉIMPORT INTERDIT.** L'avertissement ci-dessous
+> (« partir de ce fichier ») est **caduc**. `n8n/taxifood-notifications.json` et
+> l'instance ont divergé **dans les deux sens** : l'instance envoie par le nœud SMTP
+> « SMTP account » depuis `christopher@distripro207.com` (l'expéditeur déclaré chez
+> Apple), porte les boutons J'accepte / Je refuse et la photo en tête, que le fichier
+> n'a pas. Réimporter le fichier casserait les notifications de tous les restaurants.
+>
+> **La référence est désormais l'instance.** Avant chaque modification, prendre par `GET`
+> une sauvegarde datée **hors du dépôt** (elle contient le chemin du webhook de production,
+> non authentifié) — ⚠️ au 2026-09-15, **aucune sauvegarde n'existe encore**. Toute modification passe
+> par : `GET` → sauvegarde → modifier **la seule chaîne `jsCode`** → test local ancien
+> / nouveau code sur des charges factices → `PUT` (`name`, `nodes`, `connections`,
+> `settings`) → **désactiver puis réactiver** (un `PUT` sur un workflow actif ne
+> réenregistre pas son webhook de production) → `GET` et diff programmé.
+>
+> **État au 2026-09-15 : T7uX n'a PAS été modifié** (versionId `e3ec172e…`, actif,
+> 8 nœuds, inchangé depuis le 2026-09-05). La sauvegarde n'a pas pu être écrite
+> (action refusée par le garde-fou de la session), donc la modification n'a pas été
+> tentée.
+>
+> **Changement prêt, en attente — ligne « repas offert par vous » dans le Telegram
+> restaurant.** Nœud « Prepare le message », constante `telegram` : insérer juste après
+> la ligne `+ \`\n\n💰 ${ar(cmd.sous_total)} (hors livraison) · ${cmd.paiement}\`` :
+>
+> ```js
+>       // Geste du restaurant (code offert) : la part offerte sort de SA recette,
+>       // pas de celle de Taxi Food. Sans cette ligne, le patron verrait passer
+>       // un montant qu'il ne touchera pas en entier et croirait a une erreur.
+>       + (cmd.offert_par_restaurant === true
+>           ? `\nRepas offert par vous — code ${cmd.code_promo || '—'} (−${ar(cmd.remise_charge_restaurant)})`
+>           : '')
+> ```
+>
+> Testé hors n8n le 2026-09-15 sur le `jsCode` live : sans geste (commande simple,
+> code TAXIFOOD50, annulation, charge sans les champs `offert_par_restaurant` /
+> `remise_charge_restaurant`), la sortie complète est **identique octet pour octet** à
+> l'ancien code ; avec geste, seul `telegram_texte` change, d'une ligne. Rien d'autre
+> (boutons, photo, e-mail client, branches). ⚠️ En mode photo, le texte est une légende
+> Telegram limitée à 1 024 caractères : la ligne ajoute ~55 caractères à une commande
+> déjà longue.
+
+### Workflow « Taxi Food — code offert » (`xDZt2TzDehkvNUHN`)
+
+Workflow **dédié**, distinct de T7uX pour ne jamais risquer les notifications de
+commande. Appelé par le trigger `notifier_code_offert` (insertion `promo_envois`,
+canal `email`). Code du nœud versionné dans
+[`n8n/code-offert.js`](../n8n/code-offert.js).
+
+Webhook `POST` sur un chemin non devinable (volontairement absent du dépôt), réponse
+immédiate → « Prepare l e-mail du code offert » → « E-mail present ? » → « E-mail au
+client » (même credential « SMTP account » et même expéditeur que T7uX, texte + HTML).
+
+⚠️ **État au 2026-09-15 : créé INACTIF, et pas encore activable.** Le nœud webhook
+exige une authentification Header Auth, mais **la credential n'est pas posée** : sa
+valeur est le secret Vault `n8n_webhook_secret`, et elle n'a pas pu être transférée
+de la base à n8n sans l'afficher. À faire à la main :
+
+1. Dans n8n → *Credentials* → nouvelle **Header Auth** : nom de l'en-tête
+   `x-taxifood-secret`, valeur = `n8n_webhook_secret` (Supabase → *Vault*).
+2. La sélectionner sur le nœud « Code offert (webhook) », puis **activer**.
+3. Tester : `POST` sans en-tête → 403 attendu ; `POST` avec l'en-tête et une charge
+   factice vers une boîte interne → exécution `success`.
+4. **Seulement ensuite**, poser `n8n_code_offert_url` dans le Vault (URL de
+   production du webhook). Tant que ce secret n'existe pas, `notifier_code_offert` ne
+   fait rien — c'est voulu : posé trop tôt, chaque envoi partirait vers un webhook
+   inactif et serait perdu sans bruit (la ligne `promo_envois` reste `demande`).
+
+⚠️ Aucun retour de n8n vers la base : on n'affiche jamais « envoyé » ni « reçu ».
+
+> ~~⚠️ À RÉIMPORTER SUR L'INSTANCE — DEUX CHANGEMENTS EN ATTENTE (2026-09-06). Partir de ce
+> fichier, jamais de la version en ligne.~~ **CADUC depuis le 2026-09-15 — voir l'encadré
+> « RÉIMPORT INTERDIT » plus haut.** Le paragraphe est conservé pour l'historique des deux
+> changements qu'il décrivait ; il ne doit plus guider aucun geste.
 
 1. **La ligne de remise** (`Code TAXIFOOD50 −5 000 Ar`) dans l'e-mail client et dans le
    message Telegram ; la charge utile du trigger transporte désormais `code_promo` et

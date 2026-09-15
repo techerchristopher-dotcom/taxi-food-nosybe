@@ -769,9 +769,9 @@ export type RaisonPromo =
   | 'restaurant_inconnu'
   /**
    * Le code est bon, mais il ne donne rien ICI : un code « livraison » sur un
-   * restaurant qui livre gratuitement, un code « sous_total » sur un panier
-   * trop petit. Refusé plutôt qu'annoncé à 0 Ar — sinon `create_order`
-   * consommerait l'unique utilisation du client sans lui rendre un ariary.
+   * restaurant qui livre gratuitement, un repas offert sur un panier sans plat
+   * (bières et softs seuls). Refusé plutôt qu'annoncé à 0 Ar : « Tu économises
+   * 0 Ar » laisserait croire au client qu'il a dépensé son code.
    */
   | 'sans_effet';
 
@@ -780,12 +780,41 @@ export type VerificationPromo =
   | { valide: false; raison: RaisonPromo };
 
 /**
+ * `verifier_code_promo` et `apercu_code_promo` répondent dans la même forme :
+ * une seule lecture, pour que les deux chemins ne divergent jamais sur un
+ * champ manquant.
+ */
+function lireVerificationPromo(data: unknown, code: string): VerificationPromo {
+  const r = data as {
+    valide: boolean;
+    raison?: RaisonPromo;
+    code?: string;
+    remise?: number;
+    porte_sur?: 'livraison' | 'sous_total';
+    description?: string | null;
+  } | null;
+  if (!r?.valide) return { valide: false, raison: r?.raison ?? 'inconnu' };
+  return {
+    valide: true,
+    code: r.code ?? code.trim().toUpperCase(),
+    remise: r.remise ?? 0,
+    porteSur: r.porte_sur ?? 'livraison',
+    description: r.description ?? null,
+  };
+}
+
+/**
  * Vérifie un code promo AVANT de valider le panier, sans rien consommer.
  *
  * ⚠️ Le montant renvoyé est un APERÇU. Le montant qui compte est celui que
  * `create_order` recalcule au moment de la commande : c'est elle qui relit le
  * barème et les frais de livraison en base. Si les deux divergeaient, c'est la
  * commande qui aurait raison.
+ *
+ * ⚠️ Gardée pour les versions installées, et comme REPLI de `apercuCodePromo`.
+ * Elle ne reçoit que le sous-total, boissons comprises : pour un repas offert
+ * hors boissons, elle répond « valide, remise 0 » (migration 20260914193000).
+ * Elle n'annonce donc jamais plus que la facture, mais pas le vrai montant.
  */
 export async function verifierCodePromo(
   code: string,
@@ -798,22 +827,40 @@ export async function verifierCodePromo(
     p_sous_total: sousTotal,
   });
   if (error) throw error;
-  const r = data as {
-    valide: boolean;
-    raison?: RaisonPromo;
-    code?: string;
-    remise?: number;
-    porte_sur?: 'livraison' | 'sous_total';
-    description?: string | null;
-  };
-  if (!r?.valide) return { valide: false, raison: r?.raison ?? 'inconnu' };
-  return {
-    valide: true,
-    code: r.code ?? code.trim().toUpperCase(),
-    remise: r.remise ?? 0,
-    porteSur: r.porte_sur ?? 'livraison',
-    description: r.description ?? null,
-  };
+  return lireVerificationPromo(data, code);
+}
+
+/**
+ * Aperçu EXACT d'un code promo, calculé sur les lignes du panier.
+ *
+ * POURQUOI en plus de `verifierCodePromo` : un repas offert porte sur les plats,
+ * les suppléments et l'emballage, sans les bières ni les softs. Le sous-total
+ * ne dit pas quelles lignes sont des boissons ; `apercu_code_promo` relit
+ * produits, options et catégories en base, avec les règles de `create_order`.
+ * La remise annoncée est donc celle qui sera facturée.
+ *
+ * ⚠️ `p_items` part au MÊME format que dans `createOrder`. Un écart ferait
+ * calculer la remise sur un autre panier que celui qui sera commandé.
+ *
+ * Lève en cas d'échec (fonction absente d'une base pas encore migrée, réseau) :
+ * c'est à l'appelant de retomber sur `verifierCodePromo` (`store/promo.ts`).
+ */
+export async function apercuCodePromo(
+  code: string,
+  restaurantId: string,
+  items: CreateOrderItem[],
+): Promise<VerificationPromo> {
+  const { data, error } = await supabase.rpc('apercu_code_promo', {
+    p_code: code,
+    p_restaurant_id: restaurantId,
+    p_items: items.map((i) => ({
+      product_id: i.productId,
+      quantity: i.quantity,
+      options: i.options.map((o) => ({ option_id: o.optionId, quantity: o.quantity })),
+    })),
+  });
+  if (error) throw error;
+  return lireVerificationPromo(data, code);
 }
 
 /**

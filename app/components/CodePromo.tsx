@@ -21,8 +21,8 @@ import { usePromo } from '../store/promo';
  * Le conteneur (Card, marges) appartient à l'écran qui monte le composant.
  */
 export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
-  const { t } = useTranslation();
-  const { code, remise, valide, raison, enAttenteConnexion, enCours, appliquer, retirer } = usePromo();
+  const { t, i18n } = useTranslation();
+  const { code, remise, valide, porteSur, raison, enAttenteConnexion, enCours, appliquer, retirer } = usePromo();
 
   const [saisi, setSaisi] = useState(code ?? '');
   // Le code retenu peut changer sans passer par ce champ : normalisation par la
@@ -32,12 +32,31 @@ export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
   }, [code]);
 
   if (valide && code) {
+    const repas = porteSur === 'sous_total';
     return (
       <View style={[styles.ligne, style]}>
         <Icon name="check_circle" size={20} color={colors.primary} />
         <View style={{ flex: 1 }}>
           <Text style={styles.titre}>{t('promo.applique', { code })}</Text>
-          <Text style={styles.sous}>{t('promo.economie', { amount: formatAr(remise) })}</Text>
+          {/* Valide à 0 Ar : seul le repli `verifier_code_promo` a répondu, pour
+              un repas offert hors boissons. Il ne connaît pas le vrai montant.
+              On n'annonce aucun chiffre — surtout pas « 0 Ar » : `create_order`
+              appliquera la vraie remise, et le client paiera moins que le total
+              affiché, jamais plus. */}
+          <Text style={styles.sous}>
+            {remise > 0
+              ? t(repas ? 'promo.economieRepas' : 'promo.economie', { amount: formatAr(remise) })
+              : t('promo.remiseALaValidation')}
+          </Text>
+          {/* Ce qui reste à payer avec un repas offert. On n'annonce que la
+              livraison : un code « sous_total » ne la couvre jamais. La réponse
+              d'`apercu_code_promo` ne dit ni si les boissons sont incluses (case
+              « Boissons incluses » de l'admin) ni si l'emballage l'est (colonne
+              à false par défaut) : les nommer serait faux pour une partie des
+              codes. Le montant affiché, lui, est exact dans tous les cas. Pour
+              détailler, la base devra renvoyer exclut_boissons et
+              inclut_emballage dans l'aperçu. */}
+          {repas ? <Text style={styles.sous}>{t('promo.aideRepas')}</Text> : null}
         </View>
         <Pressable onPress={retirer} hitSlop={8}>
           <Text style={styles.action}>{t('promo.retirer')}</Text>
@@ -96,8 +115,8 @@ export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
         </Pressable>
       </View>
       {/* Un message d'erreur doit dire QUOI FAIRE, pas seulement que ça a raté.
-          Sans erreur, on rappelle sur quoi porte la remise — sans jamais citer
-          de taux ni de montant : ils vivent en base, pas dans un dictionnaire. */}
+          Sans erreur, une aide neutre — sans jamais citer de taux, de montant
+          ni de portée : ils vivent en base, pas dans un dictionnaire. */}
       {raison ? (
         /* ⚠️ « Retire-le pour valider ta commande » disent deux de ces
            messages — et il n'y avait rien à toucher pour le faire : le bouton
@@ -106,7 +125,13 @@ export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
            sur un champ vide). Le client lisait une consigne qu'il ne pouvait
            pas suivre. */
         <View style={styles.erreurLigne}>
-          <Text style={[styles.erreur, { flex: 1 }]}>{t(`promo.erreur.${raison}`)}</Text>
+          {/* Repli sur « inconnu » : la raison peut venir du message d'erreur
+              de `create_order` (`raisonPromoDepuisErreur`), et une raison
+              ajoutée en base avant la mise à jour de l'app afficherait sinon la
+              clé brute « promo.erreur.xxx » au client. */}
+          <Text style={[styles.erreur, { flex: 1 }]}>
+            {t(i18n.exists(`promo.erreur.${raison}`) ? `promo.erreur.${raison}` : 'promo.erreur.inconnu')}
+          </Text>
           {code ? (
             <Pressable onPress={retirer} hitSlop={8}>
               <Text style={[styles.action, { marginTop: 10 }]}>{t('promo.retirer')}</Text>
@@ -114,7 +139,10 @@ export function CodePromo({ style }: { style?: StyleProp<ViewStyle> }) {
           ) : null}
         </View>
       ) : (
-        <Text style={styles.aide}>{t('promo.surLivraison')}</Text>
+        /* Aide NEUTRE : avant validation on ne sait pas si le code offre la
+           livraison ou le repas. « La remise porte sur la livraison » était
+           faux pour un repas offert. */
+        <Text style={styles.aide}>{t('promo.aideSaisie')}</Text>
       )}
     </View>
   );

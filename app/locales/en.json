@@ -268,8 +268,11 @@
     "retirer": "Remove",
     "applique": "Code {{code}} applied",
     "economie": "You save {{amount}} on delivery.",
+    "economieRepas": "You save {{amount}} on your meal.",
+    "aideRepas": "You still pay for delivery.",
+    "remiseALaValidation": "Your discount applies when you confirm your order.",
     "ligne": "Code {{code}}",
-    "surLivraison": "The discount applies to the delivery fee.",
+    "aideSaisie": "The discount shows in the total as soon as your code is confirmed.",
     "enAttente": "Code {{code}} saved",
     "enAttenteDetail": "We check it as soon as you sign in. Tap “{{bouton}}”: the discount will show before payment.",
     "rejeteALaValidation": "The code could not be applied. Your order was not sent: check the message above, then confirm again.",
@@ -282,7 +285,7 @@
       "deja_utilise": "You have already used this code. It is valid once per customer.",
       "non_connecte": "Sign in to use a promo code.",
       "restaurant_inconnu": "This code does not apply to this restaurant.",
-      "sans_effet": "This code changes nothing on this order: delivery is already free here. Keep it for next time.",
+      "sans_effet": "This code changes nothing on this order. Keep it for next time.",
       "reseau": "We could not check the code right now. Check your connection and try again."
     }
   },

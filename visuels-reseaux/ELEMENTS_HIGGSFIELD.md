@@ -144,3 +144,37 @@ zone du four. Une régénération donnait 30 à 90.
 `seedream_v5_pro` avec `remove_bg: true` sort directement la pizza détourée, sans ardoise ni
 assiette. Le détourage a posteriori (`remove_background` sur la photo) gardait le support noir
 sous la croûte et demandait une reprise au masque.
+
+## Les trois plats du jour — Chez Bidul & Truc (15/09/2026)
+
+Générés dans le style de sa carte (ardoise ou bol noir, fond quasi noir, lueur radiale), puis
+déposés dans `produits/chez-bidul-truc/` et pointés par `products.photo_url`.
+
+| Élément | id | ce que c'est |
+|---|---|---|
+| `TF-Poulet-Basquaise-Bidul` | `d9fa4fc8-81ae-49a1-81d9-04b054d7f29e` | cuisse + pilon sur ardoise ronde, lanières de poivron |
+| `TF-Blanquette-Poisson-Bidul` | `23bfc5ec-e382-43ae-bba7-df63dd0d4d03` | bol noir, légumes identifiables un par un |
+| `TF-Tartare-Zebu-Bidul` | `acc6560e-faf5-479b-be37-518960214dc8` | dôme haut sur ardoise, jaune d'œuf en demi-coquille |
+
+**Un doublon à supprimer à la main :** `TF-Tartare-Zebu-Bidul-1`
+(`1bfdb5e5-1b49-4cbc-97fd-9af0cf9d5de6`). La création avait renvoyé un 502 de la passerelle
+alors que le serveur l'avait déjà enregistrée ; la reprise en a donc créé une seconde. L'API
+Elements n'expose pas de suppression — **relire la liste avant de rejouer une création qui a
+échoué sur un 5xx**, l'échec peut être seulement celui de la réponse.
+
+### Ce qui sépare un plat de son voisin
+
+Chaque description porte le signe qui empêche la confusion avec un plat déjà à la carte, parce
+que le modèle, laissé libre, converge vers le plat le plus banal du lot :
+
+- **Tartare de zébu** — un **volume** : dôme haut, jaune d'œuf en demi-coquille au sommet.
+  À plat en tranches, c'est le *Carpaccio de zébu*, qui existe déjà.
+- **Blanquette de poisson** — les **légumes sortent de la sauce** et se comptent : carotte
+  orange, champignon brun, oignon blanc. Sans eux, c'est l'*Émincé de poulet estragon*.
+- **Poulet basquaise** — les **lanières larges de poivron** rouge et vert, jamais fondues.
+
+### La règle de contenant, mesurée sur la carte existante
+
+Chez Bidul, **ce qui a du liquide va dans le bol noir, ce qui se dresse va sur l'ardoise.**
+Elle n'est écrite nulle part : elle se lit sur les photos déjà en ligne. La blanquette part
+donc au bol, la basquaise et le tartare à l'ardoise.

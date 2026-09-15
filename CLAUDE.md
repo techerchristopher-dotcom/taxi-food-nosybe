@@ -805,6 +805,16 @@ cd app && npx expo export -p web --output-dir dist && npx netlify deploy --prod 
 cd admin && npm run build && npx netlify deploy --prod --dir=out --site=taxi-food-admin-nosybe
 ```
 
+- ⚠️ **eas-cli 18.5 (constaté le 2026-09-15) : la commande ci-dessus ne passe plus depuis un
+  terminal non interactif** (Claude Code, CI) — elle exige `--environment`, et en pseudo-terminal
+  elle ouvre un menu de choix d'environnement. Procédure utilisée et vérifiée ce jour-là :
+  1. `cd app && npx expo export --platform ios --platform android --output-dir dist-ota`
+     (les variables viennent de `app/.env`, comme d'habitude) ;
+  2. **vérifier les deux paquets AVANT de publier** : `dist-ota/metadata.json` donne le `.hbc` de
+     chaque plateforme, qui doit contenir `bmdveawomizjpiebgtkj.supabase.co` et la clé publishable ;
+  3. `npx eas update --branch production --message "…" --skip-bundler --input-dir dist-ota --environment production --non-interactive`
+     — avec `--skip-bundler`, `--environment` ne sert qu'à satisfaire la CLI : le paquet est déjà
+     construit, les variables EAS (vides) ne le touchent pas ; puis supprimer `dist-ota`.
 - ⚠️ **`eas update` sans `--environment`.** EAS n'a **aucune** variable
   d'environnement enregistrée côté serveur (vérifié le 2026-09-09) : passer
   `--environment production` fait échouer la commande, et le faire avec

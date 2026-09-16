@@ -868,7 +868,22 @@ cd app && npx expo export -p web --output-dir dist \
 # 3. Dashboard admin — SI admin/ a change (site Netlify DIFFERENT)
 cd admin && npm run build \
   && npx netlify deploy --prod --dir=out --site=d2e677f5-4db2-46e3-a39f-cc83a18dbc40
+
+# 4. Vitrine — SI landing/ a change. ⚠️ DEPUIS landing/, JAMAIS depuis la racine.
+cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1288e48f7eaa
 ```
+
+- ⛔ **La vitrine se déploie DEPUIS `landing/`.** Son `netlify.toml` y vit, pas à la racine.
+  Lancé depuis la racine avec `--dir=landing`, le CLI ne le lit pas : **zéro fonction
+  embarquée**, et ni les redirections ni `[images] remote_images` de ce fichier. Payé le
+  2026-09-16 : deux déploiements du matin sont partis sans `partage` ni `repondre-commande`.
+  Tous les liens `/p/ /r/ /j/ /s/` répondaient 404 — et surtout les liens `/a/…` par
+  lesquels les **restaurants répondent aux commandes**. Rétabli le jour même. Contrôle après
+  chaque déploiement : `curl -s -o /dev/null -w '%{http_code}' https://taxifoodnosybe.distripro207.com/a/00000000-0000-0000-0000-000000000000/x`
+  doit répondre **400** (la fonction refuse le jeton) — un **404** veut dire fonctions absentes.
+- ⚠️ **Un déploiement brouillon (sans `--prod`) ne prouve pas les pages de partage** :
+  `SUPABASE_URL` et `SUPABASE_ANON_KEY` n'existent qu'en contexte *production* sur ce site, et
+  `partage.mjs` renvoie alors vers l'accueil. Il prouve seulement que les fonctions sont embarquées.
 
 - ⚠️ **`--site=<nom>` ne marche plus** : `netlify deploy --site=taxi-food-admin-nosybe` répond
   *« Failed retrieving site data … Not Found »* (constaté le 2026-09-15) alors que le site
@@ -973,7 +988,7 @@ pour les builds 1.2.2 (iOS 32, Android 12), les deux OTA et les deux sites.
 
 ## Le site de pré-lancement (`landing/`)
 
-**https://taxifoodnosybe.distripro207.com** — site statique, aucun build, aucune dépendance. Déploiement `netlify deploy --prod --dir=landing`. Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).
+**https://taxifoodnosybe.distripro207.com** — site statique, aucun build, aucune dépendance. Déploiement **depuis `landing/`** : `cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1288e48f7eaa` — jamais `--dir=landing` depuis la racine, qui part sans les fonctions (voir « Les commandes » plus haut). Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).
 
 ✅ **Domaine canonique changé le 2026-09-06 : `taxifood.rentanoo.com` → `taxifoodnosybe.distripro207.com`.** C'est le *primary domain* Netlify du site `taxifood-nosybe-landing`, et toutes les URL absolues des pages (canonical, hreflang, og:image, sitemap, JSON-LD, `Sitemap:` de `robots.txt`) le désignent désormais. Tant qu'elles pointaient sur rentanoo, **le nouveau nom ne pouvait pas être indexé** : le canonical envoyait Google ailleurs.
 

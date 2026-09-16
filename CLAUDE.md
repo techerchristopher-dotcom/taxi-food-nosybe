@@ -6,15 +6,29 @@ Trois livrables distincts, à ne pas confondre :
 
 | | Quoi | Où |
 |---|---|---|
-| **`app/`** | l'application mobile (Expo, iOS + Android) | **en ligne sur l'App Store**, déposée sur le Play Store |
+| **`app/`** | l'application mobile (Expo, iOS + Android) | **en ligne sur l'App Store ET le Play Store** |
 | **`admin/`** | le tableau de bord de gestion (Next.js, web) | `taxi-food-admin-nosybe.netlify.app` |
 | **`landing/`** | le site de **pré-lancement**, trilingue | **`taxifoodnosybe.distripro207.com`** |
 
 ## Où en est la soumission
 
-**iOS — ⏳ 1.2.0 (28) EN VÉRIFICATION CHEZ APPLE**, envoyée le **2026-09-07 à 23 h 09**
-depuis App Store Connect. Apple annonce jusqu'à 48 h. La 1.1.0 reste en ligne pendant ce
-temps.
+**Au 2026-09-15 (relu dans les deux consoles, pas de mémoire) :**
+
+| | Version | État |
+|---|---|---|
+| **Android** | **1.2.2** (versionCode 12) | ✅ **en ligne**, production, 177 pays |
+| **iOS** | **1.2.2** (build 32) | ⏳ **en attente de vérification** (soumise le 15/09, publication automatique) |
+| **iOS en ligne pendant ce temps** | 1.2.1 | — |
+
+✅ **CONFORMITÉ DSA VALIDÉE le 2026-09-15** (e-mail « Your trader contact information was
+verified »). L'app était **absente des 27 boutiques de l'UE** depuis le lancement : des clients
+français et réunionnais, physiquement à Nosy Be, lisaient « pas disponible dans votre pays ».
+Vérifié après validation : présente en FR, BE, DE, IT, ES. ⚠️ **L'App Store regarde le pays du
+COMPTE Apple, jamais l'endroit où se trouve le téléphone.** Détails et pièges du formulaire :
+mémoire `statut-commercant-dsa-app-store-taxi-food`.
+
+⚠️ **Deux mises à jour à distance sont publiées à chaque fois, une par runtime** (1.2.1 ET
+1.2.2), tant que les deux versions coexistent en magasin — voir plus bas.
 
 ⚠️ **Les builds 26 et 27 sont des échecs, pas des versions** : le profil de provisioning
 n'avait pas encore l'entitlement Apple Pay. Détail et remède dans `docs/PAIEMENT-STRIPE.md`
@@ -449,6 +463,54 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
   sur TAXIFOOD50 et que `promo_redemptions_user_id_fkey` est `ON DELETE CASCADE`, supprimer
   puis recréer son compte rend le code réutilisable sans plafond.
 
+## 🎁 Codes offerts « MERCI + prénom » (2026-09-15)
+
+**Geste commercial nominatif, PAYÉ PAR LE RESTAURANT qui l'offre.** Né d'un client mécontent
+(Sulli, TF-162 chez Chez Bidul & Truc) à qui le restaurant a voulu offrir le repas suivant.
+
+- **Un code par client**, nommé `MERCI` + prénom nettoyé (`MERCISULLI`), **réservé à son
+  bénéficiaire** : tout autre compte reçoit `inconnu`, sans révéler que le code existe. Le nom
+  peut donc circuler. Valable **dans un seul restaurant**, **une fois**, **30 jours**.
+- **Ce qu'il offre** : plats + suppléments + emballage, **hors Bières et Softs**
+  (`categories.est_boisson`, recalculé au renommage). Plafond par défaut **37 000 Ar**
+  (`type_remise = 'montant'`). Le client paie la livraison et ses boissons.
+- ⚠️ **`orders.remise_charge_restaurant`** fige la part offerte par le restaurant. Le net à
+  reverser en est diminué, et **Taxi Food ne prélève pas de commission sur la part offerte**.
+  `mark_order_delivered`, `record_settlement`, la vue `rapport_journalier` et `Report.tsx`
+  appliquent tous la même formule : **dû = plats + emballage − commission − part offerte**.
+- ⚠️ **Un code « livraison offerte » ne peut PAS être payé par le restaurant** (contrainte en
+  base) : c'est Taxi Food qui encaisse la livraison.
+- ⚠️ **Un code rendu à l'annulation.** `liberer_code_promo_annulation` supprime la redemption
+  — mais jamais depuis `livree`, et elle est **recréée** si la commande ressort de `annulee`
+  (`admin_set_order_status` accepte toutes les transitions : sans ça, le repas déjà mangé
+  libérait le code et le restaurant payait deux fois).
+- ⚠️ **`verifier_code_promo` (3 args, appelée par les apps installées) renvoie remise 0 pour un
+  code repas** : elle ne voit que le sous-total, donc ni l'emballage ni l'exclusion des
+  boissons. C'est délibéré — **on peut facturer moins qu'annoncé, jamais plus.** Les apps à
+  jour appellent **`apercu_code_promo(code, restaurant, items)`**, qui calcule exactement comme
+  `create_order`. Nom nouveau, **jamais une surcharge** (piège PGRST203 du 2026-09-05).
+- **Admin** : onglet « Codes offerts » (recherche client, génération, e-mail, lien WhatsApp
+  pré-rempli, liste et désactivation). RPC `admin_chercher_clients`, `admin_creer_codes_offerts`,
+  `admin_lister_codes_offerts`, `admin_envoyer_codes_email`, `admin_noter_whatsapp`,
+  `admin_desactiver_code_offert` — toutes `is_admin()`, aucune exécution pour `anon`.
+- ⚠️ **On n'affiche JAMAIS « envoyé »** : n8n ne renvoie rien à la base, `promo_envois.statut`
+  reste `demande`. Ouvrir un lien WhatsApp ne prouve pas non plus qu'il est parti.
+
+### Reste à faire (au 2026-09-16)
+
+1. ⏳ **Activer l'e-mail** : credential Header Auth `x-taxifood-secret` à créer dans n8n avec la
+   valeur du Vault `n8n_webhook_secret` (**geste humain** : un assistant ne saisit pas un
+   jeton), à attacher au webhook de `xDZt2TzDehkvNUHN` (« Taxi Food — code offert », créé,
+   **inactif**), puis poser `n8n_code_offert_url` dans le Vault. Tant que ce secret n'existe
+   pas, `notifier_code_offert` est **inerte** : aucun e-mail ne part, et c'est voulu.
+2. ⏳ **Ligne Telegram « Repas offert par vous — code X (−N Ar) »** dans T7uX : patch **écrit et
+   testé hors n8n** (sans geste : sortie identique ; avec geste : une ligne de plus, 208
+   caractères). Sauvegarde du workflow prise hors dépôt. **À appliquer restaurants FERMÉS** :
+   la réactivation du webhook fait perdre toute notification émise pendant la coupure.
+3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
+   rappeler**. Sans la ligne Telegram, prévenir Chez Bidul & Truc par téléphone que la commande
+   est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
 ## Heures de service — deux services par jour, cartes à l'heure (2026-09-07)
 
 Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et dont les
@@ -795,15 +857,30 @@ l'ancien écran ; seule la garde en base empêchait la commande de passer.
 ### Les deux commandes, à lancer ensemble
 
 ```bash
-# 1. Mobile (canal production, runtime = appVersion)
-cd app && npx eas update --branch production --message "…"
+# 1. Mobile — UNE PUBLICATION PAR RUNTIME EN MAGASIN (voir l'avertissement ci-dessous)
+cd app && npx expo export --platform ios --platform android --output-dir dist-ota
+cd app && npx eas update --branch production --message "…" --skip-bundler --input-dir dist-ota --environment production --non-interactive
 
 # 2. Web — NE PAS OUBLIER
-cd app && npx expo export -p web --output-dir dist && npx netlify deploy --prod --dir=dist
+cd app && npx expo export -p web --output-dir dist \
+  && npx netlify deploy --prod --dir=dist --site=1e13c535-fd25-4027-9188-2b8c178c7f60
 
 # 3. Dashboard admin — SI admin/ a change (site Netlify DIFFERENT)
-cd admin && npm run build && npx netlify deploy --prod --dir=out --site=taxi-food-admin-nosybe
+cd admin && npm run build \
+  && npx netlify deploy --prod --dir=out --site=d2e677f5-4db2-46e3-a39f-cc83a18dbc40
 ```
+
+- ⚠️ **`--site=<nom>` ne marche plus** : `netlify deploy --site=taxi-food-admin-nosybe` répond
+  *« Failed retrieving site data … Not Found »* (constaté le 2026-09-15) alors que le site
+  existe. **Utiliser l'ID**, lisible par `npx netlify sites:list`. Les deux IDs sont dans les
+  commandes ci-dessus : `1e13c535…` pour le site web, `d2e677f5…` pour l'admin.
+- ⚠️ **DEUX runtimes coexistent tant que les deux versions sont en magasin.** Une mise à jour
+  n'atteint QUE les appareils portant le même numéro de version. Le 2026-09-15, l'Android
+  servait la 1.2.2 et l'iOS la 1.2.1 : il a fallu publier **deux fois** le même paquet. Pour la
+  version qui n'est plus celle d'`app.json`, changer `expo.version` **le temps de la commande**
+  puis le restaurer (un `trap … EXIT` évite de le laisser faux si la commande échoue), et
+  vérifier ensuite `git diff -- app/app.json` **vide**. `eas update:list --branch production`
+  doit alors montrer une ligne par runtime.
 
 - ⚠️ **eas-cli 18.5 (constaté le 2026-09-15) : la commande ci-dessus ne passe plus depuis un
   terminal non interactif** (Claude Code, CI) — elle exige `--environment`, et en pseudo-terminal
@@ -859,6 +936,21 @@ depuis un bouton de bot. Ce « double clic » touchera tous les restaurateurs.
   jamais l'OTA (un client resté en 1.1.0) et le web tant qu'il n'est pas
   redéployé. L'écran n'est jamais l'autorité : la clé anon est publique et
   `create_order` reste appelable directement.
+
+## ⛔ MVola ne doit entrer dans AUCUN build ni aucune mise à jour (2026-09-15)
+
+Consigne du porteur du projet. L'intégration MVola est écrite sur la **branche locale `mvola`**
+(copie de travail `taxi-food-nosybe-mvola`, jamais poussée, migrations **non appliquées**).
+
+⚠️ Un code « derrière un interrupteur éteint » **est quand même embarqué** dans le binaire ou le
+paquet OTA. Avant tout `eas build`, `eas update` ou `netlify deploy`, sur le commit exact publié :
+
+```bash
+git grep -n -i mvola <commit> -- app supabase/functions landing admin
+```
+
+Résultat non vide = **ne pas publier**, prévenir le porteur du projet. Vérifié vide le 2026-09-15
+pour les builds 1.2.2 (iOS 32, Android 12), les deux OTA et les deux sites.
 
 ## Build de production (EAS) — état
 

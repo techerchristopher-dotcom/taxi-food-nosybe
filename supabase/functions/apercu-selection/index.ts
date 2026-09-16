@@ -1,14 +1,16 @@
 /**
  * Image d'apercu d'une SELECTION : UNE image 1200x630, a la charte Taxi Food.
  *
- * ⚠️ CE FICHIER EST LE TEXTE EXACT DU BUNDLE DEPLOYE (verifie par get_edge_function le
- * 2026-09-16). Le deploiement passe par MCP, pas par `supabase functions deploy` : si tu
- * modifies ce fichier, redeploie-le, sinon le depot decrit un code qui ne tourne pas.
+ * ⚠️ CE FICHIER EST LE TEXTE EXACT DU BUNDLE DEPLOYE. Le deploiement passe par MCP, pas par
+ * `supabase functions deploy` : si tu modifies ce fichier, redeploie-le, sinon le depot decrit
+ * un code qui ne tourne pas.
  *
- * CHARTE (visuels-reseaux/gabarit.py) : photo PLEINE bord a bord, FILET OR, BANDEAU ROUGE,
- * sur-titre or en capitales espacees, titre blanc tres gras, prix en blanc sur voile encre.
- * JAMAIS de fond sombre degrade : la premiere version recopiait celui de apercu-plats-du-jour,
- * elle etait hors charte et a ete refusee.
+ * ⚠️ JUMELLE DE `apercu-plats-du-jour` : meme charte, memes primitives de dessin, recopiees.
+ * TOUTE retouche graphique doit etre portee dans LES DEUX.
+ *
+ * CHARTE (visuels-reseaux/gabarit.py) : photo PLEINE bord a bord, FILET OR, BANDEAU ROUGE
+ * #E8342A, sur-titre or en capitales espacees, titre blanc tres gras.
+ * ⚠️ Le fond brun sombre de la premiere version a ete REFUSE : ce n'est pas la charte.
  *
  * Le nom du restaurant est sous CHAQUE plat : le panier de l'app est MONO-RESTAURANT
  * (app/store/cart.ts, canAdd), le client doit savoir chez qui il commande.
@@ -225,8 +227,9 @@ Deno.serve(async (req) => {
     const photos = await Promise.all(tuiles.map((t) => photo(t.p.photo_url, t.w, t.h)));
 
     const tailleNom = uneRangee ? 30 : 23;
+    const taillePrix = uneRangee ? 26 : 20;
     const tailleResto = uneRangee ? 20 : 16;
-    const hVoile = uneRangee ? 170 : 120;
+    const hVoile = uneRangee ? 170 : 126;
 
     tuiles.forEach((t, i) => {
       const img = photos[i];
@@ -242,18 +245,24 @@ Deno.serve(async (req) => {
       const padX = uneRangee ? 26 : 18;
       const largeurUtile = t.w - padX * 2;
 
-      // Le restaurant EN PREMIER, en or : c'est lui qui dit chez qui on commande.
-      if (t.p.restaurant_nom) {
-        const resto = texte(demi, tailleResto, t.p.restaurant_nom, OR, largeurUtile);
-        fond.composite(resto, t.x + padX, t.y + t.h - (uneRangee ? 96 : 68));
-      }
+      // ⚠️ LE NOM SUR SA PROPRE LIGNE, PLEINE LARGEUR. Le prix etait a droite sur la meme
+      // ligne : il mangeait la moitie de la tuile et « Poulet basquaise » sortait en
+      // « Poulet b… ». Un nom de plat tronque ne donne pas envie, il intrigue au mieux.
+      const nom = texte(grasse, tailleNom, t.p.nom, BLANC, largeurUtile);
+      fond.composite(nom, t.x + padX, t.y + t.h - (uneRangee ? 88 : 74));
 
-      // Prix rendu d'abord : sa largeur decide de la place qui reste au nom.
-      const montant = Image.renderText(grasse, tailleNom, prix(t.p.prix), BLANC);
-      const nom = texte(grasse, tailleNom, t.p.nom, BLANC, Math.max(40, largeurUtile - montant.width - 14));
-      const yNom = t.y + t.h - (uneRangee ? 60 : 42);
-      fond.composite(nom, t.x + padX, yNom);
-      fond.composite(montant, t.x + t.w - padX - montant.width, yNom);
+      // Puis, sur une seule ligne : le restaurant a gauche, le prix a droite, tous deux en or.
+      // Le restaurant est ce qui dit chez qui on commande — le panier est mono-restaurant.
+      const yLigne2 = t.y + t.h - (uneRangee ? 44 : 36);
+      const montant = Image.renderText(grasse, taillePrix, prix(t.p.prix), OR);
+      fond.composite(montant, t.x + t.w - padX - montant.width, yLigne2);
+      if (t.p.restaurant_nom) {
+        const resto = texte(demi, tailleResto, t.p.restaurant_nom, OR,
+          Math.max(40, largeurUtile - montant.width - 14));
+        // Legerement descendu : le restaurant est plus petit que le prix, les deux doivent
+        // sembler poses sur la meme ligne de base.
+        fond.composite(resto, t.x + padX, yLigne2 + (uneRangee ? 7 : 4));
+      }
     });
 
     fond.drawBox(1, H_PHOTOS + 1, L, FILET, OR);

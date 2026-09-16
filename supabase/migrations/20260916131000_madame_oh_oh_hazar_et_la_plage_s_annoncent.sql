@@ -28,9 +28,12 @@
 --
 -- LES PHOTOS. 60 visuels déposés dans le bucket `produits`, un dossier par
 -- restaurant, nom de fichier repris de la source. Ramenés de 1792×2240 (jusqu'à
--- 7 Mo) à 1024×1280 (2,3 Mo au plus) : l'application télécharge la photo telle
--- quelle, sans transformateur, et la liaison de Nosy Be ne pardonne pas 7 Mo par
--- vignette. Ce sont des RECONSTITUTIONS d'après les recettes, pas des photos
+-- 7 Mo) à 1024×1280 (2,3 Mo au plus), au format des photos déjà en ligne.
+-- ⚠️ Correction du 2026-09-16 : une première version de ce commentaire affirmait que
+-- l'application téléchargeait la photo sans transformateur. C'est FAUX — ses
+-- vignettes passent par /render/image (app/data/types.ts). Le redimensionnement sert
+-- ce qui charge le fichier d'origine : la vitrine, les pages de partage, les
+-- aperçus WhatsApp. Ce sont des RECONSTITUTIONS d'après les recettes, pas des photos
 -- prises dans leurs cuisines (même exception assumée que docs/PARTENAIRES.md) :
 -- à confirmer par chaque restaurateur avant l'ouverture des commandes.
 --

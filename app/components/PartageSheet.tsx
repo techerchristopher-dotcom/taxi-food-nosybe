@@ -46,11 +46,15 @@ export function PartageSheet({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [copie, setCopie] = useState(false);
+  const [aideFacebook, setAideFacebook] = useState(false);
 
   // La confirmation « Lien copié » ne doit pas survivre à la fermeture : sinon
   // elle s'affiche déjà cochée à la réouverture, sur un autre plat.
   useEffect(() => {
-    if (!visible) setCopie(false);
+    if (!visible) {
+      setCopie(false);
+      setAideFacebook(false);
+    }
   }, [visible]);
 
   async function copier() {
@@ -85,8 +89,19 @@ export function PartageSheet({
               icone="facebook"
               teinte="#1877F2"
               libelle={t('partage.facebook')}
-              onPress={() => {
-                partagerFacebook(titre, texte, url);
+              onPress={async () => {
+                // ⚠️ ON ATTEND LE PARTAGE AVANT DE FERMER. Fermer dans la foulée faisait
+                // échouer la feuille de partage d'iOS en silence : le système refuse
+                // d'en présenter une pendant qu'une autre se referme. WhatsApp, qui
+                // passe par un simple lien, marchait ; Facebook, rien.
+                const issue = await partagerFacebook(titre, texte, url);
+                if (issue === 'copie') {
+                  // Navigateur sans feuille de partage : le lien est copié, et il faut
+                  // le DIRE — sinon le bouton paraît mort.
+                  setAideFacebook(true);
+                  setTimeout(onClose, 3500);
+                  return;
+                }
                 onClose();
               }}
             />
@@ -101,13 +116,16 @@ export function PartageSheet({
                 icone="ios_share"
                 teinte={colors.textDark}
                 libelle={t('partage.plus')}
-                onPress={() => {
-                  partageSysteme(titre, texte, url);
+                onPress={async () => {
+                  // Même piège que Facebook : attendre, puis fermer.
+                  await partageSysteme(titre, texte, url);
                   onClose();
                 }}
               />
             ) : null}
           </View>
+
+          {aideFacebook ? <Text style={styles.aide}>{t('partage.copieFacebook')}</Text> : null}
 
           <Pressable onPress={onClose} style={styles.annuler} hitSlop={8}>
             <Text style={styles.annulerTexte}>{t('partage.fermer')}</Text>
@@ -169,6 +187,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ligneTexte: { flex: 1, fontFamily: fonts.semibold, fontSize: 15, color: colors.ink },
+  aide: { fontFamily: fonts.semibold, fontSize: 13.5, color: colors.success, marginTop: 14, textAlign: 'center' },
   annuler: { alignSelf: 'center', paddingVertical: 16, paddingHorizontal: 24, marginTop: 6 },
   annulerTexte: { fontFamily: fonts.semibold, fontSize: 14.5, color: colors.textMuted },
 });
@@ -195,11 +214,21 @@ export function PartageEnLigne({
 }) {
   const { t } = useTranslation();
   const [copie, setCopie] = useState(false);
+  const [aideFacebook, setAideFacebook] = useState(false);
 
   async function copier() {
     const ok = await copierLien(url);
     setCopie(ok);
     if (ok) setTimeout(() => setCopie(false), 2000);
+  }
+
+  async function facebook() {
+    // Navigateur mobile sans feuille de partage : le lien est copié (voir
+    // partagerFacebook). Le dire, sinon la pastille paraît morte.
+    if ((await partagerFacebook(titre, texte, url)) === 'copie') {
+      setAideFacebook(true);
+      setTimeout(() => setAideFacebook(false), 4000);
+    }
   }
 
   return (
@@ -216,7 +245,7 @@ export function PartageEnLigne({
           icone="facebook"
           teinte="#1877F2"
           libelle={t('partage.facebook')}
-          onPress={() => partagerFacebook(titre, texte, url)}
+          onPress={facebook}
         />
         <Pastille
           icone={copie ? 'check' : 'link'}
@@ -233,7 +262,11 @@ export function PartageEnLigne({
           />
         ) : null}
       </View>
-      {copie ? <Text style={enLigne.confirme}>{t('partage.copie')}</Text> : null}
+      {aideFacebook ? (
+        <Text style={enLigne.confirme}>{t('partage.copieFacebook')}</Text>
+      ) : copie ? (
+        <Text style={enLigne.confirme}>{t('partage.copie')}</Text>
+      ) : null}
     </View>
   );
 }

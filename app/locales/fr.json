@@ -465,7 +465,8 @@
     "copie": "Lien copié",
     "plus": "Autre application…",
     "fermer": "Fermer",
-    "surLabel": "Partager sur :"
+    "surLabel": "Partager sur :",
+    "copieFacebook": "Lien copié : ouvre Facebook et colle-le dans ta publication."
   },
   "authCallback": {
     "working": "Validation en cours…",

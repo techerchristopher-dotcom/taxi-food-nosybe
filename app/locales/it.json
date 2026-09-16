@@ -465,7 +465,8 @@
     "copie": "Link copiato",
     "plus": "Altra app…",
     "fermer": "Chiudi",
-    "surLabel": "Condividi su:"
+    "surLabel": "Condividi su:",
+    "copieFacebook": "Link copiato: apri Facebook e incollalo nel tuo post."
   },
   "authCallback": {
     "working": "Verifica in corso…",

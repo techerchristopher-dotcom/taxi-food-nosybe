@@ -216,7 +216,14 @@ export async function ouvrirPartage(url: string) {
  * le composeur reçoit alors une phrase contenant un lien plutôt qu'un lien : il
  * ne va pas chercher l'aperçu.
  */
-export async function partagerFacebook(titre: string, texte: string, url: string) {
+/**
+ * Ce qu'il s'est réellement passé : l'écran doit pouvoir le dire. Un « copie » sans
+ * message laisserait croire que le bouton n'a rien fait — c'est le défaut signalé
+ * le 2026-09-16.
+ */
+export type IssuePartageFacebook = 'systeme' | 'copie' | 'onglet';
+
+export async function partagerFacebook(titre: string, texte: string, url: string): Promise<IssuePartageFacebook> {
   // ⚠️ L'APPLICATION NATIVE PASSE PAR LA FEUILLE DU SYSTÈME, comme le web mobile.
   //
   // Le defaut a failli partir en revue Apple : la garde ne testait que
@@ -233,21 +240,29 @@ export async function partagerFacebook(titre: string, texte: string, url: string
       if (Platform.OS === 'web') {
         if (typeof navigator?.share === 'function') {
           await navigator.share({ title: titre, url });
-          return;
+          return 'systeme';
         }
+        // ⚠️ NAVIGATEUR MOBILE SANS FEUILLE DE PARTAGE — le navigateur intégré de
+        // Facebook ou d'Instagram, certains navigateurs Android. Le code retombait ici
+        // sur `sharer.php`, la voie n°1 décrite plus haut comme morte sur téléphone :
+        // constaté le 2026-09-16 sur les plats du jour, la page n'affichait qu'un logo
+        // Facebook, rien à partager. On copie le lien et l'écran dit quoi en faire :
+        // un chemin un peu plus long, mais qui aboutit.
+        if (await copierLien(url)) return 'copie';
       } else {
         // Feuille native iOS/Android : Facebook y figure, et c'est l'application
         // elle-même qui prend la main.
         await Share.share({ title: titre, message: url }, { subject: titre });
-        return;
+        return 'systeme';
       }
     } catch (e) {
       // Feuille fermée par l'utilisateur : ce n'est pas une erreur, et ouvrir le
       // partageur derrière serait agressif.
-      return;
+      return 'systeme';
     }
   }
   await ouvrirPartage(lienFacebook(url));
+  return 'onglet';
 }
 
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */

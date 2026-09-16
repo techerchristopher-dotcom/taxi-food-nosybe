@@ -465,7 +465,8 @@
     "copie": "Link copied",
     "plus": "Other app…",
     "fermer": "Close",
-    "surLabel": "Share on:"
+    "surLabel": "Share on:",
+    "copieFacebook": "Link copied: open Facebook and paste it into your post."
   },
   "authCallback": {
     "working": "Verifying…",

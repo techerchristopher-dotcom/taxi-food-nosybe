@@ -78,6 +78,45 @@ donc porter **le détail visuel unique** qui interdit la confusion.
 plats sur la carte de Madame Oh — sans elle, le panang et le curry rouge sortaient identiques.
 Chercher ce qu'on **voit** dans l'assiette, pas la recette.
 
+## Imperfection n'est pas saleté
+
+Piège payé le 16/09. La compétence `photo-ia-realiste` demande une « imperfection commandée »
+et donne en exemple des gobelets en plastique, des assiettes sales empilées, un gâteau de
+supermarché. J'ai transposé ça tel quel sur un plat et commandé une coulée de bouillon le long
+du bol, des éclaboussures, une trace de pouce gras, de la peinture écaillée et des ronds de
+verre. Refusé, à raison : **« je veux un truc propre, pas parfait mais propre ».**
+
+Ces exemples valent pour une **fin de soirée**, où le désordre est la vérité du moment. Pour un
+plat qu'on vient de servir, la vérité est l'inverse : la cuisine vient de le dresser, la table
+est essuyée. Une assiette sale ne dit pas « vraie photo », elle dit « restaurant sale ».
+
+**Ce qui fait vrai tient en quatre points, et aucun ne salit :**
+
+- le **cadrage** — le plat posé légèrement décentré et pas d'équerre, comme posé par un serveur
+  et non placé par un styliste ;
+- la **mise au point** — pris à main levée et assez ouvert, le bord proche part doucement ;
+- la **lumière** — directionnelle et un peu dure, une tache chaude et une vraie chute dans
+  l'ombre, jamais l'enveloppe régulière d'une boîte à lumière ;
+- le **désordre naturel des ingrédients** — deux feuilles de coriandre et un tronçon de
+  citronnelle tombés là où ils sont tombés, pas disposés.
+
+**Et la liste d'interdits va dans le prompt, explicitement :** aucune coulée le long du
+contenant, aucune éclaboussure, aucune goutte sur la table, aucune trace de doigt, aucune
+tache, aucune peinture écaillée, aucun rond de verre, aucune miette.
+
+**Mesure du décentrement** (centroïde du sujet, 0,500 = pile au centre) : studio **−0,7 %**,
+version propre **−3,0 %** et **−7,5 %**. On garde donc tout l'écart au catalogue sans une
+seule salissure.
+
+## Deux registres par maison, pas un
+
+- **Packshot propre** pour la carte et l'application, à côté du prix. C'est la convention des
+  90 photos déjà en ligne ; y injecter du désordre jurerait avec le catalogue.
+- **Registre argentique propre** pour les pubs réseaux, là où il faut croire qu'un vrai
+  restaurant existe derrière.
+
+Même couleur mesurée, même règle de contenant, deux mises en lumière.
+
 ## Les registres arrêtés
 
 ### Madame Oh — thaï, Hell-Ville

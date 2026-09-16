@@ -39,10 +39,13 @@ export function Restaurants() {
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select('id, name, cuisine_type, delivery_fee, min_order, commission_rate, zone_served, is_open, food_types, opens_at, closes_at')
-      .order('name');
+    // ⚠️ PAS de lecture directe de `restaurants` ICI. Depuis la migration
+    // 20260917091000, `commission_rate` et `telegram_chat_id` ne sont plus
+    // lisibles par `anon` NI par `authenticated` : n'importe quel client
+    // connecte lisait le taux negocie avec chaque restaurant. La commission
+    // revient par cette fonction, qui la rend au seul administrateur.
+    // Memes colonnes, memes noms, deja triees par nom.
+    const { data, error } = await supabase.rpc('admin_lister_restaurants');
     if (error) { setErr(error.message); return; }
     setList((data ?? []) as Resto[]);
   }, []);
@@ -100,14 +103,14 @@ export function Restaurants() {
         <div className="grid" style={{ gap: 12 }}>
           <Field label="Nom"><input style={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <Field label="Type de cuisine"><input style={inp} value={form.cuisine_type} onChange={(e) => setForm({ ...form, cuisine_type: e.target.value })} placeholder="Pizzeria, Snack…" /></Field>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="rangee">
             <Field label="Frais de livraison (Ar)"><input style={inp} type="number" value={form.delivery_fee} onChange={(e) => setForm({ ...form, delivery_fee: e.target.value })} /></Field>
             <Field label="Commission (%)"><input style={inp} type="number" step="0.5" value={form.commissionPct} onChange={(e) => setForm({ ...form, commissionPct: e.target.value })} /></Field>
             <Field label="Min. commande (Ar)"><input style={inp} type="number" value={form.min_order} onChange={(e) => setForm({ ...form, min_order: e.target.value })} /></Field>
           </div>
           <Field label="Zone desservie"><input style={inp} value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} placeholder="Hell-Ville…" /></Field>
           <Field label="Types de plats (filtre accueil, séparés par des virgules)"><input style={inp} value={form.food_types} onChange={(e) => setForm({ ...form, food_types: e.target.value })} placeholder="Pizza, Tacos, Burger" /></Field>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="rangee">
             <Field label="Ouvre à"><input style={inp} type="time" value={form.opens_at} onChange={(e) => setForm({ ...form, opens_at: e.target.value })} /></Field>
             <Field label="Ferme à"><input style={inp} type="time" value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} /></Field>
             <Field label="Ouvert ?"><label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38 }}><input type="checkbox" checked={form.is_open} onChange={(e) => setForm({ ...form, is_open: e.target.checked })} /> {form.is_open ? 'Ouvert' : 'Fermé'}</label></Field>

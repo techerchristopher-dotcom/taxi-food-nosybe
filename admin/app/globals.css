@@ -148,3 +148,273 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .center { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
 .muted { color: var(--muted); }
 .empty { color: var(--muted); padding: 24px 8px; text-align: center; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE TÉLÉPHONE
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Ce dashboard a été dessiné pour un écran large, et il l'est resté : à 390 px
+   la barre du haut débordait À ELLE SEULE de ~38 px — avant même les tableaux —
+   parce qu'une adresse e-mail ne se coupe pas (UAX#14 n'autorise aucun retour
+   après le « @ »). Tout le document partait alors en défilement horizontal, sur
+   les six onglets.
+
+   ⚠️ POURQUOI UN SEUL PALIER `max-width` ET PAS UNE CASCADE INVERSÉE. Écrire
+   « mobile d'abord » au sens strict — base téléphone, puis `min-width` pour
+   l'ordinateur — obligerait à réécrire les 150 lignes au-dessus, dont celles de
+   l'écran de remboursement, utilisé pour rendre de l'argent. Pour un résultat
+   visuellement IDENTIQUE. Le risque n'est pas payé par le gain : on ajoute un
+   palier, on ne refond pas ce qui marche.
+
+   ⚠️ LE `!important` N'EST PAS UN CONTOURNEMENT ICI. Neuf objets de style sont
+   écrits en ligne dans cinq composants (`fInp`, `inputStyle`, `selStyle`,
+   `inp`, `btn`…) : aucune media query ne les atteint. Or dans la cascade CSS,
+   une déclaration `!important` de feuille de style bat une déclaration en ligne
+   ordinaire. C'est le seul outil qui corrige les cinq composants sans les
+   ouvrir — donc sans risque de régression sur l'ordinateur.
+
+   Cible : 390 px, tenu à une main, pendant un service. */
+@media (max-width: 640px) {
+
+  /* On récupère d'abord de la place : 84 px de marges sur 390, c'était 21 % de
+     l'écran perdu avant le premier caractère. */
+  .shell { padding: 12px; }
+  .card { padding: 14px; border-radius: 12px; }
+
+  /* La barre du haut : elle se replie, et l'e-mail disparaît. Ce n'est pas une
+     action, c'est une identité — et sur un téléphone qui n'appartient qu'à une
+     personne, elle ne renseigne personne. Le bouton Déconnexion, lui, reste. */
+  .topbar { flex-wrap: wrap; gap: 10px; padding-bottom: 12px; margin-bottom: 16px; }
+  .who { display: none; }
+
+  /* Les six onglets : deux colonnes fixes plutôt qu'un repli dicté par la
+     longueur des libellés. Avant, la position d'un onglet changeait selon
+     l'onglet actif — impossible de mémoriser où taper. Trois rangées stables. */
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    min-height: 44px; display: flex; align-items: center; justify-content: center;
+    padding: 8px 10px; border-radius: 12px; text-align: center; line-height: 1.2;
+  }
+
+  /* ⚠️ 16 px SUR TOUS LES CHAMPS, SANS EXCEPTION. En dessous, iOS Safari zoome
+     la page au moment où le doigt entre dans le champ — et ne dézoome PAS en
+     sortant. Combiné à un débordement horizontal, on se retrouve à taper dans
+     une page agrandie et décalée, sans savoir quoi toucher pour revenir. */
+  input, select, textarea, .champ {
+    font-size: 16px !important;
+    min-height: 44px !important;
+    max-width: none !important;
+  }
+
+  /* Toute cible tactile à 44 px. Les boutons de statut de l'écran temps réel
+     faisaient 24 px de haut, espacés de 5 px — « Livrée » et « Annulée » à cinq
+     pixels l'un de l'autre, sur une commande déjà débitée. */
+  button, .btn, a.btn { min-height: 44px !important; padding-block: 10px !important; }
+  .btn.petit { padding: 10px 14px !important; font-size: 13px !important; }
+  .gestes { gap: 10px; }
+  /* Le geste destructeur quitte la file des gestes anodins. */
+  .gestes .btn.ghost.danger { margin-left: auto; }
+
+  /* La croix qui retire un client d'une sélection faisait 24 × 16 px, à 6 px de
+     la suivante : se tromper de croix, c'est offrir un repas à quelqu'un d'autre. */
+  .puce { padding: 4px 4px 4px 12px; }
+  .puce button {
+    min-width: 44px !important; min-height: 44px !important;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* Les tuiles de statistiques : sept d'entre elles occupaient ~344 px de haut
+     sur l'écran de pilotage, soit la première commande deux fois sous la ligne
+     de flottaison. Deux colonnes, valeurs plus sobres. */
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .stat { min-width: 0; padding: 10px 12px; }
+  .stat .value { font-size: 18px; }
+
+  /* Les modales deviennent des feuilles basses. Sur iOS, l'ouverture du clavier
+     ne réduit pas la hauteur de la fenêtre : une boîte centrée reste centrée sur
+     844 px dont la moitié est cachée par le clavier, et les boutons atterrissent
+     dessous. `dvh` est justement l'unité qui tient compte de la barre d'URL. */
+  .voile { align-items: flex-end; padding: 0; }
+  .boite {
+    max-width: none; max-height: 92dvh; border-radius: 16px 16px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  .pied { flex-direction: column-reverse; gap: 8px; }
+  .pied .btn { width: 100%; }
+
+  /* ── LES TABLEAUX ─────────────────────────────────────────────────────────
+     Deux régimes, et c'est l'usage qui tranche, pas la largeur.
+
+     CONSULTATION (rapport, codes) : on lit, on compare des colonnes. Le
+     défilement latéral est le bon geste — à condition de donner une largeur
+     minimale à la table, sinon `width: 100%` l'écrase à ~22 px par colonne au
+     lieu de la faire défiler. */
+  .card { overflow-x: auto; }
+  .card table:not(.cartes) { min-width: 620px; }
+  .defile table:not(.cartes) { min-width: 900px; }
+
+  /* ACTION (temps réel, remboursements) : on ne compare pas, on AGIT sur une
+     ligne. Une ligne devient une carte, chaque cellule reprend son en-tête.
+     Sans ça, « 3,41 € / — / 3,41 € » ne veut plus rien dire — et c'est sur
+     cette lecture qu'on décide de rendre de l'argent. */
+  table.cartes, table.cartes tbody, table.cartes tr, table.cartes td { display: block; width: auto; }
+  table.cartes { min-width: 0; }
+  table.cartes thead { display: none; }
+  table.cartes tr {
+    border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2);
+    padding: 6px 2px; margin-bottom: 10px;
+  }
+  table.cartes td { border: 0; padding: 5px 10px; font-size: 14px; }
+  table.cartes td::before {
+    content: attr(data-label); display: block;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); margin-bottom: 2px;
+  }
+  /* Une cellule sans libellé (la rangée de gestes) n'en invente pas. */
+  table.cartes td:not([data-label])::before { content: none; }
+  table.cartes td[data-label='']::before { content: none; }
+
+  /* Le retour au doigt : sans survol, un bouton qui ne réagit pas au tap passe
+     pour un bouton mort, et on tape deux fois — sur « Annulée » aussi. */
+  .btn:active, .tab:active { transform: scale(0.98); opacity: 0.9; }
+}
+
+/* Deux champs côte à côte qui se replient d'eux-mêmes : remplace les
+   `<div style={{display:'flex'}}>` écrits en ligne, invisibles depuis le CSS. */
+.grid.deux { grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .grid.deux { grid-template-columns: 1fr; gap: 10px; } }
+
+/* Une rangée de champs qui se met debout sur un téléphone. Remplace les
+   `<div style={{display:'flex'}}>` écrits en ligne : à 390 px, trois champs
+   côte à côte laissaient 68 px de saisie sous un libellé replié sur 4 lignes. */
+.rangee { display: flex; gap: 12px; }
+@media (max-width: 640px) { .rangee { flex-direction: column; gap: 10px; } }
+/* ============================================================
+   SÉLECTIONS — l'écran qui publie une page partageable.
+
+   Écrit pour un téléphone tenu debout dans un restaurant : tout est
+   en colonne à 390 px, et l'écran large ne fait qu'élargir (un seul
+   @media, en min-width). Deux règles non négociables, constatées sur
+   ce dashboard : les champs sont à 16 px — en dessous, iOS Safari
+   zoome au focus et ne redescend jamais — et rien qui se touche ne
+   passe sous 44 px.
+   ============================================================ */
+
+.sel-bloc { margin-bottom: 16px; }
+
+/* Bandeaux d'état : la carte existante, seulement recolorée. */
+.sel-erreur { margin-bottom: 16px; color: var(--red); }
+.sel-info { margin-bottom: 16px; color: var(--green); }
+.sel-erreur-texte { color: var(--red); font-size: 12px; }
+
+.sel-texte-court { font-size: 12px; line-height: 1.6; margin: 10px 0 0; }
+
+/* Les trois étapes de composition. Un filet, pas une carte imbriquée :
+   sur 390 px, une carte dans une carte coûte 28 px de largeur pour rien.
+   Le séparateur ne vient qu'ENTRE deux étapes — pas de :first-of-type,
+   qui se casserait dès qu'un <div> est ajouté au-dessus. */
+.sel-etape + .sel-etape { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; }
+.sel-etape-titre {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  font-weight: 700; font-size: 14px; margin-bottom: 10px;
+}
+
+.sel-liste { display: flex; flex-direction: column; gap: 6px; }
+
+/* Une rangée à cocher. La zone tactile, c'est TOUTE la rangée (c'est un
+   <label>) : viser une case de 20 px avec un pouce, c'est cocher le
+   plat d'à côté et publier le mauvais prix. */
+.sel-rangee {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 44px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--panel-2); cursor: pointer;
+}
+.sel-rangee.choisi { border-color: var(--primary); }
+.sel-case { width: 22px; height: 22px; flex: none; accent-color: var(--primary); }
+.sel-corps { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* `anywhere` : un nom de plat sans espace ne se coupe nulle part et
+   pousserait la rangée hors de l'écran. */
+.sel-nom { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.sel-detail { font-size: 12px; }
+
+/* Vignette produit. Sans photo, des initiales — ADR-007 : jamais de
+   visuel approximatif, la vignette sert à contrôler ce qu'on sert. */
+.sel-vignette {
+  width: 44px; height: 44px; flex: none;
+  border-radius: 10px; object-fit: cover;
+  border: 1px solid var(--border); background: var(--panel);
+}
+.sel-initiales {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: var(--muted);
+}
+
+/* Les plats restent groupés par restaurant : le panier est
+   mono-restaurant, une liste à plat laisserait croire le contraire. */
+.sel-groupe { margin-bottom: 14px; }
+.sel-groupe-titre {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--muted); font-weight: 700; margin-bottom: 6px;
+}
+
+/* Champs. 16 px sans exception, et 44 px de haut. */
+.sel-champ-bloc { display: block; margin-bottom: 14px; }
+.sel-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.sel-champ {
+  width: 100%; font-size: 16px; font-family: inherit; min-height: 44px;
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  padding: 11px 12px; border-radius: 10px;
+}
+.sel-court { max-width: 140px; }
+.sel-compteur { display: block; text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.sel-compteur.trop { color: var(--red); }
+
+/* Gestes. 10 px entre les boutons : à 6 px, « Désactiver » tombe sous
+   le même pouce que « Copier le lien ». */
+.sel-gestes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.sel-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Le lien et le message : deux textes qu'il faut pouvoir sélectionner à
+   la main le jour où le navigateur refuse le presse-papiers. `anywhere`
+   parce qu'un UUID ne se coupe nulle part ; `user-select: all` pour que
+   le lien se prenne en entier d'un seul appui long. */
+.sel-lien {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; overflow-wrap: anywhere; user-select: all;
+}
+.sel-message {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px; margin: 0; font-family: inherit; font-size: 13px; line-height: 1.6;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+/* L'aperçu publié : pleine largeur, c'est l'objet qu'on vient vérifier. */
+.sel-apercu {
+  display: block; width: 100%; max-width: 480px; height: auto;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2);
+}
+
+/* Les sélections déjà publiées : des fiches, pas un tableau. Six colonnes
+   ne se lisent pas sur 390 px, et chaque ligne porte un geste. */
+.sel-fiche {
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px; background: var(--panel-2);
+}
+.sel-fiche.morte { opacity: 0.6; }
+.sel-fiche-haut { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+/* Pastilles d'état, préfixées `sel-` comme les `code-` : « active » ne
+   doit pas hériter par hasard d'un statut de commande du même nom.
+   Contour teinté plutôt qu'aplat, pour n'employer que les variables
+   de couleur déjà déclarées. */
+.pill.sel-active { background: var(--panel-2); color: var(--green); border: 1px solid var(--green); }
+.pill.sel-expiree { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); }
+.pill.sel-desactivee { background: var(--panel-2); color: var(--red); border: 1px solid var(--red); }
+
+/* Écran large : deux colonnes de rangées, rien de plus. Le téléphone
+   reste la référence, l'ordinateur n'est que du confort. */
+@media (min-width: 720px) {
+  .sel-liste { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sel-etape-titre { font-size: 15px; }
+}

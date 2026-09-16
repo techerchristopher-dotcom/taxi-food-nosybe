@@ -162,7 +162,7 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <input style={{ ...inp, flex: 1 }} placeholder="Nom" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} />
               <input style={{ ...inp, width: 60 }} placeholder="🍕" value={newCat.icon} onChange={(e) => setNewCat({ ...newCat, icon: e.target.value })} />
-              <input style={{ ...inp, width: 60 }} type="number" title="ordre" value={newCat.sort_order} onChange={(e) => setNewCat({ ...newCat, sort_order: e.target.value })} />
+              <input style={{ ...inp, width: 60 }} type="number" placeholder="Ordre" aria-label="Ordre d'affichage" value={newCat.sort_order} onChange={(e) => setNewCat({ ...newCat, sort_order: e.target.value })} />
               <button className="btn" style={sm} onClick={addCat} disabled={busy === 'newcat' || !newCat.name.trim()}>+</button>
             </div>
           </div>

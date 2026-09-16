@@ -1,6 +1,17 @@
 /**
- * Pages de partage : /p/<id> (un produit), /r/<id> (un restaurant) et /j/<id> (les
- * plats du jour d'un restaurant, en UNE publication — image `/j/<id>/apercu.jpg`).
+ * Pages de partage : /p/<id> (un produit), /r/<id> (un restaurant), /j/<id> (les
+ * plats du jour d'un restaurant, en UNE publication — image `/j/<id>/apercu.jpg`)
+ * et /s/<id> (une SÉLECTION composée à la main, des plats de plusieurs
+ * restaurants — image `/s/<id>/apercu.jpg`).
+ *
+ * ── /j/ et /s/ ne se ressemblent qu'en surface ────────────────────────────────
+ * /j/ est la vitrine d'UN restaurant : tout y mène au même menu. /s/ mélange
+ * volontairement plusieurs établissements, et le panier de l'application est
+ * MONO-RESTAURANT : on ne peut pas composer une commande unique à partir de
+ * deux d'entre eux. La page le montre donc dans sa structure même — les plats
+ * sont groupés par restaurant, chaque groupe a son propre bouton de commande —
+ * et le dit en toutes lettres avant le premier tap. Une page qui laisserait
+ * croire au panier mélangé enverrait le client dans un mur au deuxième plat.
  *
  * ── Pourquoi une fonction et pas une page statique ────────────────────────────
  * L'aperçu affiché par WhatsApp, Messenger ou Facebook est construit par un
@@ -131,6 +142,34 @@ async function supabase(chemin) {
   return Array.isArray(j) ? j[0] ?? null : j;
 }
 
+/**
+ * Appel d'une fonction SQL (RPC), en POST.
+ *
+ * ⚠️ POURQUOI PAS UN GET SUR LA TABLE, comme les deux fonctions ci-dessus.
+ * `selections` et `selection_items` n'ont AUCUNE politique de lecture pour la
+ * clé anonyme — c'est voulu, pas un oubli : un GET direct listerait toutes les
+ * sélections, y compris celles qui ne sont pas encore publiées. Tout passe donc
+ * par `selection_publique`, qui applique elle-même les règles en base : elle ne
+ * rend rien pour une sélection inconnue, désactivée ou expirée, et elle écarte
+ * les plats devenus incommandables. Le nom, le prix et la photo sont lus à
+ * CHAQUE ouverture — une page qui afficherait un prix figé la veille mentirait
+ * au client, qui paierait la différence à la caisse.
+ */
+async function supabaseRpc(fonction, corps) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fonction}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(corps),
+  });
+  if (!r.ok) throw new Error(`supabase rpc ${fonction} ${r.status}`);
+  const j = await r.json();
+  return Array.isArray(j) ? j : [];
+}
+
 
 /**
  * Renvoi vers l'accueil, JAMAIS mis en cache.
@@ -148,7 +187,16 @@ function versAccueil() {
   });
 }
 
-function page({ titre, description, image, lien, prix, commander, plats }) {
+/**
+ * Le gabarit est PARTAGÉ par /p/, /r/, /j/ et /s/.
+ *
+ * ⚠️ Les trois derniers paramètres (`note`, `groupes`, `ctaTexte`) n'existent
+ * que pour /s/ et sont tous facultatifs : sans eux, la page rendue est celle
+ * d'avant, à l'octet près. C'est la condition pour toucher à ce fichier sans
+ * risquer de casser trois pages qui marchent — ne pas transformer un paramètre
+ * facultatif en obligatoire.
+ */
+function page({ titre, description, image, lien, prix, commander, plats, note, groupes, ctaTexte }) {
   const t = echapper(titre);
   const d = echapper(description);
   return `<!doctype html>
@@ -208,7 +256,11 @@ function page({ titre, description, image, lien, prix, commander, plats }) {
     border:2.5px solid currentColor; border-top-color:transparent;
     border-radius:50%; animation:tourne .7s linear infinite;
   }
-  a.cta, a.cta2 { position:relative; }
+  /* Les cartes de plat et les boutons « Commander chez … » mènent au MÊME
+     endroit que le bouton principal, donc à la même attente : ils doivent eux
+     aussi pouvoir tourner. Sans le position:relative ci-dessous, le rond du
+     ::after se centrerait sur la page et pas sur l'élément tapé. */
+  a.cta, a.cta2, a.plat, a.cmd { position:relative; }
   @keyframes tourne { to { transform:rotate(360deg); } }
   /* Une animation qui tourne en boucle est penible pour qui a demande moins de
      mouvement : on garde alors un mot, pas un rond. */
@@ -222,6 +274,26 @@ function page({ titre, description, image, lien, prix, commander, plats }) {
   ul.plats img { width:56px; height:56px; border-radius:10px; object-fit:cover; background:#F0E6DA; flex:none; }
   ul.plats .nom { flex:1; font-weight:600; }
   ul.plats .px { color:#E8590C; font-weight:700; white-space:nowrap; }
+
+  /* ── Sélection (/s/) : un bloc par restaurant ───────────────────────────────
+     ⚠️ Liste à part (ul.choix) et non ul.plats. Ici la carte blanche est
+     portée par le LIEN, pas par le li : si la carte restait sur le li, la
+     zone tapable se réduirait au texte, et on raterait le plat une fois sur
+     deux au pouce. Les quelques déclarations qui se répètent entre les deux
+     listes sont le prix à payer pour que /j/ ne bouge pas d'un pixel. */
+  .note { color:#5C554E; font-size:14px; line-height:1.5; margin:0 0 20px; }
+  section.groupe { margin:0 0 24px; }
+  section.groupe h2 { font-size:14px; text-transform:uppercase; letter-spacing:.04em;
+                      color:#8A827A; margin:0 0 10px; }
+  ul.choix { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
+  a.plat { display:block; background:#fff; border-radius:14px; padding:8px 12px 8px 8px;
+           color:inherit; text-decoration:none; }
+  a.plat .txt { display:flex; align-items:center; gap:12px; }
+  a.plat img { width:56px; height:56px; border-radius:10px; object-fit:cover; background:#F0E6DA; flex:none; }
+  a.plat .nom { flex:1; font-weight:600; }
+  a.plat .px { color:#E8590C; font-weight:700; white-space:nowrap; }
+  a.cmd { display:block; text-align:center; margin-top:12px; background:#E8590C; color:#fff;
+          text-decoration:none; font-weight:600; font-size:16px; padding:14px; border-radius:999px; }
 </style>
 </head>
 <body>
@@ -229,10 +301,13 @@ function page({ titre, description, image, lien, prix, commander, plats }) {
   <img class="visuel" src="${echapper(image)}" alt="${t}">
   <h1>${t}</h1>
   ${prix ? `<p class="prix">${echapper(prix)}</p>` : ''}
-  ${Array.isArray(plats) && plats.length
+  ${note ? `<p class="note">${echapper(note)}</p>` : ''}
+  ${Array.isArray(groupes) && groupes.length
+    ? groupes.map((g) => `<section class="groupe"><h2>${echapper(g.nom)}</h2><ul class="choix">${g.plats.map((x) => `<li><a class="plat" href="${echapper(x.lien)}"><span class="txt"><img src="${echapper(x.image)}" alt=""><span class="nom">${echapper(x.nom)}</span><span class="px">${echapper(x.prix)}</span></span></a></li>`).join('')}</ul><a class="cmd" href="${echapper(g.commander)}"><span class="txt">${echapper(g.bouton)}</span></a></section>`).join('')
+    : Array.isArray(plats) && plats.length
     ? `<ul class="plats">${plats.map((x) => `<li><img src="${echapper(x.image)}" alt=""><span class="nom">${echapper(x.nom)}</span><span class="px">${echapper(x.prix)}</span></li>`).join('')}</ul>`
     : `<p>${d}</p>`}
-  <a class="cta" href="${echapper(commander)}"><span class="txt">Commander maintenant</span></a>
+  <a class="cta" href="${echapper(commander)}"><span class="txt">${echapper(ctaTexte || 'Commander maintenant')}</span></a>
   <a class="cta2" id="app" href="${APP_STORE}" hidden><span class="txt">Télécharger l’application</span></a>
   <a class="sec" href="${SITE}/">Découvrir Taxi Food</a>
   <footer>Livraison de repas à Nosy Be</footer>
@@ -262,7 +337,9 @@ function page({ titre, description, image, lien, prix, commander, plats }) {
     }
 
     // Retour immediat au tap : le bouton tourne, et ne se laisse plus retaper.
-    document.querySelectorAll('a.cta, a.cta2').forEach(function (b) {
+    // Les cartes de plat (a.plat) et les boutons par restaurant (a.cmd) de la
+    // page /s/ ouvrent la meme application web : meme attente, meme traitement.
+    document.querySelectorAll('a.cta, a.cta2, a.plat, a.cmd').forEach(function (b) {
       b.addEventListener('click', function () {
         b.classList.add('occupe');
         // ⚠️ Filet de securite. Sur iOS, revenir en arriere restaure la page
@@ -282,16 +359,52 @@ function page({ titre, description, image, lien, prix, commander, plats }) {
 </html>`;
 }
 
+/**
+ * Sélection inconnue, désactivée, expirée, ou dont il ne reste plus un seul
+ * plat commandable : une VRAIE page, en 200.
+ *
+ * ⚠️ Ni redirection nue, ni 404, et ce n'est pas une préférence de style.
+ * Une redirection dépose le client sur l'accueil sans lui dire d'où il vient ;
+ * un 404 casse la carte de la publication si Facebook repasse. Ici la personne
+ * lit ce qui s'est passé et repart avec deux portes : l'application web pour
+ * commander tout de suite, le site pour découvrir.
+ *
+ * ⚠️ JAMAIS mis en cache. Une sélection se périme puis se remplace ; si la page
+ * « plus disponible » restait en cache, ceux qui ont ouvert le lien pendant le
+ * trou y resteraient coincés. Même leçon que `versAccueil` (panne du 2026-09-05).
+ */
+function pageIndisponible(id) {
+  return new Response(page({
+    titre: 'Cette sélection n’est plus disponible',
+    prix: '',
+    description: 'Les plats mis en avant ont changé. La carte, elle, est toujours là : '
+      + 'les restaurants de Nosy Be vous attendent sur Taxi Food.',
+    image: OG_DEFAUT,
+    lien: `${SITE}/s/${id}`,
+    commander: `${APP}/`,
+    ctaTexte: 'Voir les restaurants',
+  }), {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store, max-age=0',
+    },
+  });
+}
+
 export default async (request) => {
   const url = new URL(request.url);
-  const m = url.pathname.match(/^\/(p|r|j)\/([0-9a-f-]{36})(\/apercu\.jpg)?\/?$/i);
+  const m = url.pathname.match(/^\/(p|r|j|s)\/([0-9a-f-]{36})(\/apercu\.jpg)?\/?$/i);
 
   // Identifiant absent ou mal formé : on renvoie sur l'accueil du site plutôt
   // que d'afficher une erreur — un lien tronqué dans une conversation reste
   // ainsi utile.
   if (!m) return versAccueil();
   const [, genre, id, apercu] = m;
-  if (apercu && genre !== 'j') return versAccueil();
+  // Seuls /j/ et /s/ fabriquent une image assemblée. Sans cette garde étendue à
+  // « s », `/s/<id>/apercu.jpg` partirait en 302 vers l'accueil : `og:image`
+  // serait une redirection, et l'aperçu WhatsApp disparaîtrait sans un mot.
+  if (apercu && genre !== 'j' && genre !== 's') return versAccueil();
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
@@ -304,7 +417,14 @@ export default async (request) => {
     // un aperçu WhatsApp ne s'affiche de façon fiable qu'en JPEG servi par le même
     // domaine que la page (voir `apercuImage`).
     if (apercu) {
-      const r = await fetch(`${SUPABASE_URL}/functions/v1/apercu-plats-du-jour?r=${id}`);
+      // ⚠️ Ce `fetch` n'envoie NI apikey NI Authorization : la fonction Edge
+      // appelée doit rester en `verify_jwt = false` dans supabase/config.toml.
+      // Sinon elle répond 401, on tombe sur le repli ci-dessous, et l'aperçu ne
+      // disparaît pas — il devient le logo générique. Panne invisible.
+      const cible = genre === 's'
+        ? `apercu-selection?s=${encodeURIComponent(id)}`
+        : `apercu-plats-du-jour?r=${id}`;
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/${cible}`);
       if (!r.ok) {
         return new Response(null, { status: 302, headers: { location: OG_DEFAUT, 'cache-control': 'no-store, max-age=0' } });
       }
@@ -341,6 +461,73 @@ export default async (request) => {
           prix: formatAr(x.price),
           image: x.photo_url ? apercuVignette(x.photo_url) : OG_DEFAUT,
         })),
+      };
+    } else if (genre === 's') {
+      // ── Sélection composée à la main ────────────────────────────────────────
+      // Une seule requête : la fonction SQL rend déjà les lignes filtrées et
+      // ordonnées. Zéro ligne veut dire quatre choses à la fois — sélection
+      // inconnue, désactivée, expirée, ou vidée de ses plats commandables — et
+      // toutes appellent la même réponse côté client.
+      const lignes = await supabaseRpc('selection_publique', { p_id: id });
+      if (!lignes.length) return pageIndisponible(id);
+
+      // Le rang est l'ordre voulu par celui qui a composé la sélection. La
+      // fonction SQL trie déjà, on re-trie ici pour que la page ne dépende pas
+      // de cet ordre : un tri perdu se verrait, un tri doublé ne coûte rien.
+      const ordonnees = [...lignes].sort((a, b) => (a.rang ?? 0) - (b.rang ?? 0));
+
+      // Regroupement par restaurant SANS casser les rangs : un restaurant prend
+      // la place de son premier plat, et ses plats gardent leur ordre. Une Map
+      // conserve l'ordre d'insertion, c'est exactement ce qu'il faut ici.
+      const parResto = new Map();
+      for (const l of ordonnees) {
+        const cle = l.restaurant_id ?? l.restaurant_nom ?? '';
+        if (!parResto.has(cle)) {
+          const nom = l.restaurant_nom ?? 'Taxi Food';
+          parResto.set(cle, {
+            nom,
+            // « Commander chez Chez Bidul & Truc » : même règle que le titre des
+            // plats du jour plus haut — un nom qui commence déjà par « Chez »
+            // prend « de ». Un bouton qui bégaie se lit comme une faute.
+            bouton: /^chez\s/i.test(nom) ? `Commander ${nom}` : `Commander chez ${nom}`,
+            plats: [],
+            // Le bouton du groupe mène au MENU du restaurant : c'est là qu'on
+            // complète une commande, une fois le premier plat choisi.
+            commander: l.restaurant_id ? `${APP}/restaurant/${encodeURIComponent(l.restaurant_id)}` : `${APP}/`,
+          });
+        }
+        parResto.get(cle).plats.push({
+          nom: l.nom,
+          prix: formatAr(l.prix),
+          image: l.photo_url ? apercuVignette(l.photo_url) : OG_DEFAUT,
+          // L'application web : on commande sans rien installer. Même cible que
+          // le bouton principal des autres pages de partage.
+          lien: `${APP}/product/${encodeURIComponent(l.product_id)}`,
+        });
+      }
+      const groupes = [...parResto.values()];
+
+      const noms = ordonnees.map((x) => x.nom);
+      const liste = noms.length > 1
+        ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`
+        : noms[0];
+      vue = {
+        titre: ordonnees[0].titre,
+        prix: '',
+        description: `${liste} — à commander sur Taxi Food.`,
+        image: `${SITE}/s/${id}/apercu.jpg`,
+        lien: `${SITE}/s/${id}`,
+        // ⚠️ Pas de « Commander maintenant » global ici : il n'y a pas UN
+        // restaurant à ouvrir. Le vrai bouton de commande est sous chaque
+        // groupe ; celui-ci n'est qu'une sortie vers la carte complète.
+        commander: `${APP}/`,
+        ctaTexte: 'Voir tous les restaurants',
+        // Dit avant le premier tap, pas découvert au deuxième plat.
+        note: groupes.length > 1
+          ? 'Chaque commande se fait auprès d’un seul restaurant : pour des plats '
+            + 'de deux établissements, il faut passer deux commandes.'
+          : '',
+        groupes,
       };
     } else if (genre === 'p') {
       const p = await supabase(
@@ -387,4 +574,10 @@ export default async (request) => {
   }
 };
 
-export const config = { path: ['/p/:id', '/r/:id', '/j/:id', '/j/:id/apercu.jpg'] };
+// ⚠️ C'EST ICI que Netlify prend les routes, pas dans netlify.toml ni dans
+// _redirects. Ajouter une règle ailleurs créerait une seconde source de vérité
+// et masquerait la fonction. Oublier une ligne ici = 404 statique sur un lien
+// déjà partagé.
+export const config = {
+  path: ['/p/:id', '/r/:id', '/j/:id', '/j/:id/apercu.jpg', '/s/:id', '/s/:id/apercu.jpg'],
+};

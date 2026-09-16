@@ -9,8 +9,9 @@ import { Remboursements } from '../components/Remboursements';
 import { Report } from '../components/Report';
 import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
+import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'remboursements' | 'codes' | 'report' | 'requests' | 'restaurants';
+type Tab = 'realtime' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -106,6 +107,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>
           Codes offerts
         </button>
+        <button className={`tab ${tab === 'selections' ? 'active' : ''}`} onClick={() => setTab('selections')}>
+          Sélections
+        </button>
         <button className={`tab ${tab === 'report' ? 'active' : ''}`} onClick={() => setTab('report')}>
           Rapport de clôture
         </button>
@@ -123,6 +127,7 @@ export default function AdminPage() {
       {tab === 'report' && <Report />}
       {tab === 'requests' && <Requests />}
       {tab === 'restaurants' && <Restaurants />}
+      {tab === 'selections' && <Selections />}
     </div>
   );
 }

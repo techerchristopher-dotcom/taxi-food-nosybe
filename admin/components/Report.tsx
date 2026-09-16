@@ -83,7 +83,8 @@ export function Report() {
         .is('delivered_at', null)
         .gte('created_at', debut)
         .lt('created_at', finExclue),
-      supabase.from('restaurants').select('id, name, commission_rate'),
+      // Voir Restaurants.tsx : la commission n'est plus lisible en direct.
+      supabase.rpc('admin_lister_restaurants'),
       supabase
         .from('restaurant_settlements')
         .select('id, restaurant_id, period_start, period_end, amount_due, paid_amount, paid_at')

@@ -72,3 +72,23 @@ verify_jwt = false
 # Repasser a `true` la rendrait inappelable, et l'echec serait silencieux —
 # exactement le piege deja paye sur `stripe-webhook`.
 verify_jwt = false
+
+# --- Images d'apercu Open Graph --------------------------------------------
+# L'appelant est la fonction Netlify `partage.mjs`, qui re-sert l'image depuis notre
+# domaine. Elle appelle SANS apikey ni Authorization — c'est volontaire : ces images
+# ne montrent que ce que l'app affiche deja a n'importe qui, et les robots d'apercu
+# (Facebook, WhatsApp) n'ont evidemment aucun jeton a presenter.
+#
+# ⚠️ `verify_jwt = false` est donc OBLIGATOIRE ici, et l'oublier est une panne
+# SILENCIEUSE : la fonction repond 401, partage.mjs bascule sur l'image generique du
+# site (son repli normal), et plus personne ne voit les plats dans les partages —
+# sans qu'aucune erreur ne remonte. Exactement le piege deja paye sur stripe-webhook.
+
+[functions.apercu-selection]
+verify_jwt = false
+
+[functions.apercu-plats-du-jour]
+# Absente de ce fichier jusqu'ici, alors que la fonction existe et est en service
+# depuis le 2026-09-15 : un `supabase functions deploy apercu-plats-du-jour` la
+# repassait au defaut `true`. Repare ici, en meme temps qu'on ajoute sa jumelle.
+verify_jwt = false

@@ -268,7 +268,7 @@ export function Realtime() {
         {filtered.length === 0 ? (
           <div className="empty">Aucune commande.</div>
         ) : (
-          <table>
+          <table className="cartes">
             <thead>
               <tr>
                 <th>#</th><th>Restaurant</th><th>Client</th><th>Statut</th><th>Livreur</th>
@@ -283,14 +283,14 @@ export function Realtime() {
                 const telClient = c?.phone || a?.phone || null;
                 return (
                   <tr key={o.id}>
-                    <td>{o.order_number}</td>
-                    <td>
+                    <td data-label="Commande">{o.order_number}</td>
+                    <td data-label="Restaurant">
                       {r?.name ?? '—'}
                       {r?.phone
                         ? <a href={`tel:${r.phone}`} style={{ ...btn, marginLeft: 6, textDecoration: 'none', display: 'inline-block' }}>📞 resto</a>
                         : <span className="muted" style={{ marginLeft: 6, fontSize: 11 }} title="Le restaurant n'a pas saisi son numéro dans ses réglages">n° absent</span>}
                     </td>
-                    <td>
+                    <td data-label="Client">
                       {c?.full_name ?? '—'}
                       {telClient
                         ? <a href={`tel:${telClient}`} style={{ ...btn, marginLeft: 6, textDecoration: 'none', display: 'inline-block' }}>📞 client</a>
@@ -301,7 +301,7 @@ export function Realtime() {
                         : <span className="badge-late" style={{ marginLeft: 6 }}>SANS GPS</span>}
                       {a?.landmark ? <div className="muted" style={{ fontSize: 11 }}>{a.landmark}</div> : null}
                     </td>
-                    <td>
+                    <td data-label="Statut">
                       <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
                       {/* Sans ce rappel, on annule une commande encaissee sans le
@@ -314,7 +314,7 @@ export function Realtime() {
                         </div>
                       ) : null}
                     </td>
-                    <td>
+                    <td data-label="Livreur">
                       {/* Assignable des que la commande est prete a partir. Avant, le
                           plat n'est pas fait : assigner n'aurait aucun sens. */}
                       {o.status === 'en_livraison' ? (
@@ -338,8 +338,8 @@ export function Realtime() {
                         <span className="muted">—</span>
                       )}
                     </td>
-                    <td>{timeLabel(o.created_at)}</td>
-                    <td className="num">
+                    <td data-label="Heure">{timeLabel(o.created_at)}</td>
+                    <td className="num" data-label="Montant">
                       {formatAr(o.total)}
                       {/* Le total est deja net de remise : sans ce rappel, une
                           commande remisee ressemble a une erreur de caisse. */}
@@ -350,7 +350,7 @@ export function Realtime() {
                       ) : null}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      <div className="gestes">
                         {(SUITE[o.status] ?? []).map((s) => (
                           <button key={s} onClick={() => void changerStatut(o, s)} disabled={busy === o.id}
                                   style={{ ...btn, ...(s === 'annulee' ? { color: 'var(--red)' } : {}) }}>

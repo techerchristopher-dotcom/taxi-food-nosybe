@@ -318,7 +318,7 @@ export function Remboursements() {
             {tout ? 'Aucun paiement par carte encaissé.' : 'Rien à rembourser.'}
           </div>
         ) : (
-          <table>
+          <table className="cartes">
             <thead>
               <tr>
                 <th>#</th><th>Restaurant</th><th>Client</th><th>Commande</th>
@@ -332,13 +332,13 @@ export function Remboursements() {
                 const siens = refunds.filter((r) => r.payment_intent_id === i.id);
                 return (
                   <tr key={i.id}>
-                    <td>
+                    <td data-label="Commande">
                       {o?.order_number ?? '—'}
                       <div className="muted" style={{ fontSize: 11 }}>{dateLabel(i.captured_at)}</div>
                     </td>
-                    <td>{un(o?.restaurants ?? null)?.name ?? '—'}</td>
-                    <td>{un(o?.profiles ?? null)?.full_name ?? '—'}</td>
-                    <td>
+                    <td data-label="Restaurant">{un(o?.restaurants ?? null)?.name ?? '—'}</td>
+                    <td data-label="Client">{un(o?.profiles ?? null)?.full_name ?? '—'}</td>
+                    <td data-label="État">
                       <span className={`pill ${o?.status ?? 'recue'}`}>{STATUS_LABEL[o?.status ?? ''] ?? o?.status}</span>
                       <span className={`pill ${o?.payment_status === 'rembourse' ? 'rembourse' : 'paye'}`} style={{ marginLeft: 6 }}>
                         {PAYMENT_STATUS_LABEL[o?.payment_status ?? ''] ?? o?.payment_status}
@@ -347,11 +347,11 @@ export function Remboursements() {
                         ? <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>{o.cancellation_reason}</div>
                         : null}
                     </td>
-                    <td className="num">
+                    <td className="num" data-label="Encaissé">
                       {formatEur(i.amount_minor, i.currency)}
                       <div className="muted" style={{ fontSize: 11 }}>{formatAr(i.amount_ar)}</div>
                     </td>
-                    <td className="num">
+                    <td className="num" data-label="Rendu">
                       {solde.rendu > 0 ? formatEur(solde.rendu, i.currency) : <span className="muted">—</span>}
                       {siens.length ? (
                         <div style={{ fontSize: 11, marginTop: 4 }}>
@@ -366,7 +366,7 @@ export function Remboursements() {
                         </div>
                       ) : null}
                     </td>
-                    <td className="num">
+                    <td className="num" data-label="Remboursable">
                       {solde.reste > 0
                         ? formatEur(solde.reste, i.currency)
                         : <span className="muted">—</span>}

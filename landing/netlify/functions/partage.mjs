@@ -123,6 +123,29 @@ const echapper = (s) =>
 const formatAr = (n) =>
   typeof n === 'number' ? `${n.toLocaleString('fr-FR').replace(/ | /g, ' ')} Ar` : '';
 
+/**
+ * Empreinte des plats à l'affiche, posée dans l'adresse (`?v=`).
+ *
+ * ⚠️ POURQUOI LE LIEN PORTE UNE EMPREINTE (`?v=`). Facebook met en cache, PAR
+ * ADRESSE, ce qu'il a lu la première fois : titre, texte, image. Le lien des plats du
+ * jour était toujours le même, `/j/<restaurant>` — le 2026-09-16, le partage publiait
+ * donc les plats de la VEILLE, alors que la page servait bien les nouveaux. L'empreinte
+ * est calculée sur les plats à l'affiche : les plats changent, l'adresse change, et
+ * Facebook est obligé de relire la page.
+ *
+ * ⚠️ MÊME CALCUL, AU CARACTÈRE PRÈS, dans app/lib/partage.ts (`empreintePlats`), qui
+ * construit le lien partagé. Si les deux divergent,
+ * Facebook suit `og:url` : ça marche encore, mais au prix d'une double lecture.
+ */
+function empreintePlats(ids) {
+  let h = 0x811c9dc5;
+  for (const c of [...ids].sort().join(',')) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
 /** Même requête, mais la liste entière (plats du jour). */
 async function supabaseListe(chemin) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${chemin}`, {
@@ -436,12 +459,15 @@ export default async (request) => {
     let vue;
     if (genre === 'j') {
       // Plats du jour : les plats À L'AFFICHE et commandables, dans l'ordre de l'app.
-      const [r, plats] = await Promise.all([
+      const [r, platsLus] = await Promise.all([
         supabase(`restaurants?id=eq.${id}&select=id,name`),
         supabaseListe(`products?restaurant_id=eq.${id}&is_featured=eq.true&is_archived=eq.false&is_available=eq.true`
-          + '&select=id,name,price,photo_url&order=sort_order.asc,name.asc'),
+          + '&select=id,name,price,photo_url,stock_quantity&order=sort_order.asc,name.asc'),
       ]);
       if (!r) return versAccueil();
+      // Un plat épuisé ne s'annonce pas — même règle que l'app (`stockQuantity !== 0`),
+      // et c'est elle qui garde l'empreinte identique des deux côtés.
+      const plats = platsLus.filter((x) => x.stock_quantity !== 0);
       // Plus aucun plat à l'affiche (le lien a été partagé hier) : la page du restaurant
       // reste utile, un lien mort non.
       if (!plats.length) {
@@ -453,8 +479,10 @@ export default async (request) => {
         titre: `Plats du jour ${/^chez\s/i.test(r.name) ? 'de' : 'chez'} ${r.name}`,
         prix: '',
         description: `${liste} — à commander sur Taxi Food.`,
-        image: `${SITE}/j/${id}/apercu.jpg`,
-        lien: `${SITE}/j/${id}`,
+        // L'empreinte est AUSSI sur l'image : Facebook met les images en cache par
+        // adresse, indépendamment de la page.
+        image: `${SITE}/j/${id}/apercu.jpg?v=${empreintePlats(plats.map((x) => x.id))}`,
+        lien: `${SITE}/j/${id}?v=${empreintePlats(plats.map((x) => x.id))}`,
         commander: `${APP}/restaurant/${id}`,
         plats: plats.map((x) => ({
           nom: x.name,

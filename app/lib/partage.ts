@@ -45,8 +45,33 @@ export function lienRestaurant(restaurantId: string) {
  * est fabriqué par la fonction Edge `apercu-plats-du-jour`, re-servie par
  * `landing/netlify/functions/partage.mjs`.
  */
-export function lienPlatsDuJour(restaurantId: string) {
-  return `${SITE}/j/${restaurantId}`;
+export function lienPlatsDuJour(restaurantId: string, platIds?: string[]) {
+  const base = `${SITE}/j/${restaurantId}`;
+  return platIds && platIds.length ? `${base}?v=${empreintePlats(platIds)}` : base;
+}
+
+/**
+ * Empreinte courte d'une liste de plats — FNV-1a 32 bits en base 36, sur les
+ * identifiants TRIÉS (l'ordre d'affichage ne doit pas changer l'adresse).
+ *
+ * ⚠️ POURQUOI LE LIEN PORTE UNE EMPREINTE (`?v=`). Facebook met en cache, PAR
+ * ADRESSE, ce qu'il a lu la première fois : titre, texte, image. Le lien des plats du
+ * jour était toujours le même, `/j/<restaurant>` — le 2026-09-16, le partage publiait
+ * donc les plats de la VEILLE, alors que la page servait bien les nouveaux. L'empreinte
+ * est calculée sur les plats à l'affiche : les plats changent, l'adresse change, et
+ * Facebook est obligé de relire la page.
+ *
+ * ⚠️ MÊME CALCUL, AU CARACTÈRE PRÈS, dans landing/netlify/functions/partage.mjs
+ * (`empreintePlats`), qui pose la même adresse dans `og:url`. Si les deux divergent,
+ * Facebook suit `og:url` : ça marche encore, mais au prix d'une double lecture.
+ */
+export function empreintePlats(ids: string[]): string {
+  let h = 0x811c9dc5;
+  for (const c of [...ids].sort().join(',')) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
 }
 
 /**

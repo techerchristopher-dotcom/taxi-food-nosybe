@@ -352,7 +352,7 @@ export default function RestaurantMenuScreen() {
         visible={partageJour}
         titre={titrePlatsDuJour(restaurant.name)}
         texte={textePartagePlatsDuJour({ restaurantName: restaurant.name, plats: platsDuJour })}
-        url={lienPlatsDuJour(restaurant.id)}
+        url={lienPlatsDuJour(restaurant.id, platsDuJour.map((p) => p.id))}
         onClose={() => setPartageJour(false)}
       />
 

@@ -895,7 +895,10 @@ export default function RestaurantSettingsScreen() {
                   restaurantName: resto.name,
                   plats: alAffiche.filter((p) => p.isAvailable && p.stockQuantity !== 0),
                 })}
-                url={lienPlatsDuJour(resto.id)}
+                url={lienPlatsDuJour(
+                  resto.id,
+                  alAffiche.filter((p) => p.isAvailable && p.stockQuantity !== 0).map((p) => p.id),
+                )}
               />
             </View>
           ) : null}

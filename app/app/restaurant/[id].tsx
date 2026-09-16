@@ -379,7 +379,7 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.rName}>{r.name}</Text>
           <Text style={styles.rSub}>
-            {r.cuisineType} — {r.zone}
+            {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
           </Text>
         </View>
         <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />

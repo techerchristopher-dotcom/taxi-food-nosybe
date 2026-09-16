@@ -120,7 +120,8 @@
     "open": "Aperto",
     "unavailable": "Presto di nuovo",
     "opensAt": "Apre alle {{time}}",
-    "comingSoon": "Presto disponibile"
+    "comingSoon": "Presto disponibile",
+    "enNegociation": "In trattativa"
   },
   "restaurant": {
     "notFound": "Ristorante non trovato.",
@@ -156,7 +157,7 @@
     "chooseOptions": "Scegli le opzioni",
     "share": "Condividi questo piatto",
     "restaurantFerme": "Ristorante chiuso",
-    "restaurantBientot": "Presto disponibile",
+    "restaurantBientot": "In trattativa",
     "produitBientot": "Presto disponibile",
     "produitIndisponible": "Presto di nuovo",
     "servedFrom": "Servito dalle {{de}}",

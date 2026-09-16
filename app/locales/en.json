@@ -120,7 +120,8 @@
     "open": "Open",
     "unavailable": "Back soon",
     "opensAt": "Opens at {{time}}",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "enNegociation": "In talks"
   },
   "restaurant": {
     "notFound": "Restaurant not found.",
@@ -156,7 +157,7 @@
     "chooseOptions": "Choose the options",
     "share": "Share this dish",
     "restaurantFerme": "Restaurant closed",
-    "restaurantBientot": "Coming soon",
+    "restaurantBientot": "In talks",
     "produitBientot": "Coming soon",
     "produitIndisponible": "Back soon",
     "servedFrom": "Served from {{de}}",

@@ -17,16 +17,26 @@ type Resto = {
   food_types: string[] | null;
   opens_at: string | null;
   closes_at: string | null;
+  sort_order: number;
+  listing_status: 'visible' | 'coming_soon' | 'hidden';
 };
 
 type FormState = {
   name: string; cuisine_type: string; delivery_fee: string; commissionPct: string;
   zone: string; is_open: boolean; min_order: string; food_types: string; opens_at: string; closes_at: string;
+  sort_order: string;
 };
 
 const EMPTY: FormState = {
   name: '', cuisine_type: '', delivery_fee: '10000', commissionPct: '15', zone: '',
-  is_open: true, min_order: '0', food_types: '', opens_at: '', closes_at: '',
+  is_open: true, min_order: '0', food_types: '', opens_at: '', closes_at: '', sort_order: '',
+};
+
+/** Ce que voit un client, dit avec ses mots : « Fermé » ne dit pas qu'on négocie encore. */
+const STATUT: Record<Resto['listing_status'], { libelle: string; pastille: string }> = {
+  visible: { libelle: 'Disponible', pastille: 'livree' },
+  coming_soon: { libelle: 'En négociation', pastille: 'recue' },
+  hidden: { libelle: 'Masqué', pastille: 'sans_objet' },
 };
 
 export function Restaurants() {
@@ -62,6 +72,7 @@ export function Restaurants() {
       commissionPct: String(Math.round(r.commission_rate * 10000) / 100), zone: r.zone_served ?? '',
       is_open: r.is_open, min_order: String(r.min_order), food_types: (r.food_types ?? []).join(', '),
       opens_at: r.opens_at?.slice(0, 5) ?? '', closes_at: r.closes_at?.slice(0, 5) ?? '',
+      sort_order: String(r.sort_order),
     });
     setErr(null); setMode('form');
   }
@@ -82,11 +93,25 @@ export function Restaurants() {
       p_opens_at: form.opens_at,
       p_closes_at: form.closes_at,
     };
-    const { error } = editing
+    const { data, error } = editing
       ? await supabase.rpc('admin_update_restaurant', { p_id: editing.id, ...args })
       : await supabase.rpc('admin_create_restaurant', args);
+    if (error) { setBusy(false); setErr(error.message); return; }
+
+    // ⚠️ Le rang passe par SA PROPRE fonction, pas par un paramètre de plus sur
+    // admin_update_restaurant : changer la signature de celle-ci créerait une
+    // surcharge, et PostgREST répondrait PGRST203 sur cet écran. Champ laissé
+    // vide = rang inchangé.
+    const rang = form.sort_order.trim();
+    const id = editing?.id ?? (data as { id?: string } | null)?.id;
+    if (rang !== '' && id && (!editing || Number(rang) !== editing.sort_order)) {
+      const { error: e2 } = await supabase.rpc('admin_ordonner_restaurant', {
+        p_restaurant_id: id,
+        p_sort_order: parseInt(rang, 10),
+      });
+      if (e2) { setBusy(false); setErr(`Restaurant enregistré, mais le rang a été refusé : ${e2.message}`); return; }
+    }
     setBusy(false);
-    if (error) { setErr(error.message); return; }
     setMode('list');
     await load();
   }
@@ -107,6 +132,14 @@ export function Restaurants() {
             <Field label="Frais de livraison (Ar)"><input style={inp} type="number" value={form.delivery_fee} onChange={(e) => setForm({ ...form, delivery_fee: e.target.value })} /></Field>
             <Field label="Commission (%)"><input style={inp} type="number" step="0.5" value={form.commissionPct} onChange={(e) => setForm({ ...form, commissionPct: e.target.value })} /></Field>
             <Field label="Min. commande (Ar)"><input style={inp} type="number" value={form.min_order} onChange={(e) => setForm({ ...form, min_order: e.target.value })} /></Field>
+          </div>
+          <Field label="Rang dans le catalogue (10, 20, 30… — plus petit = plus haut)">
+            <input style={inp} type="number" inputMode="numeric" min={0} max={99999} value={form.sort_order}
+                   onChange={(e) => setForm({ ...form, sort_order: e.target.value })} placeholder="ex. 35 pour passer entre 30 et 40" />
+          </Field>
+          <div className="muted" style={{ fontSize: 12, marginTop: -6 }}>
+            Les restaurants disponibles passent toujours avant ceux en négociation, quel que soit leur rang :
+            le rang ne classe qu'à l'intérieur de chaque groupe.
           </div>
           <Field label="Zone desservie"><input style={inp} value={form.zone} onChange={(e) => setForm({ ...form, zone: e.target.value })} placeholder="Hell-Ville…" /></Field>
           <Field label="Types de plats (filtre accueil, séparés par des virgules)"><input style={inp} value={form.food_types} onChange={(e) => setForm({ ...form, food_types: e.target.value })} placeholder="Pizza, Tacos, Burger" /></Field>
@@ -135,11 +168,14 @@ export function Restaurants() {
         <div className="empty">Aucun restaurant.</div>
       ) : (
         <table>
-          <thead><tr><th>Nom</th><th>État</th><th className="num">Commission</th><th className="num">Livraison</th><th></th></tr></thead>
+          {/* Dans l'ordre EXACT du catalogue client : admin_lister_restaurants trie sur rang_catalogue. */}
+          <thead><tr><th className="num">Rang</th><th>Nom</th><th>Catalogue</th><th>État</th><th className="num">Commission</th><th className="num">Livraison</th><th></th></tr></thead>
           <tbody>
             {list.map((r) => (
               <tr key={r.id}>
+                <td className="num">{r.sort_order}</td>
                 <td>{r.name}<div className="muted" style={{ fontSize: 12 }}>{r.cuisine_type ?? ''}{r.zone_served ? ` · ${r.zone_served}` : ''}</div></td>
+                <td><span className={`pill ${STATUT[r.listing_status]?.pastille ?? 'sans_objet'}`}>{STATUT[r.listing_status]?.libelle ?? r.listing_status}</span></td>
                 <td>{r.is_open ? <span className="pill livree">Ouvert</span> : <span className="pill annulee">Fermé</span>}</td>
                 <td className="num">{Math.round(r.commission_rate * 10000) / 100}%</td>
                 <td className="num">{formatAr(r.delivery_fee)}</td>

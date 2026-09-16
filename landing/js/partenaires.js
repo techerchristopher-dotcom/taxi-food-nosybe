@@ -7,8 +7,18 @@
  * partenaires coute plus cher qu'une vitrine moins riche.
  *
  * ⚠️ `listing_status` est respecte : `hidden` n'apparait nulle part,
- * `coming_soon` s'affiche grise. Sans ce filtre la vitrine reafficherait un
- * partenaire que l'application a justement retire.
+ * `coming_soon` s'affiche « En negociation ». Sans ce filtre la vitrine
+ * reafficherait un partenaire que l'application a justement retire.
+ *
+ * ⚠️ UN RESTAURANT EN NEGOCIATION N'EST PAS GRISE. Il l'etait (opacity .78) :
+ * ses photos doivent au contraire donner envie avant meme qu'on puisse
+ * commander, c'est tout l'interet de le montrer. Decision du porteur du projet,
+ * 2026-09-16. Ce qui reste coupe, c'est l'acces a la commande.
+ *
+ * ⚠️ L'ORDRE VIENT DE LA BASE (`rang_catalogue`), comme dans l'application. Le
+ * tri precedent, `listing_status.asc`, etait ALPHABETIQUE : « coming_soon »
+ * passait avant « visible », et la vitrine montrait en premier les partenaires
+ * ou l'on ne peut pas commander.
  *
  * ⚠️ AUCUNE BOISSON. Demande explicite du porteur du projet : la vitrine ne
  * montre que ce qui se mange. Une biere ou un soda en photo ne donne envie de
@@ -37,22 +47,11 @@
   var hote = document.getElementById('partenaires');
   if (!hote) return;
 
-  /**
-   * Taxi Be est `listing_status = 'visible'` EN BASE, mais uniquement parce
-   * que c'est le restaurant laisse ouvert en permanence pour le relecteur
-   * Apple (voir CLAUDE.md, § « Les vrais restaurants », et
-   * `docs/FICHE-APP-STORE.md` § 7 : a repasser en `coming_soon` APRES la
-   * validation). Passer son statut en base maintenant le FERMERAIT dans
-   * l'application (`app/data/api.ts` : `listing_status === 'coming_soon'`
-   * force `isOpen: false`) — au moment ou Apple est peut-etre justement en
-   * train d'y passer commande.
-   *
-   * Le porteur du projet veut pourtant que la vitrine, elle, dise la verite
-   * commerciale : le partenariat est encore en negociation. D'ou cette
-   * substitution d'AFFICHAGE SEULEMENT, par id (pas par nom, insensible a un
-   * renommage) — la base ne change pas, l'app reste testable.
-   */
-  var EN_NEGOCIATION = ['ac2766bb-c4d1-4f5e-9a40-3ea0febcb886']; // Taxi Be
+  // ⚠️ Il y avait ici une liste d'identifiants EN_NEGOCIATION (Taxi Be seul),
+  // posee quand Taxi Be etait `visible` en base pour le relecteur Apple. Ce
+  // n'est plus vrai depuis le 2026-09-08, et depuis le 2026-09-16 TOUT
+  // restaurant `coming_soon` s'affiche « En negociation », ici comme dans l'app.
+  // La base dit la verite : plus aucune liste a tenir a la main.
 
   var T = {
     fr: { bientot: 'Bientôt disponible', actif: 'Déjà dans l’aventure ✅', negociation: 'En négociation', voir: 'Voir la carte',
@@ -177,21 +176,17 @@
   }
 
   function carte(r, photos, idx) {
-    // `negociation` prime sur `listing_status` : voir le commentaire de
-    // EN_NEGOCIATION plus haut, la base ne dit pas toujours la verite
-    // commerciale a la vitrine.
-    var negociation = EN_NEGOCIATION.indexOf(r.id) !== -1;
-    var bientot = negociation || r.listing_status === 'coming_soon';
+    var bientot = r.listing_status === 'coming_soon';
     var logo = r.logo_url
       ? '<img src="' + esc(visuel(r.logo_url, 56)) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
       : '<div style="width:56px;height:56px;border-radius:15px;flex:none;background:#1A1A1A;color:#FFC72C;display:flex;align-items:center;justify-content:center;font:800 19px/1 Archivo,sans-serif">' + esc(initiales(r.name)) + '</div>';
     var pastille = bientot
-      ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + (negociation ? t.negociation : t.bientot) + '</div>'
+      ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + t.negociation + '</div>'
       : '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#E7F6EC;color:#157F3C;font:700 11px/1 Archivo,sans-serif">' + t.actif + '</div>';
     var lien = bientot ? '' :
       '<a href="' + COMMANDE + '/restaurant/' + esc(r.id) + '" style="margin-top:14px;align-self:flex-start;height:40px;padding:0 18px;border-radius:999px;background:#1A1A1A;color:#fff;display:inline-flex;align-items:center;font:700 13px/1 Archivo,sans-serif;text-decoration:none">' + t.voir + '</a>';
 
-    return '<div style="flex:1 1 320px;min-width:min(280px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 2px 8px rgba(26,26,26,.06);border:1px solid #E9E5E0;display:flex;flex-direction:column;gap:14px' + (bientot ? ';opacity:.78' : '') + '">'
+    return '<div style="flex:1 1 320px;min-width:min(280px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 2px 8px rgba(26,26,26,.06);border:1px solid #E9E5E0;display:flex;flex-direction:column;gap:14px">'
       + '<div style="display:flex;align-items:center;gap:13px">' + logo
       + '<div style="min-width:0">'
       + '<div style="font:500 9px/1 \'JetBrains Mono\',monospace;letter-spacing:.18em;color:#6B6662">' + esc((r.zone_served || 'Nosy Be').toUpperCase()) + '</div>'
@@ -241,7 +236,7 @@
     if (g && g.length) ouvrir(g, parseInt(b.getAttribute('data-i'), 10) || 0);
   });
 
-  api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status&order=listing_status.asc,created_at.asc')
+  api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status&order=rang_catalogue.asc,created_at.asc')
     .then(function (restos) {
       if (!restos.length) return;
       var ids = restos.map(function (r) { return r.id; }).join(',');

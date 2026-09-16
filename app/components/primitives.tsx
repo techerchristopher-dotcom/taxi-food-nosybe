@@ -103,8 +103,12 @@ export function OpenBadge({ open, comingSoon }: { open: boolean; comingSoon?: bo
     return (
       <View style={[styles.openBadge, { backgroundColor: colors.warnBg }]}>
         <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
+        {/* ⚠️ « En négociation », et NON la clé `comingSoon` : celle-ci sert aussi aux
+            PLATS pas encore servis (les milkshakes de La Cabane s'annoncent, ils ne
+            se négocient pas). Un restaurant en `coming_soon` n'a pas encore signé —
+            décision du porteur du projet, 2026-09-16. */}
         <Text style={[styles.openText, { color: colors.warnTextAlt }]}>
-          {t('restaurantCard.comingSoon')}
+          {t('restaurantCard.enNegociation')}
         </Text>
       </View>
     );

@@ -89,7 +89,8 @@ export function FeaturedRestaurantCard({
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name}>{r.name}</Text>
           <Text style={styles.sub}>
-            {r.cuisineType} — {r.zone}
+            {/* Sans zone connue, pas de tiret orphelin : « Cuisine thaïlandaise — ». */}
+            {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
           </Text>
           <CategoryTags tags={r.categoryTags} />
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
@@ -109,7 +110,14 @@ export function RestaurantRow({
 }) {
   const { t } = useTranslation();
   return (
-    <Pressable onPress={onPress} style={[styles.row, !r.isOpen && { opacity: 0.55 }]}>
+    // ⚠️ Un restaurant FERMÉ se grise ; un restaurant EN NÉGOCIATION, jamais.
+    // Ses photos doivent donner envie avant même qu'on puisse commander — c'est
+    // tout l'intérêt de le montrer. La commande, elle, reste coupée : bouton
+    // grisé sur la fiche, et refus en base (commandable_maintenant).
+    <Pressable
+      onPress={onPress}
+      style={[styles.row, !r.isOpen && r.listingStatus !== 'coming_soon' && { opacity: 0.55 }]}
+    >
       <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={64} r={radius.tile} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowHead}>
@@ -118,7 +126,7 @@ export function RestaurantRow({
           <HorairesDuJour r={r} />
         </View>
         <Text style={styles.sub}>
-          {r.cuisineType} — {r.zone}
+          {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
         </Text>
         <CategoryTags tags={r.categoryTags} />
         {r.isOpen ? (

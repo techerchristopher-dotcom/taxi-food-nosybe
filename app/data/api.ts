@@ -264,6 +264,13 @@ export async function listRestaurants(): Promise<Restaurant[]> {
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
     // supprime rien.
     .neq('listing_status', 'hidden')
+    // ⚠️ L'ORDRE EST DÉCIDÉ EN BASE, pas ici. `rang_catalogue` est une colonne
+    // générée : le statut d'abord (disponibles, puis en négociation), le rang
+    // choisi dans l'admin ensuite. La vitrine trie sur la même colonne — deux
+    // règles écrites séparément finissaient par diverger. Avant, le tri par date
+    // mettait Taxi Be, le plus ancien, en tête alors qu'on ne pouvait rien y
+    // commander. `created_at` ne sert plus qu'à départager deux rangs égaux.
+    .order('rang_catalogue', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
   const rows = data as unknown as RestaurantRow[];

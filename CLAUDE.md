@@ -25,9 +25,6 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   `service_role`. L'API MCP ne sait pas supprimer une fonction.
 
 **Mesure et référencement**
-- Jeton fournisseur App Store `pt` (App Analytics → Campagnes) → `APP_STORE_PT` dans
-  `landing/js/mesure.js`, puis déployer la vitrine. **Bloqué** : session App Store Connect expirée
-  le 2026-09-17, le porteur du projet doit s'y reconnecter (je ne saisis aucun mot de passe).
 - (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
@@ -1192,7 +1189,11 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   `candidature-livreur`, `video-langue`. Inerte hors du domaine de production.
 - **Les téléchargements réels** ne se voient QUE dans les consoles des magasins : les liens Google
   Play sont marqués `referrer=utm_…` par page (Play Console → Acquisition) ; les liens App Store
-  le seront quand `APP_STORE_PT` (jeton fournisseur, App Analytics → Campagnes) sera renseigné.
+  le sont par `pt=129322978&ct=<page>&mt=8` (jeton relevé le 2026-09-17, App Analytics → Campagnes →
+  « Générer un lien de campagne » ; nom de campagne **30 caractères max**). Apple n'affiche une
+  campagne qu'à partir de **5 comptes Apple différents** installés par elle. ⚠️ Les boutons App Store
+  de la vitrine passent par `/telecharger/` : leur campagne est donc `vitrine-telecharger`, la page
+  d'origine est perdue. Les pages de partage, elles, gardent la leur.
 - App web : `app/lib/mesure.ts` (`ajout-panier`, `commande-validee`, `partage` par canal). **Jamais
   de donnée personnelle** dans un événement. Web seulement, silencieux sur l'app installée.
 - Liens partagés depuis l'app marqués `utm_source` (whatsapp / lien / systeme) — **pas Facebook**,
@@ -1216,7 +1217,7 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   users) → cartes Acquisition, filtre « Traffic source » ; les liens du site portent
   `utm_source=taxifood-site`, `utm_medium` = vitrine/partage, `utm_campaign` = la page. Au
   2026-09-17 : 23 acquisitions d'appareils sur 28 jours ; la ventilation par source n'a pas été lue.
-- Reste à faire : jeton `pt` App Store.
+- ✅ Jeton `pt` App Store posé et déployé le 2026-09-17 (vérifié au clic sur `/telecharger/`).
 
 ## Le site de pré-lancement (`landing/`)
 

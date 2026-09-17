@@ -36,7 +36,8 @@
   var UMAMI_ID = '8be3907d-295a-4b7f-ac06-c398d6a20c57';
   // Jeton fournisseur App Store Connect (« pt »), public lui aussi : App Analytics →
   // Sources → Campagnes. Sans lui, Apple ignore la campagne : on n'ajoute rien.
-  var APP_STORE_PT = '';
+  // Relevé le 2026-09-17 dans « Générer un lien de campagne ».
+  var APP_STORE_PT = '129322978';
   var HOTE_PRODUCTION = 'taxifoodnosybe.distripro207.com';
 
   var APP_STORE_ID = 'id6802418114';
@@ -129,8 +130,8 @@
   // l'installation.
   function campagne() {
     // « vitrine-accueil », « partage-j » : la page d'un partage porte déjà son
-    // préfixe. 40 caractères au plus côté Apple.
-    return (page.indexOf(surface) === 0 ? page : surface + '-' + page).slice(0, 40);
+    // préfixe. 30 caractères au plus côté Apple (champ « Campagne », vérifié le 2026-09-17).
+    return (page.indexOf(surface) === 0 ? page : surface + '-' + page).slice(0, 30);
   }
   function lienMagasin(url) {
     var u = String(url || '');

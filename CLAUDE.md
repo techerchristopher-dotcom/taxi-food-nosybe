@@ -58,9 +58,7 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   (pré-autorisé, rattaché à sa 1re connexion). Jetons push enregistrés (Android + iOS) ; aucune
   notification push encore observée chez eux.
 - ✅ Commission **7 %** (décision du porteur du projet, 2026-09-17).
-- ⚠️ **À régler vite, le restaurant étant commandable** : livraison **0 Ar** (autres 10 000),
-  `zone_served` et `phone` vides (le patron a donné
-  +261 32 71 548 96 à l'inscription — à confirmer comme numéro du restaurant).
+- ✅ Livraison **10 000 Ar**, zone « Nosy Be », téléphone +261 32 71 548 96 (2026-09-17).
 
 **Madame Oh et Oh Hazar (en négociation), AVANT tout passage en `visible`**
 - Commission par défaut **15 %**, livraison **0 Ar**, zone et **horaires vides**, aucun canal Telegram.

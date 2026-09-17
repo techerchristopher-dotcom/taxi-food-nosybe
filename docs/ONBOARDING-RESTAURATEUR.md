@@ -404,7 +404,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 |---|---|---|---|---|---|
 | La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ✅ 2026-09-06 — `7381518363` (« Nancia Elie »), message de contrôle remis |
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
-| La Plage | laplagehellville.nosybe@gmail.com (patron) + davidantoniods35@gmail.com | — (Google) | à confirmer | ✅ 2026-09-17 | ✅ 2026-09-17 — **groupe** `-1004301209124`, commande test acceptée |
+| La Plage | laplagehellville.nosybe@gmail.com (patron) + davidantoniods35@gmail.com | — (Google) | +261 32 71 548 96 | ✅ 2026-09-17 | ✅ 2026-09-17 — **groupe** `-1004301209124`, commande test acceptée |
 | Les Siciliens | — | — | — | ❌ | ❌ |
 | Taxi Be | — | — | — | ❌ | ❌ |
 | Angelo | — | — | — | ❌ (masqué) | ❌ |

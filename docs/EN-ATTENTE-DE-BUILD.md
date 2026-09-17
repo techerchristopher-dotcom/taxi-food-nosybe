@@ -13,7 +13,28 @@ réellement en attente à cette date — ne pas supposer que le reste du fichier
 sans vérifier au cas par cas.
 
 
-## 🔥 Partager les plats du jour en UNE publication (2026-09-15) — EXIGE UN BUILD POUR LE BOUTON
+## 📦 Build 1.2.3 (lancé le 2026-09-17) — ce qu'il embarque et la recette à passer
+
+**Stratégie de version** : `version` 1.2.3 (Apple refuse un nouveau build sous 1.2.2, déjà
+approuvée), `runtimeVersion` **fixé à "1.2.2"** : aucun changement natif depuis le build 1.2.2
+(`aa350d4` → diff vide sur package.json, package-lock, eas.json, assets, app.json hors version).
+Une seule OTA sert donc 1.2.2 et 1.2.3 ; le runtime 1.2.1 garde sa propre publication.
+
+Tout le JavaScript de ce build est **déjà en ligne en OTA** (groupes `6390203e…` pour 1.2.2,
+`9ab7dddc…` pour 1.2.1). Ce que SEUL le binaire apporte : **la vérification de mise à jour au
+premier lancement** d'une installation fraîche (le code tourne dès le 1er lancement parce qu'il est
+embarqué).
+
+Recette sur appareil (TestFlight / piste interne), à passer avant promotion :
+1. **Installation fraîche** (désinstaller d'abord) → l'écran de lancement peut durer jusqu'à 5 s,
+   puis l'app s'ouvre **directement** sur la dernière OTA : pied du Profil = date de la dernière
+   mise à jour, pas « version du magasin » (sauf s'il n'y a aucune OTA plus récente que le build).
+2. **Mode avion** au lancement → l'app s'ouvre en ≤ 5 s, pas de blocage, pas de boucle.
+3. Page **Chez Bidul & Truc** → toutes les catégories visibles sans glisser, « Pizza · 18:00 » hors
+   service, le tap change la catégorie.
+4. Taxi Be absent de l'accueil et de la recherche ; `demo.resto@taxifood.mg` entre toujours dans
+   l'espace restaurant de Taxi Be.
+ (2026-09-15) — EXIGE UN BUILD POUR LE BOUTON
 
 **Demande du porteur du projet** : au lieu de partager chaque plat, un bouton qui publie les
 plats du jour ensemble (objectif : une publication avec les 3 plats de Chez Bidul & Truc).

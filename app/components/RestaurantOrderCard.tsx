@@ -84,7 +84,9 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
               <Text style={styles.chipText}>Itinéraire</Text>
             </Pressable>
           ) : (
-            <Text style={styles.noGps}>Position GPS manquante</Text>
+            // Commande par téléphone sans position (2026-09-17) : zone + repère au-dessus,
+            // et le livreur appelle le client — le bouton d'appel est juste à côté.
+            <Text style={styles.noGps}>Pas de GPS — appelle le client</Text>
           )}
           {order.clientPhone ? (
             <Pressable style={styles.chip} onPress={() => Linking.openURL(`tel:${order.clientPhone}`)}>

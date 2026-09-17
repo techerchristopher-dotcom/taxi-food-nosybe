@@ -22,10 +22,13 @@ import type { Categorie, Groupe, Ligne, Option, Plat } from '../lib/commandeTele
  * 2. PENDANT L'APPEL. Une seule colonne, dans l'ordre de la conversation :
  *    numéro, nom, où livrer, restaurant, plats. Le numéro d'un client déjà
  *    servi par téléphone ramène son nom, sa zone, son repère et sa position.
- * 3. LA POSITION N'EST PAS DEVINÉE. `create_order` exige le GPS ; on colle un
- *    lien Google Maps ou la localisation WhatsApp, et hors de Nosy Be l'écran
- *    refuse (inversion latitude / longitude). Jamais un « centre de zone » :
- *    le livreur irait au mauvais endroit.
+ * 3. LA POSITION EST FACULTATIVE (retour du porteur du projet, 2026-09-17) :
+ *    on ne peut pas saisir un point GPS à la place du client. Zone + repère
+ *    suffisent, le livreur appelle le client. Si le client envoie sa
+ *    localisation WhatsApp ou un lien Maps, on la colle ; hors de Nosy Be,
+ *    l'écran refuse (inversion latitude / longitude). Jamais un « centre de
+ *    zone » inventé. La base ne lève l'obligation GPS de `create_order` QUE
+ *    pour cette fonction admin (migration 20260917170000).
  * 4. LES MONTANTS AFFICHÉS SONT UNE ESTIMATION. Le total qui fait foi est
  *    celui que la base renvoie, affiché après l'envoi — à relire au client.
  */
@@ -167,7 +170,8 @@ export function CommandeTelephone() {
     telephone.replace(/\D/g, '').length < 8 ? 'le numéro' : null,
     !nom.trim() ? 'le nom' : null,
     !zone.trim() ? 'la zone' : null,
-    !position ? 'la position GPS' : positionHorsZone ? 'une position DANS Nosy Be' : null,
+    !repere.trim() ? 'le repère' : null,
+    positionTexte.trim() && !position ? 'une position lisible (ou vide le champ)' : positionHorsZone ? 'une position DANS Nosy Be (ou vide le champ)' : null,
     !resto ? 'le restaurant' : null,
     lignes.length === 0 ? 'au moins un plat' : null,
   ].filter(Boolean) as string[];
@@ -227,7 +231,7 @@ export function CommandeTelephone() {
   }
 
   async function envoyer() {
-    if (gestEnCours.current || manque.length > 0 || !resto || !position) return;
+    if (gestEnCours.current || manque.length > 0 || !resto) return;
     gestEnCours.current = true;
     setEnvoi(true);
     setErr(null);
@@ -237,8 +241,8 @@ export function CommandeTelephone() {
       p_client_telephone: telephone.trim(),
       p_zone: zone.trim(),
       p_repere: repere.trim(),
-      p_latitude: position.lat,
-      p_longitude: position.lng,
+      p_latitude: position?.lat ?? null,
+      p_longitude: position?.lng ?? null,
       p_items: articlesPourLaBase(lignes),
     });
     gestEnCours.current = false;
@@ -313,15 +317,15 @@ export function CommandeTelephone() {
             <datalist id="tel-zones">{ZONES.map((z) => <option key={z} value={z} />)}</datalist>
           </label>
           <label className="sel-champ-bloc">
-            <span className="sel-label">Repère (hôtel, couleur du portail, à côté de…)</span>
+            <span className="sel-label">Repère — ce qui guidera le livreur (hôtel, couleur du portail, à côté de…)</span>
             <input className="sel-champ" autoComplete="off" value={repere} onChange={(e) => setRepere(e.target.value)} placeholder="Hôtel Les Bungalows, portail bleu" />
           </label>
           <label className="sel-champ-bloc">
-            <span className="sel-label">Position GPS — lien Google Maps ou localisation WhatsApp collée</span>
+            <span className="sel-label">Position GPS — facultatif. Seulement si le client a envoyé sa localisation WhatsApp ou un lien Maps</span>
             <input className="sel-champ" autoComplete="off" value={positionTexte} onChange={(e) => setPositionTexte(e.target.value)} placeholder="-13.3985, 48.2168" />
             {positionTexte.trim() && !position ? (
               <span className="sel-compteur trop">
-                Pas de coordonnées lisibles. Un lien court maps.app.goo.gl n’en contient pas : ouvre-le et copie les chiffres.
+                Pas de coordonnées lisibles. Un lien court maps.app.goo.gl n’en contient pas : ouvre-le et copie les chiffres, ou vide le champ.
               </span>
             ) : null}
             {position && positionHorsZone ? (
@@ -466,13 +470,14 @@ export function CommandeTelephone() {
         </div>
       ) : null}
 
-      {confirmer && resto && position ? (
+      {confirmer && resto ? (
         <div className="voile" role="dialog" aria-modal="true">
           <div className="boite">
             <h3>Envoyer à {resto.name} ?</h3>
             <div className="recap">
               <div><strong>{nom.trim()}</strong> · {telephone.trim()}</div>
               <div>{zone.trim()}{repere.trim() ? ` — ${repere.trim()}` : ''}</div>
+              <div className="muted">{position ? 'Position GPS jointe' : 'Sans position GPS : le livreur appellera le client'}</div>
               {lignes.map((l) => (
                 <div key={l.cle}>{l.quantite} × {l.plat.name}{l.options.length ? ` (${l.options.map((o) => o.name).join(', ')})` : ''}</div>
               ))}

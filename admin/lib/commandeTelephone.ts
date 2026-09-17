@@ -108,7 +108,10 @@ export function messageErreur(brut: string): string {
   if (m.includes('telephone:nom_manquant')) return 'Le nom du client manque.';
   if (m.includes('telephone:numero_invalide')) return 'Le numéro du client est invalide (8 à 15 chiffres).';
   if (m.includes('telephone:zone_manquante')) return 'La zone de livraison manque.';
-  if (m.includes('telephone:position_manquante')) return 'La position GPS manque : colle un lien Google Maps ou la localisation WhatsApp du client.';
+  if (m.includes('telephone:repere_manquant')) return 'Le repère manque : c’est lui qui guide le livreur.';
+  if (m.includes('telephone:position_incomplete')) return 'Position incomplète : colle latitude ET longitude, ou vide le champ.';
+  if (m.includes('telephone:position_hors_nosy_be')) return 'Cette position est hors de Nosy Be : vérifie-la ou vide le champ.';
+  if (m.includes('Position GPS manquante')) return 'La base exige encore une position GPS : la migration « commande téléphone sans GPS » n’est pas en place. Rien n’a été envoyé.';
   if (m.includes('telephone:panier_vide')) return 'Le panier est vide.';
   if (m.includes('Produit indisponible')) return 'Un plat du panier n’est plus disponible. Recharge la carte et retire-le. Rien n’a été envoyé.';
   if (m.includes('Choix requis manquant') || m.includes('Nombre de choix invalide') || m.includes('Option invalide')) {

@@ -609,7 +609,10 @@ const ORDER_SELECT =
 function mapOrder(o: OrderJoinRow): Order {
   const restaurantName = o.restaurants?.name ?? 'Restaurant';
   const addr = o.addresses;
-  const addressLabel = addr ? formatAddressLine(addr.zone, addr.label) : '';
+  // Commande saisie par TELEPHONE depuis l'admin (`admin_commande_telephone`) : le
+  // compte est celui de l'admin, le vrai client est sur le libelle « ☎ <nom> ».
+  const clientTelephone = addr?.label?.startsWith('☎ ') ? addr.label.slice(2).trim() : null;
+  const addressLabel = addr ? formatAddressLine(addr.zone, clientTelephone ? null : addr.label) : '';
   return {
     id: o.id,
     orderNumber: o.order_number,
@@ -618,7 +621,7 @@ function mapOrder(o: OrderJoinRow): Order {
     restaurantInitials: initialsFromName(restaurantName),
     restaurantLogoUrl: o.restaurants?.logo_url ?? null,
     restaurantPhone: o.restaurants?.phone ?? null,
-    clientName: o.profiles?.full_name ?? null,
+    clientName: clientTelephone ?? o.profiles?.full_name ?? null,
     items: (o.order_items ?? []).map((it) => ({
       productId: it.product_id ?? '',
       name: it.product_name_snapshot,

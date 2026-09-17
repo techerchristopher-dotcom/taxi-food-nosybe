@@ -55,7 +55,7 @@ type OrderRow = {
   payment_status: string;
   restaurants: { id: string; name: string; phone: string | null } | null;
   profiles: { full_name: string | null; phone: string | null } | null;
-  addresses: { zone: string | null; landmark: string | null; phone: string | null; latitude: number | null; longitude: number | null } | null;
+  addresses: { label: string | null; zone: string | null; landmark: string | null; phone: string | null; latitude: number | null; longitude: number | null } | null;
 };
 
 type CourierRow = { user_id: string; zone: string | null; is_available: boolean };
@@ -115,7 +115,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -280,7 +280,9 @@ export function Realtime() {
                 const r = un(o.restaurants);
                 const c = un(o.profiles);
                 const a = un(o.addresses);
-                const telClient = c?.phone || a?.phone || null;
+                // Le numéro donné POUR cette commande (adresse) prime, comme dans l'app :
+                // pour une commande téléphone, le profil est celui de l'admin.
+                const telClient = a?.phone || c?.phone || null;
                 return (
                   <tr key={o.id}>
                     <td data-label="Commande">{o.order_number}</td>
@@ -291,7 +293,9 @@ export function Realtime() {
                         : <span className="muted" style={{ marginLeft: 6, fontSize: 11 }} title="Le restaurant n'a pas saisi son numéro dans ses réglages">n° absent</span>}
                     </td>
                     <td data-label="Client">
-                      {c?.full_name ?? '—'}
+                      {/* Commande saisie par téléphone : le compte est celui de l'admin,
+                          le vrai client est sur le libellé d'adresse « ☎ <nom> ». */}
+                      {a?.label?.startsWith('☎ ') ? a.label : (c?.full_name ?? '—')}
                       {telClient
                         ? <a href={`tel:${telClient}`} style={{ ...btn, marginLeft: 6, textDecoration: 'none', display: 'inline-block' }}>📞 client</a>
                         : null}

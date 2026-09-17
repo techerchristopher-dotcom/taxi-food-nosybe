@@ -506,6 +506,10 @@ export async function listAddresses(): Promise<Address[]> {
     .from('addresses')
     .select('id, label, zone, landmark, phone, instructions, is_default, latitude, longitude')
     .eq('user_id', session.user.id)
+    // Les adresses des commandes saisies par TELEPHONE depuis l'admin
+    // (`admin_commande_telephone`, libelle « ☎ <client> ») appartiennent au
+    // compte de l'admin : ce sont celles de ses clients, pas les siennes.
+    .or('label.is.null,label.not.like.☎*')
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true });
   if (error) throw error;

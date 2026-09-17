@@ -1,7 +1,7 @@
-import { Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import { AppState, Image, Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -22,6 +22,7 @@ import { useSession } from '../store/session';
 import { useCart } from '../store/cart';
 import { hydrateLanguage } from '../lib/i18n';
 import { registerForPush } from '../lib/push';
+import { miseAJourAuDemarrage, miseAJourAuRetour } from '../lib/miseAJour';
 import { useTranslation } from 'react-i18next';
 
 function Splash() {
@@ -100,6 +101,17 @@ export default function RootLayout() {
    */
   const [delaiDepasse, setDelaiDepasse] = useState(false);
 
+  /**
+   * Dernière version dès le premier lancement (voir `lib/miseAJour.ts`). Le splash
+   * attend la vérification, 5 s au plus — sous le filet de 8 s ci-dessus, qui reste
+   * l'ultime garde. Vrai d'emblée sur le web : le site se met à jour au déploiement.
+   */
+  const [majVerifiee, setMajVerifiee] = useState(Platform.OS === 'web');
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    void miseAJourAuDemarrage().finally(() => setMajVerifiee(true));
+  }, []);
+
   useEffect(() => {
     void hydrateSession();
     void hydrateCart();
@@ -137,8 +149,33 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
+  /**
+   * Retour au premier plan après 30 min ou plus : une mise à jour publiée entre-temps
+   * est téléchargée en silence, et appliquée SEULEMENT si le client est sur l'accueil
+   * du parcours client — jamais au milieu d'un panier, d'un paiement, d'un suivi ou
+   * dans un espace pro. Sinon elle attend le prochain lancement.
+   */
+  const pathname = usePathname();
+  const mode = useSession((s) => s.mode);
+  const momentSur = useRef<() => boolean>(() => false);
+  momentSur.current = () => pathname === '/' && mode !== 'restaurant' && mode !== 'livreur';
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    let enArrierePlanDepuis: number | null = null;
+    const sub = AppState.addEventListener('change', (etat) => {
+      if (etat === 'background') {
+        enArrierePlanDepuis = Date.now();
+      } else if (etat === 'active' && enArrierePlanDepuis !== null) {
+        const absence = Date.now() - enArrierePlanDepuis;
+        enArrierePlanDepuis = null;
+        if (absence >= 30 * 60 * 1000) void miseAJourAuRetour(() => momentSur.current());
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   const ready =
-    (!sessionLoading && cartHydrated && langReady && (Platform.OS === 'web' || fontsLoaded)) ||
+    (!sessionLoading && cartHydrated && langReady && majVerifiee && (Platform.OS === 'web' || fontsLoaded)) ||
     delaiDepasse;
 
   // La navigation attend que le Stack existe : au démarrage à froid depuis une

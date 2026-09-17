@@ -35,21 +35,18 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   ⚠️ **`demo.resto@taxifood.mg` reste rattaché à Taxi Be** (espace restaurant intact, invisible des
   clients) — décision à valider, et **son espace est vide** (0 commande) : voir
   `docs/FICHE-APP-STORE.md` § 4 avant la prochaine soumission.
-- 🔄 **Un nouveau client iPhone démarre sur l'ANCIENNE version** (constaté le 2026-09-17) : juste
-  après installation depuis l'App Store, ancien écran ; fermer / rouvrir → bonne version.
-  Cause : réglage par défaut d'`expo-updates` (`fallbackToCacheTimeout` = 0) — le premier lancement
-  affiche le paquet JS **embarqué dans le binaire**, télécharge l'OTA en arrière-plan et ne
-  l'applique qu'au lancement suivant. Objectif du porteur du projet : **un nouveau client a toujours
-  la dernière version**, mise à jour automatique « comme partout ». Pistes : (1) au démarrage,
-  `checkForUpdateAsync` → `fetchUpdateAsync` → `reloadAsync` derrière l'écran de lancement, avec un
-  délai maximal (liaison de Nosy Be) ; (2) re-builder après chaque grosse OTA pour que le binaire
-  embarque le JS récent. ⚠️ Le code de démarrage ne protège les **nouvelles installations** que
-  s'il est dans le binaire : il faudra un build (en OTA, il ne sert qu'aux appareils déjà à jour).
-  Et `git grep -n -i mvola` avant ce build.
-- ☎️ **Commande manuelle par téléphone** depuis l'admin : un client appelle, le porteur du projet
-  saisit sa commande en quelques gestes et elle part dans le **circuit existant** (restaurant
-  prévenu, livreur, suivi) — jamais un circuit parallèle. Passer par la même RPC que l'app
-  (`create_order`), pas par une écriture directe.
+- 🔄 **Dernière version dès le premier lancement** — code écrit (`app/lib/miseAJour.ts`, voir sa
+  section), publié en OTA le 2026-09-17 sur les runtimes 1.2.2 et 1.2.1. ⚠️ Il ne protège les
+  **nouvelles installations** qu'une fois dans le binaire : build **1.2.3** (voir « Où en est la
+  soumission »). **Non vérifié sur un vrai téléphone** : installation fraîche → doit ouvrir
+  directement la dernière version (≤ 5 s d'écran de lancement en plus).
+- ☎️ **Commande par téléphone** — ✅ livrée dans l'admin le 2026-09-17 (onglet « ☎ Commande tél. »,
+  voir sa section). **Aucune vraie commande passée** : testée en transaction annulée seulement
+  (un test réel aurait réveillé Chez Bidul & Truc). Première vraie commande à surveiller :
+  message Telegram du restaurant = nom et numéro du CLIENT, pas ceux du porteur du projet.
+  Décisions à valider : commande rattachée au compte admin, GPS obligatoire.
+- 📱 **Puces de catégories en retour à la ligne** sur la page restaurant (2026-09-17) : OTA + web
+  livrés, vérifié à 375 px sur l'export web.
 
 **Les trois restaurants en négociation (Madame Oh, Oh Hazar, La Plage), AVANT tout passage en `visible`**
 - Commission par défaut **15 %** (les autres 5 %), livraison **0 Ar** (les autres 10 000), zone et
@@ -366,7 +363,45 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
   avec une largeur minimale. Champs à **16 px** (en dessous iOS zoome et ne redescend pas), cibles à
   **44 px** — `!important` voulu, pour battre les styles écrits en ligne. Modales en feuilles basses
   (`dvh`). Mesuré à 375 px : mise en page 720 → 375 px, cibles sous 44 px 20 → 0.
+- **Onglet « ☎ Commande tél. »** (2026-09-17) : voir la section « Commande par téléphone ».
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes.
+
+## ☎️ Commande par téléphone (2026-09-17)
+
+Un client appelle, le porteur du projet saisit sa commande dans l'admin (onglet **☎ Commande tél.**),
+elle part dans le **circuit de l'app**. Migration `20260917150000_commande_par_telephone`.
+
+- **RPC `admin_commande_telephone(restaurant, nom, téléphone, zone, repère, lat, lng, items)`**,
+  `is_admin()`, aucune exécution pour `anon` (vérifié : 401 `42501` par PostgREST). Elle crée une
+  adresse puis appelle **`create_order` (5 arguments)** : mêmes gardes (restaurant commandable,
+  catégorie servie à l'heure, produit dispo, options obligatoires, prix et frais relus, GPS),
+  mêmes triggers (numéro TF-, jeton `/a/`, notification **différée** au commit). Aucune écriture
+  directe dans `orders`. `items` a le format exact de l'app.
+- **Trace** : table `commandes_telephone` (order_id, adresse, nom, téléphone, `telephone_norme`
+  générée, saisie_par) — RLS sans policy ni grant. `admin_client_telephone_connu(tel)` ramène le
+  dernier nom / zone / repère / position d'un numéro déjà servi par téléphone.
+- ⚠️ **`notify_order_status()` modifiée sur le seul bloc `client`** de la charge utile : nom et
+  téléphone de `commandes_telephone` priment, e-mail omis, clé `par_telephone`. Tout le reste du
+  corps (relecture différée, garde carte) est inchangé — appliqué par `replace()` du texte existant
+  avec contrôle, pas réécrit à la main.
+- **Décisions à valider par le porteur du projet** :
+  1. La commande appartient au **compte admin qui la saisit**, jamais à un compte client retrouvé
+     par numéro (un appelant peut donner le numéro d'un autre ; aucun compte créé). Conséquences :
+     les push « client » arrivent sur le téléphone de l'admin, la commande apparaît dans SON onglet
+     Commandes de l'app, et `clientName` dans l'app restaurant / livreur affiche le nom de l'admin
+     (le **téléphone** affiché est bien celui du client : l'adresse prime). L'adresse porte le
+     libellé `☎ <nom du client>`, filtré du carnet d'adresses de l'app (`listAddresses`).
+  2. **GPS obligatoire** (garde de `create_order` inchangée) : on colle un lien Google Maps long ou
+     la localisation WhatsApp ; un lien court `maps.app.goo.gl` n'a pas de coordonnées. Hors de
+     Nosy Be (cadre −13,55/−13,05 × 48,05/48,45), l'écran refuse. Jamais de « centre de zone ».
+  3. **Espèces à la livraison seulement**, pas de code promo, pas de commentaire libre.
+- **Vérifié** (transaction annulée, 2026-09-17, Chez Bidul & Truc ouvert) : non-admin refusé ;
+  option obligatoire manquante → `Choix requis manquant : Sauce au choix` ; Les Siciliens →
+  `service:restaurant_ferme` ; sans GPS → refus ; commande valide → 2 × « Le classique »,
+  sous-total 48 000 + livraison 10 000 = 58 000, 3 options, jeton posé, bloc client = nom et numéro
+  saisis, e-mail nul. ⚠️ Chaque test consomme un numéro TF- (séquence non annulée). **Pas de test
+  réel** : il aurait prévenu un vrai restaurant. Écran vérifié à 375 px (données réelles, envoi
+  non exercé faute de session admin dans le navigateur de test).
 
 ## Paiement par carte (Stripe) — 2026-09-06
 
@@ -862,6 +897,11 @@ public, et adapter les 9 fonctions SECURITY DEFINER qui les lisent ou écrivent 
   langues** : renommer l'un sans l'autre envoie le restaurateur chercher une section qui
   n'existe plus. Les deux bougent ensemble, et le nom cité reste le **texte littéral de
   l'écran**, français quelle que soit la langue lue.
+- ⚠️ **Les catégories de la page restaurant passent à la ligne** (2026-09-17), plus de rangée qui
+  défile horizontalement : les clients ne voyaient pas qu'il fallait la faire glisser et rataient
+  « Hamburger », « Dessert »… Chez Bidul & Truc tient en 3 lignes à 375 px. Ne pas remettre de
+  `ScrollView horizontal` (`styles.catWrap`, `app/app/restaurant/[id].tsx`). La vitrine et les pages
+  de partage n'ont pas de rangée équivalente.
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
 - **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
 - **Frais de livraison : 10 000 Ar depuis le 2026-09-06** (5 000 auparavant). Le montant vit **uniquement** dans `restaurants.delivery_fee` — il n'est écrit en dur nulle part dans le code ; l'app et le site l'affichent tels qu'ils le lisent. Le seul reliquat était la valeur **par défaut du formulaire** de création de restaurant (`admin/components/Restaurants.tsx`), mise à jour elle aussi.
@@ -1074,6 +1114,16 @@ cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1
   *« Failed retrieving site data … Not Found »* (constaté le 2026-09-15) alors que le site
   existe. **Utiliser l'ID**, lisible par `npx netlify sites:list`. Les deux IDs sont dans les
   commandes ci-dessus : `1e13c535…` pour le site web, `d2e677f5…` pour l'admin.
+- ⚠️ **Depuis la 1.2.3, `runtimeVersion` est FIXÉ à `"1.2.2"` dans `app.json`** (il suivait
+  `appVersion`). Raison : aucun changement natif entre le build 1.2.2 (commit `aa350d4`) et la 1.2.3
+  (package.json, package-lock, app.json hors version, eas.json, assets : diff vide), et Apple exige
+  un numéro de version supérieur pour tout nouveau build. Une seule OTA sert donc 1.2.2 **et** 1.2.3.
+  ⛔ **Au premier changement natif** (module natif, plugin, permission, icône, `app.json` natif) :
+  passer `runtimeVersion` à la nouvelle version, sinon une OTA partirait vers des binaires
+  incompatibles et les ferait planter. Pour publier sur le runtime **1.2.1**, c'est désormais
+  `runtimeVersion` (et plus `expo.version`) qu'il faut changer le temps de la commande.
+  Conséquence visible : une OTA publiée depuis la config 1.2.3 affiche « v1.2.3 » dans le pied du
+  Profil d'un binaire 1.2.2 — pour identifier le binaire, lire le build number, pas cette ligne.
 - ⚠️ **DEUX runtimes coexistent tant que les deux versions sont en magasin.** Une mise à jour
   n'atteint QUE les appareils portant le même numéro de version. Le 2026-09-15, l'Android
   servait la 1.2.2 et l'iOS la 1.2.1 : il a fallu publier **deux fois** le même paquet. Pour la
@@ -1109,6 +1159,17 @@ cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1
   (https://taxifood.distripro207.com), `siteId` dans `app/.netlify/state.json`,
   `deploy_source: cli`. C'est exactement le piège des migrations MCP hors dépôt :
   ce qui n'est pas automatique diverge en silence.
+### Dernière version dès le premier lancement (2026-09-17)
+
+`app/lib/miseAJour.ts`, appelé par `app/app/_layout.tsx`. Au démarrage natif (jamais web ni dev) :
+`checkForUpdateAsync` → `fetchUpdateAsync` → `reloadAsync` pendant l'écran de lancement, **5 s au
+plus** au total (sous le filet de 8 s). Passé le délai, l'app s'ouvre et la mise à jour s'applique
+au lancement suivant — **jamais de rechargement après coup** (drapeau `abandonne`). **Pas de
+boucle** : l'identifiant de la mise à jour pour laquelle on a rechargé est mémorisé
+(AsyncStorage `tf_maj_rechargee_pour`). Au **retour au premier plan après ≥ 30 min** : téléchargement
+silencieux, rechargement seulement si l'écran est `/` hors espace pro. ⚠️ Ne sert aux **nouvelles
+installations** qu'une fois embarqué dans un binaire (1.2.3).
+
 ### 🛑 Avant de déboguer quoi que ce soit sur mobile : QUEL BINAIRE tourne ?
 
 **Un binaire tout juste déposé n'est PAS celui du magasin.** `eas submit -p android`

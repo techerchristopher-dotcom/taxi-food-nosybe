@@ -587,3 +587,44 @@ Taxi Be. Angelo reste `hidden`. **Tout ceci est à défaire après validation �
 Les captures d'écran **datent du 2026-08-19** et montrent encore le vouvoiement, abandonné
 côté client le 2026-08-24. Ce n'est pas un motif de rejet, mais c'est une incohérence visible
 sur la fiche produit, à reprendre à la prochaine version.
+
+---
+
+## 9. Version 1.2.3 — préparée le 2026-09-17, À SOUMETTRE PAR LE PORTEUR DU PROJET
+
+Build iOS lancé et envoyé à App Store Connect / TestFlight par Claude Code ; **la soumission à la
+vérification n'est PAS faite** (geste du porteur du projet). Numéros de build : voir « Où en est la
+soumission » dans CLAUDE.md.
+
+### Nouveautés (FR) — « Nouveautés de cette version »
+
+```
+• L'app s'ouvre directement sur sa dernière version, dès le premier lancement.
+• Toutes les catégories d'un restaurant sont visibles d'un coup d'œil, sans faire glisser.
+• Petites corrections et améliorations.
+```
+
+### Notes au relecteur — remplacer le bloc « WHAT IS NEW » du § 4
+
+```
+WHAT IS NEW IN THIS VERSION (1.2.3)
+1. On first launch, the app now checks for the latest content update before opening
+   (at most 5 seconds, then it opens anyway).
+2. A restaurant's menu sections now wrap onto several lines instead of a horizontal scroll.
+No change to accounts, payment, location or data collection.
+```
+
+Le reste du § 4 (comptes démo, paiement, localisation) reste valable **avec les deux passages déjà
+corrigés le 2026-09-17** (compte restaurant « Taxi Be » non listé au catalogue ; plus de « Please order
+from Taxi Be »). Déclaration de confidentialité : **inchangée** (aucune donnée nouvelle collectée).
+
+### Avant d'appuyer sur « Soumettre » — vérifier soi-même
+
+1. Les trois comptes démo se connectent (`TaxiFoodDemo2026`).
+2. ⚠️ **L'espace de `demo.resto` est vide** (0 commande chez Taxi Be). Le rejet 2.1(a) de 2026-08
+   portait sur un espace pro qu'on ne pouvait pas exercer. La 1.2.2 est passée ainsi, mais si l'on
+   veut des commandes de démonstration, elles ne peuvent plus être créées par `create_order` (Taxi Be
+   est `hidden`, donc refusé) : il faudrait les insérer à la main, sans notification — à décider.
+3. Aucun restaurant n'est ouvert la nuit à Madagascar : un relecteur en Californie tombera sur des
+   restaurants fermés. En 1.2.0, les restaurants avaient été ouverts en permanence pour la revue
+   (§ 7) ; **ne pas le refaire sans filet Telegram** — ce sont de vrais restaurants.

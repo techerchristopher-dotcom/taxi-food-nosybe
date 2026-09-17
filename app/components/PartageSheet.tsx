@@ -4,13 +4,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
+import { mesurer } from '../lib/mesure';
 import {
+  avecSource,
   copierLien,
   lienWhatsApp,
   ouvrirPartage,
   partageNatifDisponible,
   partagerFacebook,
   partageSysteme,
+  typeDeLien,
 } from '../lib/partage';
 
 /**
@@ -58,7 +61,8 @@ export function PartageSheet({
   }, [visible]);
 
   async function copier() {
-    const ok = await copierLien(url);
+    const ok = await copierLien(avecSource(url, 'lien'));
+    if (ok) mesurer('partage', { canal: 'lien', type: typeDeLien(url) });
     setCopie(ok);
     // On ne ferme PAS tout de suite : le client doit voir que c'est copié,
     // sinon rien à l'écran ne distingue un succès d'un tap dans le vide.
@@ -81,7 +85,8 @@ export function PartageSheet({
               teinte="#25D366"
               libelle={t('partage.whatsapp')}
               onPress={() => {
-                ouvrirPartage(lienWhatsApp(texte, url));
+                ouvrirPartage(lienWhatsApp(texte, avecSource(url, 'whatsapp')));
+                mesurer('partage', { canal: 'whatsapp', type: typeDeLien(url) });
                 onClose();
               }}
             />
@@ -95,6 +100,7 @@ export function PartageSheet({
                 // d'en présenter une pendant qu'une autre se referme. WhatsApp, qui
                 // passe par un simple lien, marchait ; Facebook, rien.
                 const issue = await partagerFacebook(titre, texte, url);
+                mesurer('partage', { canal: 'facebook', type: typeDeLien(url), issue });
                 if (issue === 'copie') {
                   // Navigateur sans feuille de partage : le lien est copié, et il faut
                   // le DIRE — sinon le bouton paraît mort.
@@ -118,7 +124,8 @@ export function PartageSheet({
                 libelle={t('partage.plus')}
                 onPress={async () => {
                   // Même piège que Facebook : attendre, puis fermer.
-                  await partageSysteme(titre, texte, url);
+                  await partageSysteme(titre, texte, avecSource(url, 'systeme'));
+                  mesurer('partage', { canal: 'systeme', type: typeDeLien(url) });
                   onClose();
                 }}
               />
@@ -217,7 +224,8 @@ export function PartageEnLigne({
   const [aideFacebook, setAideFacebook] = useState(false);
 
   async function copier() {
-    const ok = await copierLien(url);
+    const ok = await copierLien(avecSource(url, 'lien'));
+    if (ok) mesurer('partage', { canal: 'lien', type: typeDeLien(url) });
     setCopie(ok);
     if (ok) setTimeout(() => setCopie(false), 2000);
   }
@@ -225,7 +233,9 @@ export function PartageEnLigne({
   async function facebook() {
     // Navigateur mobile sans feuille de partage : le lien est copié (voir
     // partagerFacebook). Le dire, sinon la pastille paraît morte.
-    if ((await partagerFacebook(titre, texte, url)) === 'copie') {
+    const issue = await partagerFacebook(titre, texte, url);
+    mesurer('partage', { canal: 'facebook', type: typeDeLien(url), issue });
+    if (issue === 'copie') {
       setAideFacebook(true);
       setTimeout(() => setAideFacebook(false), 4000);
     }
@@ -239,7 +249,10 @@ export function PartageEnLigne({
           icone="chat"
           teinte="#25D366"
           libelle={t('partage.whatsapp')}
-          onPress={() => ouvrirPartage(lienWhatsApp(texte, url))}
+          onPress={() => {
+            ouvrirPartage(lienWhatsApp(texte, avecSource(url, 'whatsapp')));
+            mesurer('partage', { canal: 'whatsapp', type: typeDeLien(url) });
+          }}
         />
         <Pastille
           icone="facebook"
@@ -258,7 +271,10 @@ export function PartageEnLigne({
             icone="ios_share"
             teinte={colors.textDark}
             libelle={t('partage.plus')}
-            onPress={() => partageSysteme(titre, texte, url)}
+            onPress={() => {
+              void partageSysteme(titre, texte, avecSource(url, 'systeme'));
+              mesurer('partage', { canal: 'systeme', type: typeDeLien(url) });
+            }}
           />
         ) : null}
       </View>

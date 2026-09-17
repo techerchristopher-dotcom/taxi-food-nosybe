@@ -158,8 +158,8 @@
         peindre();
         /* Seule mesure qui dira si une version malgache merite d'etre
            produite. Ne fait rien tant qu'aucun analytics n'est installe. */
-        if (typeof window.plausible === "function") {
-          window.plausible("video_lang_change", { props: { film: film, langue: loc } });
+        if (window.tfMesure) {
+          window.tfMesure("video-langue", { film: film, langue: loc });
         }
         if (Array.isArray(window.dataLayer)) {
           window.dataLayer.push({ event: "video_lang_change", film: film, langue: loc });

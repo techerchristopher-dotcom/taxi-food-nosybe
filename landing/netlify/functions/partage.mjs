@@ -318,6 +318,9 @@ function page({ titre, description, image, lien, prix, commander, plats, note, g
   a.cmd { display:block; text-align:center; margin-top:12px; background:#E8590C; color:#fff;
           text-decoration:none; font-weight:600; font-size:16px; padding:14px; border-radius:999px; }
 </style>
+<!-- Mesure d'audience (js/mesure.js) : c'est ICI qu'on apprend si ce qu'on publie
+     est regarde. Meme fichier que la vitrine, donc memes regles de comptage. -->
+<script src="/js/mesure.js"></script>
 </head>
 <body>
 <main>

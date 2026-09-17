@@ -399,6 +399,7 @@ svg.i{display:block;flex:none;fill:currentColor}
   ]
 }
 </script>
+<script src="/js/mesure.js"></script>
 </head>
 <body>
 
@@ -1147,6 +1148,9 @@ svg.i{display:block;flex:none;fill:currentColor}
         if (res.status === 204 || res.ok) {
           form.reset();
           set({ leadSending: false, leadSent: true, leadError: false });
+          /* Mesure : un restaurateur a VRAIMENT laisse ses coordonnees (le chemin
+             du robot plus haut ne passe pas ici). */
+          if (window.tfMesure) window.tfMesure("demande-rappel");
           var box = document.getElementById("lead-sent");
           if (box) box.focus();
           return;

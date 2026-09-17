@@ -11,6 +11,7 @@ import { BottomBar } from '../components/BottomBar';
 import { ChoixModePaiement } from '../components/paiement/ChoixModePaiement';
 import { colors, fonts, formatAr, spacing } from '../theme/tokens';
 import { formatAddressLine, paymentShort } from '../data/types';
+import { mesurer } from '../lib/mesure';
 import { createOrder, listAddresses, raisonPromoDepuisErreur, refusServiceDepuisErreur } from '../data/api';
 import {
   apercuMontantMineur,
@@ -171,6 +172,9 @@ function CheckoutForm() {
         // commande en boucle. Voir `store/promo.ts`.
         codePromo: promo.aEnvoyer,
       });
+      // La commande EXISTE : l'étape que tout le reste de la mesure prépare.
+      // Mode de paiement et restaurant seulement — rien qui désigne le client.
+      mesurer('commande-validee', { paiement: String(paymentMethod), restaurant: restaurantName ?? '' });
       // Le panier est vidé dès que la commande existe, y compris pour une carte
       // non encore payée : la commande est créée quoi qu'il arrive, et garder le
       // panier inviterait à la passer une seconde fois. Le repli espèces et la

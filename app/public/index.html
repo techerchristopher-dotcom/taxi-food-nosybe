@@ -105,6 +105,22 @@
       @keyframes tf-tourne { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { #tf-boot-rotative { animation: none; } }
     </style>
+    <!-- Mesure d'audience — Umami Cloud, sans cookie, donc sans bandeau de consentement.
+         INERTE tant que data-website-id est vide. data-domains : seul le vrai domaine
+         compte, jamais un aperçu Netlify ni le poste de développement.
+         Les étapes (panier, commande, partage) passent par lib/mesure.ts. -->
+    <script>
+      (function () {
+        var ID = '';
+        if (!ID || location.hostname !== 'taxifood.distripro207.com') return;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://cloud.umami.is/script.js';
+        s.setAttribute('data-website-id', ID);
+        s.setAttribute('data-domains', 'taxifood.distripro207.com');
+        document.head.appendChild(s);
+      })();
+    </script>
   </head>
 
   <body>

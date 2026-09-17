@@ -12,6 +12,7 @@
  * (Le serveur recalcule ce prix de façon autoritaire dans create_order — ici c'est l'affichage.)
  */
 import { create } from 'zustand';
+import { mesurer } from '../lib/mesure';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { optionsTotal, Product, SelectedOption } from '../data/types';
 
@@ -196,6 +197,8 @@ export const useCart = create<CartState>((set, get) => ({
     };
     set(next);
     void persist(next);
+    // Web seulement, sans donnée personnelle : voir lib/mesure.ts.
+    mesurer('ajout-panier', { restaurant: ctx.name });
   },
 
   // Le code promo SURVIT au changement de restaurant : le client l'a saisi

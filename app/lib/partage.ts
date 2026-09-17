@@ -290,6 +290,27 @@ export async function partagerFacebook(titre: string, texte: string, url: string
   return 'onglet';
 }
 
+/**
+ * Le lien partagé, marqué de son CANAL (`utm_source`) — c'est ce qui permet à la
+ * mesure d'audience de dire d'où viennent les visites : WhatsApp, un lien copié
+ * collé ailleurs, la feuille du système.
+ *
+ * ⚠️ PAS POUR FACEBOOK. Facebook remplace le lien par `og:url` (sans utm) dans la
+ * publication : le marquage serait perdu, et il fabriquerait une adresse de plus
+ * à mettre en cache. Facebook se signale de toute façon comme site d'origine.
+ *
+ * La page de partage ignore la requête (elle ne lit que le chemin) : l'aperçu est
+ * identique avec ou sans marquage.
+ */
+export function avecSource(url: string, source: 'whatsapp' | 'lien' | 'systeme') {
+  return `${url}${url.includes('?') ? '&' : '?'}utm_source=${source}&utm_medium=partage`;
+}
+
+/** « j », « r », « s », « p » : ce qui est partagé, pour la mesure. */
+export function typeDeLien(url: string) {
+  return url.match(/\/(j|r|s|p)\//)?.[1] ?? 'autre';
+}
+
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */
 export async function copierLien(url: string): Promise<boolean> {
   try {

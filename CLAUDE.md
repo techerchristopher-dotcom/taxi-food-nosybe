@@ -43,9 +43,6 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   embarque le JS récent. ⚠️ Le code de démarrage ne protège les **nouvelles installations** que
   s'il est dans le binaire : il faudra un build (en OTA, il ne sert qu'aux appareils déjà à jour).
   Et `git grep -n -i mvola` avant ce build.
-- 💬 **Bulle WhatsApp** flottante sur la vitrine ET l'app, comme sur le site Rentanoo. Message
-  pré-rempli **à définir avec le porteur du projet** avant de coder. Déjà compté par `mesure.js`
-  (`contact-whatsapp`) dès qu'un lien `wa.me/` est cliqué.
 - ☎️ **Commande manuelle par téléphone** depuis l'admin : un client appelle, le porteur du projet
   saisit sa commande en quelques gestes et elle part dans le **circuit existant** (restaurant
   prévenu, livreur, suivi) — jamais un circuit parallèle. Passer par la même RPC que l'app
@@ -1233,6 +1230,22 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   `utm_source=taxifood-site`, `utm_medium` = vitrine/partage, `utm_campaign` = la page. Au
   2026-09-17 : 23 acquisitions d'appareils sur 28 jours ; la ventilation par source n'a pas été lue.
 - ✅ Jeton `pt` App Store posé et déployé le 2026-09-17 (vérifié au clic sur `/telecharger/`).
+
+## Bulle WhatsApp (2026-09-17)
+
+Bulle verte flottante, numéro **+261 36 15 745 21**, message pré-rempli « Bonjour Taxi Food 👋
+J'ai une question : » (EN / IT selon la langue). Décidé avec le porteur du projet.
+
+- Vitrine et pages de partage : `landing/js/bulle-whatsapp.js`, inclus après `mesure.js` dans 10
+  pages et le modèle de `partage.mjs`. **Pas** sur `/mon-espace/` ni `/telegram/` (outils pro).
+- App (native + web) : `app/components/BulleWhatsApp.tsx`, posée dans `app/(tabs)/_layout.tsx`
+  (Accueil, Commandes, Profil — **cachée sur Panier**) et sur `restaurant/[id]` (remontée
+  au-dessus du bouton « Voir le panier »). Jamais sur les écrans qui valident ni les espaces pro.
+- ⚠️ Numéro et message vivent aux DEUX endroits (+ `locales/*.json > bulleWhatsApp`) : les changer
+  ensemble.
+- Comptée dans Umami : `contact-whatsapp` (vitrine, par `mesure.js`) ; `contact-whatsapp` avec
+  `origine: bulle` (app web).
+- Livrée le 2026-09-17 : vitrine, app web, OTA runtimes 1.2.2 et 1.2.1 (visible au 2ᵉ lancement).
 
 ## Le site de pré-lancement (`landing/`)
 

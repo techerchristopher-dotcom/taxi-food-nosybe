@@ -986,6 +986,34 @@ pour les builds 1.2.2 (iOS 32, Android 12), les deux OTA et les deux sites.
 - ✅ Vérifié sur appareil réel (Android, émulateur Pixel 8, 2026-08-19) : connexion Google native, connexion Facebook (flux web), position GPS — testé en conditions réelles, parcours client complet, par le porteur du projet.
 - ⏳ **Non testé** : parcours restaurant et livreur sur appareil réel, toutes plateformes. Le build `production` Android est déposé mais **je n'ai pas de retour d'usage dessus** (ni revue Google, ni test terrain). **Recette du build 22 sur appareil** : liste dans [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md) — notamment un compte SMS neuf (sans nom ni numéro) qui part de « Commander » et doit arriver sur `/address`, et le bouton Retour après connexion qui doit fermer l'app, pas révéler une seconde barre d'onglets.
 
+## 📊 Mesure d'audience — Umami (2026-09-17)
+
+**Umami Cloud, sans cookie** : pas de bandeau de consentement, donc pas de visiteurs européens
+qui refusent et disparaissent des chiffres. Script de 2 Ko.
+
+| Surface | Compte Umami | Identifiant | Où il vit |
+|---|---|---|---|
+| Vitrine + pages de partage `/j/ /r/ /s/ /p/` | techerchristopher@gmail.com | `8be3907d-295a-4b7f-ac06-c398d6a20c57` | `landing/js/mesure.js` |
+| App web `taxifood.distripro207.com` | **autre compte, à créer** | *(vide = rien n'est mesuré)* | `app/public/index.html` |
+
+- ⚠️ **Le plan gratuit n'accepte qu'UN site par compte** (« Website limit reached »). D'où deux
+  comptes. Ne jamais recopier l'identifiant de la vitrine dans l'app web : les audiences se mélangent.
+- `landing/js/mesure.js` est inclus en **synchrone** dans le `<head>` des 12 pages et du modèle de
+  `partage.mjs`. Il compte : `telecharger` (magasin), `vers-app`, `contact-whatsapp`, `appel`,
+  `reseau-social`, `partage-ouvert` (type + titre de ce qui a été partagé), `demande-rappel`,
+  `candidature-livreur`, `video-langue`. Inerte hors du domaine de production.
+- **Les téléchargements réels** ne se voient QUE dans les consoles des magasins : les liens Google
+  Play sont marqués `referrer=utm_…` par page (Play Console → Acquisition) ; les liens App Store
+  le seront quand `APP_STORE_PT` (jeton fournisseur, App Analytics → Campagnes) sera renseigné.
+- App web : `app/lib/mesure.ts` (`ajout-panier`, `commande-validee`, `partage` par canal). **Jamais
+  de donnée personnelle** dans un événement. Web seulement, silencieux sur l'app installée.
+- Liens partagés depuis l'app marqués `utm_source` (whatsapp / lien / systeme) — **pas Facebook**,
+  qui remplace le lien par `og:url`.
+- Vérifier qu'une surface mesure : sur la page en production, `typeof window.umami === 'object'`, et
+  un `POST https://cloud.umami.is/api/send` avec l'identifiant doit répondre **200**.
+- Reste à faire : compte Umami de l'app web ; Google Search Console (propriété Domaine
+  `distripro207.com`, TXT chez **Hostinger**, sitemap) ; jeton `pt` App Store.
+
 ## Le site de pré-lancement (`landing/`)
 
 **https://taxifoodnosybe.distripro207.com** — site statique, aucun build, aucune dépendance. Déploiement **depuis `landing/`** : `cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1288e48f7eaa` — jamais `--dir=landing` depuis la racine, qui part sans les fonctions (voir « Les commandes » plus haut). Documentation propre : [landing/LISEZ-MOI.md](landing/LISEZ-MOI.md).

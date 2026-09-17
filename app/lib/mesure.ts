@@ -22,7 +22,9 @@ export function mesurer(nom: string, donnees?: Record<string, string | number | 
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   try {
     const umami = (window as unknown as { umami?: { track: (n: string, d?: object) => void } }).umami;
-    umami?.track(nom, donnees);
+    // `surface` : repère explicite dans les événements, utile si un jour les deux
+    // audiences sont regroupées dans un même site Umami.
+    umami?.track(nom, { surface: 'app-web', ...donnees });
   } catch {
     // Jamais bloquant.
   }

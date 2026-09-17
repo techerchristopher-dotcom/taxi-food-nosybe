@@ -27,9 +27,13 @@
  */
 (function () {
   // ── Réglages ───────────────────────────────────────────────────────────────
-  // Identifiant du site « vitrine » dans Umami Cloud (Settings → Websites). Public
+  // Identifiant du site dans Umami Cloud (compte techerchristopher@gmail.com). Public
   // par nature : il est écrit dans le HTML de toute page mesurée.
-  var UMAMI_ID = '';
+  // ⚠️ La vitrine SEULE. Le plan gratuit d'Umami n'accepte qu'un site par compte
+  // (« Website limit reached », 2026-09-17) : l'app web a donc son propre compte et
+  // son propre identifiant, dans app/public/index.html. Ne pas recopier celui-ci
+  // là-bas, les deux audiences se mélangeraient.
+  var UMAMI_ID = '8be3907d-295a-4b7f-ac06-c398d6a20c57';
   // Jeton fournisseur App Store Connect (« pt »), public lui aussi : App Analytics →
   // Sources → Campagnes. Sans lui, Apple ignore la campagne : on n'ajoute rien.
   var APP_STORE_PT = '';

@@ -111,6 +111,9 @@
          Les étapes (panier, commande, partage) passent par lib/mesure.ts. -->
     <script>
       (function () {
+        // Identifiant du site Umami de l'APP WEB — un compte Umami à part de celui de la
+        // vitrine (plan gratuit : un seul site par compte). Vide = rien n'est mesuré.
+        // ⚠️ Ne pas y mettre celui de la vitrine : les deux audiences se mélangeraient.
         var ID = '';
         if (!ID || location.hostname !== 'taxifood.distripro207.com') return;
         var s = document.createElement('script');

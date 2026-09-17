@@ -55,33 +55,46 @@
   // ⚠️ Propre à CHAQUE site : la mémoire du navigateur est rangée par domaine. Il
   // faut l'ouvrir aussi sur l'app web, qui gère la même adresse de son côté.
   var exclu = false;
+  var q = new URLSearchParams(location.search);
+  var demande = q.has('ne-pas-me-compter') ? 'exclure' : q.has('me-compter') ? 'inclure' : null;
+  var stockageOk = true;
   try {
-    var q = new URLSearchParams(location.search);
-    if (q.has('ne-pas-me-compter')) localStorage.setItem('umami.disabled', '1');
-    if (q.has('me-compter')) localStorage.removeItem('umami.disabled');
+    if (demande === 'exclure') localStorage.setItem('umami.disabled', '1');
+    if (demande === 'inclure') localStorage.removeItem('umami.disabled');
     exclu = !!localStorage.getItem('umami.disabled');
-    if (q.has('ne-pas-me-compter') || q.has('me-compter')) {
-      // L'adresse est nettoyée : partagée par erreur, elle ne ferait sortir personne
-      // d'autre des statistiques.
-      q.delete('ne-pas-me-compter');
-      q.delete('me-compter');
-      var reste = q.toString();
-      history.replaceState(null, '', location.pathname + (reste ? '?' + reste : '') + location.hash);
-      var message = exclu
-        ? 'Cet appareil n’est plus compté dans les statistiques.'
-        : 'Cet appareil est de nouveau compté dans les statistiques.';
-      document.addEventListener('DOMContentLoaded', function () {
-        var b = document.createElement('div');
-        b.textContent = message;
-        b.setAttribute('role', 'status');
-        b.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;'
-          + 'background:#1A1A1A;color:#fff;font:600 14px/1.4 Archivo,system-ui,sans-serif;'
-          + 'padding:12px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
-        document.body.appendChild(b);
-        setTimeout(function () { b.remove(); }, 5000);
-      });
-    }
-  } catch (e) { /* navigation privée sans stockage : on compte, tant pis */ }
+  } catch (e) {
+    // Navigation privée, stockage bloqué : le réglage ne peut pas tenir, et on le DIT.
+    stockageOk = false;
+  }
+  if (demande) {
+    // L'adresse est nettoyée : partagée par erreur, elle ne ferait sortir personne
+    // d'autre des statistiques.
+    q.delete('ne-pas-me-compter');
+    q.delete('me-compter');
+    var reste = q.toString();
+    try { history.replaceState(null, '', location.pathname + (reste ? '?' + reste : '') + location.hash); } catch (e) {}
+    // ⚠️ Le bandeau s'affiche DANS TOUS LES CAS, échec compris. La première version
+    // n'affichait rien quand le stockage était bloqué : « aucun bandeau », sans
+    // qu'on sache pourquoi. Il reste affiché jusqu'à un appui.
+    (function (message) {
+        var montrer = function () {
+          var b = document.createElement('div');
+          b.textContent = message + '  ✕';
+          b.setAttribute('role', 'status');
+          b.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;'
+            + 'background:#1A1A1A;color:#fff;font:600 15px/1.4 system-ui,-apple-system,sans-serif;cursor:pointer;'
+            + 'padding:14px 20px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center';
+          b.onclick = function () { b.remove(); };
+          document.body.appendChild(b);
+          // Permanent jusqu'à un appui : demande du porteur du projet, qui ne le voyait
+          // pas passer en 5 s.
+        };
+        if (document.body) montrer(); else document.addEventListener('DOMContentLoaded', montrer);
+      })(
+      !stockageOk ? 'Réglage impossible : ce navigateur bloque le stockage (navigation privée ?).'
+        : exclu ? 'Cet appareil n’est plus compté dans les statistiques.'
+        : 'Cet appareil est de nouveau compté dans les statistiques.');
+  }
 
   // ── Où sommes-nous ─────────────────────────────────────────────────────────
   var m = location.pathname.match(/^\/(j|r|s|p)\//);

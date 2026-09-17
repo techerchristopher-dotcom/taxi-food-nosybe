@@ -43,7 +43,8 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   voir sa section). **Aucune vraie commande passée** : testée en transaction annulée seulement
   (un test réel aurait réveillé Chez Bidul & Truc). Première vraie commande à surveiller :
   message Telegram du restaurant = nom et numéro du CLIENT, pas ceux du porteur du projet.
-  Décisions à valider : commande rattachée au compte admin, GPS obligatoire.
+  Décision à valider : commande rattachée au compte admin. **GPS facultatif depuis le
+  2026-09-17** (retour du porteur du projet), repère obligatoire.
 - 📱 **Puces de catégories en retour à la ligne** sur la page restaurant (2026-09-17) : OTA + web
   livrés, vérifié à 375 px sur l'export web.
 
@@ -412,10 +413,26 @@ elle part dans le **circuit de l'app**. Migration `20260917150000_commande_par_t
      Commandes de l'app, et `clientName` dans l'app restaurant / livreur affiche le nom de l'admin
      (le **téléphone** affiché est bien celui du client : l'adresse prime). L'adresse porte le
      libellé `☎ <nom du client>`, filtré du carnet d'adresses de l'app (`listAddresses`).
-  2. **GPS obligatoire** (garde de `create_order` inchangée) : on colle un lien Google Maps long ou
-     la localisation WhatsApp ; un lien court `maps.app.goo.gl` n'a pas de coordonnées. Hors de
-     Nosy Be (cadre −13,55/−13,05 × 48,05/48,45), l'écran refuse. Jamais de « centre de zone ».
+  2. **GPS FACULTATIF, repère OBLIGATOIRE** (migration `20260917170000_commande_telephone_sans_gps`,
+     retour du porteur du projet : « impossible que je saisisse un repère GPS pour le client »).
+     `create_order` ne lève sa garde GPS que si le **drapeau de transaction**
+     `taxifood.commande_telephone = 'on'` (posé par `set_config(..., true)` dans
+     `admin_commande_telephone`, remis à vide juste après) **ET** `is_admin()`. ⛔ Ne jamais retirer
+     l'une des deux conditions : un client de l'app sans GPS doit rester refusé. Position fournie :
+     les deux coordonnées, dans le cadre de Nosy Be (−13,55/−13,05 × 48,05/48,45), sinon refus.
+     Jamais de « centre de zone » inventé. Aval sans GPS vérifié dans le code : carte de commande
+     restaurant / livreur (« Pas de GPS — appelle le client » + bouton d'appel), admin Temps réel
+     (badge SANS GPS), charge utile Telegram patron (lien 📍 absent), nœud n8n du dépôt
+     (`carte` vide si pas de coordonnées — ⚠️ l'instance n8n n'a pas été relue).
   3. **Espèces à la livraison seulement**, pas de code promo, pas de commentaire libre.
+- **Vérifié sans GPS** (transaction annulée, 2026-09-17) : client app sans GPS → refusé ; client qui
+  pose lui-même le drapeau → refusé ; admin appelant `create_order` directement sans drapeau →
+  refusé ; admin par la RPC sans GPS → TF-245 acceptée, drapeau revenu à vide, lien 📍 vide ; sans
+  repère → `telephone:repere_manquant` ; position incomplète / inversée → refus ; avec GPS → accepté.
+  Refusé aussi après application réelle de la migration (client + drapeau).
+- **Nom du vrai client** : l'app (`mapOrder`) et l'admin Temps réel lisent le libellé `☎ <nom>` ;
+  le téléphone de l'adresse prime sur celui du profil (l'admin Temps réel faisait l'inverse,
+  corrigé). OTA `8773196a…` (1.2.2/1.2.3) et `7db125ab…` (1.2.1), web et admin redéployés.
 - **Vérifié** (transaction annulée, 2026-09-17, Chez Bidul & Truc ouvert) : non-admin refusé ;
   option obligatoire manquante → `Choix requis manquant : Sauce au choix` ; Les Siciliens →
   `service:restaurant_ferme` ; sans GPS → refus ; commande valide → 2 × « Le classique »,

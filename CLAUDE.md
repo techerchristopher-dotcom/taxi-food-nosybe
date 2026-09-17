@@ -28,6 +28,21 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
+- 🚮 **Retirer complètement Taxi Be de l'appli** (et du site) : il ne doit plus apparaître nulle part.
+  ⚠️ Avant de toucher : vérifier s'il sert encore aux **comptes de démonstration du relecteur
+  Apple** (il avait été passé `visible` pour lui) — le retirer sans solution de rechange peut faire
+  rejeter la prochaine soumission. Retirer en base (statut), pas seulement à l'écran.
+- 🔄 **Un nouveau client iPhone démarre sur l'ANCIENNE version** (constaté le 2026-09-17) : juste
+  après installation depuis l'App Store, ancien écran ; fermer / rouvrir → bonne version.
+  Cause : réglage par défaut d'`expo-updates` (`fallbackToCacheTimeout` = 0) — le premier lancement
+  affiche le paquet JS **embarqué dans le binaire**, télécharge l'OTA en arrière-plan et ne
+  l'applique qu'au lancement suivant. Objectif du porteur du projet : **un nouveau client a toujours
+  la dernière version**, mise à jour automatique « comme partout ». Pistes : (1) au démarrage,
+  `checkForUpdateAsync` → `fetchUpdateAsync` → `reloadAsync` derrière l'écran de lancement, avec un
+  délai maximal (liaison de Nosy Be) ; (2) re-builder après chaque grosse OTA pour que le binaire
+  embarque le JS récent. ⚠️ Le code de démarrage ne protège les **nouvelles installations** que
+  s'il est dans le binaire : il faudra un build (en OTA, il ne sert qu'aux appareils déjà à jour).
+  Et `git grep -n -i mvola` avant ce build.
 - 💬 **Bulle WhatsApp** flottante sur la vitrine ET l'app, comme sur le site Rentanoo. Message
   pré-rempli **à définir avec le porteur du projet** avant de coder. Déjà compté par `mesure.js`
   (`contact-whatsapp`) dès qu'un lien `wa.me/` est cliqué.

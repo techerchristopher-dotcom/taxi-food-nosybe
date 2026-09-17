@@ -1,6 +1,6 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase, avec trois **vrais restaurants** (Angelo, Taxi Be, La Cabane). Branche de travail : `main`.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase. **Huit restaurants en base** au 2026-09-17 : deux ouverts à la commande (La Cabane, Chez Bidul & Truc), cinq « en négociation » (Les Siciliens, Madame Oh, Oh Hazar, La Plage, Taxi Be), un masqué (Angelo) — voir « Les vrais restaurants ». Branche de travail : `main`.
 
 Trois livrables distincts, à ne pas confondre :
 
@@ -10,15 +10,65 @@ Trois livrables distincts, à ne pas confondre :
 | **`admin/`** | le tableau de bord de gestion (Next.js, web) | `taxi-food-admin-nosybe.netlify.app` |
 | **`landing/`** | le site de **pré-lancement**, trilingue | **`taxifoodnosybe.distripro207.com`** |
 
+## 🧭 Reste à faire — état au 2026-09-17
+
+Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
+
+**Bloquant ou risqué**
+- 🔓 **Fuite de confidentialité ouverte** : avec la seule clé publiable, n'importe qui lit
+  `restaurants.commission_rate` et `telegram_chat_id`. La fermeture par privilèges de colonne a
+  **cassé l'app** (colonnes calculées) et a été annulée. Voie qui marchera : table privée.
+  → section « Fuite connue ».
+- 📤 **Commits locaux non poussés** sur `main` (16 au 2026-09-17, `git log origin/main..HEAD`) : `git push` à faire.
+- 🗑️ **Supprimer depuis le tableau de bord Supabase** la fonction Edge jetable
+  `upload-plats-du-jour-bidul` — encore ACTIVE (vérifié le 2026-09-17). Sa version 1 portait la
+  `service_role`. L'API MCP ne sait pas supprimer une fonction.
+
+**Mesure et référencement**
+- Google Search Console : propriété **Domaine** `distripro207.com` avec techerchristopher@gmail.com,
+  enregistrement TXT chez **Hostinger** (le DNS du domaine y est), puis sitemap
+  `https://taxifoodnosybe.distripro207.com/sitemap.xml`.
+- Jeton fournisseur App Store `pt` (App Analytics → Campagnes) → `APP_STORE_PT` dans `landing/js/mesure.js`.
+
+**Les trois restaurants en négociation (Madame Oh, Oh Hazar, La Plage), AVANT tout passage en `visible`**
+- Commission par défaut **15 %** (les autres 5 %), livraison **0 Ar** (les autres 10 000), zone et
+  horaires vides, aucun logo, aucun canal Telegram.
+- À confirmer par les restaurateurs : prix réels du poisson entier, du mi xao et de la soupe
+  chinoise (créés **indisponibles**, « à partir de 29 000 ») ; plats qui reçoivent les
+  accompagnements ; tajine de poisson (photo **chermoula**, mais options pruneaux / citron confit) ;
+  photos = reconstitutions, contenant des plats de La Plage.
+
+**Produit et contenu**
+- Page de partage `/r/<id>` d'un restaurant en négociation : dit encore « Commandez… » et montre
+  « Commander maintenant ». À aligner sur « En négociation ».
+- Chez Bidul : confirmer le contenant et les couches du boudin façon hachis ; constater à l'écran
+  Réglages (compte restaurateur) que les 3 anciens plats du jour sont bien « dormants ».
+- Partage Facebook sur **iPhone** (app installée) : correctif « attendre avant de fermer la feuille »
+  non vérifié sur un vrai iPhone.
+- Sélection d'essai `199877aa-3096-468a-8600-840efba83f15` (« Les plats du jour à Nosy Be ») encore
+  active : la désactiver depuis l'onglet Sélections si inutile.
+- Fiche App Store : le contact commerçant DSA publié porte l'**ancien** numéro `+261 37 34 379 12`
+  (le site est passé au `+261 36 15 74 521` le 2026-09-10). ⚠️ Le modifier peut relancer une
+  vérification Apple et retirer l'app des boutiques de l'UE le temps de l'examen.
+- **Aucun moyen pour un client d'écrire en laissant une trace** : « Contactez-nous » = lien WhatsApp,
+  l'espace client n'a pas de messagerie, et le formulaire « Être rappelé » (restaurateurs) n'avait
+  reçu qu'un test au 2026-09-16. Un client disant avoir « envoyé un message » a écrit par WhatsApp
+  ou e-mail — hors base. Piste ouverte : un vrai formulaire de contact enregistré + notifié n8n.
+
+**Codes offerts** (voir leur section) : identifiant n8n à coller, ligne Telegram « Repas offert »,
+test `MERCISULLI` avec Sulli.
+
 ## Où en est la soumission
 
-**Au 2026-09-15 (relu dans les deux consoles, pas de mémoire) :**
+**Au 2026-09-17 (catalogue Apple relu en MG et FR, pas de mémoire) :**
 
 | | Version | État |
 |---|---|---|
 | **Android** | **1.2.2** (versionCode 12) | ✅ **en ligne**, production, 177 pays |
-| **iOS** | **1.2.2** (build 32) | ⏳ **en attente de vérification** (soumise le 15/09, publication automatique) |
-| **iOS en ligne pendant ce temps** | 1.2.1 | — |
+| **iOS** | **1.2.2** (build 32) | ✅ **en ligne** depuis le 2026-09-15 23:23 UTC (Madagascar ET France) |
+
+Des téléphones restent en 1.2.1 tant qu'ils n'ont pas mis l'app à jour : les OTA partent donc
+encore pour les **deux** runtimes.
 
 ✅ **CONFORMITÉ DSA VALIDÉE le 2026-09-15** (e-mail « Your trader contact information was
 verified »). L'app était **absente des 27 boutiques de l'UE** depuis le lancement : des clients
@@ -159,9 +209,22 @@ LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device <udid>
 
 ## Les vrais restaurants
 
-État vérifié en base le 2026-09-07 : **cinq** lignes dans `restaurants`, dont trois seulement
-sont `listing_status = 'visible'`. Le titre de cette section disait « les trois vrais
-restaurants » ; c'est daté.
+État vérifié en base le 2026-09-17 : **huit** lignes dans `restaurants`. Dans l'ordre du
+catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
+
+| Rang | Restaurant | `listing_status` | id |
+|---|---|---|---|
+| 10 | La Cabane | visible | `958faac6-61ab-4ff5-9226-b8adab46ed24` |
+| 20 | Chez Bidul & Truc | visible | `700e8f32-e966-476a-b371-02884d08dea1` |
+| 30 | Les Siciliens | coming_soon | `aee1c612-5ee0-402b-a7b4-aec9c6825b0b` |
+| 40 | Madame Oh (thaï, Hell-Ville) | coming_soon | `ba08c074-bc2f-4d0c-b087-ecdf7925269f` |
+| 50 | Oh Hazar (marocain, Hell-Ville) | coming_soon | `c2a49e11-d839-459f-a332-024796102155` |
+| 60 | La Plage (bistrot & bar, Hell-Ville) | coming_soon | `eb10f338-fb78-4c16-82d5-810ae37b49fe` |
+| 70 | Angelo | hidden | `cb482596-b39e-4355-96a5-3dfdad75dcee` |
+| 90 | Taxi Be — **toujours dernier** | coming_soon | `ac2766bb-c4d1-4f5e-9a40-3ea0febcb886` |
+
+`coming_soon` s'affiche **« En négociation »** partout (app et vitrine) et n'est **jamais
+commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` — la garde est en base.
 
 - **Chez Bidul & Truc** (`700e8f32-…`) — **visible**, et le seul en `auto_open = true` : son
   ouverture est déduite de ses horaires, pas d'un interrupteur. Deux services par jour, midi et
@@ -172,7 +235,14 @@ restaurants » ; c'est daté.
   Pizza, Pâtes, Burger, Tapas ; plage Pizza 18–22 h inchangée. **Offre du jour** (migration
   `20260915082305_chez_bidul_trois_plats_du_jour`) : Poulet basquaise, Blanquette de poisson,
   Tartare de zébu — 30 000 Ar, étiquette « Plat du jour », créations « À l'affiche » (sans
-  catégorie, `in_menu = false`). Photos branchées le même jour (migration
+  catégorie, `in_menu = false`). **Depuis le 2026-09-16, ces trois-là DORMENT** dans la
+  bibliothèque (`is_featured = false`, jamais archivés, photo intacte) et l'affiche porte
+  **Pot-au-feu** et **Boudin noir façon hachis** (30 000 Ar, `sort_order` 4 et 5 — le bandeau suit
+  `sort_order`), migrations `20260916150000_chez_bidul_pot_au_feu_et_boudin_a_l_affiche` et
+  `20260916151000_…_photos`, photos déposées par `deposer-visuel`. ⚠️ **Ne jamais archiver un plat
+  du jour** : `getFeaturedLibrary` filtre `is_archived = false`, il sortirait de la bibliothèque
+  et le retour en un tap serait perdu. ⚠️ Sans catégorie, **aucune plage horaire** : `create_order`
+  ne vérifie `categorie_servie_maintenant` que si le produit a une catégorie. Photos branchées le même jour (migration
   `20260915083553_chez_bidul_plats_du_jour_photos`, fichiers `produits/chez-bidul-truc/plat-*.png`,
   sources dans `visuels-reseaux/photos/`), déposées via la fonction Edge jetable
   `upload-plats-du-jour-bidul`, **neutralisée (410)** — ⚠️ à supprimer depuis le tableau de bord. Accompagnements
@@ -189,7 +259,15 @@ restaurants » ; c'est daté.
   projet, posé pendant les tests : **ses commandes nous arrivaient à nous**. Remplacé le
   2026-09-06 par son canal privé, message de contrôle et commande de test remis. La commande de
   test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
-- **Les Siciliens** — visible.
+- **Les Siciliens** — `coming_soon` (« En négociation »).
+- **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
+  `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
+  `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant
+  dépôt. Les choix sont des **options**, pas des plats : tajines (pruneaux OU citron confit),
+  desserts « ananas ou banane » / « confiture ou sucre », et à La Plage **un accompagnement inclus
+  au choix + les suivants à 5 000 Ar** (deux groupes). Les sandwichs s'appellent « Sandwich
+  fromage », pas « Fromage » : panier et ticket affichent le plat SANS sa catégorie. Tout ce qui
+  reste à régler avant l'ouverture : « Reste à faire » en tête de fichier.
 - **Angelo** — `listing_status = 'hidden'`. Voir sa carte en base pour le détail des catégories.
 - **Taxi Be** — `coming_soon`. Bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs). ⚠️ Les 6 cocktails sont désactivés depuis le 2026-08-19 (`categories.is_active = false`, décision classement d'âge — voir `docs/FICHE-APP-STORE.md` § 3), les 19 bières restent.
 
@@ -253,8 +331,21 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
 - **Auth** : rôle **`admin`** (`app_role` étendu) attribué **uniquement à la main** en base, jamais via `request_role`. Connexion **Google** (même provider). Garde : `supabase.rpc('is_admin')` ; un non-admin voit « Accès refusé » et surtout **ne lit aucune donnée** (RLS `*_select_admin using (is_admin())`). ⚠️ Ajouter `http://localhost:3000` (+ l'URL Netlify de prod) dans **Supabase → Auth → Redirect URLs**.
 - **Base** (migrations `app_role_add_admin`, `admin_dashboard_foundation`) : `restaurants.commission_rate` (fraction 0..1, **placeholder 0.15 à ajuster par resto**) ; `orders.commission_rate/commission_amount` **figés à la livraison** (`mark_order_delivered`) → un rapport déjà sorti ne bouge jamais ; table `restaurant_settlements` (trace des reversements). RPC SECURITY DEFINER admin : `set_commission_rate`, `record_settlement` (calcule le net dû sur la période, jour local `Indian/Antananarivo`), `approve_role`/`reject_role`.
 - **Modèle d'argent** (tranché) : le livreur encaisse tout le cash → te le remet → tu reverses au restaurant `Σ plats − commission` et gardes commission + frais de livraison. **Commission sur les plats (`subtotal`) uniquement.** Seules les `livree` comptent ; aucune commission sur une annulée. **Ouvert** : rémunération livreur (le rapport trace le reversement restaurant en priorité).
-- **Écrans (4 onglets)** : Temps réel (commandes actives tous restos + livreurs dispo, polling 10 s, badge RETARD) · Rapport de clôture (période, net à reverser/resto, totaux, export CSV, « marquer reversé » + historique) · Demandes de rôle (valider/refuser, lier `restaurant_staff`) · Restaurants & menus (créer/éditer un restaurant ; gérer catégories/produits — prix, description, dispo, **photo par URL en V1**, upload direct = P1). Écritures via RPC admin (`admin_create_restaurant`, `admin_update_restaurant`, `admin_upsert_category`, `admin_upsert_product`), gardées par `is_admin()`.
-- **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes, mode admin mobile allégé.
+- **Écrans d'origine (2026-08)** : Temps réel (commandes actives tous restos + livreurs dispo, polling 10 s, badge RETARD) · Rapport de clôture (période, net à reverser/resto, totaux, export CSV, « marquer reversé » + historique) · Demandes de rôle (valider/refuser, lier `restaurant_staff`) · Restaurants & menus (créer/éditer un restaurant ; gérer catégories/produits — prix, description, dispo, **photo par URL en V1**, upload direct = P1). Écritures via RPC admin (`admin_create_restaurant`, `admin_update_restaurant`, `admin_upsert_category`, `admin_upsert_product`), gardées par `is_admin()`.
+- **Onglets au 2026-09-17** : Temps réel · Remboursements · Codes offerts · **Sélections** · Rapport de
+  clôture · Demandes de rôle · Restaurants & menus. L'onglet Restaurants montre le **rang** et le
+  statut (Disponible / En négociation / Masqué) et permet de changer le rang
+  (`admin_ordonner_restaurant`, fonction à part : ajouter un paramètre à `admin_update_restaurant`
+  créerait une surcharge PGRST203). La liste des restaurants de l'admin vient de
+  `admin_lister_restaurants()` (commission + rang + statut, dans l'ordre du catalogue client).
+- **Téléphone d'abord (2026-09-16)** : un palier `@media (max-width: 640px)` dans `globals.css`.
+  La barre du haut débordait de 38 px à elle seule (une adresse e-mail ne se coupe pas). Les
+  tableaux **d'action** (Temps réel, Remboursements, classe `cartes` + `data-label` sur chaque
+  cellule) deviennent des cartes empilées ; les tableaux **de consultation** défilent latéralement
+  avec une largeur minimale. Champs à **16 px** (en dessous iOS zoome et ne redescend pas), cibles à
+  **44 px** — `!important` voulu, pour battre les styles écrits en ligne. Modales en feuilles basses
+  (`dvh`). Mesuré à 375 px : mise en page 720 → 375 px, cibles sous 44 px 20 → 0.
+- **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes.
 
 ## Paiement par carte (Stripe) — 2026-09-06
 
@@ -652,6 +743,79 @@ qui a la place).
 absolues du site. **Ne pas le confondre avec `taxifood.distripro207.com`, qui est l'app web** :
 elle n'a aucune balise Open Graph, et un partage qui la vise ne montre qu'un lien nu.
 
+## Partage des plats du jour, sélections, Facebook (2026-09-16/17)
+
+**Les pages de partage** (`landing/netlify/functions/partage.mjs`) : `/p/` plat, `/r/` restaurant,
+`/j/` plats du jour d'un restaurant, `/s/` **sélection multi-restaurants**. Chaque page a son image
+Open Graph `…/apercu.jpg`, fabriquée par une fonction Edge.
+
+- ⛔ **La vitrine se déploie DEPUIS `landing/`** — sinon `partage` et `repondre-commande` ne partent
+  pas : tous ces liens ET les liens `/a/…` de réponse des restaurants tombent en 404 (payé le
+  2026-09-16). Contrôle : `/a/00000000-0000-0000-0000-000000000000/x` → **400**.
+- **Sélections** (tables `selections` / `selection_items`, RLS sans aucune policy ni grant, lecture par
+  la seule `selection_publique()`, écriture par `admin_creer_selection` / `admin_lister_selections` /
+  `admin_desactiver_selection`) : le fondateur choisit jusqu'à 12 plats chez 5 restaurants au plus,
+  onglet admin **Sélections**. **Rien n'est figé** : nom, prix et photo relus à chaque ouverture ; un
+  plat devenu non commandable disparaît. Le panier étant **mono-restaurant** (`cart.ts`, `canAdd`),
+  la page groupe les plats par restaurant et le dit.
+- **Charte des images d'aperçu** (`apercu-plats-du-jour`, `apercu-selection`) : photo pleine bord à
+  bord, **filet or #FFC72C**, **bandeau rouge #E8342A**, sur-titre or en capitales espacées, titre
+  blanc très gras — celle de `visuels-reseaux/gabarit.py`. ⚠️ Le fond brun sombre de la première
+  version a été **refusé** par le porteur du projet. Le nom du plat a sa propre ligne (à côté du prix
+  il était tronqué : « Poulet b… »). Voile sous les photos en rampe courte (lisible sur une canette
+  blanche), encre posée AVANT une photo détourée. ⚠️ **Les deux fonctions se recopient** (primitives
+  de dessin) : toute retouche graphique se porte dans LES DEUX. Chaque fichier du dépôt est le texte
+  exact du bundle déployé (déploiement par MCP) — relire par `get_edge_function` en cas de doute.
+- ⚠️ **Déployer une fonction Edge ne rend pas le nouveau code immédiat** : l'isolate chaud sert
+  l'ancien bundle quelques dizaines de secondes. Comparer l'empreinte de l'image avant de conclure.
+- ⚠️ **Facebook met en cache, PAR ADRESSE**, titre, texte et image. Le lien `/j/<resto>` étant
+  toujours le même, le partage publiait les plats **de la veille**. Le lien porte désormais une
+  **empreinte des plats à l'affiche** (`?v=`, FNV-1a sur les identifiants triés), calculée à
+  l'identique dans `app/lib/partage.ts` et `partage.mjs`, et posée aussi dans `og:url` et sur
+  l'image. Une publication DÉJÀ faite garde son ancien aperçu : seul le débogueur
+  https://developers.facebook.com/tools/debug/ (« Scrape Again ») la rafraîchit.
+- **Bouton Facebook** : sur un navigateur mobile **sans** `navigator.share` (navigateur intégré de
+  Facebook, certains Android), `sharer.php` n'affichait qu'un logo — le lien est maintenant **copié**
+  et la feuille le dit. Dans la feuille de partage, on **attend** la fin du partage avant de fermer :
+  iOS refuse en silence d'ouvrir une feuille système pendant qu'une autre se referme.
+- Liens partagés marqués `utm_source` (whatsapp / lien / systeme) pour la mesure — **jamais
+  Facebook**, qui remplace le lien par `og:url`.
+
+## Ordre du catalogue et « En négociation » (2026-09-16)
+
+- **L'ordre vit en base** (migration `20260916130000_l_ordre_du_catalogue_se_decide_en_base`) : `restaurants.sort_order` (choisi dans l'admin, 10/20/30…) et
+  `rang_catalogue`, colonne **générée** = statut d'abord (visible, puis coming_soon, puis hidden),
+  rang ensuite. L'app (`listRestaurants`) et la vitrine (`partenaires.js`) trient toutes deux sur
+  `rang_catalogue.asc, created_at.asc` — vérifié identique par l'API. Avant : l'app triait par date
+  (Taxi Be en tête), la vitrine par `listing_status.asc`, un tri **alphabétique** qui passait les
+  « bientôt » avant les ouverts. Pas de vue : `restaurants` porte quatre colonnes calculées.
+  ⚠️ Ne jamais antidater `created_at` pour déplacer un restaurant.
+- **« En négociation »** remplace « Bientôt disponible » pour TOUT restaurant `coming_soon`, app et
+  vitrine (décision du porteur du projet). Clé i18n **à part** `restaurantCard.enNegociation` :
+  `comingSoon` sert aussi aux PLATS qui s'annoncent (milkshakes). La liste d'identifiants
+  `EN_NEGOCIATION` écrite en dur dans la vitrine a disparu.
+- Un restaurant en négociation **n'est plus grisé** (ni carte de l'app, ni vitrine) : ses photos
+  doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
+  Un restaurant simplement **fermé** reste grisé.
+
+## 🔓 Fuite connue : commission et canal Telegram lisibles par anon (2026-09-16)
+
+Avec la seule clé publiable, `select commission_rate, telegram_chat_id from restaurants` répond.
+**Toujours ouvert au 2026-09-17.**
+
+⛔ **Ne pas refaire la fermeture par privilèges de colonne.** Tentée le 2026-09-16 (migration
+`20260917091000_la_commission_ne_regarde_personne`) : l'accueil de l'app a répondu **401**, annulée
+dans la foulée (`20260917092000_la_commission_attendra`). Cause : `restaurants` porte quatre
+**colonnes calculées PostgREST** (`commandable_maintenant`, `horaires_du_jour`, `ouvert_maintenant`,
+`services_du_jour`) qui prennent la **ligne entière** — Postgres exige alors le SELECT sur toutes
+les colonnes. Le contrôle en SQL direct (`set local role anon; select id, name…`) passait : faux
+témoin. **Toujours vérifier un changement de droits par PostgREST, avec la clé publiable et la
+requête exacte de l'app.**
+
+Voie qui marchera : sortir les deux colonnes dans une table privée `restaurant_prive` sans grant
+public, et adapter les 9 fonctions SECURITY DEFINER qui les lisent ou écrivent ainsi que
+`notify-order`. `admin_lister_restaurants()` est déjà en place côté admin.
+
 ## Règles produit importantes (déjà implémentées)
 
 - ⚠️ **Labels alimentaires « contient du porc » : on ne tague que ce qui est CONFIRMÉ par le
@@ -952,6 +1116,21 @@ depuis un bouton de bot. Ce « double clic » touchera tous les restaurateurs.
   redéployé. L'écran n'est jamais l'autorité : la clé anon est publique et
   `create_order` reste appelable directement.
 
+### Pièges de la publication OTA, rencontrés le 2026-09-16/17
+
+- **Une commande OTA interrompue ne publie rien** : `dist-ota/` resté sur le disque et
+  `eas update:list` sans la ligne attendue. Toujours vérifier la liste avant de dire « c'est en ligne ».
+- **Chercher un texte dans un paquet Hermes (`.hbc`)** : toute chaîne contenant un caractère non ASCII
+  (« é ») y est stockée en **UTF-16**. Une recherche UTF-8 répond « absent » à tort — chercher les
+  deux encodages.
+- **Changer `expo.version` le temps d'une publication** : restaurer par `trap` **sans changer de
+  dossier dans la commande**. Un `cd ..` avant la sortie a fait restaurer `app.json` au mauvais
+  endroit (fichier parasite à la racine, `app/app.json` resté en 1.2.1). Vérifier ensuite
+  `git diff -- app/app.json` **vide** dans une commande séparée.
+- **`deposer-visuel` depuis ce poste** : Python 3.14 (python.org) n'a pas de certificats racine →
+  passer par `curl`, secret dans un fichier d'en-tête temporaire (`-H @fichier`, `umask 077`,
+  supprimé par `trap`), jamais sur la ligne de commande.
+
 ## ⛔ MVola ne doit entrer dans AUCUN build ni aucune mise à jour (2026-09-15)
 
 Consigne du porteur du projet. L'intégration MVola est écrite sur la **branche locale `mvola`**
@@ -1012,7 +1191,12 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
 - **Ne pas se compter soi-même** : ouvrir UNE fois `https://taxifoodnosybe.distripro207.com/?ne-pas-me-compter`
   (et `https://taxifood.distripro207.com/?ne-pas-me-compter` pour l'app web — la mémoire du navigateur
   est propre à chaque site) sur chaque appareil. `?me-compter` annule. Pose `localStorage["umami.disabled"]`,
-  que le tracker Umami lit avant chaque envoi.
+  que le tracker Umami lit avant chaque envoi. Un **bandeau noir s'affiche à l'ouverture de cette adresse
+  et reste jusqu'à un appui** (✕) — demande du porteur du projet, qui ne voyait pas passer la version
+  à 5 s. Il s'affiche aussi en cas d'échec (« ce navigateur bloque le stockage »). Jamais sur une visite
+  normale. Fait le 2026-09-17 sur le Chrome de l'ordinateur du porteur du projet, pour les deux sites.
+- Données à ignorer dans les deux comptes : événements `verification-installation` et visites
+  `utm_source=verification` / `test-claude` du 2026-09-17 (tests d'installation).
 - Vérifier qu'une surface mesure : sur la page en production, `typeof window.umami === 'object'`, et
   un `POST https://cloud.umami.is/api/send` avec l'identifiant doit répondre **200**.
 - Reste à faire : Google Search Console (propriété Domaine

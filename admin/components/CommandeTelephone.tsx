@@ -287,7 +287,7 @@ export function CommandeTelephone() {
     <>
       {err ? <div className="card sel-erreur">{err}</div> : null}
 
-      <div className="card sel-bloc">
+      <div className="card sel-bloc tel-carte">
         <h2>Commande par téléphone</h2>
 
         <div className="sel-etape">
@@ -414,10 +414,12 @@ export function CommandeTelephone() {
           </div>
         ) : null}
 
-        {manque.length ? <p className="muted sel-texte-court">Il manque : {manque.join(', ')}.</p> : null}
-        <div className="sel-gestes">
-          <button className="btn sel-btn" disabled={envoi || manque.length > 0} onClick={() => { setErr(null); setConfirmer(true); }}>
-            Envoyer au restaurant
+        {/* Collé en bas de l'écran : une carte de 60 plats sépare sinon le
+            panier du bouton, et l'appel dure pendant qu'on défile. */}
+        <div className="tel-envoi">
+          {manque.length ? <p className="muted sel-texte-court">Il manque : {manque.join(', ')}.</p> : null}
+          <button className="btn sel-btn tel-envoi-btn" disabled={envoi || manque.length > 0} onClick={() => { setErr(null); setConfirmer(true); }}>
+            {lignes.length ? `Envoyer · ${formatAr(montants.total)}` : 'Envoyer au restaurant'}
           </button>
         </div>
       </div>

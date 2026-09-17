@@ -433,3 +433,14 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .tel-stepper .sel-btn { min-width: 44px; padding: 0; font-size: 18px; }
 .tel-qte { min-width: 24px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
 .tel-numero { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin: 4px 0 12px; color: var(--accent); }
+/* Barre d'envoi collée en bas pendant qu'on parcourt la carte. */
+.tel-envoi {
+  position: sticky; bottom: 0; z-index: 5; margin-top: 12px; padding: 10px 0 calc(12px + env(safe-area-inset-bottom));
+  background: var(--panel); border-top: 1px solid var(--border);
+}
+/* ⚠️ Au palier téléphone, `.card` passe en `overflow-x: auto` (tableaux) :
+   un ancêtre qui défile désactive `position: sticky`. Cette carte n'a pas de
+   tableau. */
+.card.tel-carte { overflow: visible; }
+.tel-envoi .sel-texte-court { margin: 0 0 8px; }
+.tel-envoi-btn { width: 100%; }

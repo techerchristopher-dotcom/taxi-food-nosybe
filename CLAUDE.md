@@ -994,7 +994,7 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
 | Surface | Compte Umami | Identifiant | Où il vit |
 |---|---|---|---|
 | Vitrine + pages de partage `/j/ /r/ /s/ /p/` | techerchristopher@gmail.com | `8be3907d-295a-4b7f-ac06-c398d6a20c57` | `landing/js/mesure.js` |
-| App web `taxifood.distripro207.com` | **autre compte, à créer** | *(vide = rien n'est mesuré)* | `app/public/index.html` |
+| App web `taxifood.distripro207.com` | chrisrentanoo@gmail.com | `bff7e721-dac8-4030-b295-5960d0842930` | `app/public/index.html` |
 
 - ⚠️ **Le plan gratuit n'accepte qu'UN site par compte** (« Website limit reached »). D'où deux
   comptes. Ne jamais recopier l'identifiant de la vitrine dans l'app web : les audiences se mélangent.
@@ -1015,7 +1015,7 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   que le tracker Umami lit avant chaque envoi.
 - Vérifier qu'une surface mesure : sur la page en production, `typeof window.umami === 'object'`, et
   un `POST https://cloud.umami.is/api/send` avec l'identifiant doit répondre **200**.
-- Reste à faire : compte Umami de l'app web ; Google Search Console (propriété Domaine
+- Reste à faire : Google Search Console (propriété Domaine
   `distripro207.com`, TXT chez **Hostinger**, sitemap) ; jeton `pt` App Store.
 
 ## Le site de pré-lancement (`landing/`)

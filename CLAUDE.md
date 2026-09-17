@@ -84,6 +84,15 @@ test `MERCISULLI` avec Sulli.
 | **Android** | **1.2.2** (versionCode 12) | ✅ **en ligne**, production, 177 pays |
 | **iOS** | **1.2.2** (build 32) | ✅ **en ligne** depuis le 2026-09-15 23:23 UTC (Madagascar ET France) |
 
+**Build 1.2.3 (2026-09-17)** — iOS **build 33** (`03784765-bd6a-4fdb-a731-704b55c259f5`) envoyé à
+App Store Connect / TestFlight (soumission EAS `7a2519b4…`, FINISHED) ; Android **versionCode 13**
+(`40087104-13f6-4d83-a967-744b6208b351`) déposé sur la piste **interne** (soumission `ab841b19…`,
+FINISHED). Commit `d842e50`, `git grep -i mvola` vide. `runtimeVersion` **1.2.2** (voir « Les
+commandes »). ⏳ **Restent au porteur du projet** : recette sur appareil
+(`docs/EN-ATTENTE-DE-BUILD.md`), puis soumission à la vérification Apple (textes et notes :
+`docs/FICHE-APP-STORE.md` § 9) et promotion Play interne → production. Ni l'une ni l'autre n'est
+faite.
+
 Des téléphones restent en 1.2.1 tant qu'ils n'ont pas mis l'app à jour : les OTA partent donc
 encore pour les **deux** runtimes.
 

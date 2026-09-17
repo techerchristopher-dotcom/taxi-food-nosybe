@@ -25,10 +25,19 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   `service_role`. L'API MCP ne sait pas supprimer une fonction.
 
 **Mesure et référencement**
-- Google Search Console : propriété **Domaine** `distripro207.com` avec techerchristopher@gmail.com,
-  enregistrement TXT chez **Hostinger** (le DNS du domaine y est), puis sitemap
-  `https://taxifoodnosybe.distripro207.com/sitemap.xml`.
-- Jeton fournisseur App Store `pt` (App Analytics → Campagnes) → `APP_STORE_PT` dans `landing/js/mesure.js`.
+- Jeton fournisseur App Store `pt` (App Analytics → Campagnes) → `APP_STORE_PT` dans
+  `landing/js/mesure.js`, puis déployer la vitrine. **Bloqué** : session App Store Connect expirée
+  le 2026-09-17, le porteur du projet doit s'y reconnecter (je ne saisis aucun mot de passe).
+- (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
+
+**Nouveaux chantiers (demandés le 2026-09-17)**
+- 💬 **Bulle WhatsApp** flottante sur la vitrine ET l'app, comme sur le site Rentanoo. Message
+  pré-rempli **à définir avec le porteur du projet** avant de coder. Déjà compté par `mesure.js`
+  (`contact-whatsapp`) dès qu'un lien `wa.me/` est cliqué.
+- ☎️ **Commande manuelle par téléphone** depuis l'admin : un client appelle, le porteur du projet
+  saisit sa commande en quelques gestes et elle part dans le **circuit existant** (restaurant
+  prévenu, livreur, suivi) — jamais un circuit parallèle. Passer par la même RPC que l'app
+  (`create_order`), pas par une écriture directe.
 
 **Les trois restaurants en négociation (Madame Oh, Oh Hazar, La Plage), AVANT tout passage en `visible`**
 - Commission par défaut **15 %** (les autres 5 %), livraison **0 Ar** (les autres 10 000), zone et
@@ -1199,8 +1208,15 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   `utm_source=verification` / `test-claude` du 2026-09-17 (tests d'installation).
 - Vérifier qu'une surface mesure : sur la page en production, `typeof window.umami === 'object'`, et
   un `POST https://cloud.umami.is/api/send` avec l'identifiant doit répondre **200**.
-- Reste à faire : Google Search Console (propriété Domaine
-  `distripro207.com`, TXT chez **Hostinger**, sitemap) ; jeton `pt` App Store.
+- ✅ **Google Search Console** (2026-09-17) : propriété **préfixe d'URL**
+  `https://taxifoodnosybe.distripro207.com/`, compte techerchristopher@gmail.com, validée par le
+  fichier `landing/googlebf483449cdeef436.html`. ⛔ **Ne jamais supprimer ce fichier** : la propriété
+  perdrait sa validation. Sitemap `/sitemap.xml` soumis : « Opération effectuée », 8 pages découvertes.
+- **Play Console** : rien à configurer. Les chiffres sont dans *Développer les utilisateurs* (Grow
+  users) → cartes Acquisition, filtre « Traffic source » ; les liens du site portent
+  `utm_source=taxifood-site`, `utm_medium` = vitrine/partage, `utm_campaign` = la page. Au
+  2026-09-17 : 23 acquisitions d'appareils sur 28 jours, rien d'attribué au site encore.
+- Reste à faire : jeton `pt` App Store.
 
 ## Le site de pré-lancement (`landing/`)
 
@@ -1212,7 +1228,7 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
 
 ⚠️ **Le *primary domain* Netlify ne redirige RIEN tout seul** (vérifié le 2026-08-24, et ça contredit ce qu'on lit partout) : `taxifood-nosybe-landing.netlify.app` répondait 200 avec le site entier, canonical compris, et Netlify ne pose de `X-Robots-Tag: noindex` que sur les deploy previews et les branch deploys, **jamais en production**. La seule protection est la règle de redirection absolue de `_redirects`.
 
-⚠️ **L'indexation ne se déclenche pas toute seule** : le site n'est pas déclaré en Search Console, geste que seul le porteur du projet peut faire (validation de propriété). Sans lui, Google découvrira le nouveau nom par les 301 et le sitemap, mais lentement.
+✅ **Déclaré en Search Console le 2026-09-17** (préfixe d'URL, fichier `googlebf483449cdeef436.html` à la racine de `landing/` — à ne jamais supprimer) et sitemap soumis. Détail dans la section « Mesure ».
 
 **Six pages, deux parcours × trois langues.** Client : `/`, `/en/`, `/it/`. Restaurateur : `/restaurants-partenaires/`, `/en/restaurant-partners/`, `/it/ristoranti-partner/`.
 

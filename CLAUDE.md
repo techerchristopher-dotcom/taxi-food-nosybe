@@ -1,6 +1,6 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase. **Huit restaurants en base** au 2026-09-17 : deux ouverts à la commande (La Cabane, Chez Bidul & Truc), cinq « en négociation » (Les Siciliens, Madame Oh, Oh Hazar, La Plage, Taxi Be), un masqué (Angelo) — voir « Les vrais restaurants ». Branche de travail : `main`.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase. **Huit restaurants en base** au 2026-09-17 : deux ouverts à la commande (La Cabane, Chez Bidul & Truc), quatre « en négociation » (Les Siciliens, Madame Oh, Oh Hazar, La Plage), deux masqués (Angelo, et Taxi Be depuis le 2026-09-17) — voir « Les vrais restaurants ». Branche de travail : `main`.
 
 Trois livrables distincts, à ne pas confondre :
 
@@ -28,10 +28,13 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
-- 🚮 **Retirer complètement Taxi Be de l'appli** (et du site) : il ne doit plus apparaître nulle part.
-  ⚠️ Avant de toucher : vérifier s'il sert encore aux **comptes de démonstration du relecteur
-  Apple** (il avait été passé `visible` pour lui) — le retirer sans solution de rechange peut faire
-  rejeter la prochaine soumission. Retirer en base (statut), pas seulement à l'écran.
+- ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
+  `20260917140000_taxi_be_quitte_le_catalogue`), vitrine redéployée (bloc de repli nettoyé, logos
+  supprimés), pages de partage `/r/ /j/ /p/` d'un restaurant `hidden` → accueil (vérifié : 302),
+  écrans `restaurant/[id]` et `product/[id]` → « introuvable » sauf pour le personnel du restaurant.
+  ⚠️ **`demo.resto@taxifood.mg` reste rattaché à Taxi Be** (espace restaurant intact, invisible des
+  clients) — décision à valider, et **son espace est vide** (0 commande) : voir
+  `docs/FICHE-APP-STORE.md` § 4 avant la prochaine soumission.
 - 🔄 **Un nouveau client iPhone démarre sur l'ANCIENNE version** (constaté le 2026-09-17) : juste
   après installation depuis l'App Store, ancien écran ; fermer / rouvrir → bonne version.
   Cause : réglage par défaut d'`expo-updates` (`fallbackToCacheTimeout` = 0) — le premier lancement
@@ -239,7 +242,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 | 50 | Oh Hazar (marocain, Hell-Ville) | coming_soon | `c2a49e11-d839-459f-a332-024796102155` |
 | 60 | La Plage (bistrot & bar, Hell-Ville) | coming_soon | `eb10f338-fb78-4c16-82d5-810ae37b49fe` |
 | 70 | Angelo | hidden | `cb482596-b39e-4355-96a5-3dfdad75dcee` |
-| 90 | Taxi Be — **toujours dernier** | coming_soon | `ac2766bb-c4d1-4f5e-9a40-3ea0febcb886` |
+| 90 | Taxi Be — **retiré du catalogue le 2026-09-17** | hidden | `ac2766bb-c4d1-4f5e-9a40-3ea0febcb886` |
 
 `coming_soon` s'affiche **« En négociation »** partout (app et vitrine) et n'est **jamais
 commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` — la garde est en base.
@@ -287,7 +290,7 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   fromage », pas « Fromage » : panier et ticket affichent le plat SANS sa catégorie. Tout ce qui
   reste à régler avant l'ouverture : « Reste à faire » en tête de fichier.
 - **Angelo** — `listing_status = 'hidden'`. Voir sa carte en base pour le détail des catégories.
-- **Taxi Be** — `coming_soon`. Bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs). ⚠️ Les 6 cocktails sont désactivés depuis le 2026-08-19 (`categories.is_active = false`, décision classement d'âge — voir `docs/FICHE-APP-STORE.md` § 3), les 19 bières restent.
+- **Taxi Be** — **`hidden` depuis le 2026-09-17** (retiré à la demande du porteur du projet ; carte conservée en base, compte démo Apple `demo.resto` toujours rattaché). Bar & pizzeria (Pizza, Tapas, Bières, Cocktails, Softs). ⚠️ Les 6 cocktails sont désactivés depuis le 2026-08-19 (`categories.is_active = false`, décision classement d'âge — voir `docs/FICHE-APP-STORE.md` § 3), les 19 bières restent.
 
 ⚠️ Les 4 restaurants de **démo** (Pizzeria Papillon, Tacos du Boulevard, Burger Baobab, Chez Loulou) ont été **supprimés de la base**. Ne pas les réintroduire ; aucun nom en dur dans le code (juste un exemple dans un commentaire de `data/types.ts`).
 

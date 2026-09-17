@@ -1215,7 +1215,7 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
 - **Play Console** : rien à configurer. Les chiffres sont dans *Développer les utilisateurs* (Grow
   users) → cartes Acquisition, filtre « Traffic source » ; les liens du site portent
   `utm_source=taxifood-site`, `utm_medium` = vitrine/partage, `utm_campaign` = la page. Au
-  2026-09-17 : 23 acquisitions d'appareils sur 28 jours, rien d'attribué au site encore.
+  2026-09-17 : 23 acquisitions d'appareils sur 28 jours ; la ventilation par source n'a pas été lue.
 - Reste à faire : jeton `pt` App Store.
 
 ## Le site de pré-lancement (`landing/`)

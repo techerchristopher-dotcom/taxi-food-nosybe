@@ -245,12 +245,33 @@ depuis l'app, qui le laisse en `pending` jusqu'à validation manuelle : il est r
 | Rôle | E-mail | Ce qu'il voit |
 |---|---|---|
 | Client | `demo.apple@taxifood.mg` | parcours de commande, adresse déjà géolocalisée |
-| Restaurant | `demo.resto@taxifood.mg` | espace restaurant de **Taxi Be**, 3 commandes en 3 états |
+| Restaurant | `demo.resto@taxifood.mg` | espace restaurant de **Taxi Be** (restaurant **retiré du catalogue client** depuis le 2026-09-17, voir plus bas) |
 | Livreur | `demo.livreur@taxifood.mg` | 3 courses disponibles à prendre |
 
 Mot de passe commun : `TaxiFoodDemo2026`.
 
-**Pourquoi Taxi Be pour le compte restaurant** : c'est le seul des trois restaurants avec
+### ⚠️ Taxi Be retiré du catalogue le 2026-09-17 — ce que ça change pour le relecteur
+
+Taxi Be est passé `listing_status = 'hidden'` (migration
+`20260917140000_taxi_be_quitte_le_catalogue`) : **aucun client ne le voit** (liste, recherche,
+vitrine, pages de partage, liens profonds) et `create_order` le refuse. **`demo.resto` y reste
+rattaché** : l'espace restaurant lit son restaurant par `current_restaurant_id()`, sans filtre de
+statut, et l'écran `restaurant/[id]` reste ouvert à son propre personnel. Le relecteur garde donc
+un espace restaurant réel, sur un restaurant qu'aucun vrai client ne peut atteindre.
+
+Décision prise plutôt que de rattacher `demo.resto` à un restaurant réel : un compte démo sur La
+Cabane ou Chez Bidul & Truc donnerait au relecteur les boutons Accepter / Refuser de **vraies
+commandes de vrais clients**. À valider par le porteur du projet.
+
+Deux conséquences à connaître avant la prochaine soumission :
+- **L'espace de `demo.resto` est vide** (0 commande chez Taxi Be au 2026-09-17 : les trois
+  commandes de démonstration d'origine n'existent plus). La 1.2.2 est passée ainsi, mais le rejet
+  2.1(a) portait justement sur un espace pro qu'on ne pouvait pas exercer.
+- **Plus de restaurant « bac à sable » pour une commande de test** : Taxi Be n'était déjà plus
+  commandable depuis le 2026-09-08 (`coming_soon`). La note « Please order from Taxi Be » a été
+  retirée ci-dessous.
+
+**Pourquoi Taxi Be pour le compte restaurant (historique)** : c'est le seul des trois restaurants avec
 **zéro commande réelle**, et il a un vrai menu. Le relecteur voit donc une interface
 authentique et peut accepter, préparer et clôturer des commandes **sans jamais toucher aux
 données de La Cabane ni d'Angelo**.
@@ -341,12 +362,10 @@ This account already has a delivery address saved with GPS coordinates, so you c
 an order without going through location capture.
 
 RESTAURANT ACCOUNT (demo.resto@taxifood.mg)
-Signs in to the restaurant space of "Taxi Be". Three demo orders are waiting, one in each
-state, so the full cycle can be exercised:
-  - one "Received"     -> you can Accept or Decline it
-  - one "Confirmed"    -> you can start preparation
-  - one "In preparation" -> you can mark it ready
-This restaurant has no real customer orders, so nothing you do there affects live data.
+Signs in to the restaurant space of "Taxi Be", a demo restaurant that is not listed in the
+customer catalogue. From there you can open and close the restaurant, edit opening hours,
+upload a logo and cover photo, feature dishes of the day and mark dishes out of stock.
+Nothing you do there affects a live business.
 
 COURIER ACCOUNT (demo.livreur@taxifood.mg)
 Signs in to the courier space, with deliveries available to claim. You can take one, mark it
@@ -359,9 +378,10 @@ customer. Location is never captured in the background or while the app is close
 customer demo account already has an address saved, so this step can be skipped.
 
 WHERE TO PLACE A TEST ORDER
-Please order from "Taxi Be". It is the one restaurant with no real customer orders and no
-live notification channel, so nothing you do there disturbs a real business. The other
-restaurants on the list are live businesses whose owners receive every order on their phone.
+The restaurants on the list are live businesses whose owners receive every order on their
+phone, and orders are only accepted during their opening hours (Madagascar time, UTC+3).
+You can go through the whole flow up to the final "Order" button without placing the order.
+If you do place one, please choose "Cash on delivery"; we will cancel it on our side.
 
 PAYMENT — PLEASE USE "CASH ON DELIVERY" FOR THIS REVIEW
 Card payments are LIVE, not in test mode: selecting "Card" would place a real charge on your

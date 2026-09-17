@@ -35,6 +35,7 @@ const BANNER_HEIGHT = 200;
 import { getMenu, getRestaurant } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
+import { useSession } from '../../store/session';
 
 /** Écran 03 — Menu du restaurant (catégories + produits + panier flottant). */
 export default function RestaurantMenuScreen() {
@@ -45,6 +46,11 @@ export default function RestaurantMenuScreen() {
   const { t } = useTranslation();
 
   const { data: restaurant, loading } = useLoad(() => getRestaurant(id!), [id]);
+  // ⚠️ Un restaurant `hidden` a quitte le catalogue (Taxi Be, 2026-09-17) : un
+  // ancien lien partage ou un lien profond ne doit pas le rouvrir. Seul SON
+  // personnel le voit encore — dont le compte de demonstration Apple.
+  const monRestaurantId = useSession((s) => s.session?.restaurantId);
+  const retire = restaurant?.listingStatus === 'hidden' && monRestaurantId !== restaurant?.id;
   const { data: menu } = useLoad(() => getMenu(id!), [id]);
   const categories = menu?.categories ?? [];
   const productsByCat = menu?.products ?? [];
@@ -76,7 +82,7 @@ export default function RestaurantMenuScreen() {
       </View>
     );
   }
-  if (!restaurant) {
+  if (!restaurant || retire) {
     return (
       <View style={styles.center}>
         <Text style={styles.notFound}>{t('restaurant.notFound')}</Text>

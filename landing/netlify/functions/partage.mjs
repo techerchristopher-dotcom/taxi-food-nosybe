@@ -464,7 +464,9 @@ export default async (request) => {
     if (genre === 'j') {
       // Plats du jour : les plats À L'AFFICHE et commandables, dans l'ordre de l'app.
       const [r, platsLus] = await Promise.all([
-        supabase(`restaurants?id=eq.${id}&select=id,name`),
+        // `hidden` = retiré du catalogue (Taxi Be, 2026-09-17) : ses anciens liens
+        // retombent sur l'accueil, comme dans l'app et la vitrine.
+        supabase(`restaurants?id=eq.${id}&listing_status=neq.hidden&select=id,name`),
         supabaseListe(`products?restaurant_id=eq.${id}&is_featured=eq.true&is_archived=eq.false&is_available=eq.true`
           + '&select=id,name,price,photo_url,stock_quantity&order=sort_order.asc,name.asc'),
       ]);
@@ -563,7 +565,9 @@ export default async (request) => {
       };
     } else if (genre === 'p') {
       const p = await supabase(
-        `products?id=eq.${id}&is_available=eq.true&select=id,name,description,price,photo_url,restaurants(name)`);
+        `products?id=eq.${id}&is_available=eq.true&select=id,name,description,price,photo_url,restaurants!inner(name,listing_status)`
+        // Plat d'un restaurant retiré du catalogue : accueil (voir `j` plus haut).
+        + '&restaurants.listing_status=neq.hidden');
       if (!p) return versAccueil();
       const resto = p.restaurants?.name;
       vue = {
@@ -580,7 +584,7 @@ export default async (request) => {
       // silencieusement sur l'accueil. Le descriptif se compose à partir du type
       // de cuisine et de la zone livrée.
       const r = await supabase(
-        `restaurants?id=eq.${id}&select=id,name,cuisine_type,zone_served,delivery_fee,cover_url,logo_url`);
+        `restaurants?id=eq.${id}&listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,delivery_fee,cover_url,logo_url`);
       if (!r) return versAccueil();
       const ou = r.zone_served ? ` — livré à ${r.zone_served}` : ' à Nosy Be';
       vue = {

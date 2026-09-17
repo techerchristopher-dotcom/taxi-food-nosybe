@@ -347,7 +347,7 @@ pas les proportions : il renvoie une image écrasée (largeur demandée, hauteur
 | `img/restaurateur/` | les 6 avant/après + la commande reçue | 400 / 800 / 1200 |
 | `img/app/` | captures d'écran de l'app (`01-…` à `06-…` côté client, `resto-1` à `resto-5`) | 240 / 480 |
 | `img/produits/` | les 8 plats de La Cabane | 64 / 128 |
-| `img/logo/` | La Cabane, Angelo, Taxi Be | 64 / 128 |
+| `img/logo/` | La Cabane, Angelo | 64 / 128 |
 | `media/` | vidéo ré-encodée, son poster, le visuel d'attente | — |
 | `og/` | images de partage 1200 × 630 | — |
 | `assets/` | logo Taxi Food, favicons, icônes du manifeste | — |

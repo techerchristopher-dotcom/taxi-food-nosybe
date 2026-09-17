@@ -23,6 +23,7 @@ const PHOTO_HEIGHT = 150;
 const CHIP_THUMB = 34;
 import { getProductDetail } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
+import { useSession } from '../../store/session';
 import { RestaurantContext, useCart } from '../../store/cart';
 import { lienProduit, textePartageProduit } from '../../lib/partage';
 import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
@@ -39,6 +40,10 @@ export default function ProductDetailScreen() {
   const product = data?.product ?? null;
   const restaurant = data?.restaurant ?? null;
   const category = data?.category ?? null;
+  // Plat d'un restaurant retire du catalogue (`hidden`) : introuvable, sauf pour
+  // le personnel de ce restaurant. Voir restaurant/[id].tsx.
+  const monRestaurantId = useSession((s) => s.session?.restaurantId);
+  const retire = restaurant?.listingStatus === 'hidden' && monRestaurantId !== restaurant?.id;
   const groups = useMemo(() => data?.groups ?? [], [data]);
 
   const add = useCart((s) => s.add);
@@ -85,7 +90,7 @@ export default function ProductDetailScreen() {
       </View>
     );
   }
-  if (!product) {
+  if (!product || retire) {
     return (
       <View style={styles.center}>
         <Text style={styles.notFound}>{t('product.notFound')}</Text>

@@ -19,7 +19,6 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   `restaurants.commission_rate` et `telegram_chat_id`. La fermeture par privilèges de colonne a
   **cassé l'app** (colonnes calculées) et a été annulée. Voie qui marchera : table privée.
   → section « Fuite connue ».
-- 📤 **Commits locaux non poussés** sur `main` (16 au 2026-09-17, `git log origin/main..HEAD`) : `git push` à faire.
 - 🗑️ **Supprimer depuis le tableau de bord Supabase** la fonction Edge jetable
   `upload-plats-du-jour-bidul` — encore ACTIVE (vérifié le 2026-09-17). Sa version 1 portait la
   `service_role`. L'API MCP ne sait pas supprimer une fonction.

@@ -477,5 +477,9 @@
     "newPasswordTitle": "Nouveau mot de passe",
     "newPasswordSubtitle": "Choisis ton nouveau mot de passe. Il remplacera l'ancien immédiatement.",
     "savePassword": "Enregistrer le mot de passe"
+  },
+  "bulleWhatsApp": {
+    "message": "Bonjour Taxi Food 👋 J'ai une question : ",
+    "label": "Écrire à Taxi Food sur WhatsApp"
   }
 }

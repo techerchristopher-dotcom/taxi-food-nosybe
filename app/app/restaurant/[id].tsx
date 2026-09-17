@@ -26,6 +26,7 @@ import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ProductThumb } from '../../components/ProductThumb';
 import { ConflictSheet } from '../../components/ConflictSheet';
+import { BulleWhatsApp } from '../../components/BulleWhatsApp';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { imageUrl, Product, Restaurant, todayServicesLabel } from '../../data/types';
 
@@ -335,6 +336,9 @@ export default function RestaurantMenuScreen() {
           </View>
         </Pressable>
       ) : null}
+
+      {/* Au-dessus du bouton panier quand il est là (58 de haut + 12 d'écart). */}
+      <BulleWhatsApp bas={Math.max(insets.bottom, 16) + 10 + (count > 0 ? 58 + 12 : 0)} />
 
       <PartageSheet
         visible={aPartager !== undefined}

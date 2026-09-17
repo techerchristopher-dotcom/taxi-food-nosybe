@@ -477,5 +477,9 @@
     "newPasswordTitle": "New password",
     "newPasswordSubtitle": "Choose your new password. It replaces the old one immediately.",
     "savePassword": "Save password"
+  },
+  "bulleWhatsApp": {
+    "message": "Hello Taxi Food 👋 I have a question: ",
+    "label": "Message Taxi Food on WhatsApp"
   }
 }

@@ -321,6 +321,7 @@ function page({ titre, description, image, lien, prix, commander, plats, note, g
 <!-- Mesure d'audience (js/mesure.js) : c'est ICI qu'on apprend si ce qu'on publie
      est regarde. Meme fichier que la vitrine, donc memes regles de comptage. -->
 <script src="/js/mesure.js"></script>
+<script src="/js/bulle-whatsapp.js" defer></script>
 </head>
 <body>
 <main>

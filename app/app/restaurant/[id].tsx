@@ -259,7 +259,12 @@ export default function RestaurantMenuScreen() {
         )}
 
         <View style={styles.catBar}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {/* ⚠️ Retour à la ligne, PAS de défilement horizontal (2026-09-17). Les
+              clients ne voyaient pas qu'il fallait faire glisser la rangée et
+              ratent des catégories — chez Chez Bidul & Truc, « Hamburger » et
+              « Dessert » tombaient hors de l'écran à 375 px. Toutes visibles
+              d'un coup d'œil, quitte à prendre deux ou trois lignes. */}
+          <View style={styles.catWrap}>
             {categories.map((c) => {
               const active = c.id === activeCategory?.id;
               return (
@@ -275,7 +280,7 @@ export default function RestaurantMenuScreen() {
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </View>
         </View>
 
         <View style={{ paddingHorizontal: spacing.screen, paddingTop: 16 }}>
@@ -529,7 +534,8 @@ const styles = StyleSheet.create({
   featuredPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
   featuredStock: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.textMuted },
   featuredSoldOut: { fontFamily: fonts.semibold, fontSize: 11.5, color: colors.dangerText },
-  catChip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catChip: { minHeight: 34, paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', maxWidth: '100%' },
   catChipActive: { backgroundColor: colors.ink },
   catChipIdle: { backgroundColor: colors.fieldBg },
   catText: { fontFamily: fonts.semibold, fontSize: 12 },

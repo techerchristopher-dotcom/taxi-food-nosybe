@@ -115,6 +115,20 @@
         // vitrine (plan gratuit : un seul site par compte). Vide = rien n'est mesuré.
         // ⚠️ Ne pas y mettre celui de la vitrine : les deux audiences se mélangeraient.
         var ID = '';
+        // « Ne pas me compter » : même adresse que sur la vitrine, à ouvrir aussi ICI —
+        // la mémoire du navigateur est propre à chaque site. Voir landing/js/mesure.js.
+        try {
+          var q = new URLSearchParams(location.search);
+          if (q.has('ne-pas-me-compter')) localStorage.setItem('umami.disabled', '1');
+          if (q.has('me-compter')) localStorage.removeItem('umami.disabled');
+          if (q.has('ne-pas-me-compter') || q.has('me-compter')) {
+            q.delete('ne-pas-me-compter');
+            q.delete('me-compter');
+            var reste = q.toString();
+            history.replaceState(null, '', location.pathname + (reste ? '?' + reste : ''));
+          }
+          if (localStorage.getItem('umami.disabled')) return;
+        } catch (e) {}
         if (!ID || location.hostname !== 'taxifood.distripro207.com') return;
         var s = document.createElement('script');
         s.async = true;

@@ -45,6 +45,44 @@
 
   var enProduction = location.hostname === HOTE_PRODUCTION;
 
+  // ── « Ne pas me compter » ──────────────────────────────────────────────────
+  // Le porteur du projet visite son propre site sans arrêt : sans ceci, ses
+  // passages gonflent les chiffres qu'il cherche justement à lire. Ouvrir UNE fois
+  // `/?ne-pas-me-compter` sur un appareil l'exclut pour toujours ; `/?me-compter`
+  // annule. Le réglage `umami.disabled` est celui que le tracker Umami lit lui-même
+  // avant chaque envoi (vérifié dans son script le 2026-09-17).
+  //
+  // ⚠️ Propre à CHAQUE site : la mémoire du navigateur est rangée par domaine. Il
+  // faut l'ouvrir aussi sur l'app web, qui gère la même adresse de son côté.
+  var exclu = false;
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.has('ne-pas-me-compter')) localStorage.setItem('umami.disabled', '1');
+    if (q.has('me-compter')) localStorage.removeItem('umami.disabled');
+    exclu = !!localStorage.getItem('umami.disabled');
+    if (q.has('ne-pas-me-compter') || q.has('me-compter')) {
+      // L'adresse est nettoyée : partagée par erreur, elle ne ferait sortir personne
+      // d'autre des statistiques.
+      q.delete('ne-pas-me-compter');
+      q.delete('me-compter');
+      var reste = q.toString();
+      history.replaceState(null, '', location.pathname + (reste ? '?' + reste : '') + location.hash);
+      var message = exclu
+        ? 'Cet appareil n’est plus compté dans les statistiques.'
+        : 'Cet appareil est de nouveau compté dans les statistiques.';
+      document.addEventListener('DOMContentLoaded', function () {
+        var b = document.createElement('div');
+        b.textContent = message;
+        b.setAttribute('role', 'status');
+        b.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;'
+          + 'background:#1A1A1A;color:#fff;font:600 14px/1.4 Archivo,system-ui,sans-serif;'
+          + 'padding:12px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+        document.body.appendChild(b);
+        setTimeout(function () { b.remove(); }, 5000);
+      });
+    }
+  } catch (e) { /* navigation privée sans stockage : on compte, tant pis */ }
+
   // ── Où sommes-nous ─────────────────────────────────────────────────────────
   var m = location.pathname.match(/^\/(j|r|s|p)\//);
   // « partage » = une page ouverte depuis un lien publié ; « vitrine » = le site.
@@ -64,7 +102,7 @@
     try { window.umami.track(nom, donnees); } catch (e) { /* une mesure ne casse jamais la page */ }
   }
   window.tfMesure = function (nom, donnees) {
-    if (!enProduction || !UMAMI_ID) return;
+    if (!enProduction || !UMAMI_ID || exclu) return;
     var d = { surface: surface, page: page };
     for (var k in donnees || {}) d[k] = donnees[k];
     if (window.umami && typeof window.umami.track === 'function') envoyer(nom, d);
@@ -122,7 +160,8 @@
   }, true);
 
   // ── Chargement du tracker ──────────────────────────────────────────────────
-  if (!enProduction || !UMAMI_ID) return;
+  // Appareil exclu : on ne charge même pas le tracker.
+  if (!enProduction || !UMAMI_ID || exclu) return;
 
   var s = document.createElement('script');
   s.async = true;

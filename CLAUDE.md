@@ -1009,6 +1009,10 @@ qui refusent et disparaissent des chiffres. Script de 2 Ko.
   de donnée personnelle** dans un événement. Web seulement, silencieux sur l'app installée.
 - Liens partagés depuis l'app marqués `utm_source` (whatsapp / lien / systeme) — **pas Facebook**,
   qui remplace le lien par `og:url`.
+- **Ne pas se compter soi-même** : ouvrir UNE fois `https://taxifoodnosybe.distripro207.com/?ne-pas-me-compter`
+  (et `https://taxifood.distripro207.com/?ne-pas-me-compter` pour l'app web — la mémoire du navigateur
+  est propre à chaque site) sur chaque appareil. `?me-compter` annule. Pose `localStorage["umami.disabled"]`,
+  que le tracker Umami lit avant chaque envoi.
 - Vérifier qu'une surface mesure : sur la page en production, `typeof window.umami === 'object'`, et
   un `POST https://cloud.umami.is/api/send` avec l'identifiant doit répondre **200**.
 - Reste à faire : compte Umami de l'app web ; Google Search Console (propriété Domaine

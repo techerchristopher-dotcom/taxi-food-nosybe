@@ -47,9 +47,21 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - 📱 **Puces de catégories en retour à la ligne** sur la page restaurant (2026-09-17) : OTA + web
   livrés, vérifié à 375 px sur l'export web.
 
-**Les trois restaurants en négociation (Madame Oh, Oh Hazar, La Plage), AVANT tout passage en `visible`**
-- Commission par défaut **15 %** (les autres 5 %), livraison **0 Ar** (les autres 10 000), zone et
-  horaires vides, aucun logo, aucun canal Telegram.
+**🌴 La Plage — EN LIGNE (`visible`) depuis le 2026-09-17**, à la demande du porteur du projet
+- ✅ Horaires en base (`restaurant_hours`) : fermé le lundi, mar.–dim. 10:00–15:00 et 18:00–22:00.
+- ✅ Telegram en **groupe** « Taxi Food - La Plage » (patron + cuisinier), `telegram_chat_id =
+  -1004301209124` (supergroupe, identifiant stable). Commande test TF-242 acceptée depuis le groupe
+  en moins d'une minute, puis TF-242/243/244 (tests) **supprimées**. Message de bienvenue envoyé.
+- ✅ Comptes rattachés (Google, sans mot de passe) : `laplagehellville.nosybe@gmail.com` (patron,
+  inscrit seul le 14/09, rattaché par `inviter_restaurateur`) et `davidantoniods35@gmail.com`
+  (pré-autorisé, rattaché à sa 1re connexion). Jetons push enregistrés (Android + iOS) ; aucune
+  notification push encore observée chez eux.
+- ⚠️ **À régler vite, le restaurant étant commandable** : livraison **0 Ar** (autres 10 000),
+  commission **15 %** (autres 5 %), `zone_served` et `phone` vides (le patron a donné
+  +261 32 71 548 96 à l'inscription — à confirmer comme numéro du restaurant).
+
+**Madame Oh et Oh Hazar (en négociation), AVANT tout passage en `visible`**
+- Commission par défaut **15 %**, livraison **0 Ar**, zone et **horaires vides**, aucun canal Telegram.
 - À confirmer par les restaurateurs : prix réels du poisson entier, du mi xao et de la soupe
   chinoise (créés **indisponibles**, « à partir de 29 000 ») ; plats qui reçoivent les
   accompagnements ; tajine de poisson (photo **chermoula**, mais options pruneaux / citron confit) ;

@@ -222,6 +222,36 @@ c'est le seul moment où on peut vérifier que le nombre vient bien de son tél�
 - ⚠️ **`getUpdates` répond `409 Conflict`** si un nœud *Telegram Trigger* tourne
   dans n8n sur le même robot. Aucun webhook n'est posé aujourd'hui.
 
+### Variante à distance : un GROUPE (patron + cuisinier)
+
+Rodée le 2026-09-17 avec La Plage, sans être sur place. Envoyer ce message tel quel (validé par
+le porteur du projet), en changeant le nom et le paramètre `startgroup` :
+
+```
+Bonjour 👋 Pour recevoir vos commandes Taxi Food sur Telegram, vous et votre cuisinier :
+
+1️⃣ Installez Telegram sur votre téléphone (et votre cuisinier sur le sien) : https://taxifoodnosybe.distripro207.com/telegram/
+
+2️⃣ Sur votre téléphone, créez un groupe : ouvrez Telegram → icône ✏️ (nouveau message) → « Nouveau groupe » → ajoutez votre cuisinier → nommez le groupe Taxi Food – <Restaurant> → valider.
+
+3️⃣ Appuyez sur ce lien, choisissez le groupe Taxi Food – <Restaurant>, puis confirmez l'ajout :
+https://t.me/Taxifood_commandes_bot?startgroup=<nomcourt>
+
+C'est tout ! Prévenez-moi quand c'est fait, je vous envoie un message de test dans le groupe.
+```
+
+Puis : `getUpdates` → update `my_chat_member` d'un chat `group`/`supergroup` dont le **titre**
+correspond ; identifiant **négatif** ; `update restaurants set telegram_chat_id = '<id>'` ; message de
+test ; commande test. Les boutons Accepter/Refuser sont des liens `/a/…` : tout membre peut répondre.
+⚠️ Un groupe simple converti en supergroupe change d'identifiant (`-100…`) et les commandes
+s'arrêtent sans erreur : à refaire. Celui de La Plage était déjà supergroupe à l'ajout.
+
+### Pousser une commande test chez un restaurant en `coming_soon`
+
+`create_order` la refuse. Passer le restaurant `visible` seulement si le porteur du projet l'a décidé.
+Par MCP, `admin_commande_telephone` exige `is_admin()` : poser d'abord dans la même requête
+`set_config('request.jwt.claims', '{"sub":"<uuid admin>","role":"authenticated"}', true)`.
+
 ### ⚠️ État réel au 2026-09-06
 
 - ✅ **Chez Bidul & Truc** — `8683552574`, canal privé du patron (« Marco Bidule »),
@@ -374,6 +404,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 |---|---|---|---|---|---|
 | La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ✅ 2026-09-06 — `7381518363` (« Nancia Elie »), message de contrôle remis |
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
+| La Plage | laplagehellville.nosybe@gmail.com (patron) + davidantoniods35@gmail.com | — (Google) | à confirmer | ✅ 2026-09-17 | ✅ 2026-09-17 — **groupe** `-1004301209124`, commande test acceptée |
 | Les Siciliens | — | — | — | ❌ | ❌ |
 | Taxi Be | — | — | — | ❌ | ❌ |
 | Angelo | — | — | — | ❌ (masqué) | ❌ |

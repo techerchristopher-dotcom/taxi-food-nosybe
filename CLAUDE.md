@@ -384,7 +384,43 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
   **44 px** — `!important` voulu, pour battre les styles écrits en ligne. Modales en feuilles basses
   (`dvh`). Mesuré à 375 px : mise en page 720 → 375 px, cibles sous 44 px 20 → 0.
 - **Onglet « ☎ Commande tél. »** (2026-09-17) : voir la section « Commande par téléphone ».
+- **Onglet « 📣 Annonce »** (2026-09-18) : voir la section « Annonces push ».
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes.
+
+## 📣 Annonces push — prévenir tous les clients (2026-09-18)
+
+« Nouveau restaurant : La Plage », « L'appli s'est mise à jour ». Migration
+`20260918090000_annonces_push`, fonction Edge **`envoyer-annonce`**, onglet admin **📣 Annonce**.
+
+- **Deux gestes séparés, exprès** : `admin_creer_annonce` ÉCRIT l'annonce (table `annonces`,
+  historique : titre, corps, cible, route, auteur, dates, compteurs) ; la fonction Edge l'ENVOIE.
+  Une annonce existe donc en base avant le premier push, et un envoi interrompu laisse une trace.
+- **Garde-fous** (tous vérifiés en transaction annulée) : titre ≤ 50, corps ≤ 150, cible ∈
+  {`clients`, `moi`}, route `/` ou `/restaurant/<uuid>`, **refus d'un doublon exact dans les 24 h**,
+  `is_admin()` sur les trois RPC, statut `preparee` exigé côté Edge (une annonce ne part qu'UNE
+  fois, même si le navigateur rejoue l'appel), auteur = appelant. Aucun trigger n'appelle tout ceci :
+  **rien ne part automatiquement**.
+- **L'écran** : aperçu façon notification (titre gras + corps), compteurs, **« M'envoyer un test »**
+  (cible `moi`, un tap), puis confirmation qui relit **à cet instant** le nombre d'appareils ET de
+  comptes visés et demande de **taper ENVOYER**. Historique en dessous, avec les résultats.
+- ⚠️ **UN TICKET « ok » N'EST PAS UNE LIVRAISON.** Mesuré le 2026-09-18 sur les 10 appareils du
+  compte administrateur : **10 tickets « ok », puis 9 reçus `DeviceNotRegistered`** (anciennes
+  builds désinstallées) — un seul vrai destinataire. `envoyer-annonce` va donc chercher les **reçus**
+  8 s plus tard, compte `recus_ok`, et supprime les jetons morts. `notify-order`, lui, ne lit que
+  les tickets : ses chiffres restent optimistes, c'est assumé (il ne les affiche à personne).
+- ⚠️ **Les deux fonctions Edge ne sont PAS factorisées**, volontairement : un module commun ferait
+  qu'un déploiement d'`envoyer-annonce` peut casser l'annonce d'une commande au restaurant. Toute
+  correction de la mécanique Expo se porte dans LES DEUX.
+- **Cible `clients`** = tout compte portant le rôle client **actif** (au 2026-09-18 : 26 jetons pour
+  4 comptes — beaucoup de jetons de test, ils tomberont au premier envoi réel). Un restaurateur qui
+  a aussi un rôle client reçoit l'annonce : c'est voulu, il est aussi client.
+- **Côté app, rien à changer** : le tap suit `data.route`, déjà géré depuis les notifications de
+  commande, et l'absence d'`orderId` est sans effet (`_layout.tsx`). Aucune OTA n'a donc été publiée
+  pour ce chantier.
+- ⏳ **Jamais exercé de bout en bout** : l'envoi passe par un JWT d'administrateur, que seul le
+  porteur du projet obtient en se connectant. Vérifiés séparément : les RPC et leurs refus (SQL),
+  les refus de la fonction Edge (403 sans jeton, 403 avec la clé publiable, CORS 200), et la chaîne
+  Expo elle-même (envoi réel aux 10 appareils du compte admin, 10 tickets + 1 reçu livré).
 
 ## ☎️ Commande par téléphone (2026-09-17)
 

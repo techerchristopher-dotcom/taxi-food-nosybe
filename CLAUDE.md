@@ -909,6 +909,35 @@ Open Graph `…/apercu.jpg`, fabriquée par une fonction Edge.
 - Liens partagés marqués `utm_source` (whatsapp / lien / systeme) pour la mesure — **jamais
   Facebook**, qui remplace le lien par `og:url`.
 
+### « Enregistrer l'image » (2026-09-18)
+
+**Publier l'IMAGE comme photo, avec le lien dans le texte, rend mieux sur Facebook** qu'une
+publication qui porte un lien : le composeur rogne la carte d'aperçu. La feuille de partage
+propose donc une quatrième ligne, **« Enregistrer l'image »**.
+
+- ⚠️ **Elle n'apparaît que pour `/j/` (plats du jour) et `/s/` (sélection)** : eux seuls ont une
+  image ASSEMBLÉE (`…/apercu.jpg`). Pour `/p/` et `/r/`, l'`og:image` est la photo du plat ou la
+  couverture — rien de plus que ce que la fiche montre déjà. `lienApercuImage()` (`app/lib/partage.ts`)
+  rend null, et le bouton disparaît. La requête `?v=` est conservée : c'est elle qui identifie les
+  plats à l'affiche.
+- ⚠️ **AUCUNE DÉPENDANCE NATIVE AJOUTÉE, et c'est le cœur de la décision.** `expo-file-system`,
+  `expo-sharing` et `expo-media-library` sont absents du projet : en ajouter un aurait rendu le
+  bouton **impossible à livrer en OTA** et aurait exigé un build, donc des semaines avant que
+  quiconque en profite. Ce qui est livré marche sur les binaires DÉJÀ installés :
+  - **web** : lecture de l'image puis téléchargement sous un nom lisible
+    (`taxi-food-plats-du-jour-de-chez-bidul-truc.jpg`) ;
+  - **app installée** : l'image s'ouvre dans le navigateur du téléphone, et s'enregistre d'un
+    **appui long** (« Ajouter aux photos » sur iOS, « Télécharger l'image » sur Android). La feuille
+    reste ouverte et l'écrit — sans cette phrase, le bouton paraîtrait n'avoir rien fait.
+- ⚠️ **La vitrine sert l'aperçu avec `access-control-allow-origin: *`** (`partage.mjs`). L'app web
+  vit sur `taxifood.distripro207.com`, l'image sur `taxifoodnosybe.distripro207.com` : sans cet
+  en-tête le navigateur refuse de lire le fichier, et un `<a download>` inter-domaines est ignoré.
+  Le retirer ferait retomber le bouton sur « ouvrir l'image », sans erreur visible.
+- Vérifié le 2026-09-18 sur l'app web en production (375 px) : la feuille montre les quatre lignes,
+  le téléchargement rend un vrai JPEG (1200×630, `ff d8 ff`, 196 ko) sous le bon nom, et le bouton
+  est ABSENT du partage d'un restaurant. ⏳ **Non vérifié sur un téléphone** : l'ouverture de
+  l'image et l'appui long sur iOS et Android.
+
 ## Ordre du catalogue et « En négociation » (2026-09-16)
 
 - **L'ordre vit en base** (migration `20260916130000_l_ordre_du_catalogue_se_decide_en_base`) : `restaurants.sort_order` (choisi dans l'admin, 10/20/30…) et

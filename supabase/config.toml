@@ -34,6 +34,13 @@ verify_jwt = true
 # HMAC du corps brut. Voir l'en-tete de supabase/functions/stripe-webhook/index.ts.
 verify_jwt = false
 
+[functions.envoyer-annonce]
+# L'appelant est un ADMINISTRATEUR depuis le tableau de bord. `false` comme pour
+# `rembourser-paiement`, et pour la meme raison : la cle `anon` du projet est un
+# JWT valide, `true` fermerait la porte sans rien prouver. La fonction lit
+# elle-meme le jeton de l'appelant et exige `user_roles.role = 'admin'` ACTIF.
+verify_jwt = false
+
 [functions.notify-order]
 # L'appelant est la BASE (trigger -> pg_net). Elle verifie l'en-tete
 # `x-hook-secret`, compare au secret du Vault `push_hook_secret`.

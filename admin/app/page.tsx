@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { Annonces } from '../components/Annonces';
 import { CodesOfferts } from '../components/CodesOfferts';
 import { CommandeTelephone } from '../components/CommandeTelephone';
 import { Realtime } from '../components/Realtime';
@@ -12,7 +13,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'telephone' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants';
+type Tab = 'realtime' | 'telephone' | 'annonces' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -105,6 +106,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'telephone' ? 'active' : ''}`} onClick={() => setTab('telephone')}>
           ☎ Commande tél.
         </button>
+        <button className={`tab ${tab === 'annonces' ? 'active' : ''}`} onClick={() => setTab('annonces')}>
+          📣 Annonce
+        </button>
         <button className={`tab ${tab === 'remboursements' ? 'active' : ''}`} onClick={() => setTab('remboursements')}>
           Remboursements
         </button>
@@ -127,6 +131,7 @@ export default function AdminPage() {
 
       {tab === 'realtime' && <Realtime />}
       {tab === 'telephone' && <CommandeTelephone />}
+      {tab === 'annonces' && <Annonces />}
       {tab === 'remboursements' && <Remboursements />}
       {tab === 'codes' && <CodesOfferts />}
       {tab === 'report' && <Report />}

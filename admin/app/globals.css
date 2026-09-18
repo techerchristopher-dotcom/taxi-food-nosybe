@@ -444,3 +444,15 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .card.tel-carte { overflow: visible; }
 .tel-envoi .sel-texte-court { margin: 0 0 8px; }
 .tel-envoi-btn { width: 100%; }
+
+/* ————— Annonces push ————— */
+/* L'aperçu imite une notification : c'est la seule façon de juger un titre de
+   50 caractères avant qu'il ne parte sur tous les téléphones de l'île. */
+.ann-apercu {
+  border: 1px solid var(--border); border-radius: 14px; background: var(--panel-2);
+  padding: 12px 14px; margin: 6px 0 4px;
+}
+.ann-apercu-app { font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+.ann-apercu-titre { font-size: 15px; font-weight: 800; margin-top: 4px; overflow-wrap: anywhere; }
+.ann-apercu-corps { font-size: 13px; line-height: 1.45; margin-top: 2px; overflow-wrap: anywhere; }
+.ann-corps { min-height: 88px; resize: vertical; line-height: 1.5; padding-top: 10px; }

@@ -456,3 +456,22 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .ann-apercu-titre { font-size: 15px; font-weight: 800; margin-top: 4px; overflow-wrap: anywhere; }
 .ann-apercu-corps { font-size: 13px; line-height: 1.45; margin-top: 2px; overflow-wrap: anywhere; }
 .ann-corps { min-height: 88px; resize: vertical; line-height: 1.5; padding-top: 10px; }
+
+/* ————— Audience ————— */
+/* Une courbe en barres, sans bibliotheque : 30 colonnes tiennent a 375 px et
+   se lisent d'un coup d'oeil. Une dependance de graphiques pour ca serait
+   150 ko pour trente rectangles. */
+.aud-courbe {
+  display: flex; align-items: flex-end; gap: 3px; height: 160px;
+  overflow-x: auto; padding-bottom: 4px;
+}
+.aud-colonne { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 18px; flex: 1; }
+.aud-barres { display: flex; align-items: flex-end; gap: 2px; height: 130px; width: 100%; justify-content: center; }
+.aud-barre { width: 7px; border-radius: 3px 3px 0 0; min-height: 2px; }
+.aud-barre.premiers { background: var(--green); }
+.aud-barre.maj { background: var(--panel-2); border: 1px solid var(--border); }
+.aud-jour { font-size: 9px; color: var(--muted); white-space: nowrap; }
+.aud-legende { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.aud-puce { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.aud-puce.premiers { background: var(--green); }
+.aud-puce.maj { background: var(--panel-2); border: 1px solid var(--border); }

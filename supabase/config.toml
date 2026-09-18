@@ -70,6 +70,18 @@ verify_jwt = false
 # seconde : la cle `anon` du projet est un JWT valide.
 verify_jwt = false
 
+[functions.collecter-telechargements]
+# L'appelant est la BASE (pg_cron -> pg_net), qui n'a aucun jeton utilisateur :
+# elle s'authentifie par l'en-tete `x-hook-secret`, compare au secret du Vault
+# `collecte_hook_secret` — meme patron que notify-order.
+verify_jwt = false
+
+[functions.deposer-secret]
+# Meme patron et MEME interrupteur que `deposer-visuel` : l'appelant est le poste
+# de l'exploitant, sans session Supabase, et la fonction verifie elle-meme son
+# secret (SHA-256 dans le Vault). `true` la rendrait inappelable, en silence.
+verify_jwt = false
+
 [functions.deposer-visuel]
 # ⚠️ `false` est OBLIGATOIRE et n'est PAS un relachement. L'appelant est un outil,
 # il n'a volontairement aucune session Supabase : c'est tout l'interet de la

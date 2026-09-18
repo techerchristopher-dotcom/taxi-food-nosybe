@@ -63,3 +63,6 @@ supabase/.temp/
 # AVANT correction, ne peuvent ni etre supprimes ni deplaces sur le moment, et
 # disparaissent seuls plus tard. Un `git add .` en publierait une copie perimee.
 .fuse_hidden*
+
+# Cles privees (App Store Connect .p8, comptes de service) — jamais dans git.
+.secrets/

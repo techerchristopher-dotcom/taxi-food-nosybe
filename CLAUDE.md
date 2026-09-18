@@ -1348,6 +1348,46 @@ pour les builds 1.2.2 (iOS 32, Android 12), les deux OTA et les deux sites.
 - ✅ Vérifié sur appareil réel (Android, émulateur Pixel 8, 2026-08-19) : connexion Google native, connexion Facebook (flux web), position GPS — testé en conditions réelles, parcours client complet, par le porteur du projet.
 - ⏳ **Non testé** : parcours restaurant et livreur sur appareil réel, toutes plateformes. Le build `production` Android est déposé mais **je n'ai pas de retour d'usage dessus** (ni revue Google, ni test terrain). **Recette du build 22 sur appareil** : liste dans [docs/EN-ATTENTE-DE-BUILD.md](docs/EN-ATTENTE-DE-BUILD.md) — notamment un compte SMS neuf (sans nom ni numéro) qui part de « Commander » et doit arriver sur `/address`, et le bouton Retour après connexion qui doit fermer l'app, pas révéler une seconde barre d'onglets.
 
+## 📈 Téléchargements et écran Audience (2026-09-18)
+
+**Le nombre d'installations se lit maintenant dans l'admin**, onglet **📈 Audience**, sans ouvrir la
+console Apple. Migrations `20260918120000_telechargements_et_audience` et
+`20260918124000_releves_magasins_un_etat_par_jour`, fonction Edge `collecter-telechargements`,
+tâche `pg_cron` **`collecte-telechargements`** à 09 h 30 UTC (12 h 30 à Nosy Be).
+
+- **Ce qui est relevé** : rapport App Store Connect `SALES / SUMMARY / DAILY`, un TSV **gzippé**
+  (`Accept: application/a-gzip`, ce n'est pas un `content-encoding`). Stocké par (jour, magasin,
+  pays, **type de produit**) dans `telechargements_magasins`.
+- ⚠️ **On n'additionne pas les types.** `1`, `1F`, `1T` = première installation (iPhone, iPad,
+  Apple TV) ; `3…` = ré-installation ; `7…` = mise à jour. L'écran ne compte comme « installation »
+  que les `1*` : une mise à jour n'est pas un nouveau client.
+- ⚠️ **404 = aucun rapport ce jour-là, pas une panne.** Apple ne publie rien pour une journée sans
+  la moindre unité. C'est inscrit comme relevé « vide » — sinon le rattrapage repasse indéfiniment
+  sur les mêmes journées, et le journal ne saurait pas distinguer « rien ce jour-là » de « on n'a
+  pas regardé ».
+- **Rejouable** : `upsert` sur (jour, magasin, pays, type). Vérifié le 2026-09-18 — une collecte
+  forcée sur 14 jours puis une collecte normale laissent **5 lignes, somme 5**, et la seconde répond
+  `deja_releve` partout.
+- ⚠️ **Un index unique PARTIEL ne peut pas servir à un `on conflict` de PostgREST** (il n'envoie
+  aucune clause WHERE). L'index `(magasin, jour, statut) where statut <> 'echec'` a fait échouer
+  **en silence** toutes les écritures du journal : 14 journées collectées, journal vide. Corrigé par
+  un index complet `(magasin, jour)` ET par la remontée de l'erreur d'écriture dans la réponse de la
+  fonction — le même défaut ne peut plus passer inaperçu.
+- ⚠️ **`pg_cron` est désormais INSTALLÉ** sur ce projet (il ne l'était pas ; c'est ce qui expliquait
+  qu'aucun remboursement ne se relance tout seul). Une seule tâche pour l'instant, la collecte.
+- **La clé privée Apple (`.p8`) n'est ni dans le dépôt ni dans une conversation** : elle est passée
+  du poste au **Vault** par la fonction Edge **`deposer-secret`**, qui réutilise le secret et
+  l'**interrupteur** de `deposer-visuel` (`delete from vault.secrets where name =
+  'depot_visuel_empreinte'` désarme les deux) et ne peut écrire que six noms en liste blanche
+  (`asc_*`, `umami_*`). Elle ne relit jamais un secret.
+- **Google Play : rien n'est branché**, et la colonne `magasin` attend. Il faut un compte de service
+  Google Cloud lié à la Play Console — geste du porteur du projet, voir `docs/SOUMISSION-ANDROID.md`.
+- **Umami** : l'écran renvoie vers les deux tableaux de bord. Pour rapatrier les chiffres ici, il
+  faut une **clé d'API par compte** (Umami Cloud → profil → *Settings* → *API keys* → *Create key*,
+  base `https://api.umami.is/v1`, en-tête `Authorization: Bearer …`, 50 appels / 15 s). Les clés se
+  déposeront par `deposer-secret` (`umami_api_key_vitrine`, `umami_api_key_app`) ; **jamais dans le
+  bundle admin**. Non fait : les clés n'existent pas encore.
+
 ## 📊 Mesure d'audience — Umami (2026-09-17)
 
 **Umami Cloud, sans cookie** : pas de bandeau de consentement, donc pas de visiteurs européens

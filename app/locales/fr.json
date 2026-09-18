@@ -466,7 +466,11 @@
     "plus": "Autre application…",
     "fermer": "Fermer",
     "surLabel": "Partager sur :",
-    "copieFacebook": "Lien copié : ouvre Facebook et colle-le dans ta publication."
+    "copieFacebook": "Lien copié : ouvre Facebook et colle-le dans ta publication.",
+    "image": "Enregistrer l'image",
+    "imageOuverte": "L'image s'ouvre : appui long dessus, puis « Enregistrer ».",
+    "imageTelechargee": "Image enregistrée. Publie-la sur Facebook et colle le lien dans le texte.",
+    "imageEchec": "Impossible de récupérer l'image. Réessaie dans un instant."
   },
   "authCallback": {
     "working": "Validation en cours…",

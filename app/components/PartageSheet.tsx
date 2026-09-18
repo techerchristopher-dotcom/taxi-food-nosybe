@@ -8,6 +8,8 @@ import { mesurer } from '../lib/mesure';
 import {
   avecSource,
   copierLien,
+  enregistrerApercu,
+  lienApercuImage,
   lienWhatsApp,
   ouvrirPartage,
   partageNatifDisponible,
@@ -50,6 +52,11 @@ export function PartageSheet({
   const insets = useSafeAreaInsets();
   const [copie, setCopie] = useState(false);
   const [aideFacebook, setAideFacebook] = useState(false);
+  // Ce que l'image a donné : le bouton doit dire ce qu'il a fait.
+  const [aideImage, setAideImage] = useState<'telechargee' | 'ouverte' | 'echec' | null>(null);
+  // ⚠️ Seuls les plats du jour et les sélections ont une image ASSEMBLÉE à
+  // enregistrer (voir `lienApercuImage`) : ailleurs, le bouton n'existe pas.
+  const urlImage = lienApercuImage(url);
 
   // La confirmation « Lien copié » ne doit pas survivre à la fermeture : sinon
   // elle s'affiche déjà cochée à la réouverture, sur un autre plat.
@@ -57,6 +64,7 @@ export function PartageSheet({
     if (!visible) {
       setCopie(false);
       setAideFacebook(false);
+      setAideImage(null);
     }
   }, [visible]);
 
@@ -117,6 +125,23 @@ export function PartageSheet({
               libelle={copie ? t('partage.copie') : t('partage.copier')}
               onPress={copier}
             />
+            {urlImage ? (
+              <Ligne
+                icone="file_download"
+                teinte={colors.textDark}
+                libelle={t('partage.image')}
+                onPress={async () => {
+                  // ⚠️ ON NE FERME PAS la feuille tout de suite : sur l'app
+                  // installée, l'image s'ouvre dans le navigateur et il faut un
+                  // appui long dessus — la phrase qui le dit doit rester lisible
+                  // au retour dans l'app.
+                  const issue = await enregistrerApercu(urlImage, titre);
+                  mesurer('partage', { canal: 'image', type: typeDeLien(url), issue });
+                  setAideImage(issue);
+                  if (issue === 'telechargee') setTimeout(onClose, 2500);
+                }}
+              />
+            ) : null}
             {partageNatifDisponible() ? (
               <Ligne
                 icone="ios_share"
@@ -133,6 +158,15 @@ export function PartageSheet({
           </View>
 
           {aideFacebook ? <Text style={styles.aide}>{t('partage.copieFacebook')}</Text> : null}
+          {aideImage ? (
+            <Text style={[styles.aide, aideImage === 'echec' ? { color: colors.dangerText } : null]}>
+              {t(aideImage === 'telechargee'
+                ? 'partage.imageTelechargee'
+                : aideImage === 'ouverte'
+                  ? 'partage.imageOuverte'
+                  : 'partage.imageEchec')}
+            </Text>
+          ) : null}
 
           <Pressable onPress={onClose} style={styles.annuler} hitSlop={8}>
             <Text style={styles.annulerTexte}>{t('partage.fermer')}</Text>

@@ -466,7 +466,11 @@
     "plus": "Other app…",
     "fermer": "Close",
     "surLabel": "Share on:",
-    "copieFacebook": "Link copied: open Facebook and paste it into your post."
+    "copieFacebook": "Link copied: open Facebook and paste it into your post.",
+    "image": "Save the image",
+    "imageOuverte": "The image opens: press and hold it, then “Save”.",
+    "imageTelechargee": "Image saved. Post it on Facebook and paste the link in the text.",
+    "imageEchec": "Could not fetch the image. Try again in a moment."
   },
   "authCallback": {
     "working": "Verifying…",

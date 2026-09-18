@@ -466,7 +466,11 @@
     "plus": "Altra app…",
     "fermer": "Chiudi",
     "surLabel": "Condividi su:",
-    "copieFacebook": "Link copiato: apri Facebook e incollalo nel tuo post."
+    "copieFacebook": "Link copiato: apri Facebook e incollalo nel tuo post.",
+    "image": "Salva l'immagine",
+    "imageOuverte": "L'immagine si apre: tienila premuta, poi «Salva».",
+    "imageTelechargee": "Immagine salvata. Pubblicala su Facebook e incolla il link nel testo.",
+    "imageEchec": "Impossibile recuperare l'immagine. Riprova tra poco."
   },
   "authCallback": {
     "working": "Verifica in corso…",

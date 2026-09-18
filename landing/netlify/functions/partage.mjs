@@ -456,7 +456,21 @@ export default async (request) => {
         return new Response(null, { status: 302, headers: { location: OG_DEFAUT, 'cache-control': 'no-store, max-age=0' } });
       }
       return new Response(await r.arrayBuffer(), {
-        headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=600, s-maxage=600' },
+        headers: {
+          'content-type': 'image/jpeg',
+          'cache-control': 'public, max-age=600, s-maxage=600',
+          // ⚠️ L'app web vit sur un AUTRE domaine (taxifood.distripro207.com) : sans
+          // cet en-tête, son bouton « Enregistrer l'image » ne peut même pas lire le
+          // fichier (le navigateur bloque la lecture inter-domaines), et un
+          // `<a download>` inter-domaines est de toute façon ignoré. L'image est
+          // publique par nature — c'est elle qu'on colle sur Facebook.
+          'access-control-allow-origin': '*',
+          // Même raison que pour la page : sans cet en-tête, l'image était refabriquée
+          // à chaque appel (4 à 5 s), et le robot de Facebook renonçait. L'adresse porte
+          // l'empreinte `?v=` des plats à l'affiche : un changement de plat change
+          // l'adresse, on peut donc garder longtemps.
+          'netlify-cdn-cache-control': 'public, s-maxage=86400, stale-while-revalidate=604800, durable',
+        },
       });
     }
 
@@ -602,6 +616,14 @@ export default async (request) => {
         // Court : un prix ou une photo qui change doit se voir vite dans les
         // aperçus, mais on évite de retaper Supabase à chaque robot.
         'cache-control': 'public, max-age=300, s-maxage=300',
+        // ⚠️ SANS CE SECOND EN-TÊTE, LE CDN NE GARDE RIEN. Netlify ignore
+        // `cache-control` pour ses fonctions (il ne sert qu'au navigateur) : chaque
+        // visite repassait donc par Supabase, 2,5 à 3 s. Le robot de Facebook, lui,
+        // abandonne avant — constaté le 2026-09-18 dans son débogueur : « Expiration
+        // curl », code 418, et une carte vide avec le seul nom de domaine à la place
+        // des plats du jour. `durable` garde la page dans le cache partagé de Netlify,
+        // `stale-while-revalidate` sert l'ancienne pendant qu'on rafraîchit.
+        'netlify-cdn-cache-control': 'public, s-maxage=300, stale-while-revalidate=3600, durable',
       },
     });
   } catch (e) {

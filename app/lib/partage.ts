@@ -311,6 +311,98 @@ export function typeDeLien(url: string) {
   return url.match(/\/(j|r|s|p)\//)?.[1] ?? 'autre';
 }
 
+/**
+ * L'IMAGE d'aperçu du lien partagé, ou null quand il n'y en a pas.
+ *
+ * ⚠️ POURQUOI CE BOUTON EXISTE. Sur Facebook, une publication qui porte un LIEN
+ * affiche une carte d'aperçu rognée, et le composeur la rogne encore. Publier
+ * l'IMAGE comme photo, avec le lien dans le texte, rend mieux et se diffuse
+ * mieux. Il faut donc pouvoir récupérer l'image.
+ *
+ * ⚠️ SEULS `/j/` (plats du jour) et `/s/` (sélection) ont une image ASSEMBLÉE
+ * (`…/apercu.jpg`, fabriquée par une fonction Edge). `/p/` et `/r/` n'en ont
+ * pas : leur `og:image` est la photo du plat ou la couverture du restaurant,
+ * telle quelle — il n'y a rien à « enregistrer » de plus que ce que la fiche
+ * montre déjà. Cette fonction rend donc null pour eux, et l'écran n'affiche pas
+ * le bouton. Voir `landing/netlify/functions/partage.mjs`, même garde.
+ *
+ * La requête est CONSERVÉE : c'est elle qui porte l'empreinte `?v=` des plats à
+ * l'affiche, et l'image en dépend.
+ */
+export function lienApercuImage(url: string): string | null {
+  const m = url.match(/^(https?:\/\/[^/]+)\/(j|s)\/([0-9a-f-]{36})(\?[^#]*)?$/i);
+  if (!m) return null;
+  const [, base, genre, id, requete] = m;
+  return `${base}/${genre}/${id}/apercu.jpg${requete ?? ''}`;
+}
+
+/** « taxi-food-plats-du-jour-chez-bidul-truc.jpg » — un nom qu'on retrouve dans ses fichiers. */
+export function nomFichierApercu(titre: string): string {
+  const propre = titre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return `taxi-food-${propre || 'apercu'}.jpg`;
+}
+
+/** Ce qu'il s'est passé quand on a demandé l'image — l'écran doit pouvoir le dire. */
+export type IssueImage = 'telechargee' | 'ouverte' | 'echec';
+
+/**
+ * Récupère l'image d'aperçu.
+ *
+ * ⚠️ AUCUNE DÉPENDANCE NATIVE AJOUTÉE, et c'est un choix. `expo-file-system`,
+ * `expo-sharing` et `expo-media-library` sont absents du projet : en ajouter un
+ * est un changement NATIF — donc plus aucune mise à jour à distance possible
+ * pour ce bouton, et un build obligatoire avant que quiconque en profite.
+ *
+ * - **Web** : on lit l'image et on la télécharge sous un nom lisible. Le fichier
+ *   est servi par la VITRINE, l'app web vit sur un autre domaine : sans
+ *   `access-control-allow-origin` côté vitrine, la lecture est refusée — d'où
+ *   le repli, qui ouvre simplement l'image dans un onglet.
+ * - **App installée** : on ouvre l'image dans le navigateur du téléphone. Un
+ *   appui long dessus propose « Ajouter aux photos » (iOS) ou « Télécharger
+ *   l'image » (Android) — le geste que tout le monde connaît. C'est moins direct
+ *   qu'un enregistrement automatique, mais ça marche aujourd'hui, sur les
+ *   binaires DÉJÀ installés.
+ */
+export async function enregistrerApercu(urlImage: string, titre: string): Promise<IssueImage> {
+  if (Platform.OS !== 'web') {
+    try {
+      await Linking.openURL(urlImage);
+      return 'ouverte';
+    } catch (e) {
+      console.warn('[partage] image non ouverte', e);
+      return 'echec';
+    }
+  }
+  try {
+    const reponse = await fetch(urlImage);
+    if (!reponse.ok) throw new Error(`HTTP ${reponse.status}`);
+    const blob = await reponse.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = nomFichierApercu(titre);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Laisser le temps au navigateur de lire le blob avant de le libérer.
+    setTimeout(() => URL.revokeObjectURL(href), 10000);
+    return 'telechargee';
+  } catch (e) {
+    // Lecture refusée (domaine, réseau) : on ouvre l'image, elle s'enregistre
+    // alors d'un appui long ou d'un clic droit.
+    console.warn('[partage] telechargement impossible, ouverture', e);
+    await ouvrirPartage(urlImage);
+    return 'ouverte';
+  }
+}
+
 /** Copie le lien, et dit si ça a marché — l'écran doit pouvoir le confirmer. */
 export async function copierLien(url: string): Promise<boolean> {
   try {

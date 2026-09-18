@@ -470,7 +470,9 @@
     "image": "Enregistrer l'image",
     "imageOuverte": "L'image s'ouvre : appui long dessus, puis « Enregistrer ».",
     "imageTelechargee": "Image enregistrée. Publie-la sur Facebook et colle le lien dans le texte.",
-    "imageEchec": "Impossible de récupérer l'image. Réessaie dans un instant."
+    "imageEchec": "Impossible de récupérer l'image. Réessaie dans un instant.",
+    "imageGalerie": "Image enregistrée dans tes photos. Publie-la sur Facebook et colle le lien dans le texte.",
+    "imageRefus": "Autorisation refusée : l'image s'ouvre dans le navigateur, appui long dessus pour l'enregistrer."
   },
   "authCallback": {
     "working": "Validation en cours…",

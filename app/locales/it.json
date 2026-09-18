@@ -470,7 +470,9 @@
     "image": "Salva l'immagine",
     "imageOuverte": "L'immagine si apre: tienila premuta, poi «Salva».",
     "imageTelechargee": "Immagine salvata. Pubblicala su Facebook e incolla il link nel testo.",
-    "imageEchec": "Impossibile recuperare l'immagine. Riprova tra poco."
+    "imageEchec": "Impossibile recuperare l'immagine. Riprova tra poco.",
+    "imageGalerie": "Immagine salvata nelle tue foto. Pubblicala su Facebook e incolla il link nel testo.",
+    "imageRefus": "Autorizzazione negata: l'immagine si apre nel browser, tienila premuta per salvarla."
   },
   "authCallback": {
     "working": "Verifica in corso…",

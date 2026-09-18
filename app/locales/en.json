@@ -470,7 +470,9 @@
     "image": "Save the image",
     "imageOuverte": "The image opens: press and hold it, then “Save”.",
     "imageTelechargee": "Image saved. Post it on Facebook and paste the link in the text.",
-    "imageEchec": "Could not fetch the image. Try again in a moment."
+    "imageEchec": "Could not fetch the image. Try again in a moment.",
+    "imageGalerie": "Image saved to your photos. Post it on Facebook and paste the link in the text.",
+    "imageRefus": "Permission denied: the image opens in the browser, press and hold it to save."
   },
   "authCallback": {
     "working": "Verifying…",

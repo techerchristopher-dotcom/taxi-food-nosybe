@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
 import { mesurer } from '../lib/mesure';
+import type { IssueImage } from '../lib/partage';
 import {
   avecSource,
   copierLien,
@@ -33,6 +34,15 @@ import {
  *
  * La feuille système reste proposée en dernier, mais UNIQUEMENT là où elle marche.
  */
+/** Ce que l'écran dit selon ce que le bouton « Enregistrer l'image » a obtenu. */
+const MESSAGE_IMAGE: Record<IssueImage, string> = {
+  galerie: 'partage.imageGalerie',
+  telechargee: 'partage.imageTelechargee',
+  ouverte: 'partage.imageOuverte',
+  refus: 'partage.imageRefus',
+  echec: 'partage.imageEchec',
+};
+
 export function PartageSheet({
   visible,
   titre,
@@ -53,7 +63,7 @@ export function PartageSheet({
   const [copie, setCopie] = useState(false);
   const [aideFacebook, setAideFacebook] = useState(false);
   // Ce que l'image a donné : le bouton doit dire ce qu'il a fait.
-  const [aideImage, setAideImage] = useState<'telechargee' | 'ouverte' | 'echec' | null>(null);
+  const [aideImage, setAideImage] = useState<IssueImage | null>(null);
   // ⚠️ Seuls les plats du jour et les sélections ont une image ASSEMBLÉE à
   // enregistrer (voir `lienApercuImage`) : ailleurs, le bouton n'existe pas.
   const urlImage = lienApercuImage(url);
@@ -138,7 +148,7 @@ export function PartageSheet({
                   const issue = await enregistrerApercu(urlImage, titre);
                   mesurer('partage', { canal: 'image', type: typeDeLien(url), issue });
                   setAideImage(issue);
-                  if (issue === 'telechargee') setTimeout(onClose, 2500);
+                  if (issue === 'telechargee' || issue === 'galerie') setTimeout(onClose, 2500);
                 }}
               />
             ) : null}
@@ -160,11 +170,7 @@ export function PartageSheet({
           {aideFacebook ? <Text style={styles.aide}>{t('partage.copieFacebook')}</Text> : null}
           {aideImage ? (
             <Text style={[styles.aide, aideImage === 'echec' ? { color: colors.dangerText } : null]}>
-              {t(aideImage === 'telechargee'
-                ? 'partage.imageTelechargee'
-                : aideImage === 'ouverte'
-                  ? 'partage.imageOuverte'
-                  : 'partage.imageEchec')}
+              {t(MESSAGE_IMAGE[aideImage])}
             </Text>
           ) : null}
 

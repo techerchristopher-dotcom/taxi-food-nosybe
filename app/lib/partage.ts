@@ -349,7 +349,81 @@ export function nomFichierApercu(titre: string): string {
 }
 
 /** Ce qu'il s'est passé quand on a demandé l'image — l'écran doit pouvoir le dire. */
-export type IssueImage = 'telechargee' | 'ouverte' | 'echec';
+export type IssueImage = 'galerie' | 'telechargee' | 'ouverte' | 'refus' | 'echec';
+
+/**
+ * Les deux modules natifs qui permettent d'enregistrer VRAIMENT dans les photos,
+ * chargés PARESSEUSEMENT — et c'est le point le plus important de ce fichier.
+ *
+ * ⚠️ CE CODE PART AUSSI EN MISE À JOUR À DISTANCE SUR DES BINAIRES QUI N'ONT PAS
+ * CES MODULES. Les versions 1.2.1 et 1.2.2 en magasin ont été compilées avant
+ * `expo-media-library` et `expo-file-system` : un `import` en tête de fichier y
+ * serait évalué au chargement du bundle et ferait tomber l'app au démarrage, pas
+ * seulement le bouton. Un `require` dans un `try/catch`, lui, échoue là où il est
+ * appelé, et on retombe alors sur le comportement d'avant (ouvrir l'image dans le
+ * navigateur, appui long pour l'enregistrer).
+ *
+ * Ne JAMAIS remonter ces `require` en haut du fichier tant que des binaires sans
+ * ces modules reçoivent des mises à jour à distance.
+ */
+type ModulesGalerie = {
+  media: {
+    requestPermissionsAsync: (ecritureSeule?: boolean) => Promise<{ granted: boolean }>;
+    saveToLibraryAsync: (uri: string) => Promise<void>;
+  };
+  fs: {
+    File: { new (...args: unknown[]): { uri: string; exists: boolean; delete: () => void };
+            downloadFileAsync: (url: string, cible: unknown) => Promise<{ uri: string }> };
+    Paths: { cache: unknown };
+  };
+};
+
+function modulesGalerie(): ModulesGalerie | null {
+  if (Platform.OS === 'web') return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const media = require('expo-media-library');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('expo-file-system');
+    if (typeof media?.saveToLibraryAsync !== 'function') return null;
+    if (typeof fs?.File?.downloadFileAsync !== 'function') return null;
+    return { media, fs } as ModulesGalerie;
+  } catch (e) {
+    // Binaire compilé avant ces modules : ce n'est pas une erreur, c'est le repli.
+    console.warn('[partage] galerie indisponible sur ce binaire', e);
+    return null;
+  }
+}
+
+/**
+ * Enregistre l'image DANS LES PHOTOS du téléphone.
+ * `null` = le binaire ne sait pas faire (on retombe sur le navigateur),
+ * `refus` = l'autorisation a été refusée, `galerie` = c'est enregistré.
+ */
+async function enregistrerDansGalerie(urlImage: string, titre: string): Promise<'galerie' | 'refus' | null> {
+  const m = modulesGalerie();
+  if (!m) return null;
+  try {
+    // `true` = autorisation d'ÉCRITURE seule : on ne lit jamais les photos du
+    // client, on n'en ajoute qu'une. iOS affiche le texte de `app.json`.
+    const autorisation = await m.media.requestPermissionsAsync(true);
+    if (!autorisation?.granted) return 'refus';
+
+    const cible = new m.fs.File(m.fs.Paths.cache, nomFichierApercu(titre));
+    try {
+      if (cible.exists) cible.delete();
+    } catch { /* un reste d'un partage précédent : sans conséquence */ }
+    const fichier = await m.fs.File.downloadFileAsync(urlImage, cible);
+    await m.media.saveToLibraryAsync(fichier.uri);
+    try {
+      cible.delete();
+    } catch { /* le cache se videra tout seul */ }
+    return 'galerie';
+  } catch (e) {
+    console.warn('[partage] enregistrement galerie impossible', e);
+    return null;
+  }
+}
 
 /**
  * Récupère l'image d'aperçu.
@@ -363,17 +437,23 @@ export type IssueImage = 'telechargee' | 'ouverte' | 'echec';
  *   est servi par la VITRINE, l'app web vit sur un autre domaine : sans
  *   `access-control-allow-origin` côté vitrine, la lecture est refusée — d'où
  *   le repli, qui ouvre simplement l'image dans un onglet.
- * - **App installée** : on ouvre l'image dans le navigateur du téléphone. Un
- *   appui long dessus propose « Ajouter aux photos » (iOS) ou « Télécharger
- *   l'image » (Android) — le geste que tout le monde connaît. C'est moins direct
- *   qu'un enregistrement automatique, mais ça marche aujourd'hui, sur les
- *   binaires DÉJÀ installés.
+ * - **App installée, binaire RÉCENT** : l'image est téléchargée puis ajoutée aux
+ *   photos (`expo-media-library`), après une demande d'autorisation.
+ * - **App installée, binaire ANCIEN** (1.2.1 / 1.2.2, compilés sans ces modules)
+ *   **ou autorisation refusée** : on ouvre l'image dans le navigateur du
+ *   téléphone, où un appui long propose « Ajouter aux photos » (iOS) ou
+ *   « Télécharger l'image » (Android). C'est le comportement d'avant, et il reste
+ *   le filet : le bouton ne doit JAMAIS faire tomber la feuille de partage.
  */
 export async function enregistrerApercu(urlImage: string, titre: string): Promise<IssueImage> {
   if (Platform.OS !== 'web') {
+    const galerie = await enregistrerDansGalerie(urlImage, titre);
+    if (galerie === 'galerie') return 'galerie';
+    // Autorisation refusée, ou binaire sans les modules : le navigateur reste la
+    // voie de sortie, et l'écran dit quel geste faire.
     try {
       await Linking.openURL(urlImage);
-      return 'ouverte';
+      return galerie === 'refus' ? 'refus' : 'ouverte';
     } catch (e) {
       console.warn('[partage] image non ouverte', e);
       return 'echec';

@@ -13,6 +13,28 @@ réellement en attente à cette date — ne pas supposer que le reste du fichier
 sans vérifier au cas par cas.
 
 
+## 📸 « Enregistrer l'image » dans la galerie (2026-09-18) — EXIGE UN BUILD
+
+Écrit et commité, **pas compilé**. Le build 33 (iOS) / 13 (Android) déjà déposé ne le contient PAS.
+
+- Ajouté : `expo-media-library` (57.0.5) et `expo-file-system` (57.0.7), plugin
+  `expo-media-library` dans `app.json` avec les textes d'autorisation **en français**
+  (`savePhotosPermission`, `photosPermission`), `granularPermissions: ["photo"]` côté Android.
+- ⛔ **`runtimeVersion` est repassé à `1.2.3`** : changement natif. Les OTA se publient désormais
+  en trois fois (1.2.1, 1.2.2, 1.2.3) — voir CLAUDE.md « Les commandes ».
+- ⚠️ Le code fonctionne **sans** ces modules (require paresseux + repli navigateur) : une OTA sur
+  1.2.1 / 1.2.2 reste donc sans danger, mais elle n'apporte rien de plus là-bas.
+
+À vérifier sur appareil au prochain build :
+1. Plats du jour → Partager → **Enregistrer l'image** → la demande d'autorisation s'affiche **en
+   français**, une seule fois.
+2. Autorisation accordée → l'image apparaît dans **Photos** (iOS) / la **Galerie** (Android), et la
+   feuille affiche « Image enregistrée dans tes photos ».
+3. Autorisation **refusée** → l'image s'ouvre dans le navigateur et la feuille dit quoi faire
+   (appui long). Rien ne plante, la feuille reste utilisable.
+4. Le même bouton sur l'app **web** continue de télécharger le fichier directement.
+5. Un plat ou un restaurant (pas de visuel assemblé) → **pas de bouton**.
+
 ## 📦 Build 1.2.3 (lancé le 2026-09-17) — ce qu'il embarque et la recette à passer
 
 **Stratégie de version** : `version` 1.2.3 (Apple refuse un nouveau build sous 1.2.2, déjà

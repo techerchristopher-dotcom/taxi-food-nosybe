@@ -933,6 +933,16 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   vit sur `taxifood.distripro207.com`, l'image sur `taxifoodnosybe.distripro207.com` : sans cet
   en-tête le navigateur refuse de lire le fichier, et un `<a download>` inter-domaines est ignoré.
   Le retirer ferait retomber le bouton sur « ouvrir l'image », sans erreur visible.
+- ✅ **Le vrai enregistrement dans la galerie est ÉCRIT, pas encore compilé** (2026-09-18) :
+  `expo-media-library` + `expo-file-system` installés, plugin et textes d'autorisation **en
+  français** dans `app.json`. ⚠️ Les deux modules sont chargés en **`require` paresseux dans un
+  `try/catch`** (`modulesGalerie()`, `app/lib/partage.ts`) : ce code part aussi en OTA vers les
+  binaires **1.2.1 / 1.2.2, qui n'ont pas ces modules**, et un `import` en tête de fichier les
+  ferait planter AU DÉMARRAGE, pas seulement sur le bouton. Sans les modules, ou si l'autorisation
+  est refusée, on retombe sur l'ouverture dans le navigateur. **Ne jamais remonter ces `require` en
+  haut du fichier** tant que des binaires sans ces modules reçoivent des OTA.
+  ⏳ **Aucune OTA publiée depuis cet ajout, et aucun build lancé** : à faire quand le porteur du
+  projet le décide (voir « Les commandes » pour les TROIS runtimes).
 - Vérifié le 2026-09-18 sur l'app web en production (375 px) : la feuille montre les quatre lignes,
   le téléchargement rend un vrai JPEG (1200×630, `ff d8 ff`, 196 ko) sous le bon nom, et le bouton
   est ABSENT du partage d'un restaurant. ⏳ **Non vérifié sur un téléphone** : l'ouverture de
@@ -1215,7 +1225,17 @@ cd landing && npx netlify deploy --prod --dir=. --site=7fd9a34d-15d9-4b0d-a866-1
   *« Failed retrieving site data … Not Found »* (constaté le 2026-09-15) alors que le site
   existe. **Utiliser l'ID**, lisible par `npx netlify sites:list`. Les deux IDs sont dans les
   commandes ci-dessus : `1e13c535…` pour le site web, `d2e677f5…` pour l'admin.
-- ⚠️ **Depuis la 1.2.3, `runtimeVersion` est FIXÉ à `"1.2.2"` dans `app.json`** (il suivait
+- ⛔ **CHANGEMENT NATIF DU 2026-09-18 : `runtimeVersion` est repassé à `"1.2.3"`.** Le prochain
+  build embarque **`expo-media-library` et `expo-file-system`** (bouton « Enregistrer l'image » dans
+  la galerie). Un binaire qui porte de nouveaux modules natifs ne peut plus partager le runtime des
+  anciens : le paragraphe ci-dessous décrit ce qui valait AVANT ce changement, il est conservé pour
+  comprendre pourquoi le runtime avait été figé.
+  **Conséquence immédiate : une mise à jour à distance se publie désormais en TROIS fois** —
+  runtime `1.2.1`, `1.2.2` (les binaires en magasin) et `1.2.3` (le prochain build) — en changeant
+  `runtimeVersion` le temps de chaque commande, avec le `trap` habituel, puis `git diff -- app/app.json`
+  vide. Tant que la 1.2.3 n'est pas en magasin, une publication sur son runtime ne touche personne :
+  elle n'est pas inutile pour autant, c'est elle qui servira au premier lancement du nouveau binaire.
+- ⚠️ **Ce qui valait pour la 1.2.3 AVANT le 2026-09-18 : `runtimeVersion` était FIXÉ à `"1.2.2"`** (il suivait
   `appVersion`). Raison : aucun changement natif entre le build 1.2.2 (commit `aa350d4`) et la 1.2.3
   (package.json, package-lock, app.json hors version, eas.json, assets : diff vide), et Apple exige
   un numéro de version supérieur pour tout nouveau build. Une seule OTA sert donc 1.2.2 **et** 1.2.3.

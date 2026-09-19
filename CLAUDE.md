@@ -730,6 +730,22 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidul & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
 
+## 🥩 Repères alimentaires (`products.diet_tags`) — 2026-09-19
+
+`diet_tags` est un tableau ; seule la valeur **`porc`** est utilisée aujourd'hui (17 produits).
+À Nosy Be, une part importante de la clientèle ne mange pas de porc : un plat qui en contient
+sans le dire coûte un client pour de bon.
+
+⚠️ **Le badge ne vivait QUE dans `ProductRow`**, la ligne d'une catégorie. Un **plat du jour**
+n'a pas de catégorie (`in_menu = false`) : la paella au chorizo portait donc `{porc}` en base
+sans qu'aucun écran ne l'affiche — une valeur qui ne protège personne. Le badge est désormais
+aussi sur la **fiche produit** (`app/app/product/[id].tsx`) et sur la carte du **bandeau
+« Offre du jour »** (`app/app/restaurant/[id].tsx`), avec le texte traduit
+(`product.contientPorc`, FR/EN/IT) au lieu du français en dur.
+
+**Règle** : tout plat contenant du porc reçoit `diet_tags = array['porc']` à sa création, et on
+le CONSTATE à l'écran — pas seulement en base.
+
 ## Heures de service — deux services par jour, cartes à l'heure (2026-09-07)
 
 Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et dont les

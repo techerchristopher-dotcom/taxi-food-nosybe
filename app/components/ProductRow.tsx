@@ -56,7 +56,7 @@ export function ProductRow({
             faut le voir sans avoir à ouvrir la fiche. */}
         {product.dietTags?.includes('porc') ? (
           <View style={styles.dietBadge}>
-            <Text style={styles.dietText}>Contient du porc</Text>
+            <Text style={styles.dietText}>{t('product.contientPorc')}</Text>
           </View>
         ) : null}
         <Text style={styles.desc}>{product.description}</Text>

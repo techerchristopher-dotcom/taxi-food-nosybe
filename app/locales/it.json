@@ -161,7 +161,8 @@
     "produitBientot": "Presto disponibile",
     "produitIndisponible": "Presto di nuovo",
     "servedFrom": "Servito dalle {{de}}",
-    "horsService": "Non servito al momento"
+    "horsService": "Non servito al momento",
+    "contientPorc": "Contiene maiale"
   },
   "cart": {
     "title": "Il mio carrello",

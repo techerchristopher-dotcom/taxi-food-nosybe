@@ -230,6 +230,15 @@ export default function ProductDetailScreen() {
             <Text style={styles.name}>{product.name}</Text>
             <Text style={styles.price}>{formatAr(product.price)}</Text>
           </View>
+          {/* ⚠️ Repère alimentaire, ici AUSSI. Il n'existait que sur la ligne de la carte
+              (`ProductRow`) : un plat du jour, qui n'est dans aucune catégorie, ne passait
+              donc par aucun écran qui l'affiche. La paella au chorizo du 18/09 portait bien
+              `diet_tags = {porc}` en base sans que personne ne puisse le lire. */}
+          {product.dietTags?.includes('porc') ? (
+            <View style={styles.dietBadge}>
+              <Text style={styles.dietText}>{t('product.contientPorc')}</Text>
+            </View>
+          ) : null}
           {product.description ? <Text style={styles.desc}>{product.description}</Text> : null}
 
           {/* ⚠️ Annoncé et atteignable d'un tap, pas caché derrière l'icône de
@@ -404,6 +413,17 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   name: { flex: 1, fontFamily: fonts.bold, fontSize: 22, lineHeight: 26, letterSpacing: -0.5, color: colors.ink },
   price: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.primary },
+  dietBadge: {
+    alignSelf: 'flex-start',
+    height: 22,
+    paddingHorizontal: 10,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warnBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  dietText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.warnText },
   desc: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 20, color: colors.textDark, marginTop: 8 },
   partage: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.divider },
   group: { marginTop: 22 },

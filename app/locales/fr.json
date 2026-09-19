@@ -161,7 +161,8 @@
     "produitBientot": "Bientôt disponible",
     "produitIndisponible": "Bientôt de retour",
     "servedFrom": "Servi à partir de {{de}}",
-    "horsService": "Pas servi pour le moment"
+    "horsService": "Pas servi pour le moment",
+    "contientPorc": "Contient du porc"
   },
   "cart": {
     "title": "Mon panier",

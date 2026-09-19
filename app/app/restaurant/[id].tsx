@@ -237,6 +237,12 @@ export default function RestaurantMenuScreen() {
                         {p.name}
                       </Text>
                       <Text style={styles.featuredPrice}>{formatAr(p.price)}</Text>
+                      {/* Même repère que sur la carte : il doit se voir AVANT d'ouvrir le plat. */}
+                      {p.dietTags?.includes('porc') ? (
+                        <View style={styles.featuredDiet}>
+                          <Text style={styles.featuredDietText}>{t('product.contientPorc')}</Text>
+                        </View>
+                      ) : null}
                       {epuise ? (
                         <Text style={styles.featuredSoldOut}>
                           {t(p.listingStatus === 'coming_soon'
@@ -533,6 +539,17 @@ const styles = StyleSheet.create({
   featuredName: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   featuredPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
   featuredStock: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.textMuted },
+  featuredDiet: {
+    alignSelf: 'flex-start',
+    height: 18,
+    paddingHorizontal: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warnBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  featuredDietText: { fontFamily: fonts.semibold, fontSize: 9.5, color: colors.warnText },
   featuredSoldOut: { fontFamily: fonts.semibold, fontSize: 11.5, color: colors.dangerText },
   catWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip: { minHeight: 34, paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', maxWidth: '100%' },

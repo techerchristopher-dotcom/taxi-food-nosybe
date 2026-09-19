@@ -161,7 +161,8 @@
     "produitBientot": "Coming soon",
     "produitIndisponible": "Back soon",
     "servedFrom": "Served from {{de}}",
-    "horsService": "Not served right now"
+    "horsService": "Not served right now",
+    "contientPorc": "Contains pork"
   },
   "cart": {
     "title": "My cart",

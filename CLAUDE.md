@@ -68,6 +68,10 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   photos = reconstitutions, contenant des plats de La Plage.
 
 **Produit et contenu**
+- 🚪 **Fermeture en un geste livrée le 2026-09-20** (voir sa section) — **reste à CONSTATER
+  connecté** : écran Réglages d'un compte restaurateur (bouton « Fermer maintenant » visible même
+  en ouverture automatique, fermer puis rouvrir) et onglet **Temps réel** de l'admin (« Fermer
+  maintenant » / « Rendre aux horaires »). Corrigé et déployé, mais jamais vu avec une session.
 - Page de partage `/r/<id>` d'un restaurant en négociation : dit encore « Commandez… » et montre
   « Commander maintenant ». À aligner sur « En négociation ».
 - Chez Bidul : confirmer le contenant et les couches du boudin façon hachis ; constater à l'écran
@@ -745,6 +749,62 @@ aussi sur la **fiche produit** (`app/app/product/[id].tsx`) et sur la carte du *
 
 **Règle** : tout plat contenant du porc reçoit `diet_tags = array['porc']` à sa création, et on
 le CONSTATE à l'écran — pas seulement en base.
+
+## 🚪 Fermer doit être UN SEUL GESTE, visible même en automatique (2026-09-20)
+
+**Le défaut.** Le patron de Chez Bidul & Truc a voulu fermer son restaurant à midi depuis son
+espace. Il est resté **OUVERT pour ses clients**, et il a cru que le bouton ne marchait pas.
+
+**Pourquoi.** `ouvert_maintenant(r)` vaut `is_open` quand `auto_open` est faux, et **l'horaire du
+jour** sinon. Or l'écran Réglages n'affichait l'interrupteur « Je suis ouvert » **que si
+l'ouverture automatique était déjà coupée** (`{!autoOuverture ? … : null}`). Fermer demandait donc
+**deux gestes dans le bon ordre** — couper « Ouverture automatique » (qui ne ferme rien, le
+restaurant reste ouvert à cet instant), puis trouver un second interrupteur **apparu plus bas**.
+Personne ne devine ça, surtout pas en plein service.
+
+**⚠️ LA RÈGLE, à ne plus jamais enfreindre : fermer est UN SEUL GESTE, VISIBLE EN PERMANENCE, y
+compris quand le restaurant est en ouverture automatique.** Un réglage qui conditionne l'existence
+d'un bouton vital est un piège : le mode n'est pas un préalable à l'action.
+
+**Corollaire : un état doit dire POURQUOI.** « Fermé en ce moment » ne suffit pas — l'écran dit
+maintenant si c'est l'horaire ou une décision manuelle, et ce que la fermeture entraîne (les
+horaires **ne rouvriront pas tout seuls**).
+
+Ce qui a été fait (migration `20260920100000_fermer_est_un_seul_geste`) :
+
+- **Espace restaurateur** (`app/app/(restaurant)/reglages.tsx`) : bloc d'état teinté (vert/rouge)
+  + bouton **« Fermer maintenant » / « Rouvrir »** toujours affiché, qui appelle
+  `set_restaurant_open`. Le réglage « Ouverture automatique » reste — il sert à **revenir** au
+  fonctionnement par horaires — mais il n'est plus le passage obligé pour fermer.
+  ⚠️ `set_restaurant_open` écrit **deux** colonnes (`is_open` ET `auto_open = false`) : l'écran
+  anticipe les deux, sinon il afficherait « Fermé » sous une « Ouverture automatique » allumée.
+- **Admin** : `admin_set_restaurant_open(uuid, boolean)` ne touchait **QUE `is_open`**. Sur un
+  restaurant en ouverture automatique (La Cabane, La Plage), le bouton de l'admin était donc
+  **INERTE** : il écrivait en base et rien ne changeait à l'écran du client. Elle coupe désormais
+  `auto_open` **dans les deux sens** — rouvrir en le laissant allumé redonnerait exactement le
+  même bouton mort. Le retour aux horaires devient une action à part,
+  **`admin_set_restaurant_auto_open(uuid, boolean)`** (bouton « Rendre aux horaires »).
+  Décision assumée : **rouvrir ne remet JAMAIS l'automatique tout seul.**
+- **Écran Temps réel** : lit `ouvert_maintenant` (colonne calculée) et non plus `is_open`, affiche
+  la raison (« selon ses horaires » / « réglé à la main ») et dit ce que la fermeture entraîne.
+  ⚠️ L'onglet **Restaurants & menus** montre toujours `is_open` : sa colonne s'appelle désormais
+  **« Interrupteur »**, pas « État », et la fiche prévient que ce n'est pas l'ouverture réelle.
+
+**Vérifié en transaction annulée le 2026-09-20** (rien de persisté, TF-252 consommé dans la
+séquence sans commande créée) : admin ferme un restaurant en automatique → `is_open=f auto_open=f
+ouvert_maintenant=f` ; admin rouvre → automatique toujours coupé ; « Rendre aux horaires » →
+recalcul par les horaires ; non-admin et restaurant introuvable refusés ; patron ferme →
+**commande client refusée `service:restaurant_ferme`** ; patron rouvre → commande acceptée
+(11 000 + 10 000 = 21 000). Trace `admin_actions` avec **les deux colonnes** dans `avant`/`apres` —
+sans `auto_open`, la trace d'une fermeture sans effet était indiscernable d'une vraie fermeture.
+
+**Non vérifié** : l'écran Réglages et l'écran admin **n'ont pas été vus connectés** (ils exigent
+une session restaurateur / administrateur). Ce qui est prouvé : les deux paquets déployés
+contiennent bien les nouveaux libellés, et le comportement en base est exercé de bout en bout.
+
+⚠️ **Chez Bidul & Truc a été fermé à la main le 2026-09-20** (`is_open=false, auto_open=false`).
+Il ne rouvrira pas tout seul : c'est au restaurateur de rouvrir, ou de réactiver son ouverture
+automatique.
 
 ## Heures de service — deux services par jour, cartes à l'heure (2026-09-07)
 

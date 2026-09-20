@@ -361,7 +361,13 @@ automatique, bascule manuelle, et mise en rupture produit par produit.
 
 ⚠️ **À vérifier sur appareil :**
 - saisir « 8h30 » et « 22h » — les formes libres doivent être acceptées ;
-- basculer l'ouverture automatique, vérifier que la bascule manuelle disparaît ;
+- ~~basculer l'ouverture automatique, vérifier que la bascule manuelle disparaît~~ —
+  **caduc depuis le 2026-09-20** : la bascule manuelle ne disparaît plus, elle est
+  remplacée par un bouton « Fermer maintenant » / « Rouvrir » **visible en
+  permanence**, y compris en ouverture automatique. C'est justement sa disparition
+  qui a fait croire au patron de Chez Bidul & Truc que le bouton ne marchait pas.
+  À vérifier désormais : en ouverture automatique, fermer d'un seul tap, et
+  constater côté client que le restaurant passe « Fermé » ;
 - mettre un produit en rupture, puis le retrouver grisé côté client avec la
   mention « Bientôt de retour », toujours visible mais non commandable.
 

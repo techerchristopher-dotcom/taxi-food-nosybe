@@ -68,10 +68,10 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   photos = reconstitutions, contenant des plats de La Plage.
 
 **Produit et contenu**
-- 🚪 **Fermeture en un geste livrée le 2026-09-20** (voir sa section) — **reste à CONSTATER
-  connecté** : écran Réglages d'un compte restaurateur (bouton « Fermer maintenant » visible même
-  en ouverture automatique, fermer puis rouvrir) et onglet **Temps réel** de l'admin (« Fermer
-  maintenant » / « Rendre aux horaires »). Corrigé et déployé, mais jamais vu avec une session.
+- 🚪 **Fermeture en un geste livrée le 2026-09-20** (voir sa section). L'écran Réglages est vérifié
+  en production. **Restent à constater** : le **tap** lui-même (fermer puis rouvrir, à faire une
+  fois en service — non fait pour ne pas ouvrir La Cabane hors de ses horaires) et l'onglet
+  **Temps réel** de l'admin (« Fermer maintenant » / « Rendre aux horaires »), jamais vu connecté.
 - Page de partage `/r/<id>` d'un restaurant en négociation : dit encore « Commandez… » et montre
   « Commander maintenant ». À aligner sur « En négociation ».
 - Chez Bidul : confirmer le contenant et les couches du boudin façon hachis ; constater à l'écran
@@ -798,9 +798,22 @@ recalcul par les horaires ; non-admin et restaurant introuvable refusés ; patro
 (11 000 + 10 000 = 21 000). Trace `admin_actions` avec **les deux colonnes** dans `avant`/`apres` —
 sans `auto_open`, la trace d'une fermeture sans effet était indiscernable d'une vraie fermeture.
 
-**Non vérifié** : l'écran Réglages et l'écran admin **n'ont pas été vus connectés** (ils exigent
-une session restaurateur / administrateur). Ce qui est prouvé : les deux paquets déployés
-contiennent bien les nouveaux libellés, et le comportement en base est exercé de bout en bout.
+**Vérifié à l'écran, en production** (2026-09-20, session restaurateur existante, La Cabane —
+`auto_open = true`) : l'écran Réglages affiche « **Fermé en ce moment** · Ce sont vos horaires qui
+vous ferment », le bouton **« Ouvrir maintenant »** juste en dessous, et « Ouverture automatique »
+allumée **sous** lui. C'est exactement la régression corrigée : le bouton existe **en mode
+automatique**. Côté client (375 px) : La Cabane et Chez Bidul & Truc portent le badge « Fermé »,
+la fiche dit « pas commander — reviens à l'ouverture » et les plats n'ont plus de bouton d'ajout.
+
+**Non vérifié** :
+- le **tap** sur « Ouvrir maintenant » / « Fermer maintenant » depuis l'écran. Le seul restaurant
+  accessible avec la session disponible est **La Cabane, un vrai restaurant visible** : l'ouvrir
+  hors de ses horaires, même quelques secondes, l'expose à une commande sans personne en cuisine.
+  Le geste est exercé en base, dans les deux sens. ⚠️ **À constater une fois, en service** :
+  fermer d'un tap depuis l'espace restaurateur et voir le badge « Fermé » côté client.
+- **l'écran admin connecté** : l'admin exige une connexion Google. Ce qui est prouvé : le paquet
+  déployé contient bien « Fermer maintenant », « Rendre aux horaires » et
+  `admin_set_restaurant_auto_open`, et les deux RPC sont exercées en base.
 
 ⚠️ **Chez Bidul & Truc a été fermé à la main le 2026-09-20** (`is_open=false, auto_open=false`).
 Il ne rouvrira pas tout seul : c'est au restaurateur de rouvrir, ou de réactiver son ouverture

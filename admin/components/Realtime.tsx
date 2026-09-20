@@ -59,7 +59,21 @@ type OrderRow = {
 };
 
 type CourierRow = { user_id: string; zone: string | null; is_available: boolean };
-type RestoRow = { id: string; name: string; is_open: boolean; listing_status: string };
+/**
+ * ⚠️ `is_open` N'EST PAS l'ouverture du restaurant. Quand `auto_open` est vrai,
+ * ce sont les horaires du jour qui décident, et `is_open` n'est même pas lu.
+ * L'ouverture réelle est la colonne calculée `ouvert_maintenant`, rendue par
+ * PostgREST. Afficher `is_open` seul faisait dire « Ouvert » d'un restaurant
+ * que ses horaires tenaient fermé, et inversement.
+ */
+type RestoRow = {
+  id: string;
+  name: string;
+  is_open: boolean;
+  auto_open: boolean;
+  ouvert_maintenant: boolean;
+  listing_status: string;
+};
 
 function isLate(o: OrderRow): boolean {
   if (o.status === 'recue') return minutesSince(o.created_at) >= LATE_RECUE_MIN;
@@ -121,7 +135,7 @@ export function Realtime() {
       // Tous les livreurs, pas seulement les disponibles : l'assignation
       // manuelle sert justement quand l'etat declare ne colle plus au terrain.
       supabase.from('couriers').select('user_id, zone, is_available'),
-      supabase.from('restaurants').select('id, name, is_open, listing_status').order('name'),
+      supabase.from('restaurants').select('id, name, is_open, auto_open, ouvert_maintenant, listing_status').order('name'),
       supabase.from('orders').select('total, status').gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
     ]);
     if (o.error) { setErr(o.error.message); return; }
@@ -202,11 +216,46 @@ export function Realtime() {
     await load();
   }
 
+  /**
+   * Ouvrir ou fermer un restaurant à la main, depuis l'admin.
+   *
+   * ⚠️ On raisonne sur `ouvert_maintenant`, jamais sur `is_open` : sur un
+   * restaurant en ouverture automatique, `is_open` peut dire « ouvert » alors
+   * que ses horaires le tiennent fermé (et l'inverse). Le bouton portait donc
+   * le mauvais libellé, et l'action était inerte — le même piège que côté
+   * restaurateur, corrigé le 2026-09-20.
+   *
+   * `admin_set_restaurant_open` coupe désormais l'ouverture automatique dans
+   * les DEUX sens : le texte de confirmation doit le dire, parce que les
+   * horaires ne reprendront pas la main tout seuls.
+   */
   async function basculerResto(r: RestoRow) {
-    if (!window.confirm(`${r.is_open ? 'Fermer' : 'Ouvrir'} « ${r.name} » ?`)) return;
+    const versOuvert = !r.ouvert_maintenant;
+    const suite = r.auto_open
+      ? '\n\nL’ouverture automatique sera arrêtée : ses horaires ne le rouvriront (ni ne le fermeront) plus tout seuls, jusqu’à ce que vous la remettiez avec « Rendre aux horaires ».'
+      : '\n\nSon ouverture automatique est déjà arrêtée : ses horaires ne s’appliqueront pas.';
+    if (!window.confirm(`${versOuvert ? 'Ouvrir' : 'Fermer'} « ${r.name} » maintenant ?${suite}`)) return;
     setBusy(r.id);
     const { error } = await supabase.rpc('admin_set_restaurant_open', {
-      p_restaurant_id: r.id, p_is_open: !r.is_open,
+      p_restaurant_id: r.id, p_is_open: versOuvert,
+    });
+    setBusy(null);
+    if (error) { setErr(error.message); return; }
+    await load();
+  }
+
+  /**
+   * Rendre la main aux horaires. Action DISTINCTE de la précédente, et c'est
+   * délibéré : rouvrir un restaurant ne doit pas remettre l'automatique dans
+   * son dos, sinon ses horaires pourraient le refermer dans la minute.
+   */
+  async function rendreAuxHoraires(r: RestoRow) {
+    if (!window.confirm(
+      `Rendre « ${r.name} » à ses horaires ?\n\nSon ouverture sera de nouveau calculée sur ses horaires du jour : il peut donc s’ouvrir ou se fermer immédiatement.`,
+    )) return;
+    setBusy(r.id);
+    const { error } = await supabase.rpc('admin_set_restaurant_auto_open', {
+      p_restaurant_id: r.id, p_auto_open: true,
     });
     setBusy(null);
     if (error) { setErr(error.message); return; }
@@ -375,26 +424,48 @@ export function Realtime() {
         <div className="card">
           <h2>Restaurants — ouverture</h2>
           <table>
-            <thead><tr><th>Restaurant</th><th>État</th><th>Catalogue</th><th></th></tr></thead>
+            <thead><tr><th>Restaurant</th><th>En ce moment</th><th>Catalogue</th><th></th></tr></thead>
             <tbody>
               {restos.map((r) => (
                 <tr key={r.id}>
                   <td>{r.name}</td>
-                  <td><span className={`pill ${r.is_open ? 'en_livraison' : 'annulee'}`}>{r.is_open ? 'Ouvert' : 'Fermé'}</span></td>
+                  <td>
+                    <span className={`pill ${r.ouvert_maintenant ? 'en_livraison' : 'annulee'}`}>
+                      {r.ouvert_maintenant ? 'Ouvert' : 'Fermé'}
+                    </span>
+                    {/* Pourquoi, et pas seulement quoi : sans la raison, on ne sait pas
+                        si l'état vient des horaires ou d'une décision manuelle. */}
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      {r.auto_open ? 'selon ses horaires' : 'réglé à la main'}
+                    </div>
+                  </td>
                   <td className="muted" style={{ fontSize: 12 }}>
                     {r.listing_status === 'hidden' ? 'masqué'
                       : r.listing_status === 'coming_soon' ? 'bientôt disponible' : 'visible'}
                   </td>
                   <td>
-                    <button onClick={() => void basculerResto(r)} disabled={busy === r.id} style={btn}>
-                      {r.is_open ? 'Fermer' : 'Ouvrir'}
-                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => void basculerResto(r)} disabled={busy === r.id} style={btn}>
+                        {r.ouvert_maintenant ? 'Fermer maintenant' : 'Ouvrir maintenant'}
+                      </button>
+                      {!r.auto_open ? (
+                        <button onClick={() => void rendreAuxHoraires(r)} disabled={busy === r.id} style={btn}>
+                          Rendre aux horaires
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>
+            ⚠️ Fermer ici arrête aussi l&apos;ouverture automatique : les horaires du restaurant ne
+            le rouvriront pas tout seuls, tant que personne n&apos;a rouvert ou cliqué « Rendre aux
+            horaires ». Sans cela, la fermeture serait sans effet — c&apos;est
+            <code> ouvert_maintenant</code>, pas <code> is_open</code>, que voient les clients.
+          </p>
+          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
             ⚠️ « Masqué » et « bientôt disponible » ne se règlent pas ici : ils changent ce que
             voient les clients dans l&apos;app, pas seulement l&apos;ouverture du jour.
           </p>

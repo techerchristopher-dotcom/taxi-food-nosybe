@@ -370,6 +370,40 @@ export default function RestaurantSettingsScreen() {
     }
   }
 
+  /**
+   * Fermer — ou rouvrir — maintenant, d'un seul geste.
+   *
+   * ⚠️ `set_restaurant_open` écrit DEUX colonnes en base : `is_open` ET
+   * `auto_open = false`. On anticipe donc les deux à l'écran, sinon on
+   * afficherait « Fermé en ce moment » sous une « Ouverture automatique »
+   * restée allumée — exactement la confusion qu'on corrige ici.
+   *
+   * On recharge derrière : en repartant de l'automatique, l'ouverture
+   * effective est recalculée par la base, et elle seule fait autorité.
+   */
+  async function basculerOuverture(v: boolean) {
+    setError(null);
+    setOptResto({ isOpen: v, autoOpen: false });
+    setEnVol((e) => ({ ...e, ouvert: true, auto: true }));
+    try {
+      await setRestaurantOpen(v);
+      reload();
+    } catch (e) {
+      setOptResto({});
+      setError(
+        (e as { message?: string })?.message ||
+          (v ? 'Impossible de rouvrir.' : 'Impossible de fermer.'),
+      );
+    } finally {
+      setEnVol((e) => {
+        const suite = { ...e };
+        delete suite.ouvert;
+        delete suite.auto;
+        return suite;
+      });
+    }
+  }
+
   function majJour(weekday: number, patch: Partial<JourSaisi>) {
     setBrouillon({ ...jours, [weekday]: { ...(jours[weekday] ?? JOUR_VIDE), ...patch } });
   }
@@ -664,22 +698,72 @@ export default function RestaurantSettingsScreen() {
             </Text>
 
             <View style={styles.separateur} />
-            <View style={styles.ligne}>
-              <Icon
-                name={ouvert ? 'storefront' : 'pause_circle'}
-                size={24}
-                color={ouvert ? colors.success : colors.textMuted}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.ligneTitre}>
-                  {ouvert ? 'Ouvert en ce moment' : 'Fermé en ce moment'}
-                </Text>
-                <Text style={styles.ligneSous}>
-                  {autoOuverture
-                    ? 'Suit vos horaires automatiquement.'
-                    : 'Vous ouvrez et fermez à la main.'}
-                </Text>
+
+            {/* ⚠️ Fermer doit être UN SEUL GESTE, visible même en ouverture
+                automatique. Avant le 2026-09-20, le bouton « Je suis ouvert »
+                n'apparaissait qu'en mode manuel : pour fermer, il fallait
+                d'abord couper l'ouverture automatique (ce qui ne fermait rien),
+                puis trouver un second interrupteur apparu plus bas. Le patron de
+                Chez Bidul & Truc a cru que le bouton ne marchait pas et est
+                resté OUVERT pour ses clients, à midi. */}
+            <View style={[styles.etatCarte, ouvert ? styles.etatOuvert : styles.etatFerme]}>
+              <View style={styles.ligne}>
+                <Icon
+                  name={ouvert ? 'storefront' : 'pause_circle'}
+                  size={26}
+                  color={ouvert ? colors.successDark : colors.dangerText}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.etatTitre,
+                      { color: ouvert ? colors.successDark : colors.dangerText },
+                    ]}
+                  >
+                    {ouvert ? 'Ouvert en ce moment' : 'Fermé en ce moment'}
+                  </Text>
+                  {/* Pourquoi, et pas seulement quoi : sans la raison, le
+                      restaurateur ne sait pas ce qui décide à sa place. */}
+                  <Text style={styles.ligneSous}>
+                    {autoOuverture
+                      ? ouvert
+                        ? 'Ce sont vos horaires qui vous ouvrent.'
+                        : 'Ce sont vos horaires qui vous ferment.'
+                      : ouvert
+                        ? 'Vous avez ouvert à la main. Vos horaires ne vous fermeront pas.'
+                        : 'Vous avez fermé à la main. Vos horaires ne vous rouvriront pas.'}
+                  </Text>
+                </View>
               </View>
+
+              <Pressable
+                onPress={() => void basculerOuverture(!ouvert)}
+                disabled={!!enVol.ouvert}
+                accessibilityRole="button"
+                style={[
+                  styles.boutonEtat,
+                  { backgroundColor: ouvert ? colors.dangerText : colors.successDark },
+                  !!enVol.ouvert && { opacity: 0.5 },
+                ]}
+              >
+                <Text style={styles.boutonTexte}>
+                  {enVol.ouvert
+                    ? '…'
+                    : ouvert
+                      ? 'Fermer maintenant'
+                      : autoOuverture
+                        ? 'Ouvrir maintenant'
+                        : 'Rouvrir'}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.aide}>
+                {ouvert
+                  ? 'Fermé, votre restaurant reste visible mais n’accepte plus de commande. Il ne rouvrira pas tout seul : vos horaires ne reprendront la main qu’une fois que vous aurez rouvert, ou réactivé l’ouverture automatique.'
+                  : autoOuverture
+                    ? 'Vous ouvrez tout de suite, sans attendre vos horaires. L’ouverture automatique s’arrête : vous resterez ouvert jusqu’à ce que vous fermiez, ou que vous la réactiviez.'
+                    : 'Vous ouvrez tout de suite et vous restez ouvert jusqu’à ce que vous fermiez. Vos horaires ne vous fermeront pas tant que l’ouverture automatique est arrêtée.'}
+              </Text>
             </View>
 
             <View style={styles.separateur} />
@@ -688,7 +772,8 @@ export default function RestaurantSettingsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.ligneTitre}>Ouverture automatique</Text>
                 <Text style={styles.ligneSous}>
-                  Votre restaurant s'ouvre et se ferme tout seul, selon les horaires ci-dessous.
+                  Vos horaires ci-dessous ouvrent et ferment votre restaurant tout seuls. Pour
+                  fermer maintenant, pas besoin d’y toucher : le bouton au-dessus suffit.
                 </Text>
               </View>
               <Switch
@@ -716,43 +801,6 @@ export default function RestaurantSettingsScreen() {
                 thumbColor={colors.white}
               />
             </View>
-
-            {/* La bascule manuelle n'a de sens qu'en mode manuel : en
-                automatique, elle serait écrasée à la minute suivante. */}
-            {!autoOuverture ? (
-              <>
-                <View style={styles.separateur} />
-                <View style={styles.ligne}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.ligneTitre}>Je suis ouvert</Text>
-                    <Text style={styles.ligneSous}>
-                      Fermé, votre restaurant reste visible mais n'accepte plus de commande.
-                    </Text>
-                  </View>
-                  <Switch
-                    value={ouvert}
-                    disabled={!!enVol.ouvert}
-                    onValueChange={(v) =>
-                      bascule(
-                        'ouvert',
-                        (x) =>
-                          setOptResto((o) => {
-                            const suite = { ...o };
-                            if (x === undefined) delete suite.isOpen;
-                            else suite.isOpen = x;
-                            return suite;
-                          }),
-                        v,
-                        () => setRestaurantOpen(v),
-                        'Bascule impossible.',
-                      )
-                    }
-                    trackColor={{ true: colors.success, false: colors.borderStrong }}
-                    thumbColor={colors.white}
-                  />
-                </View>
-              </>
-            ) : null}
           </View>
 
           {/* ----------------------------------------------------- Horaires */}
@@ -1242,6 +1290,19 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  // Le bloc « ouvert / fermé en ce moment » se lit d'un coup d'œil : fond
+  // teinté par l'état, pas seulement une icône.
+  etatCarte: { borderRadius: radius.lg, padding: 12, gap: 2 },
+  etatOuvert: { backgroundColor: colors.successBg },
+  etatFerme: { backgroundColor: colors.dangerBg },
+  etatTitre: { fontFamily: fonts.extrabold, fontSize: 16 },
+  boutonEtat: {
+    marginTop: 12,
+    height: 48,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   ligneTitre: { fontFamily: fonts.bold, fontSize: 15, color: colors.textDark },
   ligneSous: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.textMuted, marginTop: 2 },

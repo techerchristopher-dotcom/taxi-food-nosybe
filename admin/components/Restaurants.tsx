@@ -146,7 +146,16 @@ export function Restaurants() {
           <div className="rangee">
             <Field label="Ouvre à"><input style={inp} type="time" value={form.opens_at} onChange={(e) => setForm({ ...form, opens_at: e.target.value })} /></Field>
             <Field label="Ferme à"><input style={inp} type="time" value={form.closes_at} onChange={(e) => setForm({ ...form, closes_at: e.target.value })} /></Field>
-            <Field label="Ouvert ?"><label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38 }}><input type="checkbox" checked={form.is_open} onChange={(e) => setForm({ ...form, is_open: e.target.checked })} /> {form.is_open ? 'Ouvert' : 'Fermé'}</label></Field>
+            <Field label="Interrupteur manuel"><label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38 }}><input type="checkbox" checked={form.is_open} onChange={(e) => setForm({ ...form, is_open: e.target.checked })} /> {form.is_open ? 'Ouvert' : 'Fermé'}</label></Field>
+          </div>
+          {/* ⚠️ Cette case n'est PAS l'ouverture du restaurant : en ouverture
+              automatique, ce sont ses horaires qui décident et `is_open` n'est
+              même pas lu. Le dire ici évite de croire qu'on vient de fermer un
+              restaurant qui reste ouvert pour ses clients. */}
+          <div className="muted" style={{ fontSize: 12, marginTop: -6 }}>
+            ⚠️ L&apos;interrupteur manuel ne décide que si l&apos;ouverture automatique du restaurant
+            est arrêtée ; sinon ce sont ses horaires qui décident. Pour ouvrir ou fermer
+            réellement un restaurant, passer par l&apos;onglet <strong>Temps réel</strong>.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
@@ -169,7 +178,7 @@ export function Restaurants() {
       ) : (
         <table>
           {/* Dans l'ordre EXACT du catalogue client : admin_lister_restaurants trie sur rang_catalogue. */}
-          <thead><tr><th className="num">Rang</th><th>Nom</th><th>Catalogue</th><th>État</th><th className="num">Commission</th><th className="num">Livraison</th><th></th></tr></thead>
+          <thead><tr><th className="num">Rang</th><th>Nom</th><th>Catalogue</th><th>Interrupteur</th><th className="num">Commission</th><th className="num">Livraison</th><th></th></tr></thead>
           <tbody>
             {list.map((r) => (
               <tr key={r.id}>

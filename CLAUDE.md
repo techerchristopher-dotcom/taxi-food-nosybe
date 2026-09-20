@@ -734,6 +734,18 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidul & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
 
+## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
+
+- **Plats du jour : UN SEUL accompagnement**, inclus dans le prix (frites, légumes sautés, pâtes,
+  riz, purée). Le groupe facultatif « 2e accompagnement (+5 000 Ar) » a été **retiré des plats du
+  jour** ce soir — décision du porteur du projet.
+- ⚠️ **La carte permanente le garde** (15 plats : cordon bleu, filet de zébu, marmite du pêcheur…).
+  Ne pas « harmoniser » sans que le porteur du projet l'ait demandé.
+- ⚠️ **Cinq plats du jour n'ont AUCUN groupe d'accompagnement** : pot-au-feu, boudin noir façon
+  hachis, paella, tripes, 1/2 poulet grillé BBQ. Les trois premiers arrivent avec leur propre
+  garniture (pommes de terre, purée gratinée) ; la paella et le demi-poulet, non. À trancher avec
+  le restaurateur — question posée, pas encore répondue.
+
 ## 🥩 Repères alimentaires (`products.diet_tags`) — 2026-09-19
 
 `diet_tags` est un tableau ; seule la valeur **`porc`** est utilisée aujourd'hui (17 produits).

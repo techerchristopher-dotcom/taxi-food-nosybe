@@ -60,6 +60,16 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - ✅ Commission **7 %** (décision du porteur du projet, 2026-09-17).
 - ✅ Livraison **10 000 Ar**, zone « Nosy Be », téléphone +261 32 71 548 96 (2026-09-17).
 
+**🥢 Chez M&K (en négociation depuis le 2026-09-21)** — `56ec29b9-d3eb-40c0-b8a1-5916e7cc7c53`,
+restaurant chinois, Djabala Honko, +261 37 19 861 96 (Kenny). 28 plats, 7 catégories, 9h–22h 7j/7
+(une ligne par jour), 5 %, 10 000 Ar, `auto_open = false`, `is_open = false`. Carte et photos :
+`partenaire /M&K/` (dossier ignoré par git). Migration `20260921100000_…` : tout y est expliqué.
+AVANT `visible`, faire trancher : photo du **bol renversé fruits de mer** (aucune) ; ingrédients
+(toutes les `description` sont NULL, volontairement) ; **ti pan mixte au porc ?** (pas de tag tant
+que ce n'est pas répondu) ; fondue (délai, minimum — créée **indisponible**) ; boissons ; adresse
+exacte et logo détouré. ⚠️ **Limite produit** : `diet_tags` vit sur le produit — nem, bouchon et
+bol renversé ont le porc en OPTION, sans badge possible.
+
 **Madame Oh et Oh Hazar (en négociation), AVANT tout passage en `visible`**
 - Commission par défaut **15 %**, livraison **0 Ar**, zone et **horaires vides**, aucun canal Telegram.
 - À confirmer par les restaurateurs : prix réels du poisson entier, du mi xao et de la soupe

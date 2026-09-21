@@ -64,10 +64,16 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 restaurant chinois, Djabala Honko, +261 37 19 861 96 (Kenny). 28 plats, 7 catégories, 9h–22h 7j/7
 (une ligne par jour), 5 %, 10 000 Ar, `auto_open = false`, `is_open = false`. Carte et photos :
 `partenaire /M&K/` (dossier ignoré par git). Migration `20260921100000_…` : tout y est expliqué.
-AVANT `visible`, faire trancher : photo du **bol renversé fruits de mer** (aucune) ; ingrédients
-(toutes les `description` sont NULL, volontairement) ; **ti pan mixte au porc ?** (pas de tag tant
-que ce n'est pas répondu) ; fondue (délai, minimum — créée **indisponible**) ; boissons ; adresse
-exacte et logo détouré. ⚠️ **Limite produit** : `diet_tags` vit sur le produit — nem, bouchon et
+Réponses de Kenny versées le 2026-09-21 (migrations `…120000` et `…121000`) : riz / pâtes
+inclus au choix sur les 12 plats principaux ; ti pan mixte = poulet + bœuf, sans porc ; soupes,
+riz cantonais et mi sao **« Avec porc / Sans porc » en option obligatoire** (le client choisit, pas
+de badge) ; fondue 24 h à l'avance, 2 pers. minimum (reste indisponible) ; Coca / Sprite petit
+modèle 8 000, bière en canette 10 000 (marques à demander) ; pas de dessert.
+Reste AVANT `visible` : photo du **bol renversé fruits de mer** (envoyée sur WhatsApp, pas encore
+déposée) ; ingrédients des autres plats ; adresse exacte et logo détouré ; **photos tirées
+d'Internet** (riz cantonais avec le filigrane « petitsplatsentreamis.com », et d'autres).
+⚠️ `est_boisson` est déduit du NOM de catégorie : seuls « Bières » et « Softs » comptent.
+Une catégorie « Boissons » est comptée comme de la nourriture. ⚠️ **Limite produit** : `diet_tags` vit sur le produit — nem, bouchon et
 bol renversé ont le porc en OPTION, sans badge possible.
 
 **Madame Oh et Oh Hazar (en négociation), AVANT tout passage en `visible`**

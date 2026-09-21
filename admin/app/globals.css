@@ -187,13 +187,18 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
   .topbar { flex-wrap: wrap; gap: 10px; padding-bottom: 12px; margin-bottom: 16px; }
   .who { display: none; }
 
-  /* Les six onglets : deux colonnes fixes plutôt qu'un repli dicté par la
-     longueur des libellés. Avant, la position d'un onglet changeait selon
-     l'onglet actif — impossible de mémoriser où taper. Trois rangées stables. */
-  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  /* Les onglets : une grille FIXE plutôt qu'un repli dicté par la longueur des
+     libellés — sinon la position d'un onglet change selon l'onglet actif, et on
+     ne mémorise plus où taper. Trois colonnes depuis le 2026-09-21 : à onze
+     onglets, deux colonnes faisaient six rangées, soit tout le premier écran
+     avant la première commande. `minmax(0, 1fr)` et non `1fr` : `1fr` refuse de
+     descendre sous le mot le plus long (« Remboursements ») et la grille sortait
+     de l'écran sur un téléphone étroit. */
+  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 16px; }
   .tab {
-    min-height: 44px; display: flex; align-items: center; justify-content: center;
-    padding: 8px 10px; border-radius: 12px; text-align: center; line-height: 1.2;
+    min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: center;
+    padding: 6px 4px; border-radius: 12px; text-align: center; line-height: 1.15;
+    font-size: 12px; overflow-wrap: anywhere; hyphens: auto;
   }
 
   /* ⚠️ 16 px SUR TOUS LES CHAMPS, SANS EXCEPTION. En dessous, iOS Safari zoome

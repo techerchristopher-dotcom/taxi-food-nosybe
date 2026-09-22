@@ -853,6 +853,32 @@ admin actif exigé comme `envoyer-annonce`), composants `admin/components/Versem
 - ⚠️ La présence d'un groupe (avertissement « aucun message ne partira ») est lue dans
   `restaurants.telegram_chat_id` — lisible aujourd'hui (fuite connue). Quand la colonne passera en
   table privée, l'écran dira « inconnu » et la base tranchera quand même (`sans_canal`).
+- **Code marchand Orange Money** (2026-09-22, commit `60638d8`) : colonne `restaurants.code_marchand`
+  (migration `20260922170000_…`, lisible par tous par choix : un code marchand n'ouvre rien),
+  écriture par **`admin_set_code_marchand` seule**. Sur chaque carte du bloc « Reversement par
+  restaurant » : code + **Copier** (« ✓ Copié ») + Modifier ; absent = « non renseigné » en ambre +
+  **Ajouter**. Forme vérifiée avant l'appel (3–20 chiffres/lettres, espaces retirés, vide = efface).
+  Dans « Marquer reversé », juste au-dessus de la référence, avec Copier ; absent = avertissement
+  ambre, versement non bloqué. Lu par une requête **séparée** de `telegram_chat_id`, pour survivre à
+  la fermeture future de ce dernier. Composant `admin/components/CodeMarchand.tsx`. Vérifié par
+  PostgREST avec la clé publique : RPC → **401 `42501`**, PATCH direct → 0 ligne, code inchangé.
+- **Fiche complète d'une commande** (2026-09-22) : dans le détail d'un versement, chaque ligne TF-
+  se déplie (plats + options + commentaire, emballage, code promo et qui le paie, livraison, total
+  et paiement, client/téléphone/zone/repère/consignes, livreur, heures, reversement avec le taux
+  **figé** de la commande). **Aucune migration** : les politiques `*_select_admin` existantes
+  couvrent `orders`, `order_items`, `order_item_options`, `addresses`, `profiles`,
+  `admin_actions`. Clé publique vérifiée : `[]` sur ces six tables. ⚠️ `unit_price` **inclut déjà
+  les options** (Σ = `subtotal` sur les 20 commandes) : ne pas rajouter `price_delta_snapshot`.
+  ⚠️ **Heures** : seules `created_at`, `picked_up_at`, `delivered_at` existent ; « acceptée » et
+  « en préparation » ne sont **pas horodatées en base** (l'écran le dit) — seuls les changements
+  faits depuis l'admin le sont (`admin_actions`, `statut_commande`). Commande par téléphone : le
+  nom vient du libellé `☎ <nom>` de l'adresse (`commandes_telephone` n'a aucune politique, illisible
+  même pour l'admin).
+- ⚠️ **Non vérifié sur l'admin en ligne** (connexion Google, pas de session admin) : rendu contrôlé
+  à 375 px sur un banc local à données simulées (aucun défilement horizontal, cibles ≥ 44 px,
+  champ à 16 px, Copier → « ✓ Copié » sur un vrai clic). Le paquet déployé contient bien les deux
+  écrans. **Jamais exercés** : un enregistrement réel du code par la RPC depuis l'écran, la lecture
+  d'une vraie fiche.
 
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 

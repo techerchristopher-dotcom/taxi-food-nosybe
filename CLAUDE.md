@@ -62,7 +62,7 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 
 **🥢 Chez M&K (en négociation depuis le 2026-09-21)** — `56ec29b9-d3eb-40c0-b8a1-5916e7cc7c53`,
 restaurant chinois, Djabala Honko, +261 37 19 861 96 (Kenny). 28 plats, 7 catégories, 9h–22h 7j/7
-(une ligne par jour), 5 %, 10 000 Ar, `auto_open = false`, `is_open = false`. Carte et photos :
+(une ligne par jour), **10 %** (corrigé le 2026-09-22, 5 % à la création), 10 000 Ar, `auto_open = false`, `is_open = false`. Carte et photos :
 `partenaire /M&K/` (dossier ignoré par git). Migration `20260921100000_…` : tout y est expliqué.
 Réponses de Kenny versées le 2026-09-21 (migrations `…120000` et `…121000`) : riz / pâtes
 inclus au choix sur les 12 plats principaux ; ti pan mixte = poulet + bœuf, sans porc ; soupes,

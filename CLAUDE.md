@@ -410,6 +410,8 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
   (`dvh`). Mesuré à 375 px : mise en page 720 → 375 px, cibles sous 44 px 20 → 0.
 - **Onglet « ☎ Commande tél. »** (2026-09-17) : voir la section « Commande par téléphone ».
 - **Onglet « 📣 Annonce »** (2026-09-18) : voir la section « Annonces push ».
+- **Rapport de clôture → versements** (2026-09-22) : détail des commandes, référence Orange Money
+  obligatoire, message Telegram au restaurant — voir la section « Versements aux restaurants ».
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes.
 
 ## 📣 Annonces push — prévenir tous les clients (2026-09-18)
@@ -805,6 +807,52 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidul & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
+## 💸 Versements aux restaurants : référence Orange Money + message Telegram (2026-09-22)
+
+Onglet « Rapport de clôture ». Migration `20260922140000_versement_reference_et_message_telegram`
+(appliquée), fonction Edge `notifier-versement` (v1, `verify_jwt = false` figé dans `config.toml`,
+admin actif exigé comme `envoyer-annonce`), composants `admin/components/Versements.tsx` +
+`admin/lib/versement.ts`. Recette : `supabase/tests/versement.test.sql` (transaction annulée).
+
+- **Une seule source pour le calcul** : `admin_commandes_a_reverser(resto, début, fin)` rend les
+  commandes retenues, une par ligne (numéro, date, montant = plats + emballage, commission, part
+  offerte, net), avec la formule et le filtre de `record_settlement` **recopiés à l'octet**. Le
+  détail affiché ET le montant enregistré en sortent. Test : sa somme = `record_settlement` sur 6
+  périodes réelles. ⚠️ **Toute évolution de la formule se porte dans les DEUX** (et dans
+  `lib/reversement.ts`) ; l'écran signale en rouge si la base et le rapport divergent.
+- **`admin_enregistrer_versement(resto, début, fin, montant_versé, référence, dû_attendu)`** — nom
+  nouveau, `record_settlement` **inchangée** (piège PGRST203). Refuse : référence vide / < 4 ou
+  > 64 caractères ; référence déjà utilisée (comparée sans espaces ni casse, + index unique) ;
+  **toute période qui CHEVAUCHE** un versement existant du même restaurant (pas seulement la
+  même) ; période sans commande ; dû affiché ≠ dû en base (« recharge le rapport »). Verrou
+  consultatif par restaurant contre le double clic. `is_admin()` ; aucune exécution pour `anon`
+  (vérifié par PostgREST : 401 `permission denied`).
+- **Colonnes ajoutées** à `restaurant_settlements` : `reference_versement`, `nb_commandes`,
+  `numeros_commandes`, `telegram_statut` (`non_prevu` = anciens reversements · `en_attente` ·
+  `en_cours` · `envoye` · `echec` · `sans_canal`), `telegram_erreur`, `telegram_message_id`,
+  `telegram_envoye_at`, `telegram_tente_at`, `telegram_tentatives`. Auteur = `created_by`
+  (existait), date = `paid_at`.
+- **Le message** est écrit par `texte_message_versement` (fonction pure, aussi appelée par la
+  fenêtre pour l'aperçu : même texte). Liste des TF- seulement sous 10 commandes. Texte brut,
+  sans `parse_mode`.
+- **Chemin d'envoi : fonction Edge, pas n8n ni pg_net.** T7uX n'est pas touché ; pg_net ne rend
+  pas la réponse de Telegram. Le jeton vit au Vault (`telegram_bot_token`), lu par
+  `lire_jeton_telegram()` **service_role seul**, jamais renvoyé ni journalisé (effacé de tout
+  message d'erreur). `versement_prendre_envoi` verrouille la ligne, refuse un 2ᵉ envoi confirmé
+  (`deja_envoye`) ou concurrent (`envoi_en_cours`, 2 min), relit le canal ACTUEL du restaurant ;
+  `versement_noter_envoi` n'écrit `envoye` que sur `ok: true` **avec** `message_id`.
+- ⚠️ **Délai dépassé (10 s) = échec « a PU partir »** : l'écran dit de regarder le groupe avant de
+  renvoyer. Un renvoi à ce moment-là peut doubler le message — c'est le seul cas.
+- **Essai** : bouton « Essai du message sur mon canal » (historique) → message d'exemple préfixé
+  🧪 sur `telegram_admin_chat_id` (vérifié : celui d'aucun restaurant). Aucun versement lu ni écrit.
+- ⚠️ **Non vérifié au 2026-09-22** : aucun envoi Telegram réel (ni essai ni vrai versement) —
+  l'admin exige Google et le navigateur disponible est connecté avec un compte non admin. Écran
+  vérifié à 375 px sur un banc d'essai local à données simulées (aucune requête Supabase), pas
+  sur l'admin en ligne. **Premier geste à faire : l'essai sur ton canal.**
+- ⚠️ La présence d'un groupe (avertissement « aucun message ne partira ») est lue dans
+  `restaurants.telegram_chat_id` — lisible aujourd'hui (fuite connue). Quand la colonne passera en
+  table privée, l'écran dira « inconnu » et la base tranchera quand même (`sans_canal`).
 
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 

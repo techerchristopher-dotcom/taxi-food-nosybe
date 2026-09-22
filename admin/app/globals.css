@@ -480,3 +480,34 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .aud-puce { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
 .aud-puce.premiers { background: var(--green); }
 .aud-puce.maj { background: var(--panel-2); border: 1px solid var(--border); }
+
+/* ============================================================
+   VERSEMENTS (Rapport de clôture, 2026-09-22).
+   Téléphone d'abord : une carte par restaurant, une carte par commande.
+   Aucune colonne à comparer ici — on vérifie une liste, puis on paie.
+   ============================================================ */
+.vers-lignes { display: flex; flex-direction: column; gap: 10px; }
+.vers-ligne {
+  border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2);
+  padding: 12px; min-width: 0;
+}
+.vers-ligne-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.vers-ligne-net { font-size: 18px; font-weight: 800; color: var(--accent); white-space: nowrap; }
+.vers-regle { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.vers-detail { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.vers-cmd { border-top: 1px solid var(--border); padding: 8px 0 2px; }
+.vers-cmd-tete { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.vers-cmd-chiffres { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.vers-cmd-chiffres b { color: var(--text); font-weight: 600; }
+.vers-net b { color: var(--accent); }
+.vers-total {
+  display: flex; justify-content: space-between; border-top: 2px solid var(--border);
+  padding-top: 8px; font-size: 15px;
+}
+.vers-montant { font-size: 26px; font-weight: 800; color: var(--accent); }
+.vers-apercu {
+  white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px; line-height: 1.45;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 6px 0 0;
+}
+/* L'historique est un tableau d'action (bouton « Renvoyer ») : en cartes sur
+   téléphone, par la règle `table.cartes` du palier mobile. */

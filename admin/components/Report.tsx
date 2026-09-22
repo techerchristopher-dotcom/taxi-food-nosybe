@@ -7,6 +7,9 @@ import {
   additionnerCumuls, bornesPeriode, CUMUL_VIDE, cumulerCommande, ecartCaisse, margeTaxiFood,
 } from '../lib/reversement';
 import type { CommandeLivree, Cumul, RegleDuCode, ReglesDesCodes } from '../lib/reversement';
+import { COLONNES_VERSEMENT, chevauche, libellePeriode, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM } from '../lib/versement';
+import type { Versement } from '../lib/versement';
+import { DetailCommandes, FenetreVersement, HistoriqueVersements } from './Versements';
 
 type DeliveredRow = CommandeLivree & {
   /** Emballages (boite a pizza...). Reverses au restaurant, commission comprise. */
@@ -28,20 +31,15 @@ type DeliveredRow = CommandeLivree & {
   commission_rate: number | null;
 };
 type Resto = { id: string; name: string; commission_rate: number };
-type Settlement = {
-  id: string;
-  restaurant_id: string;
-  period_start: string;
-  period_end: string;
-  amount_due: number;
-  paid_amount: number | null;
-  paid_at: string;
-};
-
 type Line = Cumul & {
   restaurantId: string;
   name: string;
-  settled: boolean;
+  /**
+   * Un versement déjà enregistré dont la période RECOUVRE celle du rapport —
+   * même partiellement. La base refuse d'en enregistrer un second
+   * (`admin_enregistrer_versement`) ; l'écran le montre avant qu'on essaie.
+   */
+  reglement: Versement | null;
 };
 
 const COLONNES = 'order_number, restaurant_id, subtotal, packaging_fee, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
@@ -53,11 +51,14 @@ export function Report() {
   const [end, setEnd] = useState(todayNosyBe());
   const [rows, setRows] = useState<DeliveredRow[]>([]);
   const [restos, setRestos] = useState<Resto[]>([]);
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [settlements, setSettlements] = useState<Versement[]>([]);
+  /** Restaurant → a-t-il un groupe Telegram ? Absent de la carte = inconnu. */
+  const [canaux, setCanaux] = useState<Record<string, boolean>>({});
+  const [ouvert, setOuvert] = useState<string | null>(null);
+  const [aVerser, setAVerser] = useState<Line | null>(null);
   const [regles, setRegles] = useState<ReglesDesCodes>(AUCUNE_REGLE);
   const [courierNames, setCourierNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -87,9 +88,20 @@ export function Report() {
       supabase.rpc('admin_lister_restaurants'),
       supabase
         .from('restaurant_settlements')
-        .select('id, restaurant_id, period_start, period_end, amount_due, paid_amount, paid_at')
+        .select(COLONNES_VERSEMENT)
         .order('paid_at', { ascending: false }),
     ]);
+    // Seulement pour prévenir AVANT de confirmer qu'aucun message ne partira.
+    // Lecture tolérante : si ce canal devient illisible (table privée à venir,
+    // voir « Fuite connue »), l'écran dit « inconnu » et la base tranche.
+    const c = await supabase.from('restaurants').select('id, telegram_chat_id');
+    if (!c.error) {
+      const m: Record<string, boolean> = {};
+      for (const x of (c.data ?? []) as { id: string; telegram_chat_id: string | null }[]) {
+        m[x.id] = !!(x.telegram_chat_id && x.telegram_chat_id.trim());
+      }
+      setCanaux(m);
+    }
     if (o.error || oSansDate.error || r.error || s.error) {
       setErr(o.error?.message || oSansDate.error?.message || r.error?.message || s.error?.message || 'Erreur');
     } else {
@@ -118,7 +130,7 @@ export function Report() {
       setRegles(map);
       setRows(orderRows);
       setRestos((r.data ?? []) as Resto[]);
-      setSettlements((s.data ?? []) as Settlement[]);
+      setSettlements((s.data ?? []) as unknown as Versement[]);
       const ids = Array.from(new Set(orderRows.map((x) => x.courier_id).filter(Boolean) as string[]));
       if (ids.length) {
         const { data: profs } = await supabase.from('profiles').select('id, full_name').in('id', ids);
@@ -153,7 +165,8 @@ export function Report() {
         ...CUMUL_VIDE,
         restaurantId: row.restaurant_id,
         name: restos.find((x) => x.id === row.restaurant_id)?.name ?? '—',
-        settled: settlements.some((st) => st.restaurant_id === row.restaurant_id && st.period_start === start && st.period_end === end),
+        reglement: settlements.find((st) => st.restaurant_id === row.restaurant_id
+          && chevauche(st.period_start, st.period_end, start, end)) ?? null,
       };
       map.set(row.restaurant_id, { ...cur, ...cumulerCommande(cur, row, rateOf(row.restaurant_id), regles) });
     }
@@ -187,37 +200,6 @@ export function Report() {
     }
     return Array.from(map.entries()).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.cash - a.cash);
   }, [rows]);
-
-  async function settle(l: Line) {
-    // La valeur proposée est le dû que `record_settlement` va enregistrer, à la
-    // même formule : plats + emballage − commission − part offerte par le
-    // restaurant. Proposer davantage, c'était verser au restaurant le repas
-    // qu'il venait lui-même d'offrir.
-    //
-    // Une commande douteuse fausse ce dû ET celui de `record_settlement` de la
-    // même façon : la base n'arrêtera rien. L'arrêt se fait donc ici, avant la saisie.
-    if (l.incoherentes > 0 && !window.confirm(
-      `${l.name} : ${l.incoherentes} commande${l.incoherentes > 1 ? 's' : ''} à vérifier, le dû calculé peut être faux.\n\n`
-      + `${l.aVerifier.join('\n')}\n\nEnregistrer quand même un reversement ?`,
-    )) return;
-    const offert = l.offertRestaurant > 0
-      ? `, après déduction de ${formatAr(l.offertRestaurant)} offerts par le restaurant`
-      : '';
-    const input = window.prompt(`Montant réellement versé à ${l.name} (dû calculé : ${l.net}${offert}) :`, String(l.net));
-    if (input === null) return;
-    const paid = parseInt(input, 10);
-    if (Number.isNaN(paid)) return;
-    setBusy(l.restaurantId);
-    const { error } = await supabase.rpc('record_settlement', {
-      p_restaurant_id: l.restaurantId,
-      p_period_start: start,
-      p_period_end: end,
-      p_paid_amount: paid,
-    });
-    setBusy(null);
-    if (error) { setErr(error.message); return; }
-    await load();
-  }
 
   function exportCsv() {
     const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Offert par le restaurant', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats payee par Taxi Food'];
@@ -318,38 +300,47 @@ export function Report() {
         ) : lines.length === 0 ? (
           <div className="empty">Aucune commande livrée sur cette période.</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Restaurant</th><th className="num">Livrées</th><th className="num">CA plats</th>
-                <th className="num">Emballages</th><th className="num">Commission</th>
-                {avecOffert ? <th className="num">Offert par le resto</th> : null}
-                <th className="num">Net à reverser</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l) => (
-                <tr key={l.restaurantId}>
-                  <td>{l.name}</td>
-                  <td className="num">{l.count}</td>
-                  <td className="num">{formatAr(l.caPlats)}</td>
-                  <td className="num">{l.emballages > 0 ? formatAr(l.emballages) : '—'}</td>
-                  <td className="num">{formatAr(l.commission)}</td>
-                  {avecOffert ? <td className="num">{l.offertRestaurant > 0 ? `−${formatAr(l.offertRestaurant)}` : '—'}</td> : null}
-                  <td className="num" style={{ fontWeight: 700 }}>{formatAr(l.net)}</td>
-                  <td className="num">
-                    {l.settled ? (
-                      <span className="pill livree">Reversé</span>
-                    ) : (
-                      <button className="btn" style={{ padding: '6px 12px', fontSize: 12 }} disabled={busy === l.restaurantId} onClick={() => settle(l)}>
-                        Marquer reversé
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="vers-lignes">
+            {lines.map((l) => {
+              const reg = l.reglement;
+              const exact = reg && reg.period_start === start && reg.period_end === end;
+              return (
+                <div key={l.restaurantId} className="vers-ligne">
+                  <div className="vers-ligne-tete">
+                    <strong>{l.name}</strong>
+                    <span className="vers-ligne-net">{formatAr(l.net)}</span>
+                  </div>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    {l.count} livrée{l.count > 1 ? 's' : ''} · plats {formatAr(l.caPlats)}
+                    {l.emballages > 0 ? ` · emballages ${formatAr(l.emballages)}` : ''}
+                    {' '}· commission −{formatAr(l.commission)}
+                    {l.offertRestaurant > 0 ? ` · offert −${formatAr(l.offertRestaurant)}` : ''}
+                  </div>
+                  {reg ? (
+                    <div className="vers-regle">
+                      <span className="pill livree">{exact ? 'Reversé' : 'Déjà reversé en partie'}</span>
+                      <span className="muted" style={{ fontSize: 12 }}>
+                        {' '}{libellePeriode(reg.period_start, reg.period_end)}
+                        {reg.reference_versement ? ` · réf. ${reg.reference_versement}` : ''}
+                      </span>
+                      {' '}<span className={`pill ${PASTILLE_TELEGRAM[reg.telegram_statut]}`}>{LIBELLE_TELEGRAM[reg.telegram_statut]}</span>
+                    </div>
+                  ) : null}
+                  <div className="gestes" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <button className="btn ghost petit" onClick={() => setOuvert(ouvert === l.restaurantId ? null : l.restaurantId)}>
+                      {ouvert === l.restaurantId ? 'Masquer les commandes' : `Voir les ${l.count} commande${l.count > 1 ? 's' : ''}`}
+                    </button>
+                    {!reg ? (
+                      <button className="btn petit" onClick={() => setAVerser(l)}>Marquer reversé</button>
+                    ) : null}
+                  </div>
+                  {ouvert === l.restaurantId ? (
+                    <DetailCommandes restaurantId={l.restaurantId} debut={start} fin={end} netRapport={l.net} />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -376,29 +367,17 @@ export function Report() {
         </p>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <h2>Historique des reversements</h2>
-        {settlements.length === 0 ? (
-          <div className="empty">Aucun reversement enregistré.</div>
-        ) : (
-          <table>
-            <thead>
-              <tr><th>Restaurant</th><th>Période</th><th className="num">Dû</th><th className="num">Versé</th><th>Payé le</th></tr>
-            </thead>
-            <tbody>
-              {settlements.map((s) => (
-                <tr key={s.id}>
-                  <td>{restos.find((r) => r.id === s.restaurant_id)?.name ?? '—'}</td>
-                  <td>{s.period_start === s.period_end ? s.period_start : `${s.period_start} → ${s.period_end}`}</td>
-                  <td className="num">{formatAr(s.amount_due)}</td>
-                  <td className="num">{formatAr(s.paid_amount)}</td>
-                  <td>{new Date(s.paid_at).toLocaleDateString('fr-FR')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <HistoriqueVersements versements={settlements} restos={restos} onRecharger={() => void load()} />
+
+      {aVerser ? (
+        <FenetreVersement
+          ligne={aVerser}
+          debut={start}
+          fin={end}
+          canal={aVerser.restaurantId in canaux ? canaux[aVerser.restaurantId] : null}
+          onFermer={(recharger) => { setAVerser(null); if (recharger) void load(); }}
+        />
+      ) : null}
     </>
   );
 }

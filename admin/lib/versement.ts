@@ -128,3 +128,69 @@ export async function lireErreurFonction(e: unknown): Promise<{ statut?: string;
   }
   return { erreur: (e as Error)?.message ?? 'appel impossible' };
 }
+
+/**
+ * La fiche complète d'une commande, dépliée depuis le détail d'un versement.
+ * Lecture seule, par les politiques `*_select_admin using (is_admin())` déjà en
+ * place sur `orders`, `order_items`, `order_item_options`, `addresses`,
+ * `profiles` et `admin_actions` : aucune fonction ni droit nouveau en base.
+ *
+ * ⚠️ `unit_price` contient DÉJÀ le prix des options (vérifié en base le
+ * 2026-09-22 : Σ quantité × unit_price = subtotal sur les 20 commandes, y
+ * compris les 3 à option payante). Ne pas rajouter `price_delta_snapshot`.
+ *
+ * ⚠️ Heures : la base n'enregistre que la création, la récupération par le
+ * livreur et la livraison. « Acceptée » et « en préparation » n'ont aucune
+ * colonne ; seuls les changements faits DEPUIS L'ADMIN sont horodatés
+ * (`admin_actions`, action `statut_commande`).
+ */
+export const COLONNES_FICHE =
+  'id, order_number, status, created_at, picked_up_at, delivered_at, subtotal, packaging_fee, delivery_fee, '
+  + 'promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, payment_status, '
+  + 'commission_rate, courier_id, '
+  + 'profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, instructions ), '
+  + 'order_items ( id, product_name_snapshot, quantity, unit_price, comment, '
+  + 'order_item_options ( option_name_snapshot, price_delta_snapshot, quantity ) )';
+
+type UnOuListe<T> = T | T[] | null;
+
+export type CommandeFiche = {
+  id: string;
+  order_number: string | null;
+  status: string;
+  created_at: string;
+  picked_up_at: string | null;
+  delivered_at: string | null;
+  subtotal: number;
+  packaging_fee: number | null;
+  delivery_fee: number;
+  promo_code: string | null;
+  promo_discount: number | null;
+  promo_porte_sur: string | null;
+  remise_charge_restaurant: number | null;
+  total: number;
+  payment_method: string;
+  payment_status: string | null;
+  /** Fraction 0..1 figée à la livraison ; null si jamais figée. */
+  commission_rate: number | null;
+  courier_id: string | null;
+  profiles: UnOuListe<{ full_name: string | null; phone: string | null }>;
+  addresses: UnOuListe<{ label: string | null; zone: string | null; landmark: string | null; phone: string | null; instructions: string | null }>;
+  order_items: {
+    id: string;
+    product_name_snapshot: string;
+    quantity: number;
+    unit_price: number;
+    comment: string | null;
+    order_item_options: { option_name_snapshot: string; price_delta_snapshot: number; quantity: number }[] | null;
+  }[] | null;
+};
+
+export type ChangementAdmin = { avant: string | null; apres: string | null; created_at: string };
+
+export type FicheLue = {
+  commande: CommandeFiche;
+  livreur: { full_name: string | null; phone: string | null } | null;
+  /** null : journal illisible (on n'affiche alors aucun changement). */
+  changementsAdmin: ChangementAdmin[] | null;
+};

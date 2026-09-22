@@ -12,12 +12,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { formatAr } from '../lib/util';
+import { formatAr, PAYMENT_LABEL, PAYMENT_STATUS_LABEL, STATUS_LABEL, un } from '../lib/util';
 import {
   COLONNES_VERSEMENT, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM, dateHeureNosyBe, dateNosyBe,
   libellePeriode, lireErreurFonction, peutRenvoyer, referenceValide,
 } from '../lib/versement';
-import type { CommandeReversee, StatutTelegram, Versement } from '../lib/versement';
+import { COLONNES_FICHE } from '../lib/versement';
+import type { ChangementAdmin, CommandeFiche, CommandeReversee, FicheLue, StatutTelegram, Versement } from '../lib/versement';
+import { CodeMarchandFenetre } from './CodeMarchand';
 
 export { COLONNES_VERSEMENT };
 
@@ -90,23 +92,37 @@ export function DetailCommandes({ restaurantId, debut, fin, netRapport }: {
 
 function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee[]; netRapport: number }) {
   const total = commandes.reduce((s, c) => s + c.net, 0);
+  // Une commande dépliée à la fois : sur un téléphone, deux détails ouverts
+  // font perdre la ligne qu'on était venu vérifier.
+  const [deplie, setDeplie] = useState<string | null>(null);
   return (
     <div className="vers-detail">
       {commandes.length === 0 ? <div className="empty">Aucune commande retenue.</div> : null}
-      {commandes.map((c) => (
-        <div key={c.order_id} className="vers-cmd">
-          <div className="vers-cmd-tete">
-            <strong>{c.order_number ?? 'Sans numéro'}</strong>
-            <span className="muted">{dateHeureNosyBe(c.livree_le)}</span>
+      {commandes.map((c) => {
+        const ouvert = deplie === c.order_id;
+        return (
+          <div key={c.order_id} className={`vers-cmd${ouvert ? ' ouvert' : ''}`}>
+            <button
+              type="button"
+              className="vers-cmd-bouton"
+              aria-expanded={ouvert}
+              onClick={() => setDeplie(ouvert ? null : c.order_id)}
+            >
+              <span className="vers-cmd-tete">
+                <strong>{c.order_number ?? 'Sans numéro'}</strong>
+                <span className="muted">{dateHeureNosyBe(c.livree_le)} <span className="vers-chevron" aria-hidden>{ouvert ? '▴' : '▾'}</span></span>
+              </span>
+              <span className="vers-cmd-chiffres">
+                <span>Montant <b>{formatAr(c.montant)}</b></span>
+                <span>Commission <b>−{formatAr(c.commission)}</b></span>
+                {c.offert > 0 ? <span>Offert <b>−{formatAr(c.offert)}</b></span> : null}
+                <span className="vers-net">Net <b>{formatAr(c.net)}</b></span>
+              </span>
+            </button>
+            {ouvert ? <FicheCommande reversee={c} /> : null}
           </div>
-          <div className="vers-cmd-chiffres">
-            <span>Montant <b>{formatAr(c.montant)}</b></span>
-            <span>Commission <b>−{formatAr(c.commission)}</b></span>
-            {c.offert > 0 ? <span>Offert <b>−{formatAr(c.offert)}</b></span> : null}
-            <span className="vers-net">Net <b>{formatAr(c.net)}</b></span>
-          </div>
-        </div>
-      ))}
+        );
+      })}
       <div className="vers-total">
         <span>{commandes.length} commande{commandes.length > 1 ? 's' : ''}</span>
         <strong>{formatAr(total)}</strong>
@@ -118,9 +134,187 @@ function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee
       ) : null}
       <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>
         Montant = plats + emballage. Net = montant − commission − part offerte par le restaurant.
+        Touche une commande pour son détail complet.
       </p>
     </div>
   );
+}
+
+// ───────────────────────────────────────────────────────── Fiche d'une commande
+
+type EtatFiche =
+  | { etat: 'chargement' }
+  | { etat: 'erreur'; message: string }
+  | { etat: 'pret'; fiche: FicheLue };
+
+/** Lit tout ce qu'il faut savoir d'une commande. Lecture seule, RLS admin existantes. */
+function useFicheCommande(orderId: string): EtatFiche {
+  const [e, setE] = useState<EtatFiche>({ etat: 'chargement' });
+  useEffect(() => {
+    let vivant = true;
+    setE({ etat: 'chargement' });
+    lireFicheCommande(orderId).then((r) => { if (vivant) setE(r); });
+    return () => { vivant = false; };
+  }, [orderId]);
+  return e;
+}
+
+async function lireFicheCommande(orderId: string): Promise<EtatFiche> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(COLONNES_FICHE)
+    .eq('id', orderId)
+    .maybeSingle();
+  if (error) return { etat: 'erreur', message: error.message };
+  if (!data) return { etat: 'erreur', message: 'commande introuvable (ou illisible pour ce compte)' };
+  const o = data as unknown as CommandeFiche;
+  // Le livreur est un compte auth, pas une clé étrangère vers `profiles` : lu à part.
+  // Le journal admin donne les changements de statut faits depuis l'admin — les
+  // seuls horodatés au-delà de créée / récupérée / livrée.
+  const [liv, journal] = await Promise.all([
+    o.courier_id
+      ? supabase.from('profiles').select('full_name, phone').eq('id', o.courier_id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase.from('admin_actions').select('avant, apres, created_at')
+      .eq('order_id', orderId).eq('action', 'statut_commande').order('created_at'),
+  ]);
+  return {
+    etat: 'pret',
+    fiche: {
+      commande: o,
+      livreur: (liv.data as { full_name: string | null; phone: string | null } | null) ?? null,
+      changementsAdmin: journal.error ? null : ((journal.data ?? []) as ChangementAdmin[]),
+    },
+  };
+}
+
+function FicheCommande({ reversee }: { reversee: CommandeReversee }) {
+  const e = useFicheCommande(reversee.order_id);
+  if (e.etat === 'chargement') return <div className="vers-fiche muted">Lecture de la commande…</div>;
+  if (e.etat === 'erreur') return <div className="vers-fiche" style={{ color: 'var(--red)' }}>Commande illisible : {e.message}</div>;
+  return <FicheContenu fiche={e.fiche} reversee={reversee} />;
+}
+
+export function FicheContenu({ fiche, reversee }: { fiche: FicheLue; reversee: CommandeReversee }) {
+  const o = fiche.commande;
+  const a = un(o.addresses);
+  const client = un(o.profiles);
+  const items = o.order_items ?? [];
+  // Commande par téléphone : le vrai client est sur le libellé d'adresse
+  // « ☎ <nom> », pas sur le profil (celui de l'admin qui l'a saisie).
+  const parTelephone = !!a?.label?.startsWith('☎ ');
+  const nomClient = parTelephone ? a!.label!.slice(2) : (client?.full_name ?? '—');
+  const telClient = a?.phone || client?.phone || null;
+  const remise = o.promo_discount ?? 0;
+  const emballage = o.packaging_fee ?? 0;
+  const taux = o.commission_rate;
+
+  const heures: { libelle: string; iso: string | null }[] = [
+    { libelle: 'Créée', iso: o.created_at },
+    { libelle: 'Récupérée par le livreur', iso: o.picked_up_at },
+    { libelle: 'Livrée', iso: o.delivered_at },
+  ];
+
+  return (
+    <div className="vers-fiche">
+      <section>
+        <h4>Plats</h4>
+        {items.length === 0 ? <div className="muted">Aucune ligne de plat.</div> : null}
+        {items.map((it) => (
+          <div key={it.id} className="fiche-plat">
+            <div className="fiche-ligne">
+              <span><b>{it.quantity} ×</b> {it.product_name_snapshot}</span>
+              <span className="fiche-prix">{formatAr(it.quantity * it.unit_price)}</span>
+            </div>
+            {(it.order_item_options ?? []).map((op, i) => (
+              <div key={i} className="fiche-option">
+                + {op.option_name_snapshot}{op.quantity > 1 ? ` ×${op.quantity}` : ''}
+                {op.price_delta_snapshot ? ` (${op.price_delta_snapshot > 0 ? '+' : ''}${formatAr(op.price_delta_snapshot)})` : ''}
+              </div>
+            ))}
+            {it.quantity > 1 ? <div className="fiche-option">{formatAr(it.unit_price)} l’unité, options comprises</div> : null}
+            {it.comment ? <div className="fiche-option">« {it.comment} »</div> : null}
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h4>Ce que le client a payé</h4>
+        <div className="fiche-ligne"><span>Plats</span><span>{formatAr(o.subtotal)}</span></div>
+        {emballage > 0 ? <div className="fiche-ligne"><span>Emballage</span><span>{formatAr(emballage)}</span></div> : null}
+        <div className="fiche-ligne"><span>Livraison</span><span>{formatAr(o.delivery_fee)}</span></div>
+        {o.promo_code || remise > 0 ? (
+          <div className="fiche-ligne">
+            <span>
+              Code {o.promo_code ?? '—'}
+              <span className="muted">
+                {o.promo_porte_sur === 'livraison' ? ' · sur la livraison' : o.promo_porte_sur === 'sous_total' ? ' · sur les plats' : ''}
+                {(o.remise_charge_restaurant ?? 0) > 0 ? ` · dont ${formatAr(o.remise_charge_restaurant)} offerts par le restaurant` : ''}
+              </span>
+            </span>
+            <span>−{formatAr(remise)}</span>
+          </div>
+        ) : null}
+        <div className="fiche-ligne fiche-total"><span>Total payé</span><span>{formatAr(o.total)}</span></div>
+        <div className="muted" style={{ fontSize: 13 }}>
+          {PAYMENT_LABEL[o.payment_method] ?? o.payment_method}
+          {o.payment_status ? ` · ${PAYMENT_STATUS_LABEL[o.payment_status] ?? o.payment_status}` : ''}
+        </div>
+      </section>
+
+      <section>
+        <h4>Client et livraison</h4>
+        <div>{parTelephone ? '☎ ' : ''}<b>{nomClient}</b>{parTelephone ? <span className="muted"> (commande par téléphone)</span> : null}</div>
+        {telClient ? <div><a className="fiche-tel" href={`tel:${telClient}`}>{telClient}</a></div> : <div className="muted">Pas de téléphone</div>}
+        {a ? (
+          <div className="muted" style={{ marginTop: 4 }}>
+            {a.zone ?? 'Zone inconnue'}
+            {a.landmark ? <div>Repère : {a.landmark}</div> : null}
+            {a.instructions ? <div>Consignes : {a.instructions}</div> : null}
+          </div>
+        ) : <div className="muted">Adresse supprimée depuis.</div>}
+        <div style={{ marginTop: 6 }}>
+          Livreur : <b>{fiche.livreur?.full_name ?? (o.courier_id ? 'nom inconnu' : 'aucun')}</b>
+          {fiche.livreur?.phone ? <> · <a className="fiche-tel" href={`tel:${fiche.livreur.phone}`}>{fiche.livreur.phone}</a></> : null}
+        </div>
+      </section>
+
+      <section>
+        <h4>Heures</h4>
+        {heures.map((h) => (
+          <div key={h.libelle} className="fiche-ligne">
+            <span>{h.libelle}</span>
+            <span className={h.iso ? '' : 'muted'}>{h.iso ? dateHeureNosyBe(h.iso) : 'non enregistrée'}</span>
+          </div>
+        ))}
+        {(fiche.changementsAdmin ?? []).map((c, i) => (
+          <div key={i} className="fiche-ligne">
+            <span>Passée « {STATUS_LABEL[c.apres ?? ''] ?? c.apres} » depuis l’admin</span>
+            <span>{dateHeureNosyBe(c.created_at)}</span>
+          </div>
+        ))}
+        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+          L’acceptation et la mise en préparation par le restaurant ne sont pas horodatées en base.
+        </div>
+      </section>
+
+      <section>
+        <h4>Reversement</h4>
+        <div className="fiche-ligne"><span>Montant (plats + emballage)</span><span>{formatAr(reversee.montant)}</span></div>
+        <div className="fiche-ligne">
+          <span>Commission{taux !== null && taux !== undefined ? ` (${arrondirTaux(taux)} %, figé sur la commande)` : ' (taux non figé : taux actuel)'}</span>
+          <span>−{formatAr(reversee.commission)}</span>
+        </div>
+        {reversee.offert > 0 ? <div className="fiche-ligne"><span>Offert par le restaurant</span><span>−{formatAr(reversee.offert)}</span></div> : null}
+        <div className="fiche-ligne fiche-total"><span>Net au restaurant</span><span style={{ color: 'var(--accent)' }}>{formatAr(reversee.net)}</span></div>
+      </section>
+    </div>
+  );
+}
+
+/** 0.1 → « 10 », 0.075 → « 7,5 ». */
+function arrondirTaux(t: number): string {
+  return (Math.round(t * 1000) / 10).toLocaleString('fr-FR');
 }
 
 // ──────────────────────────────────────────────────────── Fenêtre « Marquer reversé »
@@ -133,10 +327,12 @@ export type LigneAVerser = {
   aVerifier: string[];
 };
 
-export function FenetreVersement({ ligne, debut, fin, canal, onFermer }: {
+export function FenetreVersement({ ligne, debut, fin, canal, codeMarchand, onFermer }: {
   ligne: LigneAVerser;
   debut: string;
   fin: string;
+  /** Code marchand Orange Money : null = non renseigné, undefined = illisible. */
+  codeMarchand: string | null | undefined;
   /** true / false : le restaurant a (ou non) un groupe Telegram ; null : inconnu. */
   canal: boolean | null;
   /** `recharger` : un versement a été enregistré, le rapport doit se relire. */
@@ -258,6 +454,8 @@ export function FenetreVersement({ ligne, debut, fin, canal, onFermer }: {
 
             {!fait ? (
               <>
+                {/* Juste au-dessus de la référence : c'est en payant qu'on en a besoin. */}
+                <CodeMarchandFenetre code={codeMarchand} />
                 <label className="sel-champ-bloc" style={{ marginTop: 14 }}>
                   <span className="sel-label">Référence du versement (ID de transaction Orange Money) — obligatoire</span>
                   <input

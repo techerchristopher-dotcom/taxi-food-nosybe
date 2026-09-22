@@ -10,6 +10,7 @@ import type { CommandeLivree, Cumul, RegleDuCode, ReglesDesCodes } from '../lib/
 import { COLONNES_VERSEMENT, chevauche, libellePeriode, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM } from '../lib/versement';
 import type { Versement } from '../lib/versement';
 import { DetailCommandes, FenetreVersement, HistoriqueVersements } from './Versements';
+import { CodeMarchandCarte } from './CodeMarchand';
 
 type DeliveredRow = CommandeLivree & {
   /** Emballages (boite a pizza...). Reverses au restaurant, commission comprise. */
@@ -52,6 +53,11 @@ export function Report() {
   const [rows, setRows] = useState<DeliveredRow[]>([]);
   const [restos, setRestos] = useState<Resto[]>([]);
   const [settlements, setSettlements] = useState<Versement[]>([]);
+  /**
+   * Restaurant → code marchand Orange Money (null = non renseigné). `null` pour
+   * toute la carte = lecture impossible : chaque carte dit alors « illisible ».
+   */
+  const [codes, setCodes] = useState<Record<string, string | null> | null>(null);
   /** Restaurant → a-t-il un groupe Telegram ? Absent de la carte = inconnu. */
   const [canaux, setCanaux] = useState<Record<string, boolean>>({});
   const [ouvert, setOuvert] = useState<string | null>(null);
@@ -94,6 +100,16 @@ export function Report() {
     // Seulement pour prévenir AVANT de confirmer qu'aucun message ne partira.
     // Lecture tolérante : si ce canal devient illisible (table privée à venir,
     // voir « Fuite connue »), l'écran dit « inconnu » et la base tranche.
+    // Le code marchand : lecture À PART du canal Telegram, pour qu'une fermeture
+    // future de `telegram_chat_id` ne fasse pas disparaître le code avec lui.
+    const cm = await supabase.from('restaurants').select('id, code_marchand');
+    if (cm.error) {
+      setCodes(null);
+    } else {
+      const m: Record<string, string | null> = {};
+      for (const x of (cm.data ?? []) as { id: string; code_marchand: string | null }[]) m[x.id] = x.code_marchand;
+      setCodes(m);
+    }
     const c = await supabase.from('restaurants').select('id, telegram_chat_id');
     if (!c.error) {
       const m: Record<string, boolean> = {};
@@ -316,6 +332,11 @@ export function Report() {
                     {' '}· commission −{formatAr(l.commission)}
                     {l.offertRestaurant > 0 ? ` · offert −${formatAr(l.offertRestaurant)}` : ''}
                   </div>
+                  <CodeMarchandCarte
+                    restaurantId={l.restaurantId}
+                    code={codes ? (codes[l.restaurantId] ?? null) : undefined}
+                    onChange={(nouveau) => setCodes((m) => ({ ...(m ?? {}), [l.restaurantId]: nouveau }))}
+                  />
                   {reg ? (
                     <div className="vers-regle">
                       <span className="pill livree">{exact ? 'Reversé' : 'Déjà reversé en partie'}</span>
@@ -375,6 +396,7 @@ export function Report() {
           debut={start}
           fin={end}
           canal={aVerser.restaurantId in canaux ? canaux[aVerser.restaurantId] : null}
+          codeMarchand={codes ? (codes[aVerser.restaurantId] ?? null) : undefined}
           onFermer={(recharger) => { setAVerser(null); if (recharger) void load(); }}
         />
       ) : null}

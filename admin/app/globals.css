@@ -511,3 +511,53 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 }
 /* L'historique est un tableau d'action (bouton « Renvoyer ») : en cartes sur
    téléphone, par la règle `table.cartes` du palier mobile. */
+
+/* ————— Code marchand Orange Money (2026-09-22) —————
+   Sur la carte du restaurant et dans la fenêtre « Marquer reversé ». Le code
+   est en chiffres tabulaires et assez gros pour être relu chiffre à chiffre :
+   une erreur d'un chiffre envoie l'argent à quelqu'un d'autre. */
+.cm-ligne {
+  margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 6px 10px; font-size: 14px;
+}
+.cm-texte { min-width: 0; overflow-wrap: anywhere; }
+.cm-code { font-size: 17px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; color: var(--text); }
+.cm-code.grand { font-size: 24px; }
+.cm-absent { color: var(--amber); font-weight: 700; }
+.cm-gestes { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.cm-copier.fait { color: var(--green); border-color: var(--green); }
+.cm-edition { margin-top: 10px; }
+.cm-fenetre {
+  margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+}
+.cm-fenetre.cm-manque { display: block; color: var(--amber); border-color: var(--amber); font-weight: 600; font-size: 14px; }
+
+/* ————— Fiche d'une commande (détail d'un versement) —————
+   La ligne entière est le bouton : on tape où on lit. */
+.vers-cmd-bouton {
+  display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0;
+  color: inherit; font: inherit; cursor: pointer;
+}
+.vers-cmd-bouton .vers-cmd-tete, .vers-cmd-bouton .vers-cmd-chiffres { display: flex; }
+.vers-cmd.ouvert { background: var(--panel); border-radius: 10px; padding: 8px 8px 10px; border-top-color: transparent; }
+.vers-chevron { color: var(--accent); margin-left: 4px; }
+.vers-fiche { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+.vers-fiche section { border-top: 1px solid var(--border); padding-top: 8px; min-width: 0; }
+.vers-fiche h4 {
+  margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+}
+.fiche-ligne { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 2px 0; }
+.fiche-ligne > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.fiche-ligne > span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fiche-total { font-weight: 800; border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 6px; }
+.fiche-plat { padding: 3px 0; }
+.fiche-prix { font-weight: 600; }
+.fiche-option { color: var(--muted); font-size: 13px; padding-left: 14px; overflow-wrap: anywhere; }
+.fiche-tel { color: var(--accent); display: inline-block; padding: 6px 0; }
+@media (max-width: 640px) {
+  /* Le bouton de ligne garde sa hauteur de contenu (> 44 px), sans le
+     rembourrage imposé aux boutons d'action. */
+  .vers-cmd-bouton { padding-block: 4px !important; }
+  .fiche-tel { min-height: 44px; display: inline-flex; align-items: center; }
+}

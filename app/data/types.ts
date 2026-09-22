@@ -323,6 +323,12 @@ export type Order = {
   restaurantLogoUrl?: string | null;
   /** Téléphone public du restaurant — permet au client de l'appeler depuis ses commandes. */
   restaurantPhone?: string | null;
+  /**
+   * Vrai : la base passe seule la commande acceptée en préparation 30 à 60 s après
+   * l'acceptation (`restaurants.preparation_auto`, tâche pg_cron). Le bouton reste
+   * offert (« Démarrer maintenant ») et un appui tardif est inoffensif côté serveur.
+   */
+  preparationAuto?: boolean;
   /** Nom du client, visible du restaurant et du livreur (jamais des autres clients). */
   clientName?: string | null;
   items: OrderItemSnapshot[];

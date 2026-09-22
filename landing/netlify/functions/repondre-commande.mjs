@@ -102,7 +102,12 @@ export default async (request) => {
       return new Response(
         action === 'accepter'
           ? page('✅', `Commande ${esc(d.numero)} acceptée`,
-              'C’est noté. Le client vient d’être prévenu. Ouvre ton espace pour la passer en préparation, puis la marquer prête.',
+              // `preparation_auto` (2026-09-22) : la base passe seule la commande en
+              // preparation 30 a 60 s apres l'acceptation. Absent (ancienne RPC) =
+              // ancien texte, jamais une promesse fausse.
+              d.preparation_auto === true
+                ? 'C’est noté. Le client vient d’être prévenu. La commande passe en préparation toute seule dans moins d’une minute : il te restera seulement à la marquer prête dans ton espace.'
+                : 'C’est noté. Le client vient d’être prévenu. Ouvre ton espace pour la passer en préparation, puis la marquer prête.',
               '#157F3C',
               { libelle: `Voir la commande ${d.numero ?? ''}`.trim(), href: `${APP}/pro` })
           : page('❌', `Commande ${esc(d.numero)} refusée`,

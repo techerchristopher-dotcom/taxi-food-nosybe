@@ -575,7 +575,12 @@ type OrderJoinRow = {
   courier_id: string | null;
   picked_up_at: string | null;
   created_at: string;
-  restaurants: { name: string; logo_url: string | null; phone: string | null } | null;
+  restaurants: {
+    name: string;
+    logo_url: string | null;
+    phone: string | null;
+    preparation_auto?: boolean | null;
+  } | null;
   profiles: { full_name: string | null; phone: string | null } | null;
   addresses: {
     label: string | null;
@@ -601,7 +606,7 @@ type OrderJoinRow = {
 
 const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
-  'restaurants ( name, logo_url, phone ), profiles ( full_name, phone ), ' +
+  'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
@@ -621,6 +626,8 @@ function mapOrder(o: OrderJoinRow): Order {
     restaurantInitials: initialsFromName(restaurantName),
     restaurantLogoUrl: o.restaurants?.logo_url ?? null,
     restaurantPhone: o.restaurants?.phone ?? null,
+    // Bascule automatique confirmee -> en_preparation (tache pg_cron, 30 a 60 s).
+    preparationAuto: o.restaurants?.preparation_auto === true,
     clientName: clientTelephone ?? o.profiles?.full_name ?? null,
     items: (o.order_items ?? []).map((it) => ({
       productId: it.product_id ?? '',

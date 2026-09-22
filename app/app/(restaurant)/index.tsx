@@ -196,6 +196,26 @@ function OrderActions({
     );
   }
   if (order.status === 'confirmee') {
+    // Bascule automatique en base (tâche pg_cron, 30 à 60 s après l'acceptation) :
+    // le restaurateur n'a plus rien à faire. Le bouton reste pour qui veut aller plus
+    // vite, et un appui qui arrive APRÈS la bascule est accepté sans erreur par
+    // `set_order_status` — il ne peut plus afficher « Action impossible ».
+    if (order.preparationAuto) {
+      return (
+        <View style={{ gap: 8 }}>
+          <Text style={styles.autoNote}>
+            Acceptée — passe en préparation toute seule dans moins d'une minute.
+          </Text>
+          <Button
+            label="Démarrer maintenant"
+            icon="soup_kitchen"
+            variant="outline"
+            onPress={() => onAdvance(order, 'en_preparation')}
+            loading={busy}
+          />
+        </View>
+      );
+    }
     return <Button label="Démarrer la préparation" icon="soup_kitchen" onPress={() => onAdvance(order, 'en_preparation')} loading={busy} />;
   }
   if (order.status === 'en_preparation') {
@@ -221,4 +241,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   actionRow: { flexDirection: 'row', gap: 10 },
+  autoNote: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, color: colors.textMuted, textAlign: 'center' },
 });

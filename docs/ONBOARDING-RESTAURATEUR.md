@@ -406,5 +406,6 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
 | La Plage | laplagehellville.nosybe@gmail.com (patron) + davidantoniods35@gmail.com | — (Google) | +261 32 71 548 96 | ✅ 2026-09-17 | ✅ 2026-09-17 — **groupe** `-1004301209124`, commande test acceptée |
 | Les Siciliens | — | — | — | ❌ | ❌ |
+| Chez M&K | — | — | +261 37 19 861 96 | ❌ | ✅ 2026-09-22 — **groupe** `-1004341065622`, message de test remis |
 | Taxi Be | — | — | — | ❌ | ❌ |
 | Angelo | — | — | — | ❌ (masqué) | ❌ |

@@ -69,6 +69,8 @@ inclus au choix sur les 12 plats principaux ; ti pan mixte = poulet + bœuf, san
 riz cantonais et mi sao **« Avec porc / Sans porc » en option obligatoire** (le client choisit, pas
 de badge) ; fondue 24 h à l'avance, 2 pers. minimum (reste indisponible) ; Coca / Sprite petit
 modèle 8 000, bière en canette 10 000 (marques à demander) ; pas de dessert.
+✅ Telegram (2026-09-22) : groupe « Taxi food - chez mk », `telegram_chat_id = -1004341065622`
+(supergroupe, identifiant stable), message de test remis. Commande test à faire à l'ouverture.
 Reste AVANT `visible` : photo du **bol renversé fruits de mer** (envoyée sur WhatsApp, pas encore
 déposée) ; ingrédients des autres plats ; adresse exacte et logo détouré ; **photos tirées
 d'Internet** (riz cantonais avec le filigrane « petitsplatsentreamis.com », et d'autres).

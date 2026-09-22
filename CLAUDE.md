@@ -106,6 +106,9 @@ bol renversé ont le porc en OPTION, sans badge possible.
   reçu qu'un test au 2026-09-16. Un client disant avoir « envoyé un message » a écrit par WhatsApp
   ou e-mail — hors base. Piste ouverte : un vrai formulaire de contact enregistré + notifié n8n.
 
+- ⏱️ **Préparation automatique** (2026-09-22, voir sa section) : livrée base + OTA + web + vitrine.
+  Reste à constater sur une vraie commande, et à dire aux restaurateurs.
+
 **Codes offerts** (voir leur section) : identifiant n8n à coller, ligne Telegram « Repas offert »,
 test `MERCISULLI` avec Sulli.
 
@@ -371,7 +374,7 @@ Un même compte Google peut être **client** et/ou **restaurant** (et **livreur*
 - **Base** : enums `app_role` {client,restaurant,livreur} / `role_status` {pending,active,revoked} ; tables `user_roles`, `restaurant_staff` (lie un compte à un `restaurants.id`), `couriers`. RPC `request_role(p_role)` : `client` → `active` immédiat ; `restaurant`/`livreur` → `pending` jusqu'à validation **manuelle** (toi, en base).
 - **Helpers rôle** (SECURITY DEFINER) : `is_active_restaurant_staff_of(rid)`, `current_restaurant_id()`. Un « restaurant actif » = rôle restaurant `active` **ET** lien `restaurant_staff`.
 - **RLS restaurant** : policies SELECT additives sur `orders`/`order_items`/`order_item_options` → le staff voit les commandes de **son** restaurant (les policies client, par `user_id`, restent inchangées).
-- **Transitions de statut** : RPC **`set_order_status(order_id, new_status, reason)`** (SECURITY DEFINER, comme `create_order` — aucune policy UPDATE ouverte sur `orders`). Vérifie l'appartenance au restaurant et n'autorise que les transitions valides : `recue→confirmee|annulee`, `confirmee→en_preparation|annulee`, `en_preparation→en_livraison`. `annulee` exige un motif (stocké dans `orders.cancellation_reason`, visible côté client).
+- **Transitions de statut** : RPC **`set_order_status(order_id, new_status, reason)`** (SECURITY DEFINER, comme `create_order` — aucune policy UPDATE ouverte sur `orders`). Vérifie l'appartenance au restaurant et n'autorise que les transitions valides : `recue→confirmee|annulee`, `confirmee→en_preparation|annulee`, `en_preparation→en_livraison`. ⏱️ Depuis le 2026-09-22, `confirmee→en_preparation` se fait **aussi tout seul** après 30 s (tâche pg_cron, voir « Préparation automatique ») ; un appui tardif `en_preparation→en_preparation` est accepté sans effet. `annulee` exige un motif (stocké dans `orders.cancellation_reason`, visible côté client).
 - **Routage app** (`app/index.tsx`, corrigé le 2026-09-06) : **un rôle pro ACTIF est une décision d'administrateur, un rôle client n'est qu'un tap.** L'aiguillage lit, dans cet ordre, le `mode` persisté (AsyncStorage `tf_mode`), puis les rôles **pro actifs seuls** — le rôle client n'est plus lu du tout, il ne donne aucun droit. Un restaurant ou un livreur actif entre donc DIRECTEMENT dans son espace même s'il porte aussi un rôle client, et sans passer par `/phone` ; `role-select` est réservé au seul cas restaurant **et** livreur actifs. Le mode déduit des rôles est écrit, pas seulement calculé. On sort de l'espace pro par le bouton **« ↔ App client »** de l'en-tête (qui POSE `mode = 'client'`), on y revient par **Profil → « Mon espace partenaire »**. Voir « Navigation libre » et `docs/EN-ATTENTE-DE-BUILD.md` § « Un partenaire arrive dans SON espace ». Espace restaurant = groupe de routes `app/(restaurant)/` : 4 onglets **Commandes en cours** (polling 12 s, badge du nb de commandes en attente d'action via le store `restaurantQueue`) · **En livraison** (`en_livraison`, lecture seule) · **Historique** (`livree`/`annulee`) · **Réglages** (logo, couverture, téléphone public, ouverture, horaires, plats à l'affiche, ruptures). Chaque écran monte `RestaurantHeader`, qui porte le badge **« Espace partenaire »**. Le suivi client affiche l'état **refusée + motif**. ⚠️ **La RLS ne sépare RIEN toute seule, et ça vaut dans LES DEUX SENS.** `orders` porte quatre policies SELECT permissives (propriétaire, staff du restaurant, livreur, admin) qui se cumulent en OU ; `addresses` en porte trois. Chaque écran filtre donc explicitement : côté pro par `restaurant_id` / `courier_id` (`listRestaurantOrders`, `listMyActiveDeliveries`), **et côté client par `user_id`** (`listOrders`, `listAddresses`). Le sens client manquait : corrigé le 2026-09-06 après vérification avec de vrais jetons — l'onglet **Commandes** du parcours client renvoyait 4 lignes à `demo.resto` et 5 à `demo.livreur`, **aucune n'étant la leur** (les commandes de leurs clients, nom, téléphone et adresse joints), et le Profil listait 2 adresses de clients comme « adresses enregistrées ». C'était latent depuis toujours, mais le bouton « App client » a mis cet écran à UN tap d'un partenaire.
 - **Visite guidée de l'espace partenaire** (2026-09-06) — 5 étapes jouées **à la première entrée** dans l'espace restaurant, rejouables par **Réglages → « Découvrir votre espace »** : Commandes (avec une **commande d'exemple**) · En livraison · Historique · Réglages · le bouton « App client ». `components/VisiteGuidee.tsx` ; les cibles se signalent elles-mêmes via `components/ZoneVisite.tsx` + `store/visiteGuidee.ts` (la barre d'onglets et l'en-tête ne sont pas dessinés par l'écran qui joue la visite). Quatre règles à ne pas casser :
   - ⚠️ **Le repère ne masque JAMAIS sa cible** : voile en **quatre bandes autour**, contour fin, bulle **à côté**. Pas d'aplat par-dessus (erreur déjà commise sur le guide restaurateur du site vitrine).
@@ -528,7 +531,7 @@ Ce qu'il faut savoir sans l'ouvrir :
 - ⚠️ **La liste des remboursables part des `payment_intents` capturés, jamais de
   `payment_method`.** Une commande peut porter « carte » sans qu'un centime ait été pris, et
   `basculer_en_especes()` peut la repasser en espèces alors qu'un paiement vit encore.
-- ⚠️ **RIEN NE RÉESSAIE TOUT SEUL.** `pg_cron` n'est pas installé sur ce projet et `pg_net`
+- ⚠️ **RIEN NE RÉESSAIE TOUT SEUL.** `pg_cron` n'était pas installé sur ce projet à l'époque (il l'est depuis le 2026-09-18, mais aucune tâche ne relance les remboursements) et `pg_net`
   n'émet qu'une fois : si Stripe est injoignable au moment de l'annulation, la demande reste
   en `demande` avec son motif dans `erreur`, et **elle y reste**. Elle bloque au passage tout
   autre remboursement sur le même paiement (index unique partiel). Le réveil est un geste
@@ -651,6 +654,57 @@ base. C'etait le dernier maillon jamais eprouve.
 
 Les trois liens de la charge utile (suivi, accepter, refuser) sont passes au domaine canonique
 au meme moment.
+
+## ⏱️ Préparation automatique 30 s après l'acceptation (2026-09-22)
+
+**Règle du cycle de commande : `confirmee → en_preparation` se fait TOUT SEUL**, 30 à 60 s après
+l'acceptation, sans geste du restaurant. Demande du porteur du projet : ils acceptent d'un tap
+dans Telegram et oublient tous « Démarrer la préparation » — le client restait sur « Confirmée ».
+Migrations `20260922100000_preparation_automatique_apres_acceptation` et
+`20260922101000_preparation_automatique_tache_pg_cron`.
+
+- **Même chemin que l'appui du restaurateur.** `passer_en_preparation_automatiquement()`
+  (SECURITY DEFINER, **non exécutable** par `anon`/`authenticated`, vérifié) fait exactement
+  l'UPDATE de `set_order_status` : `status = 'en_preparation', status_updated_at = now()`. Tous
+  les effets viennent des triggers `AFTER UPDATE OF status` : push client (`notify-order`),
+  e-mail « C'est en cuisine » (n8n), etc. Vérifié en transaction annulée : **2 appels pg_net**
+  (notify-order + webhook n8n) pour la bascule automatique, **2 identiques** pour l'appui manuel.
+  ⚠️ **Ne jamais la réécrire en UPDATE qui contourne les triggers** (ex. `session_replication_role`).
+- **Ce qui bascule** : `confirmee` depuis **≥ 30 s et < 2 h** (au-delà, « C'est en cuisine » le
+  lendemain serait faux : elle reste à la main), restaurant `preparation_auto = true`, et **pas
+  une carte non encaissée** (`carte_active` + `cb` + `payment_status <> 'paye'` — la même règle
+  que la commande muette de `notify_order_status()` et que l'écran restaurant qui ne la montre
+  pas). Jamais une annulée, en préparation, en livraison ou livrée. Idempotente (2ᵉ passage :
+  0 ligne). Course avec un appui simultané : `FOR UPDATE SKIP LOCKED` + `status = 'confirmee'`
+  relu sous verrou, et `set_order_status` lit désormais **sous verrou** (`FOR UPDATE`).
+- **Tâche pg_cron `preparation-automatique`, `'30 seconds'`** (pg_cron 1.6.4 accepte les
+  secondes). ⏱️ **Délai réel : 30 à 60 s** + quelques secondes de pg_net ; l'écran client se
+  rafraîchit toutes les 15 s, l'écran restaurant toutes les 12 s (sondage, pas de temps réel —
+  suffisant). Une tâche `preparation-automatique-purge-journal` (03:17 UTC) ne garde que 2 jours
+  de journal de CETTE tâche (2 880 passages/jour).
+- **Désactiver** : pour un restaurant, `update restaurants set preparation_auto = false where
+  id = '…'` (vrai par défaut pour tous) ; pour tout le monde,
+  `select cron.alter_job((select jobid from cron.job where jobname = 'preparation-automatique'), active := false);`
+  (`active := true` pour rallumer). Aucun écran ne porte encore ce réglage.
+- **`set_order_status` : `en_preparation → en_preparation` n'est plus une erreur** — l'appui
+  tardif sur le bouton renvoie la commande sans rien écrire (pas de notification en double).
+  Protège toutes les versions de l'app, y compris celles qui ne recevront pas l'OTA.
+- **Écran restaurant** (OTA 1.2.1 / 1.2.2 / 1.2.3 + web, 2026-09-22) : une commande confirmée
+  d'un restaurant en automatique affiche « Acceptée — passe en préparation toute seule dans
+  moins d'une minute » et un bouton secondaire « Démarrer maintenant ». Lu depuis
+  `restaurants.preparation_auto` dans l'embed de `ORDER_SELECT`.
+- **Page « Commande acceptée »** (lien Telegram `/a/…`, fonction `landing/netlify/functions/
+  repondre-commande.mjs`, vitrine redéployée) : `repondre_commande_par_jeton` renvoie
+  `preparation_auto`, et la page dit « passe en préparation toute seule… il te restera à la
+  marquer prête » au lieu de « ouvre ton espace pour la passer en préparation ».
+- ⚠️ **Le message Telegram de nouvelle commande (n8n T7uX) n'a PAS été modifié** : la
+  réactivation du workflow fait perdre les notifications émises pendant la coupure, et des
+  restaurants étaient ouverts. À faire restaurants fermés si on veut l'annoncer là aussi.
+- ⚠️ **Non vérifié : un passage de la tâche sur une vraie commande commitée.** La tâche tourne
+  (`cron.job_run_details` : `succeeded` toutes les 30 s) et la fonction est prouvée en
+  transaction annulée ; la création d'une commande de test réelle (Taxi Be, sans client, sans
+  Telegram) a été refusée par le garde-fou de permissions. Première vraie commande acceptée à
+  surveiller : `status_updated_at` de `en_preparation` ≈ acceptation + 30 à 60 s.
 
 ## Codes promo (2026-09-06)
 

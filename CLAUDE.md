@@ -821,11 +821,14 @@ admin actif exigé comme `envoyer-annonce`), composants `admin/components/Versem
   détail affiché ET le montant enregistré en sortent. Test : sa somme = `record_settlement` sur 6
   périodes réelles. ⚠️ **Toute évolution de la formule se porte dans les DEUX** (et dans
   `lib/reversement.ts`) ; l'écran signale en rouge si la base et le rapport divergent.
+  ⚠️ Depuis le 2026-09-23 elle rend aussi `deja_reverse` / `settlement_id` / `reverse_le` /
+  `reference_versement`, et le montant enregistré ne somme que les lignes `not deja_reverse`.
 - **`admin_enregistrer_versement(resto, début, fin, montant_versé, référence, dû_attendu)`** — nom
   nouveau, `record_settlement` **inchangée** (piège PGRST203). Refuse : référence vide / < 4 ou
   > 64 caractères ; référence déjà utilisée (comparée sans espaces ni casse, + index unique) ;
-  **toute période qui CHEVAUCHE** un versement existant du même restaurant (pas seulement la
-  même) ; période sans commande ; dû affiché ≠ dû en base (« recharge le rapport »). Verrou
+  ~~toute période qui CHEVAUCHE un versement existant~~ — **remplacé le 2026-09-23** par le refus
+  commande par commande, voir « Une commande n'appartient qu'à UN reversement » plus bas ;
+  période sans commande ; dû affiché ≠ dû en base (« recharge le rapport »). Verrou
   consultatif par restaurant contre le double clic. `is_admin()` ; aucune exécution pour `anon`
   (vérifié par PostgREST : 401 `permission denied`).
 - **Colonnes ajoutées** à `restaurant_settlements` : `reference_versement`, `nb_commandes`,
@@ -879,6 +882,58 @@ admin actif exigé comme `envoyer-annonce`), composants `admin/components/Versem
   champ à 16 px, Copier → « ✓ Copié » sur un vrai clic). Le paquet déployé contient bien les deux
   écrans. **Jamais exercés** : un enregistrement réel du code par la RPC depuis l'écran, la lecture
   d'une vraie fiche.
+
+## 🔗 Une commande n'appartient qu'à UN reversement (2026-09-23)
+
+Migration `20260923100000_une_commande_un_seul_reversement` (appliquée). Le manque signalé :
+« Voir les N commandes » affichait ensemble des commandes déjà payées et des commandes encore
+dues, sans rien pour les distinguer — risque de payer deux fois.
+
+- **Table `settlement_orders`** (`order_id` **CLÉ PRIMAIRE**, `settlement_id`, `restaurant_id`,
+  `net` figé, `created_at`). La clé primaire EST la garantie anti-double-paiement : ce n'est plus
+  une règle d'écran, c'est la base qui refuse. FK composite vers `orders (id, restaurant_id)` :
+  un rattachement ne peut pas viser le reversement d'un autre restaurant. **RLS active, AUCUNE
+  politique, aucun droit** : illisible par la clé publique comme par un compte connecté (vérifié
+  par PostgREST : **401 `42501`**), tout passe par les RPC `is_admin()`.
+- **Remplie par `admin_enregistrer_versement`, dans la MÊME transaction** que le versement : soit
+  les deux, soit ni l'un ni l'autre.
+- ⛔ **Le refus par CHEVAUCHEMENT DE PÉRIODE a disparu.** Il interdisait de solder une période
+  entamée et de rattraper une commande livrée en retard, et une période décalée d'un jour le
+  contournait. Ce qui protège désormais est **commande par commande**. Un versement ne retient que
+  les commandes **non encore rattachées** ; si elles le sont toutes, il est refusé (« Rien à
+  reverser : les N commande(s) … ont déjà été reversées »).
+- **`admin_commandes_a_reverser`** rend quatre colonnes de plus (`deja_reverse`, `settlement_id`,
+  `reverse_le`, `reference_versement`) et **garde** les commandes déjà payées dans la liste : les
+  cacher ferait disparaître des commandes réelles. ⚠️ Sa signature de retour a changé (`drop` +
+  `create`) : tout appelant qui somme `net` doit filtrer `not deja_reverse`.
+- **`admin_commandes_deja_reversees(début, fin)`** : ce que le Rapport de clôture lit pour savoir
+  quelles commandes de la période sont déjà payées.
+- ⛔ **`record_settlement` n'est plus exécutable** par `anon` ni `authenticated` (révoquée) : elle
+  écrivait un reversement **sans rattacher aucune commande**, donc rouvrait le double paiement par
+  la porte de derrière. Son corps est inchangé, elle reste la référence de calcul du test.
+- **Reprise de l'existant** : les 3 reversements déjà en base ont reçu leurs commandes selon la
+  règle de période du calcul (`status = 'livree'` ET `coalesce(delivered_at, created_at)` au jour
+  local `Indian/Antananarivo` dans la période ET même restaurant) — Chez Bidul 13→14/09 (TF-161,
+  TF-162), La Cabane 20/09 (TF-254), Chez M&K 22→23/09 (TF-265). ⚠️ Pour Chez Bidul, la somme des
+  nets (125 800) vaut le **montant payé**, pas l'`amount_due` enregistré (117 800) : ce
+  reversement date d'avant l'ajout de l'emballage dans la formule. C'est normal, rien à corriger.
+- **À l'écran** : pastille par commande — verte « Reversé le JJ/MM · réf. XXX » ou ambre
+  « À reverser » ; pied de liste à **deux totaux** (déjà reversé / reste à reverser) ; carte du
+  restaurant dont le gros chiffre est le **reste à reverser** seul, avec les deux pastilles de
+  répartition ; « Marquer reversé » apparaît dès qu'**une** commande reste due (et non plus
+  « aucun versement sur une période qui chevauche »).
+- **Recette** : `supabase/tests/versement.test.sql`, transaction annulée — **40 contrôles, 0 KO**
+  (2026-09-23). Rattachement à l'enregistrement, refus d'un second versement sur des commandes
+  déjà rattachées, période chevauchante acceptée SANS la commande déjà payée, clé primaire qui
+  refuse un doublon hors RPC, cohérence restaurant, reprise des 3 reversements, commande sans
+  `delivered_at` (TF-248) visible et rattachée, non-admin refusé, clé publique refusée. Aucun vrai
+  reversement créé, aucun message Telegram envoyé.
+- ⚠️ **Non vérifié sur l'admin en ligne** (connexion Google, pas de session admin) : rendu contrôlé
+  à **375 px sur une copie locale** à données simulées reprenant `globals.css` — aucun défilement
+  horizontal (`scrollWidth = clientWidth = 375`), pastilles et deux totaux lisibles. Le paquet
+  déployé contient bien le nouveau code (`admin_commandes_deja_reversees`, `pill reverse`,
+  `pill a-reverser` présents dans le JS et le CSS servis). **Jamais exercé en vrai** : un versement
+  réel passant par le nouveau chemin.
 
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 

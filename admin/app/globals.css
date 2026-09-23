@@ -504,6 +504,19 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
   display: flex; justify-content: space-between; border-top: 2px solid var(--border);
   padding-top: 8px; font-size: 15px;
 }
+/* Le total déjà payé : présent, mais il ne doit pas se confondre avec ce qui
+   reste à verser — c'est ce dernier qu'on lit avant de payer. */
+.vers-total.paye { border-top-width: 1px; color: var(--muted); }
+.vers-total.paye strong { font-weight: 600; }
+
+/* Payé / à payer, sur une commande comme sur une carte de restaurant. */
+.pill.reverse { background: #10281a; color: #58d68d; }
+.pill.a-reverser { background: #3b2f10; color: var(--accent); }
+.vers-partage { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.vers-cmd-etat { display: block; margin-top: 4px; }
+/* Une ligne déjà payée s'efface d'un ton : elle reste lisible, elle n'attire
+   plus l'œil de celui qui cherche ce qu'il doit encore régler. */
+.vers-cmd.payee .vers-cmd-tete strong { color: var(--muted); }
 .vers-montant { font-size: 26px; font-weight: 800; color: var(--accent); }
 .vers-apercu {
   white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px; line-height: 1.45;
@@ -540,6 +553,7 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
   color: inherit; font: inherit; cursor: pointer;
 }
 .vers-cmd-bouton .vers-cmd-tete, .vers-cmd-bouton .vers-cmd-chiffres { display: flex; }
+.vers-cmd-bouton .vers-cmd-etat { display: block; }
 .vers-cmd.ouvert { background: var(--panel); border-radius: 10px; padding: 8px 8px 10px; border-top-color: transparent; }
 .vers-chevron { color: var(--accent); margin-left: 4px; }
 .vers-fiche { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }

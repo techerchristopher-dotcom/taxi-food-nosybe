@@ -15,7 +15,7 @@ import { supabase } from '../lib/supabase';
 import { formatAr, PAYMENT_LABEL, PAYMENT_STATUS_LABEL, STATUS_LABEL, un } from '../lib/util';
 import {
   COLONNES_VERSEMENT, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM, dateHeureNosyBe, dateNosyBe,
-  libellePeriode, lireErreurFonction, peutRenvoyer, referenceValide,
+  libelleReverse, libellePeriode, lireErreurFonction, peutRenvoyer, referenceValide, totauxListe,
 } from '../lib/versement';
 import { COLONNES_FICHE } from '../lib/versement';
 import type { ChangementAdmin, CommandeFiche, CommandeReversee, FicheLue, StatutTelegram, Versement } from '../lib/versement';
@@ -90,8 +90,17 @@ export function DetailCommandes({ restaurantId, debut, fin, netRapport }: {
   return <ListeCommandes commandes={e.commandes} netRapport={netRapport} />;
 }
 
+/**
+ * Le détail des commandes d'une période. Chaque ligne dit maintenant si elle a
+ * DÉJÀ été payée : c'est le manque signalé le 2026-09-23 — huit commandes
+ * s'affichaient ensemble sans que rien ne distingue les réglées des autres, et
+ * le risque était de payer deux fois.
+ *
+ * `netRapport` est ce que le rapport annonce comme RESTANT à reverser : on le
+ * confronte donc à la somme des seules commandes non reversées.
+ */
 function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee[]; netRapport: number }) {
-  const total = commandes.reduce((s, c) => s + c.net, 0);
+  const t = totauxListe(commandes);
   // Une commande dépliée à la fois : sur un téléphone, deux détails ouverts
   // font perdre la ligne qu'on était venu vérifier.
   const [deplie, setDeplie] = useState<string | null>(null);
@@ -101,7 +110,7 @@ function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee
       {commandes.map((c) => {
         const ouvert = deplie === c.order_id;
         return (
-          <div key={c.order_id} className={`vers-cmd${ouvert ? ' ouvert' : ''}`}>
+          <div key={c.order_id} className={`vers-cmd${ouvert ? ' ouvert' : ''}${c.deja_reverse ? ' payee' : ''}`}>
             <button
               type="button"
               className="vers-cmd-bouton"
@@ -111,6 +120,11 @@ function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee
               <span className="vers-cmd-tete">
                 <strong>{c.order_number ?? 'Sans numéro'}</strong>
                 <span className="muted">{dateHeureNosyBe(c.livree_le)} <span className="vers-chevron" aria-hidden>{ouvert ? '▴' : '▾'}</span></span>
+              </span>
+              <span className="vers-cmd-etat">
+                {c.deja_reverse
+                  ? <span className="pill reverse">{libelleReverse(c)}</span>
+                  : <span className="pill a-reverser">À reverser</span>}
               </span>
               <span className="vers-cmd-chiffres">
                 <span>Montant <b>{formatAr(c.montant)}</b></span>
@@ -123,17 +137,24 @@ function ListeCommandes({ commandes, netRapport }: { commandes: CommandeReversee
           </div>
         );
       })}
+      {t.nbDeja > 0 ? (
+        <div className="vers-total paye">
+          <span>{t.nbDeja} déjà reversée{t.nbDeja > 1 ? 's' : ''}</span>
+          <strong>{formatAr(t.dejaReverse)}</strong>
+        </div>
+      ) : null}
       <div className="vers-total">
-        <span>{commandes.length} commande{commandes.length > 1 ? 's' : ''}</span>
-        <strong>{formatAr(total)}</strong>
+        <span>{t.nbAReverser} à reverser</span>
+        <strong>{formatAr(t.aReverser)}</strong>
       </div>
-      {total !== netRapport ? (
+      {t.aReverser !== netRapport ? (
         <p style={{ color: 'var(--red)', fontWeight: 600 }}>
-          ⚠️ La base retient {formatAr(total)}, le rapport affiche {formatAr(netRapport)}. Ne reverse pas avant d’avoir compris l’écart.
+          ⚠️ La base retient {formatAr(t.aReverser)}, le rapport affiche {formatAr(netRapport)}. Ne reverse pas avant d’avoir compris l’écart.
         </p>
       ) : null}
       <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>
         Montant = plats + emballage. Net = montant − commission − part offerte par le restaurant.
+        Une commande déjà reversée ne peut plus entrer dans un autre versement (la base l’interdit).
         Touche une commande pour son détail complet.
       </p>
     </div>
@@ -339,7 +360,14 @@ export function FenetreVersement({ ligne, debut, fin, canal, codeMarchand, onFer
   onFermer: (recharger: boolean) => void;
 }) {
   const detail = useCommandesAReverser(ligne.restaurantId, debut, fin);
-  const commandes = detail.etat === 'pret' ? detail.commandes : [];
+  const toutes = detail.etat === 'pret' ? detail.commandes : [];
+  // ⚠️ Seules les commandes NON ENCORE RATTACHÉES à un reversement entrent dans
+  // ce versement : c'est exactement ce que `admin_enregistrer_versement`
+  // enregistrera. Une commande déjà payée reste visible dans « Voir les
+  // commandes », mais jamais dans le montant ni dans le message au restaurant.
+  const commandes = useMemo(() => toutes.filter((c) => !c.deja_reverse), [toutes]);
+  const dejaPayees = useMemo(() => toutes.filter((c) => c.deja_reverse), [toutes]);
+  const dejaMontant = dejaPayees.reduce((s, c) => s + c.net, 0);
   const du = commandes.reduce((s, c) => s + c.net, 0);
   const numeros = useMemo(() => commandes.map((c) => c.order_number ?? '?'), [commandes]);
 
@@ -430,11 +458,17 @@ export function FenetreVersement({ ligne, debut, fin, canal, codeMarchand, onFer
               <div>
                 {commandes.length} commande{commandes.length > 1 ? 's' : ''} · du {libellePeriode(debut, fin)}
               </div>
+              {dejaPayees.length > 0 ? (
+                <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                  {dejaPayees.length} commande{dejaPayees.length > 1 ? 's' : ''} de cette période ({formatAr(dejaMontant)})
+                  {dejaPayees.length > 1 ? ' ont' : ' a'} déjà été reversée{dejaPayees.length > 1 ? 's' : ''} : exclue{dejaPayees.length > 1 ? 's' : ''} de ce versement.
+                </div>
+              ) : null}
               <button type="button" className="btn ghost petit" style={{ marginTop: 8 }} onClick={() => setVoirListe((x) => !x)}>
                 {voirListe ? 'Masquer les commandes' : 'Voir les commandes'}
               </button>
             </div>
-            {voirListe ? <ListeCommandes commandes={commandes} netRapport={ligne.net} /> : null}
+            {voirListe ? <ListeCommandes commandes={toutes} netRapport={ligne.net} /> : null}
 
             {doitVerifier ? (
               <div className="warn" style={{ marginTop: 12 }}>

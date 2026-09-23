@@ -20,6 +20,12 @@
 export type CommandeLivree = {
   /** Pour nommer la commande dans une alerte ; absent, l'alerte reste lisible. */
   order_number?: string | null;
+  /**
+   * Identifiant de la commande. Il sert à savoir si elle est DÉJÀ rattachée à
+   * un reversement (`settlement_orders`) : le rapport cesse alors de proposer
+   * de la payer. Absent des jeux d'essai, d'où l'optionnel.
+   */
+  id?: string;
   restaurant_id: string;
   subtotal: number;
   packaging_fee: number | null;

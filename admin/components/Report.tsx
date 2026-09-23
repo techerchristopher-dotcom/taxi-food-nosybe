@@ -8,7 +8,7 @@ import {
 } from '../lib/reversement';
 import type { CommandeLivree, Cumul, RegleDuCode, ReglesDesCodes } from '../lib/reversement';
 import { COLONNES_VERSEMENT, chevauche, libellePeriode, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM } from '../lib/versement';
-import type { Versement } from '../lib/versement';
+import type { Rattachement, Versement } from '../lib/versement';
 import { DetailCommandes, FenetreVersement, HistoriqueVersements } from './Versements';
 import { CodeMarchandCarte } from './CodeMarchand';
 
@@ -37,13 +37,21 @@ type Line = Cumul & {
   name: string;
   /**
    * Un versement déjà enregistré dont la période RECOUVRE celle du rapport —
-   * même partiellement. La base refuse d'en enregistrer un second
-   * (`admin_enregistrer_versement`) ; l'écran le montre avant qu'on essaie.
+   * même partiellement. Purement informatif depuis le 2026-09-23 : ce n'est
+   * plus lui qui décide si on peut reverser, mais `resteAReverser`.
    */
   reglement: Versement | null;
+  /**
+   * Ce qui reste VRAIMENT à payer : les commandes de la période qu'aucun
+   * reversement ne rattache (`settlement_orders`). C'est ce montant, et lui
+   * seul, que « Marquer reversé » propose.
+   */
+  resteAReverser: Cumul;
+  /** Ce qui a déjà été payé sur cette période, commande par commande. */
+  dejaReverse: Cumul;
 };
 
-const COLONNES = 'order_number, restaurant_id, subtotal, packaging_fee, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
+const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
 
 const AUCUNE_REGLE: ReglesDesCodes = new Map();
 
@@ -53,6 +61,12 @@ export function Report() {
   const [rows, setRows] = useState<DeliveredRow[]>([]);
   const [restos, setRestos] = useState<Resto[]>([]);
   const [settlements, setSettlements] = useState<Versement[]>([]);
+  /**
+   * Commande → le reversement qui l'a déjà payée. Lu dans `settlement_orders`
+   * par `admin_commandes_deja_reversees` (la table n'a aucune politique RLS :
+   * elle n'est lisible que par une RPC `is_admin()`).
+   */
+  const [rattachements, setRattachements] = useState<Map<string, Rattachement>>(new Map());
   /**
    * Restaurant → code marchand Orange Money (null = non renseigné). `null` pour
    * toute la carte = lecture impossible : chaque carte dit alors « illisible ».
@@ -71,7 +85,7 @@ export function Report() {
     setLoading(true);
     setErr(null);
     const { debut, finExclue } = bornesPeriode(start, end);
-    const [o, oSansDate, r, s] = await Promise.all([
+    const [o, oSansDate, r, s, rat] = await Promise.all([
       supabase
         .from('orders')
         .select(COLONNES)
@@ -96,6 +110,10 @@ export function Report() {
         .from('restaurant_settlements')
         .select(COLONNES_VERSEMENT)
         .order('paid_at', { ascending: false }),
+      // Quelles commandes de la période sont DÉJÀ payées. Même règle de date
+      // que le calcul (`coalesce(delivered_at, created_at)`, jour local), donc
+      // la commande sans `delivered_at` y figure comme les autres.
+      supabase.rpc('admin_commandes_deja_reversees', { p_period_start: start, p_period_end: end }),
     ]);
     // Seulement pour prévenir AVANT de confirmer qu'aucun message ne partira.
     // Lecture tolérante : si ce canal devient illisible (table privée à venir,
@@ -118,9 +136,16 @@ export function Report() {
       }
       setCanaux(m);
     }
-    if (o.error || oSansDate.error || r.error || s.error) {
-      setErr(o.error?.message || oSansDate.error?.message || r.error?.message || s.error?.message || 'Erreur');
+    if (o.error || oSansDate.error || r.error || s.error || rat.error) {
+      setErr(o.error?.message || oSansDate.error?.message || r.error?.message || s.error?.message
+        || rat.error?.message || 'Erreur');
     } else {
+      // Sans cette carte, l'écran proposerait de repayer des commandes déjà
+      // payées : c'est le manque du 2026-09-23. Une lecture ratée est une
+      // erreur bloquante ci-dessus, jamais une carte vide silencieuse.
+      const parCommande = new Map<string, Rattachement>();
+      for (const x of ((rat.data ?? []) as unknown as Rattachement[])) parCommande.set(x.order_id, x);
+      setRattachements(parCommande);
       const orderRows = [...(o.data ?? []), ...(oSansDate.data ?? [])] as DeliveredRow[];
       // La règle de chaque code appliqué (qui paie, sur quoi). Elle ne sert pas
       // au calcul — les montants figés sur la commande priment — mais à le
@@ -183,13 +208,34 @@ export function Report() {
         name: restos.find((x) => x.id === row.restaurant_id)?.name ?? '—',
         reglement: settlements.find((st) => st.restaurant_id === row.restaurant_id
           && chevauche(st.period_start, st.period_end, start, end)) ?? null,
+        resteAReverser: CUMUL_VIDE,
+        dejaReverse: CUMUL_VIDE,
       };
-      map.set(row.restaurant_id, { ...cur, ...cumulerCommande(cur, row, rateOf(row.restaurant_id), regles) });
+      const taux = rateOf(row.restaurant_id);
+      // La MÊME commande alimente deux comptes : le cumul de la période (ce que
+      // le rapport décrit) et l'un des deux sous-cumuls (ce qui reste à payer,
+      // ce qui l'est déjà). Une commande rattachée à un reversement ne peut
+      // plus entrer dans un nouveau versement — la base le refuse, l'écran doit
+      // donc cesser de le proposer.
+      const payee = !!(row.id && rattachements.has(row.id));
+      map.set(row.restaurant_id, {
+        ...cur,
+        ...cumulerCommande(cur, row, taux, regles),
+        resteAReverser: payee ? cur.resteAReverser : cumulerCommande(cur.resteAReverser, row, taux, regles),
+        dejaReverse: payee ? cumulerCommande(cur.dejaReverse, row, taux, regles) : cur.dejaReverse,
+      });
     }
-    return Array.from(map.values()).sort((a, b) => b.net - a.net);
-  }, [rows, restos, settlements, start, end, rateOf, regles]);
+    return Array.from(map.values()).sort((a, b) => b.resteAReverser.net - a.resteAReverser.net);
+  }, [rows, restos, settlements, start, end, rateOf, regles, rattachements]);
 
   const totals = useMemo(() => lines.reduce<Cumul>((t, l) => additionnerCumuls(t, l), CUMUL_VIDE), [lines]);
+  // Les deux moitiés du « à reverser » : ce qui est parti, ce qui reste. Le
+  // rapport continue de décrire toute la période (c'est son objet) ; il dit en
+  // plus ce qu'il reste réellement à payer.
+  const totalDejaReverse = useMemo(
+    () => lines.reduce((s, l) => s + l.dejaReverse.net, 0), [lines]);
+  const totalResteAReverser = useMemo(
+    () => lines.reduce((s, l) => s + l.resteAReverser.net, 0), [lines]);
 
   // Livreurs salariés → ils te remettent 100 % du cash encaissé (salaires hors app).
   //
@@ -255,7 +301,15 @@ export function Report() {
       <div className="stat-row">
         <div className="stat"><div className="label">Livraisons</div><div className="value">{totals.count}</div></div>
         <div className="stat"><div className="label">Encaissé auprès des clients</div><div className="value">{formatAr(totals.encaisse)}</div></div>
-        <div className="stat"><div className="label">À reverser aux restaurants</div><div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div></div>
+        <div className="stat">
+          <div className="label">À reverser aux restaurants</div>
+          <div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div>
+          {totalDejaReverse > 0 ? (
+            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+              dont {formatAr(totalDejaReverse)} déjà reversés · reste {formatAr(totalResteAReverser)}
+            </div>
+          ) : null}
+        </div>
         <div className="stat"><div className="label">MA MARGE</div><div className="value" style={{ color: 'var(--green)' }}>{formatAr(margin)}</div></div>
       </div>
 
@@ -319,12 +373,15 @@ export function Report() {
           <div className="vers-lignes">
             {lines.map((l) => {
               const reg = l.reglement;
-              const exact = reg && reg.period_start === start && reg.period_end === end;
+              const reste = l.resteAReverser;
+              const deja = l.dejaReverse;
               return (
                 <div key={l.restaurantId} className="vers-ligne">
                   <div className="vers-ligne-tete">
                     <strong>{l.name}</strong>
-                    <span className="vers-ligne-net">{formatAr(l.net)}</span>
+                    {/* Le gros chiffre est ce qu'on va PAYER, jamais le total de
+                        la période : les commandes déjà reversées en sont sorties. */}
+                    <span className="vers-ligne-net">{formatAr(reste.net)}</span>
                   </div>
                   <div className="muted" style={{ fontSize: 13 }}>
                     {l.count} livrée{l.count > 1 ? 's' : ''} · plats {formatAr(l.caPlats)}
@@ -332,6 +389,14 @@ export function Report() {
                     {' '}· commission −{formatAr(l.commission)}
                     {l.offertRestaurant > 0 ? ` · offert −${formatAr(l.offertRestaurant)}` : ''}
                   </div>
+                  {deja.count > 0 ? (
+                    <div className="vers-partage">
+                      <span className="pill reverse">{deja.count} déjà reversée{deja.count > 1 ? 's' : ''} · {formatAr(deja.net)}</span>
+                      {reste.count > 0
+                        ? <span className="pill a-reverser">{reste.count} à reverser · {formatAr(reste.net)}</span>
+                        : <span className="muted" style={{ fontSize: 12 }}>Tout est reversé sur cette période.</span>}
+                    </div>
+                  ) : null}
                   <CodeMarchandCarte
                     restaurantId={l.restaurantId}
                     code={codes ? (codes[l.restaurantId] ?? null) : undefined}
@@ -339,9 +404,8 @@ export function Report() {
                   />
                   {reg ? (
                     <div className="vers-regle">
-                      <span className="pill livree">{exact ? 'Reversé' : 'Déjà reversé en partie'}</span>
                       <span className="muted" style={{ fontSize: 12 }}>
-                        {' '}{libellePeriode(reg.period_start, reg.period_end)}
+                        Dernier versement {libellePeriode(reg.period_start, reg.period_end)}
                         {reg.reference_versement ? ` · réf. ${reg.reference_versement}` : ''}
                       </span>
                       {' '}<span className={`pill ${PASTILLE_TELEGRAM[reg.telegram_statut]}`}>{LIBELLE_TELEGRAM[reg.telegram_statut]}</span>
@@ -351,12 +415,18 @@ export function Report() {
                     <button className="btn ghost petit" onClick={() => setOuvert(ouvert === l.restaurantId ? null : l.restaurantId)}>
                       {ouvert === l.restaurantId ? 'Masquer les commandes' : `Voir les ${l.count} commande${l.count > 1 ? 's' : ''}`}
                     </button>
-                    {!reg ? (
-                      <button className="btn petit" onClick={() => setAVerser(l)}>Marquer reversé</button>
+                    {/* Le geste est ouvert dès qu'il reste UNE commande non
+                        reversée — plus « aucun versement sur une période qui
+                        chevauche », qui interdisait de solder une période ou de
+                        rattraper une commande livrée en retard. */}
+                    {reste.count > 0 ? (
+                      <button className="btn petit" onClick={() => setAVerser(l)}>
+                        Marquer reversé{deja.count > 0 ? ` (${reste.count} restante${reste.count > 1 ? 's' : ''})` : ''}
+                      </button>
                     ) : null}
                   </div>
                   {ouvert === l.restaurantId ? (
-                    <DetailCommandes restaurantId={l.restaurantId} debut={start} fin={end} netRapport={l.net} />
+                    <DetailCommandes restaurantId={l.restaurantId} debut={start} fin={end} netRapport={reste.net} />
                   ) : null}
                 </div>
               );
@@ -392,7 +462,17 @@ export function Report() {
 
       {aVerser ? (
         <FenetreVersement
-          ligne={aVerser}
+          // ⚠️ Ce que la fenêtre confronte à la base, ce sont les commandes qui
+          // RESTENT à payer — pas le total de la période. Les incohérences
+          // signalées sont celles de ces commandes-là : alerter sur une
+          // commande déjà payée ne servirait qu'à bloquer un versement juste.
+          ligne={{
+            restaurantId: aVerser.restaurantId,
+            name: aVerser.name,
+            net: aVerser.resteAReverser.net,
+            incoherentes: aVerser.resteAReverser.incoherentes,
+            aVerifier: aVerser.resteAReverser.aVerifier,
+          }}
           debut={start}
           fin={end}
           canal={aVerser.restaurantId in canaux ? canaux[aVerser.restaurantId] : null}

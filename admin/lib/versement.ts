@@ -25,7 +25,49 @@ export type CommandeReversee = {
   /** part offerte par le restaurant (code offert) */
   offert: number;
   net: number;
+  /**
+   * Cette commande est-elle DÉJÀ rattachée à un reversement ? Lu dans
+   * `settlement_orders`, dont la clé primaire est `order_id` : la base rend
+   * impossible qu'une commande appartienne à deux reversements. Une commande
+   * déjà rattachée reste AFFICHÉE — elle a bien été livrée sur la période —
+   * mais elle ne compte plus dans ce qui reste à payer.
+   */
+  deja_reverse: boolean;
+  settlement_id: string | null;
+  /** Date du versement qui l'a payée (`paid_at`). */
+  reverse_le: string | null;
+  reference_versement: string | null;
 };
+
+/** Ce qu'un rattachement apprend au rapport sur une commande de la période. */
+export type Rattachement = {
+  order_id: string;
+  order_number: string | null;
+  restaurant_id: string;
+  settlement_id: string;
+  reverse_le: string;
+  reference_versement: string | null;
+  net: number;
+};
+
+/** « Reversé le 20/09 · réf. PP2309 », ou sans la référence quand elle manque. */
+export function libelleReverse(c: { reverse_le: string | null; reference_versement: string | null }): string {
+  const quand = c.reverse_le
+    ? new Date(c.reverse_le).toLocaleDateString('fr-FR', { timeZone: 'Indian/Antananarivo', day: '2-digit', month: '2-digit' })
+    : '—';
+  return c.reference_versement ? `Reversé le ${quand} · réf. ${c.reference_versement}` : `Reversé le ${quand}`;
+}
+
+/** Les deux totaux d'une liste de commandes : ce qui est payé, ce qui reste dû. */
+export function totauxListe(commandes: CommandeReversee[]): {
+  dejaReverse: number; nbDeja: number; aReverser: number; nbAReverser: number;
+} {
+  let dejaReverse = 0; let nbDeja = 0; let aReverser = 0; let nbAReverser = 0;
+  for (const c of commandes) {
+    if (c.deja_reverse) { dejaReverse += c.net; nbDeja += 1; } else { aReverser += c.net; nbAReverser += 1; }
+  }
+  return { dejaReverse, nbDeja, aReverser, nbAReverser };
+}
 
 export type StatutTelegram = 'non_prevu' | 'en_attente' | 'en_cours' | 'envoye' | 'echec' | 'sans_canal';
 

@@ -58,6 +58,26 @@ export function libelleReverse(c: { reverse_le: string | null; reference_verseme
   return c.reference_versement ? `Reversé le ${quand} · réf. ${c.reference_versement}` : `Reversé le ${quand}`;
 }
 
+/**
+ * Le jour de Nosy Be d'une commande, en `AAAA-MM-JJ` — la même conversion que
+ * la base (`at time zone 'Indian/Antananarivo'`), pour que l'aperçu du message
+ * annonce la période que la base enregistrera.
+ */
+export function jourNosyBe(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Indian/Antananarivo' });
+}
+
+/**
+ * La période que dessinent des commandes choisies, du plus ancien au plus
+ * récent. En mode « je coche », ce n'est plus la période du rapport qui est
+ * enregistrée mais celle-ci : la base en calcule le même min/max de son côté.
+ */
+export function bornesDesCommandes(commandes: { livree_le: string }[]): { debut: string; fin: string } | null {
+  if (commandes.length === 0) return null;
+  const jours = commandes.map((c) => jourNosyBe(c.livree_le)).sort();
+  return { debut: jours[0], fin: jours[jours.length - 1] };
+}
+
 /** Les deux totaux d'une liste de commandes : ce qui est payé, ce qui reste dû. */
 export function totauxListe(commandes: CommandeReversee[]): {
   dejaReverse: number; nbDeja: number; aReverser: number; nbAReverser: number;

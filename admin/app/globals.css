@@ -517,6 +517,32 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 /* Une ligne déjà payée s'efface d'un ton : elle reste lisible, elle n'attire
    plus l'œil de celui qui cherche ce qu'il doit encore régler. */
 .vers-cmd.payee .vers-cmd-tete strong { color: var(--muted); }
+
+/* ---- Cocher les commandes qu'on paie (2026-09-23).
+   La case vit dans une cible de 44 px : au pouce, on ne vise pas un carré de
+   20 px. Le reste de la ligne continue de déplier la fiche. */
+.vers-cmd-rangee { display: flex; align-items: flex-start; gap: 4px; }
+.vers-cmd-rangee .vers-cmd-bouton { flex: 1; min-width: 0; }
+.vers-case {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin: -6px 0 0 -6px; cursor: pointer; flex: none;
+}
+.vers-case input {
+  width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; margin: 0;
+}
+.vers-cmd.choisie { background: var(--panel); border-radius: 10px; }
+.vers-selection-tete {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-bottom: 4px;
+}
+.vers-selection-pied {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+  border-top: 2px solid var(--accent); padding-top: 8px;
+}
+.vers-total.choisi { border-top: 0; padding-top: 0; font-weight: 700; }
+.vers-total.choisi strong { color: var(--accent); }
+.vers-fiche-geste { margin-top: 10px; }
+.vers-fiche-geste .btn { width: 100%; min-height: 44px; }
+
 .vers-montant { font-size: 26px; font-weight: 800; color: var(--accent); }
 .vers-apercu {
   white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 14px; line-height: 1.45;

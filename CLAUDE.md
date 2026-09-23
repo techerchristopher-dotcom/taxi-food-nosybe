@@ -935,6 +935,52 @@ dues, sans rien pour les distinguer — risque de payer deux fois.
   `pill a-reverser` présents dans le JS et le CSS servis). **Jamais exercé en vrai** : un versement
   réel passant par le nouveau chemin.
 
+### Marquer MANUELLEMENT les commandes reversées (2026-09-23, 2ᵉ passe)
+
+Retour du porteur du projet : « je veux pouvoir marquer manuellement chaque commande comme étant
+reversée ». On ne pouvait reverser qu'un bloc « tout ce qui reste dû sur la période ».
+Migration `20260923140000_reverser_les_commandes_choisies` (appliquée).
+
+- **Un cœur unique, `versement_enregistrer_core(resto, ids[], début, fin, montant, réf, dû)`** —
+  **appelable par personne de l'extérieur** (révoqué de `public`, `anon`, `authenticated` ET
+  `service_role`). Deux portes y mènent :
+  - **`admin_enregistrer_versement_commandes(resto, order_ids[], montant, réf, dû)`** — le chemin
+    de l'écran depuis cette passe : la liste vient des cases cochées ;
+  - **`admin_enregistrer_versement(resto, début, fin, …)`** — inchangée de l'extérieur, elle
+    résout la période en liste (les non rattachées) puis appelle le même cœur.
+  Une seule implémentation : une règle ne peut plus diverger entre les deux chemins.
+- **Contrôles du cœur**, tous avant la moindre écriture : liste vide refusée ; commandes d'un
+  autre restaurant refusées (nombre annoncé) ; commandes non livrées refusées (numéros annoncés) ;
+  commandes déjà rattachées refusées (numéros annoncés) ; référence obligatoire, 4–64 caractères,
+  unique ; dû affiché ≠ dû en base refusé ; `is_admin()` seul ; verrou consultatif par restaurant.
+  Le montant enregistré est **la somme exacte des nets de ces commandes-là**, et ce sont les mêmes
+  lignes qui sont rattachées (mêmes tableaux : aucune seconde lecture ne peut s'en écarter).
+- ⚠️ **Période enregistrée en mode liste = min/max des jours locaux des commandes retenues**, pas
+  la période du rapport. Deux versements peuvent donc porter des périodes qui se chevauchent :
+  c'est voulu depuis la 1ʳᵉ passe, la garantie est `settlement_orders`, pas la période.
+- **Écran** (`Versements.tsx`) : case à cocher sur chaque ligne encore « À reverser », dans une
+  cible de **44 × 44 px** (mesurée) ; « Tout sélectionner / Tout désélectionner » ; pied de liste
+  « N sélectionnées · X Ar » + **« Marquer reversé (N) »** ; sur une ligne dépliée, **« Marquer
+  cette commande comme reversée »** pour solder une commande isolée. Le bouton de la carte est
+  devenu **« Tout reverser »**. La fenêtre existante sert dans tous les cas (référence Orange
+  Money obligatoire, aperçu du message Telegram avec le bon nombre et le bon montant).
+- ⚠️ **La fenêtre RELIT toujours la base** (`admin_commandes_a_reverser`) et n'utilise la
+  sélection que pour restreindre : les montants ne viennent jamais de l'écran. L'alerte d'écart
+  avec le rapport ne se déclenche **que** si l'on paie tout ce qui reste dû — sur une sélection
+  partielle, un montant plus petit est voulu, pas suspect.
+- **Après enregistrement** : `load()` relit commandes, reversements et rattachements (carte et
+  historique à jour) et un compteur `rafraichi` relit le détail resté ouvert — les lignes payées
+  passent au vert sans recharger la page.
+- **Recette** : `supabase/tests/versement.test.sql`, transaction annulée — **51 contrôles, 0 KO**
+  (2026-09-23). Dont : liste vide refusée, autre restaurant refusé, non livrée refusée, déjà
+  rattachée refusée, dû périmé refusé, sélection d'UNE commande (dû = somme des nets rattachés,
+  période déduite), même commande refusée au 2ᵉ versement, solde de la période (reste 0), cœur
+  inappelable, `anon` refusé. Aucun vrai reversement, aucun message Telegram.
+- Clé publique par PostgREST : `admin_enregistrer_versement_commandes` et
+  `versement_enregistrer_core` → **401 `42501`**.
+- ⚠️ **Non vérifié sur l'admin en ligne.** Rendu contrôlé à 375 px sur copie locale : cases
+  44 × 44 px, boutons ≥ 44 px, aucun défilement horizontal.
+
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 
 - **Plats du jour : UN SEUL accompagnement**, inclus dans le prix (frites, légumes sautés, pâtes,

@@ -16,6 +16,9 @@ declare
   v_somme int;
   /** Les reversements qui existaient AVANT ce test : ceux que la reprise devait rattacher. */
   v_anciens uuid[];
+  /** Les commandes qu'on « coche » pour le mode sélection. */
+  v_choix uuid[];
+  v_une uuid;
   v_rs public.restaurant_settlements;
   v_row public.restaurant_settlements;
   v_chat text;
@@ -381,6 +384,130 @@ begin
       v_out := v_out || format(E'\nKO reprise %s %s→%s : aucune commande rattachée', r.name, r.period_start, r.period_end);
     end if;
   end loop;
+
+  -- ============================ 11. Reverser LES COMMANDES CHOISIES
+  -- (migration 20260923140000). Tout se joue sur Chez Bidul 22→23/09, période
+  -- restée intacte jusqu'ici : TF-267 (sans `delivered_at`) et TF-268.
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+
+  begin
+    set local role anon;
+    perform public.admin_enregistrer_versement_commandes(v_bidul, '{}'::uuid[], 1000, 'ANON-LISTE', 0);
+    reset role;
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO anon appelle admin_enregistrer_versement_commandes';
+  exception when insufficient_privilege then
+    reset role;
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK anon ne peut pas reverser une liste de commandes';
+  end;
+  begin
+    set local role authenticated;
+    perform public.versement_enregistrer_core(v_bidul, '{}'::uuid[], null, null, 1000, 'CORE', 0);
+    reset role;
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO le cœur est appelable de l''extérieur';
+  exception when insufficient_privilege then
+    reset role;
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK versement_enregistrer_core n''est appelable par personne de l''extérieur';
+  end;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+
+  select array_agg(c.order_id order by c.livree_le), (count(*))::int
+    into v_choix, v_n
+  from public.admin_commandes_a_reverser(v_bidul, '2026-09-22', '2026-09-23') c
+  where not c.deja_reverse;
+
+  begin
+    perform public.admin_enregistrer_versement_commandes(v_bidul, '{}'::uuid[], 1000, 'TEST-LISTE-VIDE', 0);
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO liste vide acceptée';
+  exception when others then
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK liste vide refusée : ' || sqlerrm;
+  end;
+
+  -- Commande d'un AUTRE restaurant : refusée.
+  select o.id into v_une from public.orders o
+  where o.restaurant_id = v_cabane and o.status = 'livree' limit 1;
+  begin
+    perform public.admin_enregistrer_versement_commandes(v_bidul, array[v_une], 1000, 'TEST-AUTRE-RESTO', 1000);
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO commande d''un autre restaurant acceptée';
+  exception when others then
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK commande d''un autre restaurant refusée : ' || sqlerrm;
+  end;
+
+  -- Commande NON livrée : refusée.
+  select o.id into v_une from public.orders o where o.status <> 'livree' limit 1;
+  if v_une is not null then
+    begin
+      perform public.admin_enregistrer_versement_commandes(
+        (select restaurant_id from public.orders where id = v_une), array[v_une], 1000, 'TEST-NON-LIVREE', 1000);
+      v_ko := v_ko + 1; v_out := v_out || E'\nKO commande non livrée acceptée';
+    exception when others then
+      v_ok := v_ok + 1; v_out := v_out || E'\nOK commande non livrée refusée : ' || sqlerrm;
+    end;
+  end if;
+
+  -- Commande DÉJÀ rattachée : refusée.
+  reset role;
+  select so.order_id into v_une from public.settlement_orders so limit 1;
+  set local role authenticated;
+  begin
+    perform public.admin_enregistrer_versement_commandes(
+      (select restaurant_id from public.orders where id = v_une), array[v_une], 1000, 'TEST-DEJA-RATTACHEE', 1000);
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO commande déjà rattachée acceptée';
+  exception when others then
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK commande déjà rattachée refusée : ' || sqlerrm;
+  end;
+
+  -- SÉLECTION PARTIELLE : une seule des deux commandes de la période.
+  select c.net into v_du from public.admin_commandes_a_reverser(v_bidul, '2026-09-22', '2026-09-23') c
+  where c.order_id = v_choix[1];
+  begin
+    perform public.admin_enregistrer_versement_commandes(v_bidul, array[v_choix[1]], v_du, 'TEST-SEL-PERIME', v_du + 1);
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO dû périmé accepté en mode liste';
+  exception when others then
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK dû périmé refusé en mode liste : ' || sqlerrm;
+  end;
+
+  select * into v_rs from public.admin_enregistrer_versement_commandes(
+    v_bidul, array[v_choix[1]], v_du, 'TEST-SELECTION-1', v_du);
+  reset role;
+  select count(*), coalesce(sum(so.net), 0) into v_n, v_somme
+  from public.settlement_orders so where so.settlement_id = v_rs.id;
+  set local role authenticated;
+  if v_rs.nb_commandes = 1 and v_rs.amount_due = v_du and v_n = 1 and v_somme = v_du then
+    v_ok := v_ok + 1;
+    v_out := v_out || format(E'\nOK sélection d''UNE commande : %s, dû %s = somme des nets rattachés, période %s→%s (min/max des commandes retenues)',
+      v_rs.numeros_commandes, v_rs.amount_due, v_rs.period_start, v_rs.period_end);
+  else
+    v_ko := v_ko + 1;
+    v_out := v_out || format(E'\nKO sélection d''UNE commande : nb %s, dû %s (attendu %s), rattachées %s somme %s',
+      v_rs.nb_commandes, v_rs.amount_due, v_du, v_n, v_somme);
+  end if;
+
+  -- La MÊME commande, une seconde fois : refusée par le rattachement.
+  begin
+    perform public.admin_enregistrer_versement_commandes(v_bidul, array[v_choix[1]], v_du, 'TEST-SELECTION-BIS', v_du);
+    v_ko := v_ko + 1; v_out := v_out || E'\nKO même commande reversée deux fois';
+  exception when others then
+    v_ok := v_ok + 1; v_out := v_out || E'\nOK même commande refusée au second versement : ' || sqlerrm;
+  end;
+
+  -- Le SOLDE : l'autre commande passe, et il ne reste plus rien à reverser.
+  select coalesce(sum(c.net) filter (where not c.deja_reverse), 0) into v_du
+  from public.admin_commandes_a_reverser(v_bidul, '2026-09-22', '2026-09-23') c;
+  select * into v_rs from public.admin_enregistrer_versement_commandes(
+    v_bidul, array[v_choix[2]], v_du, 'TEST-SELECTION-2', v_du);
+  select coalesce(sum(c.net) filter (where not c.deja_reverse), 0),
+         (count(*) filter (where c.deja_reverse))::int
+    into v_somme, v_n
+  from public.admin_commandes_a_reverser(v_bidul, '2026-09-22', '2026-09-23') c;
+  if v_somme = 0 and v_n = 2 then
+    v_ok := v_ok + 1;
+    v_out := v_out || format(E'\nOK solde de la période : 2ᵉ versement de %s, reste 0 à reverser, %s commandes marquées reversées', v_rs.amount_due, v_n);
+  else
+    v_ko := v_ko + 1;
+    v_out := v_out || format(E'\nKO solde : reste %s à reverser, %s marquées reversées', v_somme, v_n);
+  end if;
 
   raise exception 'RESULTAT >>> % OK, % KO%', v_ok, v_ko, v_out;
 end

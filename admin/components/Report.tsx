@@ -75,7 +75,16 @@ export function Report() {
   /** Restaurant → a-t-il un groupe Telegram ? Absent de la carte = inconnu. */
   const [canaux, setCanaux] = useState<Record<string, boolean>>({});
   const [ouvert, setOuvert] = useState<string | null>(null);
-  const [aVerser, setAVerser] = useState<Line | null>(null);
+  /**
+   * Ce qu'on s'apprête à reverser : la ligne du restaurant, et les commandes
+   * choisies à la main. `selection: null` = tout ce qui reste dû sur la période.
+   */
+  const [aVerser, setAVerser] = useState<{ ligne: Line; selection: string[] | null } | null>(null);
+  /**
+   * Incrémenté après chaque versement : le détail déjà déplié se relit et ses
+   * lignes passent au vert, sans recharger la page ni refermer la carte.
+   */
+  const [rafraichi, setRafraichi] = useState(0);
   const [regles, setRegles] = useState<ReglesDesCodes>(AUCUNE_REGLE);
   const [courierNames, setCourierNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -420,13 +429,22 @@ export function Report() {
                         chevauche », qui interdisait de solder une période ou de
                         rattraper une commande livrée en retard. */}
                     {reste.count > 0 ? (
-                      <button className="btn petit" onClick={() => setAVerser(l)}>
-                        Marquer reversé{deja.count > 0 ? ` (${reste.count} restante${reste.count > 1 ? 's' : ''})` : ''}
+                      <button className="btn petit" onClick={() => setAVerser({ ligne: l, selection: null })}>
+                        Tout reverser{deja.count > 0 ? ` (${reste.count} restante${reste.count > 1 ? 's' : ''})` : ''}
                       </button>
                     ) : null}
                   </div>
                   {ouvert === l.restaurantId ? (
-                    <DetailCommandes restaurantId={l.restaurantId} debut={start} fin={end} netRapport={reste.net} />
+                    // `onReverser` : les cases à cocher et le geste unitaire.
+                    // La liste se relit après chaque versement (`cle`).
+                    <DetailCommandes
+                      restaurantId={l.restaurantId}
+                      debut={start}
+                      fin={end}
+                      netRapport={reste.net}
+                      cle={rafraichi}
+                      onReverser={(choisies) => setAVerser({ ligne: l, selection: choisies.map((c) => c.order_id) })}
+                    />
                   ) : null}
                 </div>
               );
@@ -467,17 +485,24 @@ export function Report() {
           // signalées sont celles de ces commandes-là : alerter sur une
           // commande déjà payée ne servirait qu'à bloquer un versement juste.
           ligne={{
-            restaurantId: aVerser.restaurantId,
-            name: aVerser.name,
-            net: aVerser.resteAReverser.net,
-            incoherentes: aVerser.resteAReverser.incoherentes,
-            aVerifier: aVerser.resteAReverser.aVerifier,
+            restaurantId: aVerser.ligne.restaurantId,
+            name: aVerser.ligne.name,
+            net: aVerser.ligne.resteAReverser.net,
+            incoherentes: aVerser.ligne.resteAReverser.incoherentes,
+            aVerifier: aVerser.ligne.resteAReverser.aVerifier,
           }}
           debut={start}
           fin={end}
-          canal={aVerser.restaurantId in canaux ? canaux[aVerser.restaurantId] : null}
-          codeMarchand={codes ? (codes[aVerser.restaurantId] ?? null) : undefined}
-          onFermer={(recharger) => { setAVerser(null); if (recharger) void load(); }}
+          selection={aVerser.selection}
+          canal={aVerser.ligne.restaurantId in canaux ? canaux[aVerser.ligne.restaurantId] : null}
+          codeMarchand={codes ? (codes[aVerser.ligne.restaurantId] ?? null) : undefined}
+          // `load()` relit commandes, reversements et rattachements : la carte
+          // recalcule son reste, l'historique montre la nouvelle ligne.
+          // `rafraichi` relit en plus le détail resté ouvert.
+          onFermer={(recharger) => {
+            setAVerser(null);
+            if (recharger) { setRafraichi((n) => n + 1); void load(); }
+          }}
         />
       ) : null}
     </>

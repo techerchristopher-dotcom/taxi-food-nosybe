@@ -981,6 +981,18 @@ Migration `20260923140000_reverser_les_commandes_choisies` (appliquée).
 - ⚠️ **Non vérifié sur l'admin en ligne.** Rendu contrôlé à 375 px sur copie locale : cases
   44 × 44 px, boutons ≥ 44 px, aucun défilement horizontal.
 
+## 📍 Position GPS des restaurants (2026-09-24)
+
+`restaurants.latitude` / `longitude`, écrites par `admin_set_position_restaurant()` (admin
+seulement, refus hors de Nosy Be : une virgule perdue ferait facturer des kilomètres imaginaires).
+Chez Bidul & Truc −13.3930201 / 48.2078429 · La Cabane −13.397834 / 48.206980 ·
+Chez M&K −13.3861762 / 48.2386413 (liens Google Maps du porteur du projet). **La Plage n'en a pas** :
+tout calcul de distance doit traiter « position inconnue ».
+
+⚠️ **Préalable au chantier « livraison au kilomètre »** : sans ces positions, aucune distance n'est
+calculable. Distances mesurées à vol d'oiseau × **1,3** pour approcher la route (pas d'itinéraire
+routier : payant, lent sur la liaison de Nosy Be, et en panne quand le service tombe).
+
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 
 - **Plats du jour : UN SEUL accompagnement**, inclus dans le prix (frites, légumes sautés, pâtes,

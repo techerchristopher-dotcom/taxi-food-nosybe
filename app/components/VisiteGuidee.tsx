@@ -406,9 +406,12 @@ export function VisiteGuidee({
  * ⚠️ Rien de tout ça n'est écrit en base : c'est un objet en mémoire, qui
  * disparaît avec la visite.
  *
- * Les frais de livraison, eux, sont LUS en base. Ils valent 10 000 Ar
- * aujourd'hui et ne vivent que dans `restaurants.delivery_fee` — les figer ici
- * ferait mentir la démonstration le jour où le tarif bougera. Le reste (deux
+ * Les frais de livraison, eux, sont LUS en base : c'est le SOCLE du restaurant
+ * (`restaurants.delivery_fee`), celui d'une livraison de moins de 3 km. Depuis
+ * le 2026-09-24 une vraie commande peut coûter plus cher — 1 000 Ar par
+ * kilomètre entamé au-delà — mais une commande d'exemple n'a pas d'adresse,
+ * donc pas de distance : le socle est le seul montant honnête ici. Les figer en
+ * dur ferait mentir la démonstration le jour où le tarif bougera. Le reste (deux
  * plats, un client) est du décor assumé, annoncé par le badge « Exemple ».
  */
 function CommandeExemple({ margeHaute }: { margeHaute: number }) {

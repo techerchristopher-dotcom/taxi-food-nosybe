@@ -32,8 +32,9 @@ import { imageUrl, Product, Restaurant, todayServicesLabel } from '../../data/ty
 
 /** Doit rester aligné sur `styles.banner.height`. */
 const BANNER_HEIGHT = 200;
-import { getMenu, getRestaurant } from '../../data/api';
+import { getFraisLivraison, getMenu, getRestaurant } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
+import { nombre } from '../../lib/nombre';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
 import { useSession } from '../../store/session';
 
@@ -392,7 +393,13 @@ export default function RestaurantMenuScreen() {
 }
 
 function RestaurantHeader({ r }: { r: Restaurant }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Le bareme, lu EN BASE et jamais ecrit en dur ici : les trois valeurs
+  // (socle, kilometres inclus, prix du kilometre) vivent sur `restaurants` et
+  // peuvent changer sans redeploiement. Une phrase figee dans le bundle
+  // deviendrait fausse le jour ou le porteur du projet ajuste le tarif, et
+  // resterait fausse sur tous les telephones qui ne prennent pas l'OTA.
+  const { data: bareme } = useLoad(() => getFraisLivraison(r.id, null), [r.id]);
   return (
     <View style={styles.rHeader}>
       <View style={styles.rHeadTop}>
@@ -413,15 +420,29 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
             <Text style={styles.rMetaText}>{todayServicesLabel(r.todayServices, r.todayHours)}</Text>
           </View>
         ) : null}
+        {/* « À partir de » : la fiche ne connaît pas encore l'adresse du client,
+            et la livraison se paie au kilomètre depuis le 2026-09-24. La règle
+            complète est rappelée juste en dessous. */}
         <View style={styles.rMetaItem}>
           <Icon name="two_wheeler" size={16} color={colors.secondary} />
-          <Text style={styles.rMetaText}>{formatAr(r.deliveryFee)}</Text>
+          <Text style={styles.rMetaText}>
+            {t('delivery.from', { amount: formatAr(r.deliveryFee) })}
+          </Text>
         </View>
         <View style={styles.rMetaItem}>
           <Icon name="shopping_basket" size={16} color={colors.secondary} />
           <Text style={styles.rMetaText}>{t('restaurant.minOrder', { amount: formatAr(r.minOrder) })}</Text>
         </View>
       </View>
+      {bareme ? (
+        <Text style={styles.rNoteLivraison}>
+          {t('delivery.rule', {
+            base: formatAr(bareme.base),
+            km: nombre(bareme.kmInclus, i18n.language),
+            prix: formatAr(bareme.prixParKm),
+          })}
+        </Text>
+      ) : null}
 
       {/* ⚠️ Le partage du RESTAURANT, annoncé au même titre que celui d'un plat.
           C'est le lien qu'un patron met sur la page Facebook de son établissement
@@ -496,6 +517,13 @@ const styles = StyleSheet.create({
   },
   rMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rMetaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },
+  rNoteLivraison: {
+    marginTop: 8,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.secondary,
+  },
   catBar: {
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.screen,

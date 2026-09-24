@@ -22,6 +22,7 @@ import {
   lireConfigPaiement,
 } from '../data/paiement';
 import { useLoad } from '../lib/useLoad';
+import { nombre } from '../lib/nombre';
 import { useFraisLivraisonAJour } from '../lib/fraisLivraison';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { usePromo, usePromoStore } from '../store/promo';
@@ -86,9 +87,12 @@ function CheckoutForm() {
   // ceux que `create_order` va facturer, pas ceux mémorisés au premier ajout au
   // panier. Voir `lib/fraisLivraison.ts` — c'est aussi ce qui empêche la remise
   // d'un code promo d'effacer à l'écran une livraison réellement due.
-  useFraisLivraisonAJour();
-
   const addressId = useCheckout((s) => s.addressId);
+
+  // Depuis le 2026-09-24 le tarif depend de la DISTANCE jusqu'a l'adresse
+  // choisie : le hook recalcule a chaque changement d'adresse. C'est le dernier
+  // ecran avant le debit, le montant affiche doit etre celui qui sera facture.
+  const fraisDetail = useFraisLivraisonAJour(addressId);
   const paymentMethod = useCheckout((s) => s.paymentMethod);
   const setPayment = useCheckout((s) => s.setPayment);
 
@@ -344,6 +348,20 @@ function CheckoutForm() {
           <Text style={styles.detailLabel}>{t('common.deliveryFee')}</Text>
           <Text style={styles.detailValue}>{formatAr(deliveryFee)}</Text>
         </View>
+        {/* La regle et la distance retenue, sous le montant : le client doit
+            pouvoir verifier lui-meme d'ou sort le chiffre. */}
+        {fraisDetail ? (
+          <Text style={styles.noteLivraison}>
+            {t('delivery.rule', {
+              base: formatAr(fraisDetail.base),
+              km: nombre(fraisDetail.kmInclus, i18n.language),
+              prix: formatAr(fraisDetail.prixParKm),
+            })}
+            {fraisDetail.distanceConnue && fraisDetail.distanceKm != null
+              ? ' · ' + t('delivery.distance', { km: nombre(fraisDetail.distanceKm, i18n.language) })
+              : ' · ' + t('delivery.noDistance')}
+          </Text>
+        ) : null}
         {promo.remise > 0 && promo.code ? (
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, styles.remiseTexte]}>
@@ -385,6 +403,13 @@ const styles = StyleSheet.create({
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
   remiseTexte: { color: colors.primary },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
+  noteLivraison: {
+    marginTop: 6,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.secondary,
+  },
   detailLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted },
   detailValue: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDark },
   separateur: { height: 1, backgroundColor: colors.border, marginTop: 6, marginBottom: 10 },

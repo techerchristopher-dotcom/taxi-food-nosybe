@@ -603,7 +603,11 @@ export default async (request) => {
       const ou = r.zone_served ? ` — livré à ${r.zone_served}` : ' à Nosy Be';
       vue = {
         titre: r.name,
-        prix: typeof r.delivery_fee === 'number' ? `Livraison ${formatAr(r.delivery_fee)}` : '',
+        // ⚠️ « À partir de » : la livraison se paie au kilomètre depuis le
+        // 2026-09-24 (socle jusqu'à 3 km, puis 1 000 Ar/km). Un aperçu social
+        // est mis en cache 300 s et partagé à des gens dont on ne connaît
+        // évidemment pas l'adresse : il ne peut annoncer que le plancher.
+        prix: typeof r.delivery_fee === 'number' ? `Livraison à partir de ${formatAr(r.delivery_fee)}` : '',
         description: `${r.cuisine_type ? r.cuisine_type + '. ' : ''}Commandez${ou} avec Taxi Food.`,
         image: r.cover_url || r.logo_url || OG_DEFAUT,
         lien: `${SITE}/r/${id}`,

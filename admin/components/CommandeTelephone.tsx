@@ -38,6 +38,8 @@ type Resto = {
   zone_served: string | null; commandable_maintenant: boolean | null;
 };
 type Envoyee = { numero: string; total: number; resto: string; client: string };
+/** Ce que la base répond pour (restaurant, position) — voir `frais_livraison_detail`. */
+type Frais = { frais: number; distance_km: number | null; distance_connue: boolean; base: number };
 
 export function CommandeTelephone() {
   // Client
@@ -48,6 +50,9 @@ export function CommandeTelephone() {
   const [zone, setZone] = useState('');
   const [repere, setRepere] = useState('');
   const [positionTexte, setPositionTexte] = useState('');
+  // Frais de livraison calculés PAR LA BASE pour la position saisie. null tant
+  // qu'on n'a pas de réponse : on retombe alors sur le socle du restaurant.
+  const [frais, setFrais] = useState<Frais | null>(null);
   // Restaurant et carte
   const [restos, setRestos] = useState<Resto[]>([]);
   const [restoId, setRestoId] = useState<string | null>(null);
@@ -150,7 +155,31 @@ export function CommandeTelephone() {
   const resto = restos.find((r) => r.id === restoId) ?? null;
   const position = lirePosition(positionTexte);
   const positionHorsZone = position ? !dansNosyBe(position) : false;
-  const montants = totalEstime(lignes, resto?.delivery_fee ?? 0);
+  // ⚠️ LIVRAISON AU KILOMÈTRE depuis le 2026-09-24. La position est facultative
+  // (décision du porteur du projet) : quand elle est donnée, le prix suit la
+  // distance ; sinon la base applique le tarif de base et l'écran le dit. Le
+  // calcul est demandé À LA BASE, jamais refait ici — `create_order` le
+  // refera de son côté, et deux formules qui divergent, c'est un litige.
+  const positionUtilisable = position && !positionHorsZone ? position : null;
+  const cleFrais = `${restoId ?? ''}|${positionUtilisable ? positionUtilisable.lat + ',' + positionUtilisable.lng : ''}`;
+  useEffect(() => {
+    if (!restoId) { setFrais(null); return; }
+    let vivant = true;
+    (async () => {
+      const { data, error } = await supabase.rpc('frais_livraison_detail', {
+        p_restaurant_id: restoId,
+        p_latitude: positionUtilisable ? positionUtilisable.lat : null,
+        p_longitude: positionUtilisable ? positionUtilisable.lng : null,
+      });
+      if (!vivant) return;
+      const l = Array.isArray(data) ? (data[0] as Frais | undefined) : undefined;
+      setFrais(error || !l ? null : l);
+    })();
+    return () => { vivant = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleFrais]);
+
+  const montants = totalEstime(lignes, frais?.frais ?? resto?.delivery_fee ?? 0);
   const categorieServie = (id: string | null) => (id ? categories.find((c) => c.id === id)?.categorie_servie_maintenant !== false : true);
 
   const platsFiltres = useMemo(() => {
@@ -351,7 +380,7 @@ export function CommandeTelephone() {
                   <span className="sel-corps">
                     <span className="sel-nom">{r.name}</span>
                     <span className="muted sel-detail">
-                      {r.listing_status === 'coming_soon' ? 'En négociation' : ok ? `Ouvert · livraison ${formatAr(r.delivery_fee)}` : 'Fermé en ce moment'}
+                      {r.listing_status === 'coming_soon' ? 'En négociation' : ok ? `Ouvert · livraison à partir de ${formatAr(r.delivery_fee)}` : 'Fermé en ce moment'}
                     </span>
                   </span>
                 </label>
@@ -411,7 +440,14 @@ export function CommandeTelephone() {
             <div className="recap">
               <div>Plats : {formatAr(montants.plats)}</div>
               {montants.emballage ? <div>Emballage : {formatAr(montants.emballage)}</div> : null}
-              <div>Livraison : {formatAr(montants.livraison)}</div>
+              <div>
+                Livraison : {formatAr(montants.livraison)}
+                {frais
+                  ? frais.distance_connue
+                    ? ` (${frais.distance_km} km)`
+                    : ' — tarif de base, position non fournie'
+                  : ''}
+              </div>
               <div><strong>Total estimé : {formatAr(montants.total)}</strong> — espèces à la livraison</div>
               <div className="muted">La base recalcule le total à l’envoi ; c’est lui qui s’affiche ensuite.</div>
             </div>

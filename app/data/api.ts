@@ -307,29 +307,75 @@ export async function getRestaurant(id: string): Promise<Restaurant | null> {
 }
 
 /**
- * Frais de livraison COURANTS d'un restaurant, relus en base.
+ * Frais de livraison RÉELS, calculés par la base pour l'adresse choisie.
  *
- * ⚠️ Le panier mémorise les frais du jour où son premier article y a été mis
- * (`cart.deliveryFeeValue`), et rien ne les rafraîchissait ensuite. Or
- * `create_order` relit toujours `restaurants.delivery_fee` : un panier laissé de
- * côté pendant que le tarif change affichait un total qui n'était plus celui
- * qu'on allait facturer. Le passage de 5 000 à 10 000 Ar le 2026-09-06 rend
- * l'écart bien réel — et un code promo « livraison », lui calculé sur le tarif
- * COURANT, pouvait alors effacer à l'écran une livraison qui restait due.
+ * ⚠️ Depuis le 2026-09-24 la livraison n'est plus un forfait : 10 000 Ar
+ * jusqu'à 3 km, puis 1 000 Ar par kilomètre entamé (distance à vol d'oiseau
+ * × 1,3 pour approcher la route). Le montant DÉPEND donc de l'adresse, et il
+ * change quand le client en change.
  *
- * Une seule colonne, aucune jointure : c'est appelé à l'ouverture du panier et
- * du récapitulatif, sur la liaison de Nosy Be.
+ * ⚠️ On passe un IDENTIFIANT d'adresse, jamais des coordonnées : la base vérifie
+ * que l'adresse appartient à l'appelant. Sans adresse (panier d'un visiteur qui
+ * n'a pas encore choisi), on demande le tarif de base — celui affiché « à partir
+ * de ».
+ *
+ * Ce montant ne fait PAS foi : `create_order` recalcule tout à la création et
+ * ignore ce que l'écran a pu croire. C'est ici pour ne pas mentir au client,
+ * pas pour décider du prix.
  */
-export async function getDeliveryFee(restaurantId: string): Promise<number | null> {
+export type FraisLivraison = {
+  /** Montant en ariary. */
+  frais: number;
+  /** Distance routière estimée en km, ou null si elle n'est pas calculable. */
+  distanceKm: number | null;
+  /** false = repli sur le tarif de base (restaurant sans position, adresse sans GPS). */
+  distanceConnue: boolean;
+  /** Kilomètres inclus dans le tarif de base (3 aujourd'hui). */
+  kmInclus: number;
+  /** Ariary par kilomètre entamé au-delà (1 000 aujourd'hui). */
+  prixParKm: number;
+  /** Tarif de base (10 000 aujourd'hui). */
+  base: number;
+};
+
+type FraisRow = {
+  frais: number;
+  distance_km: number | string | null;
+  distance_connue: boolean;
+  km_inclus: number | string;
+  prix_par_km: number;
+  base: number;
+};
+
+function mapFrais(row: FraisRow): FraisLivraison {
+  return {
+    frais: row.frais,
+    distanceKm: row.distance_km == null ? null : Number(row.distance_km),
+    distanceConnue: row.distance_connue,
+    kmInclus: Number(row.km_inclus),
+    prixParKm: row.prix_par_km,
+    base: row.base,
+  };
+}
+
+export async function getFraisLivraison(
+  restaurantId: string,
+  addressId?: string | null,
+): Promise<FraisLivraison | null> {
   if (!restaurantId) return null;
-  const { data, error } = await supabase
-    .from('restaurants')
-    .select('delivery_fee')
-    .eq('id', restaurantId)
-    .maybeSingle();
+  const { data, error } = addressId
+    ? await supabase.rpc('frais_livraison_adresse', {
+        p_restaurant_id: restaurantId,
+        p_address_id: addressId,
+      })
+    : await supabase.rpc('frais_livraison_detail', {
+        p_restaurant_id: restaurantId,
+        p_latitude: null,
+        p_longitude: null,
+      });
   if (error) throw error;
-  const fee = (data as { delivery_fee: number } | null)?.delivery_fee;
-  return typeof fee === 'number' ? fee : null;
+  const row = (data as FraisRow[] | null)?.[0];
+  return row ? mapFrais(row) : null;
 }
 
 export async function getMenu(

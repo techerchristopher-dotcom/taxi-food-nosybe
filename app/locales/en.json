@@ -8,6 +8,13 @@
     "deliveryFee": "Delivery fee",
     "total": "Total"
   },
+  "delivery": {
+    "rule": "Delivery {{base}} up to {{km}} km, then {{prix}}/km",
+    "from": "From {{amount}}",
+    "distance": "{{km}} km",
+    "beforeAddress": "final amount once you pick an address",
+    "noDistance": "distance unknown, base rate applied"
+  },
   "tabs": {
     "home": "Home",
     "orders": "Orders",

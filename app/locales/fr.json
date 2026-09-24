@@ -8,6 +8,13 @@
     "deliveryFee": "Frais de livraison",
     "total": "Total"
   },
+  "delivery": {
+    "rule": "Livraison {{base}} jusqu'à {{km}} km, puis {{prix}}/km",
+    "from": "À partir de {{amount}}",
+    "distance": "{{km}} km",
+    "beforeAddress": "montant définitif une fois l'adresse choisie",
+    "noDistance": "distance inconnue, tarif de base appliqué"
+  },
   "tabs": {
     "home": "Accueil",
     "orders": "Commandes",

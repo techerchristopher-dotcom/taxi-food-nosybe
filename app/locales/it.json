@@ -8,6 +8,13 @@
     "deliveryFee": "Costo di consegna",
     "total": "Totale"
   },
+  "delivery": {
+    "rule": "Consegna {{base}} fino a {{km}} km, poi {{prix}}/km",
+    "from": "A partire da {{amount}}",
+    "distance": "{{km}} km",
+    "beforeAddress": "importo definitivo una volta scelto l'indirizzo",
+    "noDistance": "distanza sconosciuta, si applica la tariffa base"
+  },
   "tabs": {
     "home": "Home",
     "orders": "Ordini",

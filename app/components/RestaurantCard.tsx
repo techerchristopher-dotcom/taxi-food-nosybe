@@ -6,8 +6,17 @@ import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { CategoryTag, Restaurant, formatTime, todayServicesLabel } from '../data/types';
 import { formatAr } from '../theme/tokens';
 
-/** Ligne « meta » : délai estimé + frais de livraison. */
+/**
+ * Ligne « meta » : délai estimé + frais de livraison.
+ *
+ * ⚠️ « À PARTIR DE », jamais un montant sec. Depuis le 2026-09-24 la livraison
+ * se paie au kilomètre (10 000 Ar jusqu'à 3 km, puis 1 000 Ar/km) : la carte du
+ * catalogue ne connaît pas l'adresse du client, elle ne peut donc annoncer que
+ * le plancher. Écrire « 10 000 Ar » ici ferait une promesse que le panier
+ * démentirait deux écrans plus loin.
+ */
 function Meta({ eta, fee }: { eta: string; fee: number }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.metaRow}>
       <View style={styles.metaItem}>
@@ -16,7 +25,7 @@ function Meta({ eta, fee }: { eta: string; fee: number }) {
       </View>
       <View style={styles.metaItem}>
         <Icon name="two_wheeler" size={15} color={colors.secondary} />
-        <Text style={styles.metaText}>{formatAr(fee)}</Text>
+        <Text style={styles.metaText}>{t('delivery.from', { amount: formatAr(fee) })}</Text>
       </View>
     </View>
   );

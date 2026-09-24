@@ -129,7 +129,12 @@ export function Restaurants() {
           <Field label="Nom"><input style={inp} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <Field label="Type de cuisine"><input style={inp} value={form.cuisine_type} onChange={(e) => setForm({ ...form, cuisine_type: e.target.value })} placeholder="Pizzeria, Snack…" /></Field>
           <div className="rangee">
-            <Field label="Frais de livraison (Ar)"><input style={inp} type="number" value={form.delivery_fee} onChange={(e) => setForm({ ...form, delivery_fee: e.target.value })} /></Field>
+            {/* ⚠️ Ce champ est le SOCLE, pas le prix final : depuis le 2026-09-24
+                la livraison vaut ce montant jusqu'à 3 km, puis 1 000 Ar par
+                kilomètre entamé (colonnes `livraison_km_inclus`,
+                `livraison_prix_par_km`, `livraison_coef_route` sur
+                `restaurants`, modifiables par `admin_set_tarif_livraison`). */}
+            <Field label="Livraison — socle jusqu'à 3 km (Ar)"><input style={inp} type="number" value={form.delivery_fee} onChange={(e) => setForm({ ...form, delivery_fee: e.target.value })} /></Field>
             <Field label="Commission (%)"><input style={inp} type="number" step="0.5" value={form.commissionPct} onChange={(e) => setForm({ ...form, commissionPct: e.target.value })} /></Field>
             <Field label="Min. commande (Ar)"><input style={inp} type="number" value={form.min_order} onChange={(e) => setForm({ ...form, min_order: e.target.value })} /></Field>
           </div>

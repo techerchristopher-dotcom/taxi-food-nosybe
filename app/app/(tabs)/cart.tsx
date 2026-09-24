@@ -13,17 +13,19 @@ import { BottomBar } from '../../components/BottomBar';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../../store/cart';
 import { usePromo } from '../../store/promo';
+import { useCheckout } from '../../store/checkout';
 import { useLoad } from '../../lib/useLoad';
 import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { getRestaurant } from '../../data/api';
 import { Product } from '../../data/types';
+import { nombre } from '../../lib/nombre';
 
 /** Écran 05 — Panier (et 05b — état vide). */
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const lines = useCart((s) => s.lines);
   const restaurantId = useCart((s) => s.restaurantId);
@@ -45,7 +47,12 @@ export default function CartScreen() {
   // sans ce rafraîchissement, un panier ouvert avant un changement de tarif
   // annonce un montant qui n'est plus le bon — et la remise du code promo, elle
   // calculée sur le tarif courant, creuse l'écart au lieu de le combler.
-  useFraisLivraisonAJour();
+  // L'adresse retenue, si le client en a deja choisi une : depuis le
+  // 2026-09-24 le tarif depend de la DISTANCE, pas seulement du restaurant.
+  // Tant qu'aucune adresse n'est choisie, la base rend le tarif de base et
+  // l'ecran annonce « a partir de » plutot qu'un montant qu'il ne connait pas.
+  const addressId = useCheckout((s) => s.addressId);
+  const fraisDetail = useFraisLivraisonAJour(addressId);
 
   // Le panier survit a la fermeture du restaurant : compose a 14 h, ouvert a
   // 23 h. On relit donc l'etat d'ouverture ICI, et pas seulement sur la carte.
@@ -235,6 +242,23 @@ export default function CartScreen() {
             <Text style={styles.sumLabel}>{t('common.deliveryFee')}</Text>
             <Text style={styles.sumValue}>{formatAr(deliveryFee)}</Text>
           </View>
+          {/* La regle, en une phrase, juste sous le montant : c'est ici que le
+              client decouvre les frais, donc ici qu'il doit comprendre pourquoi
+              ils ne sont pas les memes que la derniere fois. Les valeurs sont
+              INTERPOLEES depuis ce que la base a repondu — changer le tarif en
+              base ne doit pas laisser une phrase fausse a l'ecran. */}
+          {fraisDetail ? (
+            <Text style={styles.noteLivraison}>
+              {t('delivery.rule', {
+                base: formatAr(fraisDetail.base),
+                km: nombre(fraisDetail.kmInclus, i18n.language),
+                prix: formatAr(fraisDetail.prixParKm),
+              })}
+              {fraisDetail.distanceConnue && fraisDetail.distanceKm != null
+                ? ' · ' + t('delivery.distance', { km: nombre(fraisDetail.distanceKm, i18n.language) })
+                : ' · ' + t('delivery.beforeAddress')}
+            </Text>
+          ) : null}
 
           {/* ⚠️ LE CODE PROMO EST ICI, collé à la ligne qu'il fait baisser.
               C'est le premier écran où les frais de livraison s'AJOUTENT au
@@ -361,6 +385,13 @@ const styles = StyleSheet.create({
   promoTitre: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
   remiseTexte: { color: colors.primary },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  noteLivraison: {
+    marginTop: 6,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.secondary,
+  },
   sumLabel: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDark },
   sumValue: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },

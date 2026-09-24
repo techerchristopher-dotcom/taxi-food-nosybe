@@ -363,7 +363,7 @@ Colonnes/tables ajoutées au fil de l'eau (migrations appliquées via MCP) :
 - `products` : `photo_url`.
 - **Options/suppléments** : `product_option_groups` (name, min_select, max_select, required, sort_order) + `product_options` (name, price_delta, is_available, sort_order) ; snapshot commande `order_item_options`.
 - `addresses` : `latitude`, `longitude`, `location_captured_at` (**GPS obligatoire**, voir plus bas).
-- RPC **`create_order`** (**SECURITY DEFINER**) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), lit **elle-même** `restaurants.delivery_fee`, applique le code promo éventuel, génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon). La fonction fixe elle-même `user_id = auth.uid()` et exige que l'adresse appartienne à l'appelant → elle n'écrit jamais pour autrui, DEFINER est sûr.
+- RPC **`create_order`** (**SECURITY DEFINER**) : atomique, valide les options (appartenance produit, dispo, quotas min/max, groupes requis), **recalcule `unit_price` = price + Σ price_delta** (le client n'envoie jamais de prix), **calcule elle-même les frais de livraison** par `frais_livraison(restaurant, lat, lng)` à partir de l'adresse choisie (voir « Livraison au kilomètre »), applique le code promo éventuel, génère `order_number` (`TF-…`), et **vérifie que l'adresse a lat/lng** (exception sinon). La fonction fixe elle-même `user_id = auth.uid()` et exige que l'adresse appartienne à l'appelant → elle n'écrit jamais pour autrui, DEFINER est sûr.
   - ⚠️ **Elle existe en DEUX signatures, et pas une de plus** : l'implémentation à **5 arguments** (`…, p_code_promo text`) et une **enveloppe à 4 arguments** typée `payment_method`, que les versions déjà installées sur les magasins appellent. **Ne jamais recréer `create_order` en changeant le type d'un paramètre** : `create or replace` n'écrase pas, il *ajoute* une surcharge, et PostgREST répond alors `PGRST203 « Could not choose the best candidate function »` — plus aucune commande ne passe. C'est exactement ce qui s'est produit le 2026-09-05 (migration « adresse introuvable », `payment_method` → `text`) et qui est resté invisible jusqu'au 2026-09-06 faute de commande passée entre-temps.
   - ⚠️ **Pourquoi DEFINER et pas INVOKER** : la fonction fait un `UPDATE orders SET subtotal/total` après avoir inséré les lignes. `orders` n'a **volontairement aucune politique RLS UPDATE** (un client ne doit pas pouvoir modifier ses commandes via l'API REST). En INVOKER, cet UPDATE touchait **0 ligne** sous RLS → `returning into v_order` = NULL → la fonction renvoyait NULL et laissait `total = frais de livraison` (bug corrigé le 2026-08-14 : montant 0 en confirmation, « commande introuvable », total faux). DEFINER exécute les écritures hors RLS. **Ne pas repasser en INVOKER sans supprimer l'UPDATE final.**
 
@@ -380,7 +380,7 @@ Un même compte Google peut être **client** et/ou **restaurant** (et **livreur*
   - ⚠️ **Le repère ne masque JAMAIS sa cible** : voile en **quatre bandes autour**, contour fin, bulle **à côté**. Pas d'aplat par-dessus (erreur déjà commise sur le guide restaurateur du site vitrine).
   - ⚠️ **Le panneau « Exemple » est ÉPINGLÉ hors du `ScrollView` de la carte.** Sur 667 pt (iPhone SE/8, et le mode compatibilité iPhone du relecteur Apple) la carte d'exemple déborde et il faut défiler pour atteindre « Refuser »/« Accepter ». Tant que la légende défilait avec elle, ce geste la chassait de l'écran : il restait une commande #TF-000 d'apparence réelle, sans son démenti. Ne jamais la remettre dans le contenu défilant. C'est aussi la seule carte de l'app où `showsVerticalScrollIndicator` est **vrai**.
   - ⚠️ **Fermer la visite mémorise à TOUTE étape — et l'écran doit le dire.** La case « Ne plus afficher » n'existe qu'à l'étape 5 ; sa seule présence enseigne « je ferme sans cocher, donc elle reviendra ». Une ligne (`visitePro.fermerNote`) est donc affichée sur les étapes **1 à 4 seulement** et donne le chemin de repêchage, avec le libellé **interpolé** depuis `visitePro.revoirTitre`. Ne pas afficher les deux ensemble : la bulle dépasserait sa hauteur éprouvée.
-  - ⚠️ **La commande d'exemple n'existe pas en base** — objet en mémoire rendu par le vrai `RestaurantOrderCard`, badge « Exemple ». En créer une vraie polluerait rapport journalier et commissions et déclencherait e-mail + Telegram + push. Ses frais de livraison sont **lus** dans `restaurants.delivery_fee`, jamais écrits en dur.
+  - ⚠️ **La commande d'exemple n'existe pas en base** — objet en mémoire rendu par le vrai `RestaurantOrderCard`, badge « Exemple ». En créer une vraie polluerait rapport journalier et commissions et déclencherait e-mail + Telegram + push. Ses frais de livraison sont **lus** dans `restaurants.delivery_fee`, jamais écrits en dur — c'est le **socle** (moins de 3 km), la seule valeur honnête pour une commande d'exemple sans adresse.
   - ⚠️ **N'annoncer que ce qui existe, AVEC LES MOTS DE L'ÉCRAN** — une promesse fausse envoie le restaurateur chercher un bouton absent. Trois pièges déjà payés (revue de vérité du 2026-09-06) : (a) **vocabulaire** — l'écran Réglages écrit « Couverture » et « À l'affiche », pas « devanture » ni « plat du jour » ; et contrairement à ce qui était écrit ici, `save_featured_product` **crée bien un plat avec son prix** (en `in_menu = false` : il vit à l'affiche, pas dans la carte permanente), et le **prix d'un plat de la carte devient modifiable** dès qu'il est étoilé, puisqu'il rejoint « À l'affiche » et son bouton « Modifier » ; (b) **libellés cités** — toujours interpolés depuis la clé réellement rendue (`{{lien}}` ← `profile.proRestaurantLabel`), jamais recopiés : l'anglais et l'italien renvoyaient vers un « My partner space » qui n'existe pas ; (c) **ce qui n'est vrai qu'ensuite** — une commande entre dans « En livraison » dès qu'elle est marquée prête, donc **avant** qu'un livreur l'ait prise.
   - ⚠️ **La préférence est en BASE** (`profiles.visite_pro_vue_le`, écrite par la RPC `marquer_visite_pro_vue(p_vue boolean)` SECURITY DEFINER), pas en AsyncStorage : elle suit la personne, pas l'appareil. Fermer la visite en cours de route la mémorise aussi — elle ne doit pas se represser un soir de service.
 - **Espace livreur** (`app/(livreur)/`, mode `livreur`) : colonnes `orders.courier_id`/`picked_up_at`/`delivered_at`/`cash_confirmed` (pas de nouvel enum — le statut reste `en_livraison` de la prise jusqu'à `livree` ; `courier_id`/`picked_up_at` distinguent disponible/prise/récupérée). Helper `is_active_courier()`. RLS SELECT livreur : commandes **disponibles** (`en_livraison`, `courier_id is null`) + **les siennes** (`courier_id = auth.uid()`). RPC SECURITY DEFINER : **`claim_order`** (attribution atomique `UPDATE … WHERE courier_id IS NULL`, une seule commande à la fois), `release_order`, `mark_order_picked_up`, `mark_order_delivered` (encaissement espèces obligatoire), `set_courier_availability` (upsert `couriers.is_available`). 2 onglets : **Livraisons** (toggle dispo, prise « Je la prends », cycle Récupérée→Livrée, polling 12 s) + **Historique**. Le suivi client distingue « en attente d'un livreur » vs « récupérée, en route » via `picked_up_at`.
@@ -993,6 +993,80 @@ tout calcul de distance doit traiter « position inconnue ».
 calculable. Distances mesurées à vol d'oiseau × **1,3** pour approcher la route (pas d'itinéraire
 routier : payant, lent sur la liaison de Nosy Be, et en panne quand le service tombe).
 
+## 🛵 Livraison au kilomètre (2026-09-24) — formule C
+
+**La règle, en une phrase, celle qu'on annonce aux clients :**
+> **Livraison 10 000 Ar jusqu'à 3 km, puis 1 000 Ar par kilomètre entamé.**
+
+Décision du porteur du projet : **aucun plafond, aucun rayon maximum** (les deux
+explicitement). Prime livreur : **hors de ce lot**, rien n'est décompté pour lui.
+
+**La base fait foi, et elle seule.** `create_order` calcule les frais elle-même par
+`frais_livraison(restaurant, latitude, longitude)` à partir de l'adresse choisie, et
+n'accepte aucun montant venu du client — il n'existe **aucun paramètre** pour en proposer un,
+et `orders` n'a volontairement aucune politique RLS UPDATE. `orders.delivery_fee` est **figé à
+la création** : un rapport déjà sorti ne bouge pas. Vérifié en transaction annulée : un compte
+client qui tente `update orders set delivery_fee = 1` touche **0 ligne**.
+
+**Distance** : vol d'oiseau (haversine, `distance_vol_oiseau_km`) **× 1,3** pour approcher la
+route. Pas d'API d'itinéraire — payante, lente sur la liaison de Nosy Be, et en panne quand le
+service tombe. Le kilomètre est **entamé** : 4,3 km ⇒ 2 km au-delà de 3 ⇒ +2 000 Ar.
+
+**Trois replis sur le tarif de base (10 000 Ar), jamais une erreur bloquante** :
+- le **restaurant n'a pas de position** — c'est le cas de **La Plage** au 2026-09-24 ;
+- l'**adresse n'a pas de GPS** — commande par téléphone, où la position est facultative ;
+- une des deux positions tombe **hors du carré de Nosy Be** (latitude −13,55 à −13,05,
+  longitude 48,05 à 48,45 — le même carré que la garde de `admin_commande_telephone`).
+  ⚠️ **Hygiène de données** : une virgule perdue ou deux coordonnées inversées facturerait des
+  dizaines de kilomètres imaginaires. On préfère sous-facturer que facturer une donnée fausse.
+
+**Où se changent les réglages, sans redéployer** : trois colonnes sur `restaurants`, avec
+valeurs par défaut — `livraison_km_inclus` (3), `livraison_prix_par_km` (1 000),
+`livraison_coef_route` (1,3) — à côté de `delivery_fee`, qui reste le socle. Tout le tarif d'un
+restaurant se lit donc sur **sa** ligne, et un restaurant peut être traité à part. RPC admin
+**`admin_set_tarif_livraison(restaurant, socle, km_inclus, prix_par_km, coef)`**, tracée dans
+`admin_actions`. ⚠️ Fonction **à part**, jamais un paramètre de plus sur
+`admin_update_restaurant` : une surcharge fait répondre PGRST203 à PostgREST.
+
+**Les fonctions** (migrations `20260924150000`, `20260924151000`, `20260924152000`) :
+| Fonction | Pour qui | Rend |
+|---|---|---|
+| `frais_livraison(restaurant, lat, lng)` | `create_order` | le montant |
+| `frais_livraison_detail(restaurant, lat, lng)` | app, admin (anon + authenticated) | montant, distance, `distance_connue`, barème |
+| `frais_livraison_adresse(restaurant, address_id)` | app | idem, pour **une adresse de l'appelant** |
+| `dans_nosy_be(lat, lng)`, `distance_vol_oiseau_km(...)` | briques | booléen / km |
+
+⚠️ **`frais_livraison_adresse` prend un IDENTIFIANT d'adresse, pas des coordonnées** : l'adresse
+doit appartenir à l'appelant, sinon la fonction serait un mesureur de distance à la demande.
+Adresse d'un autre compte ⇒ tarif de base, aucune distance rendue (vérifié).
+
+**Ce que voient les écrans** :
+- **catalogue et fiche restaurant** : « **À partir de** 10 000 Ar » — ils ne connaissent pas
+  l'adresse du client. La fiche rappelle le barème **lu en base**, jamais écrit en dur.
+- **panier** : le montant pour l'adresse déjà choisie, sinon le socle + « montant définitif une
+  fois l'adresse choisie ».
+- **validation** : le montant exact + la distance retenue (« 9,3 km »).
+- Clés FR/EN/IT : bloc **`delivery`** (`rule`, `from`, `distance`, `beforeAddress`,
+  `noDistance`). ⚠️ `rule` est **interpolée** depuis ce que la base a répondu : changer le
+  tarif en base ne doit pas laisser une phrase fausse sur les téléphones.
+- **vitrine** (`landing/js/partenaires.js`) et **aperçus sociaux** (`partage.mjs`, mis en cache
+  300 s) : « à partir de » obligatoire — ils sont vus par des gens dont on ne connaît aucune adresse.
+- **commande par téléphone** (admin) : position facultative ; donnée, le prix suit la distance
+  et l'écran l'affiche entre parenthèses ; absente, il écrit « tarif de base, position non fournie ».
+
+**Preuves chiffrées** (transactions annulées, 2026-09-24, aucune commande réelle créée) :
+| Cas | Distance recalculée | Frais |
+|---|---|---|
+| TF-268 — Chez Bidul & Truc | 0,478 km | 10 000 |
+| TF-251 — La Cabane | **3,013 km** | **11 000** |
+| TF-265 — Chez M&K | 4,317 km | 12 000 |
+| TF-151 — La Cabane | 9,250 km | 17 000 |
+
+⚠️ **TF-251 est l'enseignement du lot** : annoncée « 3 km », elle mesure **3,013 km** une fois
+recalculée, donc **un kilomètre entamé** et 11 000 Ar. Treize mètres au-dessus du seuil coûtent
+1 000 Ar. C'est la règle demandée qui s'applique, pas un défaut — mais si ce couperet dérange,
+le remède est un réglage, pas du code : monter `livraison_km_inclus` à 3,2 par exemple.
+
 ## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
 
 - **Plats du jour : UN SEUL accompagnement**, inclus dans le prix (frites, légumes sautés, pâtes,
@@ -1375,7 +1449,7 @@ public, et adapter les 9 fonctions SECURITY DEFINER qui les lisent ou écrivent 
   de partage n'ont pas de rangée équivalente.
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
 - **Suppléments = ingrédients de la composition** (1:1, prix unitaire) ; La Cabane a en plus « Sauce au choix » (obligatoire) + « Sauce supplémentaire » (+2 000 Ar).
-- **Frais de livraison : 10 000 Ar depuis le 2026-09-06** (5 000 auparavant). Le montant vit **uniquement** dans `restaurants.delivery_fee` — il n'est écrit en dur nulle part dans le code ; l'app et le site l'affichent tels qu'ils le lisent. Le seul reliquat était la valeur **par défaut du formulaire** de création de restaurant (`admin/components/Restaurants.tsx`), mise à jour elle aussi.
+- **Frais de livraison : AU KILOMÈTRE depuis le 2026-09-24** — 10 000 Ar jusqu'à 3 km, puis 1 000 Ar par kilomètre entamé. `restaurants.delivery_fee` n'est plus le prix mais le **socle**. Aucun montant n'est écrit en dur dans le code ; l'app, le site et l'admin lisent la base. Voir la section « Livraison au kilomètre » pour la règle complète, les replis et les réglages.
 - **Filtre accueil** = `restaurants.food_types` (Pizza, Tacos, Kebab, Burger, Américain, Panini, Crêpe, Milkshake, Tapas) ; un resto multi-types ressort dans chaque filtre. **Les tags sur la carte resto = les CATÉGORIES actives** (emoji + nom), différent des food types.
 - **Photos** : `products.photo_url` via `ProductThumb`, logos resto via `RestaurantLogo` (image + repli initiales) ; repli propre si `null`/échec, jamais le nom en texte.
 - **GPS OBLIGATOIRE** pour valider une commande (pas d'adressage postal à Nosy Be) : l'écran adresse bloque « Confirmer » tant qu'aucune position n'est captée (`expo-location`) ; refus → réessayer/Réglages, aucun contournement. Adresses enregistrées sans GPS = signalées et bloquées. Utilitaire `getMapsNavigationUrl(lat,lng)` prêt pour un futur back-office livreur. Depuis le 2026-08-17, un **aperçu carte cliquable** (`MapPreview`, voir plus bas) permet de vérifier visuellement la position captée.

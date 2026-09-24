@@ -55,11 +55,14 @@
 
   var T = {
     fr: { bientot: 'Bientôt disponible', actif: 'Déjà dans l’aventure ✅', negociation: 'En négociation', voir: 'Voir la carte',
-          livraison: 'Livraison', plats: 'plats en photo', fermer: 'Fermer', prec: 'Précédent', suiv: 'Suivant' },
+          livraison: 'Livraison à partir de', plats: 'plats en photo', fermer: 'Fermer', prec: 'Précédent', suiv: 'Suivant',
+          bareme: 'Livraison {base} jusqu’à 3 km, puis 1 000 Ar/km' },
     en: { bientot: 'Coming soon', actif: 'Already on board ✅', negociation: 'In talks', voir: 'See the menu',
-          livraison: 'Delivery', plats: 'dishes in pictures', fermer: 'Close', prec: 'Previous', suiv: 'Next' },
+          livraison: 'Delivery from', plats: 'dishes in pictures', fermer: 'Close', prec: 'Previous', suiv: 'Next',
+          bareme: 'Delivery {base} up to 3 km, then 1,000 Ar/km' },
     it: { bientot: 'Presto disponibile', actif: 'Già a bordo ✅', negociation: 'In trattativa', voir: 'Vedi il menu',
-          livraison: 'Consegna', plats: 'piatti in foto', fermer: 'Chiudi', prec: 'Precedente', suiv: 'Successivo' },
+          livraison: 'Consegna a partire da', plats: 'piatti in foto', fermer: 'Chiudi', prec: 'Precedente', suiv: 'Successivo',
+          bareme: 'Consegna {base} fino a 3 km, poi 1.000 Ar/km' },
   };
   var t = T[(document.documentElement.lang || 'fr').slice(0, 2)] || T.fr;
 
@@ -193,8 +196,15 @@
       + '<div style="font:800 20px/1.15 Archivo,sans-serif;letter-spacing:-.02em;margin-top:5px">' + esc(r.name) + '</div>'
       + '</div></div>'
       + pastille
+      // ⚠️ « A PARTIR DE » : depuis le 2026-09-24 la livraison se paie au
+      // kilometre (socle jusqu'a 3 km, puis 1 000 Ar/km). La vitrine ne connait
+      // aucune adresse : elle ne peut annoncer que le plancher, et la regle est
+      // rappelee sur la ligne suivante pour qu'un montant plus eleve dans l'app
+      // ne passe pas pour une surprise.
       + '<p style="font:400 14px/1.55 Archivo,sans-serif;color:#4A4744;margin:0">' + esc(r.cuisine_type || '') + ' · ' + t.livraison + ' ' + ariary(r.delivery_fee || 0)
       + (photos.length ? ' · <strong>' + photos.length + '</strong> ' + t.plats : '') + '</p>'
+      + '<p style="font:400 12px/1.5 Archivo,sans-serif;color:#6B6662;margin:4px 0 0">'
+      + esc(t.bareme.replace('{base}', ariary(r.delivery_fee || 0))) + '</p>'
       + bande(photos, idx) + lien + '</div>';
   }
 

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,11 +29,23 @@ function sansAccent(s: string): string {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: largeurEcran } = useWindowDimensions();
   const { t } = useTranslation();
   const [filter, setFilter] = useState<string>(TOUT);
   const [query, setQuery] = useState('');
 
   const session = useSession((s) => s.session);
+
+  // ⚠️ LA RANGÉE DOIT MONTRER 3 À 4 PLATS, sinon elle ne se lit pas comme une
+  // rangée : à deux cartes et demie, on croit voir la fin du contenu. La largeur
+  // se déduit donc de l'écran — trois cartes entières plus le bord de la
+  // quatrième, qui est ce qui dit qu'il y a autre chose à droite. Bornée des
+  // deux côtés : sous 96 px le nom d'un plat ne tient plus, au-delà de 132 px
+  // une tablette n'en montrerait que trois.
+  const largeurCarte = Math.max(
+    96,
+    Math.min(132, Math.round((largeurEcran - spacing.screen - 12 * 3) / 3.15)),
+  );
 
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
   // Les plats du jour de TOUS les restaurants, en une requête (RPC
@@ -205,7 +217,7 @@ export default function HomeScreen() {
                 <CartePlatDuJour
                   key={p.id}
                   p={p}
-                  width={150}
+                  width={largeurCarte}
                   onPress={() => router.push(`/product/${p.id}`)}
                 />
               ))}

@@ -50,6 +50,10 @@ export function CartePlatDuJour({
 }) {
   const { t } = useTranslation();
   const ferme = !p.isOpen;
+  // À 375 px la carte descend sous 110 px de large : le nom du plat et le prix
+  // doivent alors rétrécir d'un point, sinon « Escalope de poulet milanaise »
+  // mange trois lignes et la rangée devient un mur de texte.
+  const serre = width < 120;
   return (
     <Pressable
       onPress={onPress}
@@ -72,10 +76,10 @@ export function CartePlatDuJour({
         <Text style={styles.resto} numberOfLines={1}>
           {p.restaurantName}
         </Text>
-        <Text style={styles.nom} numberOfLines={2}>
+        <Text style={[styles.nom, serre && styles.nomSerre]} numberOfLines={2}>
           {p.name}
         </Text>
-        <Text style={styles.prix}>{formatAr(p.price)}</Text>
+        <Text style={[styles.prix, serre && styles.prixSerre]}>{formatAr(p.price)}</Text>
         {p.dietTags.includes('porc') ? (
           <View style={styles.porc}>
             <Text style={styles.porcTexte}>{t('product.contientPorc')}</Text>
@@ -137,7 +141,7 @@ const styles = StyleSheet.create({
   },
   pastilleFermeeTexte: {
     fontFamily: fonts.semibold,
-    fontSize: 11,
+    fontSize: 10.5,
     color: colors.white,
     textAlign: 'center',
   },
@@ -149,6 +153,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   nom: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink, lineHeight: 18 },
+  nomSerre: { fontSize: 12.5, lineHeight: 16 },
+  prixSerre: { fontSize: 12 },
   prix: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
   porc: {
     alignSelf: 'flex-start',

@@ -43,27 +43,65 @@ L'agent doit donc, à chaque exécution :
 3. les comparer au journal de la veille (`journal-partages.md` ou équivalent) pour savoir où
    reprendre la rotation, et repérer les nouveaux groupes.
 
-⚠️ **Cette fenêtre ne montre PAS tous les groupes de Christopher.** Elle ne montre que ceux où la
-**page** est autorisée à publier — une poignée. Le compte personnel, lui, est membre de
-**428 groupes** (chiffre affiché par Facebook sur `facebook.com/groups/joins`, vérifié le
-25/09/2026), plus 2 demandes en attente. Y publier passe par le profil personnel : autre mécanique,
-et le risque porte alors sur le compte personnel.
+⚠️ **Le compte personnel de Christopher est membre de 428 groupes** (chiffre affiché par Facebook
+sur `facebook.com/groups/joins`, vérifié le 25/09/2026). **Ils sont hors périmètre — décision du
+porteur du projet, 25/09/2026 :** on ne travaille que sur les groupes de la page Taxi Food.
 
-### Corollaire : le problème n'est pas la quantité, c'est le tri
+Pourquoi c'est la bonne décision : la quasi-totalité des 428 n'a rien à voir avec Nosy Be (groupes
+de La Réunion, d'automobile, de métier…). Y publier une livraison de repas, c'est au mieux ignoré,
+au pire un signalement qui met le compte personnel en danger. Le périmètre utile est déjà constitué
+et tient en une trentaine de lignes — c'est le § 3 ter.
 
-Avec 428 groupes, « publier partout » n'a plus aucun sens — et ce n'est même plus l'objectif. La
-grande majorité n'a rien à voir avec Nosy Be (groupes de La Réunion, d'automobile, de métier…).
-Publier une livraison de repas dans un de ceux-là, c'est au mieux ignoré, au pire un signalement.
+## 3 ter. LE PÉRIMÈTRE TAXI FOOD — la liste de travail
 
-Le vrai travail préalable est donc un **inventaire qualifié, fait une seule fois** puis entretenu :
-parcourir les 428, ne garder que ceux dont l'audience est à Nosy Be ou en voyage vers Nosy Be, et
-écrire pour chacun : nom, identifiant, nombre de membres, langue dominante, sujet toléré,
-modération oui/non, slug `?g=`. **C'est cette liste-là qui devient la source de vérité de la
-rotation**, pas la fenêtre de partage — qui, elle, reste la source de vérité pour ce que la PAGE
-sait faire seule.
+**C'est la seule liste que l'agent parcourt.** Elle se relit dans la fenêtre « Partager dans un
+groupe » (colonne « déjà servi » mise à jour par le journal), une fois par semaine, pour attraper
+les groupes rejoints entre-temps.
 
-L'inventaire se refait **une fois par semaine**, pas tous les jours : c'est là qu'on récupère les
-groupes rejoints entre-temps.
+| # | Groupe | Membres | Slug `?g=` | État |
+|---|---|---|---|---|
+| 1 | Business Nosy-Be (Hell Ville 207) | 39 700 | `business207` | ✅ servi 25/09 |
+| 2 | TANY ALAFO SY TRANO AFONDRO… 207 | 25 400 | `tanyalafo` | ✅ servi 25/09 |
+| 3 | Zanaka nosy be mila tragno | 25 200 | `zanaka` | ✅ servi 25/09 |
+| 4 | INO VAOVAO NOSY BE HELL-VILLE | 21 600 | `inovaovao` | ✅ servi 25/09 |
+| 5 | AMBIANCE À NOSY BE | 20 700 | `ambiance` | ✅ servi 25/09 |
+| 6 | NOSY-BE Petit Paris | 16 300 | `petitparis` | ⏳ modéré, jamais paru |
+| 7 | TRAGNO AFONDRO ETO NOSY BE HELLE VILLE | 15 025 | `tragnoafondro` | ⬜ **jamais servi** — page membre |
+| 8 | Nosy Bon Coins | 13 251 | `bonscoins` | ⬜ **jamais servi** — page membre |
+| 9 | Bizness nosy be hell ville | 12 385 | `bizness` | ✅ servi 25/09 |
+| 10 | Nosy be hell Mbizna | 10 100 | `mbizna` | ✅ servi 25/09 |
+| 11 | Le grand marché de nosy-be | 8 447 | `grandmarche` | ✅ servi 25/09 |
+| 12 | NosyBe Bonnes Affaires | 7 632 | `bonnesaffaires` | ⬜ **jamais servi** — page membre |
+| 13 | Séjour Nosybe et Nord Madagascar | 5 500 | `sejour` | ✅ servi 25/09 |
+| 14 | MADAGASCAR TOURIST INFO | 4 216 | `touristinfo` | ⬜ **jamais servi** — page membre |
+| 15 | Amici italiani 🇮🇹🇲🇬 (Nosy be) | 3 132 | `amici` | ✅ servi 25/09 (italien) |
+| 16 | BAZAR BE NOSY BE | 2 200 | `bazarbe` | ✅ servi 25/09 |
+| 17 | Have you been Nosy Be? | 725 | `haveyoubeen` | ✅ servi 25/09 (anglais) |
+| 18 | Nosy be hell ville M bizna | — | `mbiznaville` | ✅ servi 25/09 |
+| 19 | NOSY-BE PUB | — | `nosybepub` | ✅ servi 25/09 |
+| 20 | Nosy be vente en ligne | — | `venteenligne` | ✅ servi 25/09 |
+| 21 | Nosybe Tsara Business \| Tany alafo & Trano afondro | — | `tsarabusiness` | ✅ servi 25/09 |
+| 22 | Nosy-Be Plaisirs de vacances | — | `plaisirs` | ✅ servi 25/09 |
+| 23 | Bizness Tout Sur Nosy Be | — | `toutsur` | ✅ servi 25/09 |
+| 24 | Le Bon coin Nosy be | — | `leboncoin` | ⚠️ partagé sans lien marqué |
+| 25 | Bon prix Nosy be | — | `bonprix` | ⚠️ partagé sans lien marqué |
+| 26 | NOSY BE HELL-VILLE | — | `hellville` | ⚠️ partagé sans lien marqué |
+| 27 | Le BonCoin et Plan de NosyBe | — | `boncoinplan` | ⚠️ partagé sans lien marqué |
+| 28 | TOURISME - NOSY BE - MADAGASCAR | — | `tourisme` | ⚠️ partagé sans lien marqué |
+| 29 | Business Madio à Nosy-Be | — | `businessmadio` | ⚠️ partagé sans lien marqué |
+| 30 | La Vie à Nosy-Be | — | `lavie` | ⚠️ partagé sans lien marqué |
+
+🚫 **Exclu volontairement : Fitadiavana Asa eto Nosy Be** — groupe de recherche d'emploi. Hors
+sujet, publication supprimée, risque d'exclusion. Ne pas le reproposer.
+
+**Ce que dit ce tableau** : ~250 000 membres cumulés sur les seuls groupes dont on connaît la
+taille. **Quatre groupes que la page a rejoints n'ont jamais rien reçu** (lignes 7, 8, 12, 14) —
+c'est le gisement immédiat, et il est publiable depuis Meta Business Suite, sans piloter le
+navigateur. **Sept autres** (lignes 24 à 30) n'ont reçu qu'un partage non mesurable : à refaire
+avec leur lien marqué.
+
+⚠️ Les membres manquants (`—`) et les slugs des lignes 7-8, 12, 14 et 24-30 sont à relever au
+prochain passage ; les slugs proposés ici ne comptent rien tant qu'ils n'ont pas été publiés.
 
 ## 3 bis. UN GROUPE = UN SLUG — le lien exact à partager
 

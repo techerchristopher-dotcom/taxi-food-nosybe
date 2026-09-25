@@ -1,5 +1,5 @@
 /**
- * Mesure d'audience de la vitrine ET des pages de partage (/j/, /r/, /s/, /p/).
+ * Mesure d'audience de la vitrine ET des pages de partage (/j/, /r/, /s/, /p/, /jour).
  *
  * ── Ce qu'on veut savoir ─────────────────────────────────────────────────────
  * Est-ce que les gens regardent ce qu'on publie ? D'où viennent-ils (Facebook,
@@ -43,6 +43,20 @@
   var APP_STORE_ID = 'id6802418114';
   var PLAY_ID = 'com.chris97416.taxifoodnosybe';
   var APP_WEB = 'taxifood.distripro207.com';
+
+  // ── Nos propres compteurs, dans Supabase ───────────────────────────────────
+  // ⚠️ POURQUOI ON NE SE CONTENTE PAS D'UMAMI. Umami réserve son API à son offre
+  // payante (« API access requires a Pro plan », constaté le 2026-09-25) : ses
+  // chiffres ne peuvent pas être rapatriés dans le tableau de bord, et il faudrait
+  // aller les lire à la main, site par site, sans pouvoir les croiser avec les
+  // commandes. Le classement des groupes se fait donc sur NOS compteurs. Umami
+  // reste en place pour tout le reste, il n'est pas remplacé.
+  //
+  // La clé est la clé PUBLIABLE, celle qui vit déjà en clair dans l'application :
+  // elle n'ouvre rien ici. La table `visites_partage` n'a aucune policy et aucun
+  // droit ; la seule porte est `compter_visite_partage`, qui écrit et ne rend RIEN.
+  var SUPABASE = 'https://bmdveawomizjpiebgtkj.supabase.co';
+  var SUPABASE_CLE = 'sb_publishable_PIgdG97zTlRIAYX_3MBm3A_Le6YUMjv';
 
   var enProduction = location.hostname === HOTE_PRODUCTION;
 
@@ -97,12 +111,48 @@
         : 'Cet appareil est de nouveau compté dans les statistiques.');
   }
 
+  // ── D'où vient le visiteur : l'étiquette de groupe Facebook (?g=) ──────────
+  // La page `/jour` est publiée à la main dans une vingtaine de groupes Facebook.
+  // Sans marquage, impossible de savoir lequel amène des clients — et donc lesquels
+  // arrêter. Le lien publié porte un nom court de groupe : `/jour?g=boncoin`.
+  //
+  // ⚠️ C'est `partage.mjs` qui fait le vrai travail : il réinjecte ce `g` dans
+  // `og:url`, faute de quoi Facebook remplace le lien cliqué par une adresse SANS
+  // étiquette et il ne reste rien à mesurer. Ici on ne fait que le lire.
+  //
+  // ⚠️ MÉMORISÉ POUR L'ONGLET (sessionStorage), pas seulement pour la page d'arrivée :
+  // le visiteur passe souvent par `/jour` puis `/plats-du-jour` avant de taper
+  // « Commander ». Sans mémoire, le clic qui compte le plus serait le seul à ne plus
+  // savoir d'où il vient. `sessionStorage` meurt avec l'onglet : aucune trace durable,
+  // rien de personnel, et une visite de demain ne sera pas attribuée à hier.
+  var GROUPE_OK = /^[a-z0-9][a-z0-9-]{0,23}$/;
+  var groupeDansUrl = '';
+  var groupe = '';
+  (function () {
+    var brut = (q.get('g') || '').toLowerCase();
+    if (GROUPE_OK.test(brut)) groupeDansUrl = brut;
+    try {
+      if (groupeDansUrl) sessionStorage.setItem('tf_groupe', groupeDansUrl);
+      groupe = sessionStorage.getItem('tf_groupe') || groupeDansUrl;
+    } catch (e) {
+      // Navigation privée, stockage bloqué : on garde au moins la page d'arrivée.
+      groupe = groupeDansUrl;
+    }
+  })();
+
   // ── Où sommes-nous ─────────────────────────────────────────────────────────
   var m = location.pathname.match(/^\/(j|r|s|p)\//);
+  // ⚠️ `/jour` est une page de PARTAGE, elle aussi (les plats du jour de toute l'île,
+  // servie par `partage.mjs`) — mais elle n'a pas d'identifiant, donc pas de seconde
+  // barre oblique, et la recherche ci-dessus ne la voyait pas : elle était comptée
+  // comme une page de vitrine et ne déclenchait pas `partage-ouvert`. C'est le lien le
+  // plus diffusé du projet. Même piège, même remède que `typeDeLien()` dans l'app.
+  var ile = /^\/jour\/?$/i.test(location.pathname);
   // « partage » = une page ouverte depuis un lien publié ; « vitrine » = le site.
-  var surface = m ? 'partage' : 'vitrine';
-  var typePartage = m ? m[1] : null;
+  var surface = (m || ile) ? 'partage' : 'vitrine';
+  var typePartage = m ? m[1] : ile ? 'jour' : null;
   var page = (function () {
+    if (ile) return 'partage-jour';
     if (m) return 'partage-' + m[1];
     var seg = location.pathname.split('/').filter(Boolean);
     if (!seg.length) return 'accueil';
@@ -118,10 +168,46 @@
   window.tfMesure = function (nom, donnees) {
     if (!enProduction || !UMAMI_ID || exclu) return;
     var d = { surface: surface, page: page };
+    // L'étiquette du groupe voyage sur TOUS les événements : `partage-ouvert`,
+    // `vers-app`, `telecharger`… Une propriété commune, comme `surface` et `page`,
+    // plutôt qu'un ajout au cas par cas qui finirait par en oublier un.
+    if (groupe) d.groupe = groupe;
     for (var k in donnees || {}) d[k] = donnees[k];
     if (window.umami && typeof window.umami.track === 'function') envoyer(nom, d);
     else file.push([nom, d]);
   };
+
+  // ── Nos compteurs par groupe ───────────────────────────────────────────────
+  // Deux gestes comptés, et deux seulement : l'OUVERTURE de la page depuis un
+  // groupe, et le PASSAGE vers l'application. Pas de défilement, pas de survol,
+  // pas de minuterie — un compteur qui monte tout seul ne dit plus rien.
+  //
+  // ⚠️ UNE ÉCRITURE PAR VISITE. `ouverture` part une fois, au chargement, et
+  // seulement si l'étiquette est DANS L'ADRESSE (une arrivée, pas une page
+  // suivante). `vers-app` part au clic. La base plafonne en plus à 120 écritures
+  // par minute et par étiquette, au cas où.
+  //
+  // ⚠️ LES ROBOTS NE COMPTENT PAS. Celui de Facebook (`facebookexternalhit`) lit la
+  // page pour fabriquer l'aperçu : il n'exécute aucun JavaScript, il est donc déjà
+  // hors du compte — c'est la raison profonde de compter ici plutôt que côté
+  // serveur. Le test d'agent ci-dessous n'est qu'une ceinture de plus.
+  var ROBOT = /bot|crawl|spider|slurp|facebookexternalhit|preview|headless|lighthouse|pingdom|curl|wget/i;
+  function compter(evenement, etiquette) {
+    if (!enProduction || exclu || !etiquette) return;
+    try { if (ROBOT.test(navigator.userAgent || '')) return; } catch (e) {}
+    try {
+      // `keepalive` : le clic « Commander » quitte la page dans la foulée, et une
+      // requête ordinaire serait annulée en vol — c'est justement le geste le plus
+      // important à compter. `sendBeacon` ne conviendrait pas : il ne sait pas poser
+      // l'en-tête `apikey`.
+      fetch(SUPABASE + '/rest/v1/rpc/compter_visite_partage', {
+        method: 'POST',
+        keepalive: true,
+        headers: { 'content-type': 'application/json', apikey: SUPABASE_CLE, Authorization: 'Bearer ' + SUPABASE_CLE },
+        body: JSON.stringify({ p_etiquette: etiquette, p_page: page, p_evenement: evenement }),
+      }).catch(function () { /* une mesure ne casse jamais la page */ });
+    } catch (e) { /* idem */ }
+  }
 
   // ── Liens de magasins marqués ──────────────────────────────────────────────
   // C'est ce qui relie un TÉLÉCHARGEMENT à la page qui l'a provoqué : Apple et
@@ -162,8 +248,21 @@
       window.tfMesure('telecharger', { magasin: href.indexOf(PLAY_ID) !== -1 ? 'google-play' : 'app-store' });
     } else if (href.indexOf(APP_WEB) !== -1) {
       // « Commander », « Voir la carte », « Mon espace » : le passage vers l'app web.
+      //
+      // ⚠️ L'ÉTIQUETTE PART AVEC LE VISITEUR. L'app web est un AUTRE domaine, donc un
+      // autre compte Umami : ce qui n'est pas dans l'adresse est perdu au passage de
+      // frontière. Sans ce report, on saurait quel groupe fait ouvrir la page, jamais
+      // quel groupe fait passer une commande — c'est-à-dire la seule chose qui compte.
+      // Même mécanique que `lienMagasin` juste au-dessus : on réécrit le lien AVANT que
+      // le navigateur ne le suive.
+      if (groupe && !/[?&]g=/.test(href)) {
+        href = href + (href.indexOf('?') === -1 ? '?' : '&') + 'g=' + encodeURIComponent(groupe);
+        a.setAttribute('href', href);
+      }
       var cible = href.split(APP_WEB)[1] || '/';
-      window.tfMesure('vers-app', { cible: cible.split('/')[1] || 'accueil', type: typePartage || '' });
+      window.tfMesure('vers-app', { cible: (cible.split('/')[1] || '').split('?')[0] || 'accueil', type: typePartage || '' });
+      // Nos compteurs : c'est CE geste qui classe les groupes, pas l'ouverture.
+      compter('vers-app', groupe);
     } else if (href.indexOf('wa.me/') !== -1) {
       window.tfMesure('contact-whatsapp');
     } else if (href.indexOf('tel:') === 0) {
@@ -172,6 +271,16 @@
       window.tfMesure('reseau-social', { reseau: (href.match(/(facebook|instagram|tiktok)/) || [])[1] });
     }
   }, true);
+
+  // ── Une ouverture attribuée à un groupe, dans NOS compteurs ────────────────
+  // ⚠️ AVANT le chargement du tracker Umami, et pas après : ce qui suit s'arrête
+  // net si l'identifiant Umami venait à manquer. Nos compteurs ne dépendent de
+  // personne — c'est tout l'objet du changement du 2026-09-25.
+  //
+  // ⚠️ Seulement si le `g` est DANS L'ADRESSE : c'est le compte des ARRIVÉES. Le
+  // prendre aussi depuis la mémoire de l'onglet compterait chaque page suivante
+  // comme une nouvelle arrivée, et le classement récompenserait la navigation.
+  compter('ouverture', groupeDansUrl);
 
   // ── Chargement du tracker ──────────────────────────────────────────────────
   // Appareil exclu : on ne charge même pas le tracker.
@@ -195,5 +304,18 @@
   // partagé. La provenance (Facebook, WhatsApp) vient du référent et des utm.
   if (typePartage) {
     window.tfMesure('partage-ouvert', { type: typePartage, titre: document.title.replace(/ — Taxi Food$/, '') });
+  }
+
+  // ── Une ouverture attribuée à un groupe ────────────────────────────────────
+  // ⚠️ Seulement quand le `g` est DANS L'ADRESSE, jamais depuis la mémoire de
+  // l'onglet : c'est le compte des ARRIVÉES par ce groupe. Le prendre aussi en
+  // mémoire compterait chaque page suivante comme une nouvelle arrivée, et le
+  // classement des groupes récompenserait la navigation, pas la publication.
+  //
+  // Pourquoi un événement dédié alors que `groupe` est déjà sur tous les autres :
+  // Umami ne sait pas attacher de propriété à une vue de page. Sans lui, il n'y
+  // aurait aucune ligne « ouvertures » à mettre en face des « passages vers l'app ».
+  if (groupeDansUrl) {
+    window.tfMesure('groupe-ouvert', { groupe: groupeDansUrl });
   }
 })();

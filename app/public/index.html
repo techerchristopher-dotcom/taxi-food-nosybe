@@ -150,6 +150,35 @@
               : exclu ? 'Cet appareil n’est plus compté dans les statistiques.'
               : 'Cet appareil est de nouveau compté dans les statistiques.');
         }
+        // ── L'étiquette du groupe Facebook (?g=), posée par la vitrine ──────────
+        // La vitrine publie `/jour?g=boncoin` dans les groupes Facebook et reporte
+        // l'étiquette sur le lien « Commander » (landing/js/mesure.js). Elle arrive
+        // donc ICI dans l'adresse. Sans ce bloc, on saurait quel groupe fait OUVRIR
+        // une page, jamais lequel fait passer une COMMANDE : les deux sites sont deux
+        // comptes Umami distincts, rien ne traverse tout seul.
+        //
+        // ⚠️ Mémorisée pour l'onglet : entre l'arrivée et « Commander » il y a le
+        // catalogue, la fiche, le panier, l'adresse. L'adresse de la page, elle, aura
+        // changé dix fois. `sessionStorage` meurt avec l'onglet — aucune trace durable.
+        //
+        // ⚠️ DEUX MÉMOIRES, ET ELLES NE SERVENT PAS À LA MÊME CHOSE :
+        //   `tf_groupe` (sessionStorage) meurt avec l'onglet et sert à la mesure
+        //       d'audience — une visite, une session.
+        //   `tf_provenance` (localStorage, 7 jours) survit à la fermeture et sert à
+        //       rattacher une COMMANDE à son groupe. Quelqu'un qui clique le lundi et
+        //       commande le jeudi vient bien de ce groupe ; trois semaines plus tard,
+        //       non. La date est rangée avec l'étiquette et `lib/provenance.ts` la
+        //       relit — voir ce fichier pour le raisonnement complet.
+        var groupe = '';
+        try {
+          var brutG = (q.get('g') || '').toLowerCase();
+          if (/^[a-z0-9][a-z0-9-]{0,23}$/.test(brutG)) {
+            sessionStorage.setItem('tf_groupe', brutG);
+            localStorage.setItem('tf_provenance', JSON.stringify({ g: brutG, t: Date.now() }));
+          }
+          groupe = sessionStorage.getItem('tf_groupe') || '';
+        } catch (e) { /* stockage bloqué : on s'en passe, jamais bloquant */ }
+
         if (exclu) return;
         if (!ID || location.hostname !== 'taxifood.distripro207.com') return;
         var s = document.createElement('script');
@@ -157,6 +186,31 @@
         s.src = 'https://cloud.umami.is/script.js';
         s.setAttribute('data-website-id', ID);
         s.setAttribute('data-domains', 'taxifood.distripro207.com');
+        // ⚠️ L'étiquette est ajoutée à TOUS les événements, en enveloppant `umami.track`
+        // une fois — et NON en modifiant `lib/mesure.ts`. Deux raisons :
+        //   1. ce fichier est le gabarit WEB, il ne part dans aucun binaire : la mesure
+        //      par groupe n'existe que sur le site, et aucune mise à jour à distance
+        //      (OTA) n'est nécessaire pour la livrer ;
+        //   2. un seul point de passage, donc aucun appel de `mesurer()` à ne pas
+        //      oublier — `commande-validee` comprise, qui est tout l'intérêt.
+        // La vue de page, elle, porte déjà `?g=` dans son adresse.
+        s.onload = function () {
+          if (!groupe) return;
+          try {
+            var u = window.umami;
+            if (!u || typeof u.track !== 'function') return;
+            var envoi = u.track.bind(u);
+            u.track = function (nom, donnees) {
+              // `umami.track` accepte aussi un objet ou une fonction (vue de page
+              // manuelle) : on n'enveloppe que la forme « nom + propriétés ».
+              if (typeof nom !== 'string') return envoi.apply(null, arguments);
+              var d = {};
+              for (var k in (donnees || {})) d[k] = donnees[k];
+              d.groupe = groupe;
+              return envoi(nom, d);
+            };
+          } catch (e) { /* une mesure ne casse jamais l'app */ }
+        };
         document.head.appendChild(s);
       })();
     </script>

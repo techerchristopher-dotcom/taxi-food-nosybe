@@ -25,6 +25,10 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 
 **Mesure et référencement**
 - (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
+- 🏷️ **Groupes Facebook mesurés** (2026-09-25, voir sa section) : liens `?g=<slug>`, comptés dans
+  notre base, tableau dans l'admin. **Reste à constater** : la première vraie publication marquée,
+  et une vraie commande portant son étiquette. ⚠️ **Publier le lien marqué DANS le groupe** —
+  partager la publication de la page ne mesure rien.
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
 - ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
@@ -1608,6 +1612,78 @@ l'empreinte `?v=`). Les plats du jour d'UN restaurant se partageaient depuis le 
   les contrôles `curl` ont été faits. Ni l'aperçu réel dans WhatsApp / Facebook, ni le rendu sur
   un vrai téléphone (l'OTA est partie sur les trois runtimes).
 
+## 🏷️ Quel groupe Facebook rapporte quoi (2026-09-25)
+
+Le porteur du projet publie `/jour` dans une vingtaine de groupes Facebook, **à l'aveugle** : rien
+ne disait lequel amenait des clients. Son objectif n'est pas d'automatiser ces publications, c'est
+d'**arrêter celles qui ne servent à rien**. Migration
+`20260925150000_mesurer_ce_que_chaque_groupe_facebook_rapporte`.
+
+- **Un groupe = un slug, dans l'adresse** : `https://taxifoodnosybe.distripro207.com/jour?g=boncoin`.
+  Minuscules, chiffres, tirets, 24 caractères. Le tableau des 7 groupes déjà publiés et le lien
+  exact de chacun sont dans [docs/PARTAGE-FACEBOOK-GROUPES.md](docs/PARTAGE-FACEBOOK-GROUPES.md).
+  ⚠️ **Jamais deux groupes avec le même slug** : la ligne de chiffres ne voudrait plus rien dire.
+- ⚠️ **`?g=` et pas `utm_campaign`** : les `utm_*` disent déjà autre chose sur ce projet
+  (`utm_source` = le CANAL d'un partage depuis l'app), un lien court se dicte au téléphone, et on ne
+  dépend d'aucun écran tiers pour le lire.
+- ⛔ **LE PIÈGE CENTRAL — Facebook remplace le lien cliqué par `og:url`.** Sans réinjection,
+  l'étiquette disparaît entre le clic et l'arrivée et la mesure vaut zéro. `partage.mjs` pose donc
+  le `g` reçu **dans `og:url`**, à côté de l'empreinte `?v=` (les deux ne se remplacent pas : `v`
+  sert au cache de Facebook, `g` à la mesure). ⚠️ **Le `canonical`, lui, reste propre** — d'où le
+  paramètre `canonique` de `page()` : sinon Google verrait vingt pages pour un seul contenu.
+  ⚠️ **L'image ne porte pas le `g`** : elle est identique pour tous les groupes, et multiplier ses
+  adresses la ferait refabriquer (6 s à froid) pour rien.
+- ⛔ **UMAMI NE SERT PAS À CETTE MESURE, ET NE PEUT PAS.** Son API est réservée à l'offre payante
+  (« API access requires a Pro plan », 2026-09-25) : impossible de rapatrier ses chiffres, et
+  surtout impossible de les **croiser avec les commandes**. On compte donc nous-mêmes. Umami reste
+  branché pour tout le reste — ne pas le débrancher.
+- **Ce qui est compté, et où** : table `visites_partage` (étiquette, page, `ouverture` ou
+  `vers-app`, heure, pays sur deux lettres). ⚠️ **Aucune donnée personnelle** : pas d'IP (ni brute
+  ni hachée), pas de compte, pas d'agent utilisateur, pas de référent — c'est ce qui permet de
+  continuer sans bandeau de consentement. RLS active, **aucune policy, aucun droit** : la seule
+  porte est `compter_visite_partage()`, qui écrit et **ne rend rien** (impossible de s'en servir
+  pour lire). Plafond de 120 écritures par minute et par étiquette contre le bourrage.
+  ⚠️ Les robots ne comptent pas parce que le comptage est **dans le navigateur** : celui de
+  Facebook n'exécute aucun JavaScript.
+- **Jusqu'à la commande** : l'étiquette est reportée sur le lien « Commander » par
+  `landing/js/mesure.js`, mémorisée **7 jours** (`localStorage tf_provenance`, posé par
+  `app/public/index.html`) et écrite sur `orders.etiquette_partage` par
+  `enregistrer_provenance_commande` (`app/lib/provenance.ts`, appelé sans `await` depuis
+  `checkout.tsx`).
+- ⛔ **POURQUOI PAS UN PARAMÈTRE DE `create_order`.** Elle existe en deux signatures et les binaires
+  en magasin appellent la première : lui ajouter un paramètre, même avec une valeur par défaut,
+  crée une TROISIÈME surcharge → `PGRST203` → **plus aucune commande ne passe** (payé le
+  2026-09-05). L'étiquette se pose donc **après**, par sa propre fonction. Conséquence heureuse :
+  `create_order` ne connaît pas ce champ, il ne peut peser sur **aucun montant**. Vérifié en
+  transaction annulée : montants et commission identiques avant et après marquage.
+- **Restitution** : admin → 📈 Audience → « Ce que rapporte chaque groupe Facebook »
+  (`admin_audience_groupes`, `is_admin()` obligatoire) : ouvertures, vers l'app, commandes,
+  livrées, chiffre d'affaires livré, trié par commandes. ⚠️ L'écran affiche **« Mesuré depuis le
+  JJ/MM »** — sans ça, un zéro sur un groupe publié AVANT la mise en place se lirait « ce groupe ne
+  marche pas ».
+- ⚠️ **Partager la publication de la page dans un groupe ne mesure RIEN** : le lien emporté est
+  celui de la publication, le même pour tous. Pour mesurer, il faut publier le lien marqué DANS le
+  groupe. C'est écrit en tête de la procédure.
+- ⚠️ **`/jour` est désormais comptée comme page de PARTAGE** dans `mesure.js` (`partage-jour`, et
+  `partage-ouvert` s'y déclenche) : elle n'a pas d'identifiant, donc pas de seconde barre oblique,
+  et la reconnaissance `/^\/(j|r|s|p)\//` ne la voyait pas. Même piège que `typeDeLien()` dans
+  l'app. Les campagnes de magasin de cette page changent donc de nom (`vitrine-jour` →
+  `partage-jour`).
+- **Vérifié en production le 2026-09-25** : `/jour?g=test` répond **200 au robot Facebook** et son
+  `og:url` porte `g=test` **ET** `v=…` ; `/jour` sans `g` inchangée ; `canonical` toujours sans
+  étiquette ; une étiquette mal formée est **ignorée en silence** (y compris une tentative
+  d'injection) ; `/a/…` → **400** ; image **JPEG 1200×630, 200 ko** ; rien de privé dans la page ;
+  page intacte à **375 px** sans défilement horizontal ; la clé publiable ne peut **ni lire ni
+  écrire** `visites_partage` (401) ni appeler `admin_audience_groupes` (401) ; un vrai passage de
+  navigateur sur `/jour?g=…` puis un clic « Commander » ont créé **exactement deux lignes**
+  (`ouverture` puis `vers-app`) et transporté l'étiquette jusqu'à `taxifood.distripro207.com` ;
+  les lignes de recette ont été **supprimées** ensuite.
+- ⏳ **Non vérifié** : une VRAIE commande portant l'étiquette (aucune commande réelle n'a été
+  passée — le marquage a été prouvé en transaction annulée : commande d'autrui refusée,
+  propriétaire accepté, réécriture refusée, montants inchangés), l'aperçu réel dans Facebook, et le
+  tableau de l'admin **rempli** (il n'y a encore aucune donnée : il s'affiche vide, c'est normal
+  jusqu'à la première publication marquée).
+
 ## 🔓 Fuite connue : commission et canal Telegram lisibles par anon (2026-09-16)
 
 Avec la seule clé publiable, `select commission_rate, telegram_chat_id from restaurants` répond.
@@ -2045,6 +2121,11 @@ tâche `pg_cron` **`collecte-telechargements`** à 09 h 30 UTC (12 h 30 à Nosy 
   (`asc_*`, `umami_*`). Elle ne relit jamais un secret.
 - **Google Play : rien n'est branché**, et la colonne `magasin` attend. Il faut un compte de service
   Google Cloud lié à la Play Console — geste du porteur du projet, voir `docs/SOUMISSION-ANDROID.md`.
+- ⛔ **L'API d'Umami est PAYANTE** (« API access requires a Pro plan », constaté le 2026-09-25 sur
+  le compte techerchristopher) : le paragraphe ci-dessous décrit une voie **fermée** tant qu'on ne
+  paie pas. C'est la raison pour laquelle la mesure par groupe Facebook est comptée dans NOTRE base
+  (voir « Quel groupe Facebook rapporte quoi »). Ne pas relancer le dépôt de clés sans avoir
+  d'abord vérifié l'offre.
 - **Umami** : l'écran renvoie vers les deux tableaux de bord. Pour rapatrier les chiffres ici, il
   faut une **clé d'API par compte** (Umami Cloud → profil → *Settings* → *API keys* → *Create key*,
   base `https://api.umami.is/v1`, en-tête `Authorization: Bearer …`, 50 appels / 15 s). Les clés se

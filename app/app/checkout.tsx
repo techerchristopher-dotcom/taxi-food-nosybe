@@ -12,6 +12,7 @@ import { ChoixModePaiement } from '../components/paiement/ChoixModePaiement';
 import { colors, fonts, formatAr, spacing } from '../theme/tokens';
 import { formatAddressLine, paymentShort } from '../data/types';
 import { mesurer } from '../lib/mesure';
+import { enregistrerProvenance } from '../lib/provenance';
 import { createOrder, listAddresses, raisonPromoDepuisErreur, refusServiceDepuisErreur } from '../data/api';
 import {
   apercuMontantMineur,
@@ -179,6 +180,12 @@ function CheckoutForm() {
       // La commande EXISTE : l'étape que tout le reste de la mesure prépare.
       // Mode de paiement et restaurant seulement — rien qui désigne le client.
       mesurer('commande-validee', { paiement: String(paymentMethod), restaurant: restaurantName ?? '' });
+      // D'OÙ VIENT CE CLIENT : le groupe Facebook du lien par lequel il est arrivé,
+      // s'il y en a un et s'il date de moins de sept jours. Posé APRÈS coup, sur une
+      // commande déjà chiffrée en base — cette étiquette ne touche à aucun montant,
+      // et `create_order` ne la connaît même pas (voir lib/provenance.ts).
+      // ⚠️ Sans `await` : une mesure ne retarde jamais une commande.
+      void enregistrerProvenance(order.id);
       // Le panier est vidé dès que la commande existe, y compris pour une carte
       // non encore payée : la commande est créée quoi qu'il arrive, et garder le
       // panier inviterait à la passer une seconde fois. Le repli espèces et la

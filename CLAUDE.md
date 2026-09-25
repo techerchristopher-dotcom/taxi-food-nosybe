@@ -86,6 +86,9 @@ bol renversé ont le porc en OPTION, sans badge possible.
   photos = reconstitutions, contenant des plats de La Plage.
 
 **Produit et contenu**
+- 🔥 **Rubrique « Plats du jour »** livrée le 2026-09-25 (voir sa section) : base + app (OTA sur
+  les trois runtimes) + web + vitrine `/plats-du-jour`. **Reste à constater** : le rendu sur un
+  vrai téléphone, et l'aperçu du lien dans WhatsApp / Facebook.
 - 🚪 **Fermeture en un geste livrée le 2026-09-20** (voir sa section). L'écran Réglages est vérifié
   en production. **Restent à constater** : le **tap** lui-même (fermer puis rouvrir, à faire une
   fois en service — non fait pour ne pas ouvrir La Cabane hors de ses horaires) et l'onglet
@@ -1402,6 +1405,64 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
 - Un restaurant en négociation **n'est plus grisé** (ni carte de l'app, ni vitrine) : ses photos
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
+
+## 🔥 Les plats du jour de toute l'île, en un seul endroit (2026-09-25)
+
+Constat du porteur du projet : les plats du jour sont le contenu **le plus attirant** du
+catalogue — les seuls à porter de vraies photos du plat servi — et ils ne se voyaient qu'en
+ouvrant chaque restaurant, un par un. Migration
+`20260925120000_les_plats_du_jour_de_toute_l_ile`.
+
+- **Une seule source, en base : la RPC `plats_du_jour_publics()`.** L'application ET la
+  vitrine l'appellent. Le filtre (à l'affiche, non archivé, disponible, non épuisé,
+  restaurant `visible`) et l'ordre (**restaurants ouverts d'abord**, puis `rang_catalogue`,
+  puis `sort_order` du plat — jamais le prix) sont décidés là, pas dans les écrans.
+  ⚠️ C'est la leçon de l'ordre du catalogue : deux requêtes écrites séparément finissent
+  toujours par ne plus dire la même chose.
+- **Elle ne rend que des colonnes déjà publiques** et elle est en **SECURITY INVOKER** : elle
+  n'ouvre aucun droit que l'appelant n'avait pas. Ni commission, ni canal Telegram, ni code
+  marchand. Vérifié à la clé publiable : RPC **200**, aucune de ces trois chaînes dans la
+  réponse, et **l'accueil de l'app répond toujours 200** avec sa requête exacte (le contrôle
+  qui manquait le 2026-09-16, quand la fermeture par privilèges de colonne l'avait cassé).
+- **`prochaine_ouverture(restaurants)`** rend `(jours d'écart, heure)` en lisant
+  `restaurant_hours` — la table dont dépendent déjà `ouvert_maintenant` et `services_du_jour`.
+  Aucun horaire n'est réinventé. ⚠️ **En ouverture MANUELLE elle ne rend rien** : le
+  restaurateur a fermé à la main, ses horaires ne le rouvriront pas tout seuls (règle du
+  2026-09-20), et annoncer « Ouvre à 18h » serait un mensonge — l'écran dit « Fermé ».
+  ⚠️ Au-delà de demain on ne nomme pas le jour : sept noms de jours × trois langues pour un
+  cas qui n'arrive qu'au lendemain d'une fermeture, ça ne se paie pas.
+- **Un restaurant fermé garde sa place**, grisé, avec son heure d'ouverture. Décision du
+  porteur du projet : sans ça la rubrique est vide en milieu d'après-midi — trois restaurants
+  sur quatre le sont. La carte du plat est alors **inerte** (pas de tap) : ouvrir la fiche
+  d'un plat qu'on ne peut pas commander est une impasse.
+- **App** : rangée défilante « 🔥 Les plats du jour » en haut de l'accueil
+  (`app/app/(tabs)/index.tsx`), cartes `app/components/PlatDuJour.tsx`, écran « Voir tout »
+  `app/app/plats-du-jour.tsx` **groupé par restaurant** — le panier étant mono-restaurant,
+  une liste à plat inviterait à une commande impossible. Textes FR/EN/IT (`platsDuJour.*`).
+  ⚠️ La rangée est **masquée pendant une recherche** : l'écran répond alors à une question
+  précise, et une rangée qui l'ignore se lirait comme un résultat.
+  ⚠️ **La largeur des cartes se déduit de l'écran** (3 entières + le bord de la 4ᵉ, bornée
+  96–132 px). À 150 px fixes on n'en voyait que deux et demie à 375 px, ce qui se lit comme
+  la fin du contenu.
+- **Vitrine** : `/plats-du-jour`, `/en/dishes-of-the-day`, `/it/piatti-del-giorno`, rendues
+  **côté serveur** par `landing/netlify/functions/plats-du-jour.mjs`. ⚠️ Côté serveur et pas
+  en JavaScript de navigateur, pour la même raison que `/p/ /r/ /j/ /s/` : un robot d'aperçu
+  n'exécute aucun JavaScript, et une page dont le contenu n'arrive qu'après coup n'est ni
+  partageable ni référencée. JSON-LD `ItemList` (chaque plat avec son prix, sa devise `MGA`,
+  son restaurant), `hreflang` réciproques, sitemap (`changefreq: daily` — c'est la seule page
+  du site dans ce cas), et un lien depuis les **trois accueils** sous le carrousel.
+  ⚠️ **Cache court, 2 minutes au bord** (`netlify-cdn-cache-control`) : l'état
+  « ouvert / Ouvre à 16h » change à l'heure près, une page gardée une heure mentirait.
+- **Vérifié en production le 2026-09-25**, à 375 px : accueil de l'app web (3 cartes + le bord
+  de la 4ᵉ), écran « Voir tout » (La Plage « Ouvert », La Cabane « Ouvre à 16h » et Chez Bidul
+  « Ouvre à 12h » grisés, badge « Contient du porc » sur la paella), page vitrine FR/EN/IT
+  (200, 8 plats, 3 groupes), `og:image` **JPEG 1200×630 · 133 ko**, et `/a/…` → **400** (les
+  fonctions de la vitrine sont bien embarquées). **État vide constaté** sur l'app web en
+  interceptant la réponse : la rangée disparaît de l'accueil sans laisser de trou, et
+  « Voir tout » affiche « Aucun plat du jour aujourd'hui » + bouton vers le catalogue.
+- ⏳ **Non vérifié** : le rendu sur un **vrai téléphone** (l'OTA est partie sur les trois
+  runtimes), l'aperçu réel de la page dans WhatsApp / Facebook, et l'indexation Google (la
+  page vient d'être ajoutée au sitemap).
 
 ## 🔓 Fuite connue : commission et canal Telegram lisibles par anon (2026-09-16)
 

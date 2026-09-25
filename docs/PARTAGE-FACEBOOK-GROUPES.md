@@ -227,6 +227,41 @@ condamner un groupe sur une publication qui n'est jamais parue.
 - **Le rappel** à 11 h pour lancer la session de partage.
 - **L'annonce aux clients** (notification + e-mail), depuis l'onglet 📣 Annonce de l'admin.
 
+## 9. L'outil officiel de Meta — ce qu'il fait, ce qu'il ne fait pas
+
+Vérifié le 25/09/2026 dans **Meta Business Suite → Créer une publication → Publier dans**
+(business.facebook.com, page Taxi Food Nosy Be). C'est l'outil que le bandeau Facebook propose.
+
+**Ce qu'il sait faire**
+- Publier le même texte + lien **dans la page ET dans des groupes**, d'un seul geste.
+- **Programmer** la date et l'heure — y compris avec des groupes sélectionnés (testé : la case
+  « Programmer → Définir la date et l'heure » reste active, le bouton devient « Programmer »).
+  Meta suggère même les créneaux où l'audience est la plus active.
+- Officiel, donc **aucun risque de blocage** — contrairement à un pilotage du navigateur.
+
+**Ses deux limites, qui décident de tout**
+1. **Trois groupes maximum par publication.** Au-delà, les autres cases se grisent. Ce n'est pas
+   contournable : c'est la règle de Meta.
+2. **Il ne voit que les groupes que la PAGE a rejoints** — sept aujourd'hui : Le grand marché de
+   nosy-be (8 447), Bizness nosy be hell ville (12 385), Amici italiani (3 132), Nosy Bon Coins
+   (13 251), MADAGASCAR TOURIST INFO (4 216), NosyBe Bonnes Affaires (7 632), TRAGNO AFONDRO ETO
+   NOSY BE HELLE VILLE (15 025). Les vingt autres groupes ont été rejoints avec le **profil
+   personnel** : l'outil les ignore.
+
+**Conséquence pratique**
+- Pour les groupes déjà rejoints par la page : **une publication programmée par groupe** (et non
+  trois d'un coup) — sinon les trois groupes reçoivent le même lien et l'étiquette `?g=` ne
+  distingue plus rien (§ 3 bis). Sept publications à programmer, gratuites, sans ordinateur
+  piloté.
+- Pour élargir : **faire rejoindre les autres groupes par la page Taxi Food** (bouton « Rejoindre »
+  en tant que page, quand l'administrateur du groupe l'autorise — beaucoup le refusent). Chaque
+  groupe gagné sort définitivement de la corvée manuelle.
+- Le reste — les groupes qui n'acceptent que les profils personnels — continue à la main, avec la
+  rotation du § 2.
+
+⚠️ Ne pas confondre avec l'API Graph : publier dans un groupe par API est **fermé depuis 2020**.
+Meta Business Suite est une interface, pas une API : il n'y a rien à automatiser côté code.
+
 ---
 
 ## JOURNAL DES PUBLICATIONS
@@ -253,9 +288,27 @@ une partie de cette vague n'a même jamais été vue.
 | Séjour Nosybe et Nord Madagascar | 5 500 | `sejour` | ✅ publié |
 | Have you been Nosy Be? | 725 | `haveyoubeen` | ✅ publié (texte en anglais) |
 | BAZAR BE NOSY BE | 2 200 | `bazarbe` | ✅ publié |
+| Nosy be hell ville M bizna | — | `mbiznaville` | ✅ publié |
+| Le grand marché de nosy-be | 8 447 | `grandmarche` | ✅ publié |
+| NOSY-BE PUB | — | `nosybepub` | ✅ publié |
+| Nosy be vente en ligne | — | `venteenligne` | ✅ publié |
+| AMBIANCE À NOSY BE | 20 700 | `ambiance` | ✅ publié |
+| Nosybe Tsara Business \| Tany alafo & Trano afondro | — | `tsarabusiness` | ✅ publié |
+| Nosy-Be Plaisirs de vacances | — | `plaisirs` | ✅ publié |
+| Bizness Tout Sur Nosy Be | — | `toutsur` | ✅ publié |
 
-**~162 000 membres touchés**, un texte différent à chaque fois, trois langues.
-**Reprendre la rotation après « BAZAR BE NOSY BE ».**
+**19 publications ce soir** (18 parues + 1 en attente), un texte différent à chaque fois, trois
+langues. **Reprendre la rotation après « Bizness Tout Sur Nosy Be ».**
+
+⚠️ **Groupe volontairement écarté : « Fitadiavana Asa eto Nosy Be »** — groupe de recherche
+d'emploi. Une annonce de livraison de repas y serait hors sujet, supprimée, et pourrait faire
+exclure le compte. Ne pas le reprendre dans la rotation.
+
+Identifiants des huit derniers groupes, pour les retrouver sans chercher :
+`facebook.com/groups/302974809351919` (M bizna), `295031501540330` (grand marché),
+`293405054684497` (PUB), `552810303637676` (vente en ligne), `486950544671896` (AMBIANCE),
+`891645463108338` (Tsara Business), `936640151968666` (Plaisirs de vacances),
+`850147542271601` (Tout Sur Nosy Be).
 
 **Restent à faire avec un lien marqué** (déjà touchés en vague 1, donc sans mesure) : Le Bon coin
 Nosy be, Bon prix Nosy be, NOSY BE HELL-VILLE, Le BonCoin et Plan de NosyBe, TOURISME - NOSY BE -

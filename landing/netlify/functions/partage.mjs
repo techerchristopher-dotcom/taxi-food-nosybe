@@ -515,7 +515,12 @@ export default async (request) => {
             // L'état d'ouverture est DANS le titre du groupe : qui lit « La Cabane ·
             // Ouvre à 16h » ne tape pas sur un bouton de commande pour rien.
             nom: etat ? `${nom} · ${etat}` : nom,
-            bouton: /^chez\s/i.test(nom) ? `Commander ${nom}` : `Commander chez ${nom}`,
+            // ⚠️ FERMÉ : « Voir la carte », jamais « Commander ». Le bouton mène au même
+            // endroit, mais promettre une commande à qui ne peut pas commander le renvoie
+            // dans un mur. Même mot que la page `/plats-du-jour`, qui a tranché ce cas.
+            bouton: !p.ouvert
+              ? 'Voir la carte'
+              : /^chez\s/i.test(nom) ? `Commander ${nom}` : `Commander chez ${nom}`,
             plats: [],
             commander: `${APP}/restaurant/${encodeURIComponent(p.restaurant_id)}`,
           });

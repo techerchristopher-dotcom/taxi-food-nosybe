@@ -989,6 +989,10 @@ Chez Bidul & Truc −13.3930201 / 48.2078429 · La Cabane −13.397834 / 48.2069
 Chez M&K −13.3861762 / 48.2386413 (liens Google Maps du porteur du projet). La Plage : −13.3945489 / 48.2645362 (Hell-Ville, 2026-09-25). Restent sans position : Angelo, Les Siciliens, Madame Oh, Oh Hazar, Taxi Be —
 tout calcul de distance doit traiter « position inconnue ».
 
+⚠️ **Barème par restaurant** : commun = 10 000 Ar jusqu'à 3 km puis 1 000 Ar/km entamé.
+**La Plage fait exception : 5 km inclus** (2026-09-25) — elle est à Hell-Ville, à 7–10 km de la zone
+touristique d'où viennent ses clients. Réglage par `admin_set_tarif_livraison`.
+
 ⚠️ **Préalable au chantier « livraison au kilomètre »** : sans ces positions, aucune distance n'est
 calculable. Distances mesurées à vol d'oiseau × **1,3** pour approcher la route (pas d'itinéraire
 routier : payant, lent sur la liaison de Nosy Be, et en panne quand le service tombe).

@@ -130,6 +130,43 @@ Un seul nœud « Code » construit l'e-mail HTML et le texte Telegram pour les h
 états (reçue, confirmée, en préparation, prête, récupérée, livrée, annulée,
 **remboursée**). Huit branches auraient été huit endroits à corriger.
 
+### Workflow « Taxi Food — annonce par e-mail » (`IJ7R1rUjR59onohu`)
+
+Workflow **dédié**, actif depuis le 2026-09-25. Il envoie l'e-mail d'une **annonce** écrite dans
+l'onglet 📣 de l'admin — pas une commande. Appelé par la fonction Edge `envoyer-annonce`, une
+requête par destinataire.
+
+⛔ **Séparé de T7uX pour la même raison que le code offert** : les notifications de commande ne
+doivent jamais dépendre d'un déploiement fait pour autre chose, et un `PUT` sur un workflow actif
+oblige à le désactiver puis le réactiver — ce qui perd les notifications émises pendant la coupure.
+
+**Même credential SMTP (`r44dcVHPrXmkP8KY`) et même expéditeur** `Taxi Food
+<christopher@distripro207.com>` que T7uX. Ce n'est pas du confort : c'est l'adresse **déclarée chez
+Apple** pour le relais privé `@privaterelay.appleid.com`. Un autre expéditeur verrait ses messages
+jetés en silence pour ces comptes-là.
+
+Chaîne : webhook `POST` (chemin non devinable, **Header Auth `x-taxifood-secret`**, credential
+`xeyGARBik6oI7eKp`) → « Prepare l e-mail d annonce » (code versionné dans
+[`n8n/annonce-email.js`](../n8n/annonce-email.js)) → « Envoyable ? » → « E-mail au client » →
+« Parti ».
+
+⚠️ **`responseMode: responseNode`, et c'est le point important.** Le webhook ne répond **qu'après**
+le nœud SMTP : un 200 signifie que le serveur de messagerie a accepté le message. C'est ce qui
+permet à l'écran admin d'écrire « parti » sans mentir. Contrairement à T7uX et au code offert, qui
+répondent à la réception et ne renvoient donc rien d'utile à la base.
+
+⚠️ **Pas de lien de désinscription, pas d'e-mail.** Le nœud « Envoyable ? » coupe la branche et le
+nœud « Refuse » répond **422**. Un message commercial sans porte de sortie n'a pas le droit de
+partir, et un lien manquant est le signe que la chaîne des jetons est cassée en amont.
+
+⚠️ **Un webhook créé par l'API n'est pas enregistré tant qu'on ne l'a pas désactivé puis réactivé**,
+et il lui faut un `webhookId` sur son nœud. Sans ces deux choses, l'URL de production répond
+« webhook is not registered » (404) alors que le workflow est bien `active`. Constaté et corrigé
+le 2026-09-25.
+
+Secrets côté base : `n8n_annonce_email_url` et `n8n_annonce_email_secret` au Vault, lus par
+`lire_webhook_annonce_email()` (grant `service_role` seul).
+
 ### L'e-mail de remboursement — `evenement: 'rembourse'`
 
 Il n'est **pas** envoyé par `notify_order_status()`, qui en est structurellement incapable :

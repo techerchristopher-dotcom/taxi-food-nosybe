@@ -86,6 +86,10 @@ bol renversé ont le porc en OPTION, sans badge possible.
   photos = reconstitutions, contenant des plats de La Plage.
 
 **Produit et contenu**
+- 📧 **Annonce par e-mail livrée le 2026-09-25** (voir sa section) : base + fonction Edge +
+  workflow n8n dédié + écran admin + page de désinscription trilingue. **Restent à constater** :
+  l'arrivée du test dans la boîte de réception (indésirables compris), le rendu de l'e-mail sur un
+  vrai téléphone, et un envoi réel depuis l'écran admin (JWT d'administrateur).
 - 🔥 **Rubrique « Plats du jour »** livrée le 2026-09-25 (voir sa section) : base + app (OTA sur
   les trois runtimes) + web + vitrine `/plats-du-jour`. **Reste à constater** : le rendu sur un
   vrai téléphone, et l'aperçu du lien dans WhatsApp / Facebook.
@@ -415,7 +419,8 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
   **44 px** — `!important` voulu, pour battre les styles écrits en ligne. Modales en feuilles basses
   (`dvh`). Mesuré à 375 px : mise en page 720 → 375 px, cibles sous 44 px 20 → 0.
 - **Onglet « ☎ Commande tél. »** (2026-09-17) : voir la section « Commande par téléphone ».
-- **Onglet « 📣 Annonce »** (2026-09-18) : voir la section « Annonces push ».
+- **Onglet « 📣 Annonce »** (2026-09-18, **e-mail ajouté le 2026-09-25**) : voir les sections
+  « Annonces push » et « L'annonce part aussi par e-mail ».
 - **Rapport de clôture → versements** (2026-09-22) : détail des commandes, référence Orange Money
   obligatoire, message Telegram au restaurant — voir la section « Versements aux restaurants ».
 - **Reste (P1/P2)** : rémunération livreur dans le rapport (question ouverte), upload photo depuis le dashboard, filtres/recherche commandes, graphes.
@@ -454,6 +459,78 @@ Petite app **Next.js 15** (App Router, TS) séparée, **même projet Supabase**,
   porteur du projet obtient en se connectant. Vérifiés séparément : les RPC et leurs refus (SQL),
   les refus de la fonction Edge (403 sans jeton, 403 avec la clé publiable, CORS 200), et la chaîne
   Expo elle-même (envoi réel aux 10 appareils du compte admin, 10 tickets + 1 reçu livré).
+
+## 📧 L'annonce part aussi par E-MAIL (2026-09-25)
+
+Le push n'atteint que les téléphones **où l'app est installée** : 19 appareils pour 7 comptes le
+matin du 2026-09-25. Beaucoup de clients commandent **depuis le site** et ne recevaient rien.
+L'annonce a donc un second canal. Migration `20260925130000_annonces_par_email`, workflow n8n
+**dédié** `IJ7R1rUjR59onohu`, page de désinscription `/d/<jeton>` sur la vitrine.
+
+- **UNE annonce, UNE ligne, DEUX canaux.** `annonces.canal` ∈ {`push`, `email`, `push_email`},
+  plus `emails_vises / emails_envoyes / emails_echoues` à côté des compteurs push. Un seul
+  historique : « déjà envoyée » veut dire la même chose pour les deux canaux, sinon un second
+  appui repartirait sur l'un des deux.
+  ⚠️ **On n'additionne JAMAIS les deux chiffres** à l'écran : les appareils et les adresses ne
+  désignent pas les mêmes personnes.
+- **Le chemin e-mail est celui qui existait déjà** — SMTP de n8n, **même credential
+  `r44dcVHPrXmkP8KY` et même expéditeur** `Taxi Food <christopher@distripro207.com>` que les
+  e-mails de commande. ⛔ **Mais un workflow SÉPARÉ, jamais T7uX** : modifier T7uX, ou seulement
+  le désactiver puis le réactiver comme un `PUT` l'exige, perd les notifications de commande
+  émises pendant la coupure. Même raisonnement que le workflow « code offert ».
+  Code du nœud versionné dans [`n8n/annonce-email.js`](n8n/annonce-email.js).
+- **La réponse du webhook vaut confirmation.** Le workflow est en `responseMode: responseNode` et
+  ne répond **qu'après** le nœud SMTP : un 200 dit que le serveur de messagerie a accepté le
+  message. C'est la seule raison pour laquelle l'écran a le droit d'écrire « parti ». Ça ne dit
+  évidemment ni « lu » ni « pas en indésirable ».
+- **La désinscription ne porte QUE sur les annonces.** Les e-mails de commande — reçue, acceptée,
+  livrée, remboursée — continuent toujours : ce ne sont pas des messages commerciaux. La phrase
+  est dans le pied de l'e-mail ET sur la page de désinscription ; sans elle, la personne croit
+  avoir tout coupé et s'inquiète à sa commande suivante.
+- **Le jeton est l'autorisation, et ce n'est PAS l'identifiant du compte.** `preferences_annonces
+  (user_id, annonces_email, jeton uuid unique)` — table **sans policy et sans grant**, exactement
+  comme `annonces`. La seule porte ouverte à `anon` est
+  `annonce_desinscription_par_jeton(jeton, action)`, qui ne rend jamais l'adresse en clair
+  (`ch•••@gmail.com`) ni l'identifiant. Mettre `user_id` dans l'URL laisserait n'importe qui
+  désinscrire n'importe qui.
+- **Destinataires e-mail, plus restrictifs que le push** : rôle client actif, une adresse, non
+  désinscrit, **et aucun rôle `restaurant` ou `livreur` ACTIF**. Le push, lui, part aux
+  restaurateurs qui sont aussi clients (décision du 2026-09-18, inchangée). Au 2026-09-25 :
+  **3 adresses** pour 8 comptes clients — les 5 autres sont des partenaires.
+- **La page `/d/<jeton>`** (fonction Netlify `landing/netlify/functions/desinscription.mjs`,
+  FR/EN/IT) : le GET **désinscrit tout de suite**, c'est la promesse du lien ; le bouton « Me
+  réabonner » est juste dessous. `?vue=1` regarde sans agir (changement de langue). La base rend
+  `change` : la page distingue « c'est fait » de « c'était déjà fait » — sans ça, un robot
+  d'antivirus qui suit le lien avant son destinataire ferait croire à un clic raté.
+- ⚠️ **`admin_creer_annonce` a changé de signature** (5ᵉ paramètre `p_canal`). L'ancienne a été
+  **supprimée** avant de créer la nouvelle : un `create or replace` aurait *ajouté* une surcharge
+  et PostgREST aurait répondu `PGRST203`. Le défaut `'push'` protège un onglet d'administration
+  resté ouvert sur l'ancien écran : il continue d'envoyer du push seul, il ne se met pas à écrire
+  à toute l'île par surprise. Même traitement pour `admin_cibles_annonce` (qui rend maintenant
+  `emails`) et `admin_lister_annonces`.
+- **Secrets** : `n8n_annonce_email_url` et `n8n_annonce_email_secret` au Vault, lus par
+  `lire_webhook_annonce_email()` (grant `service_role` seul). Le secret part en en-tête
+  `x-taxifood-secret` ; il ne descend jamais dans le navigateur. Credential n8n Header Auth
+  `xeyGARBik6oI7eKp`.
+- **Vérifié le 2026-09-25** : la clé publiable se fait refuser (401 `42501`) sur la table, sur
+  `annonces_cibles_email`, `annonces_jetons`, `lire_webhook_annonce_email`, `admin_creer_annonce`
+  et `admin_cibles_annonce` ; un jeton inconnu répond `{"ok":false}` sans rien dire de plus ; le
+  webhook n8n refuse (403) sans le bon en-tête, et refuse (422) une charge sans lien de
+  désinscription. Cycle **désinscription → réabonnement → désinscription → réabonnement** joué de
+  bout en bout sur un compte de test (FR et EN), **compte supprimé ensuite** (cascade vérifiée :
+  profil, rôle et jeton emportés). Le désinscrit **sort bien** de la liste des destinataires
+  (4 → 3). Un vrai e-mail envoyé **au seul porteur du projet** : SMTP `250 2.0.0 Ok: queued as
+  4hrlt833Hqz3wmZ`, `accepted: [techerchristopher@gmail.com]`, `rejected: []`.
+- ⏳ **Ce qui n'est PAS vérifié** : l'arrivée du message **dans la boîte de réception** (le
+  connecteur Gmail de cette session est `chrisrentanoo@gmail.com`, pas la bonne adresse) — à
+  constater soi-même, dossier indésirable compris ; le **rendu** de l'e-mail sur un vrai
+  téléphone ; et l'envoi **depuis l'écran admin**, qui passe par un JWT d'administrateur que seul
+  le porteur du projet obtient en se connectant (même limite que le push depuis le 2026-09-18).
+- ⚠️ **Pas de file d'attente.** La fonction Edge envoie les e-mails 4 par 4, avec un budget de
+  60 s, et annonce `emails_non_tentes` si elle le dépasse. À trois destinataires c'est un filet
+  inutile ; à trois cents, il faudra une vraie file côté base.
+- ⚠️ **Pas d'en-tête `List-Unsubscribe`** pour l'instant : le lien est dans le pied, pas dans le
+  bandeau natif de Gmail. À ajouter le jour où le volume le justifie.
 
 ## ☎️ Commande par téléphone (2026-09-17)
 

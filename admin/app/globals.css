@@ -462,6 +462,38 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .ann-apercu-corps { font-size: 13px; line-height: 1.45; margin-top: 2px; overflow-wrap: anywhere; }
 .ann-corps { min-height: 88px; resize: vertical; line-height: 1.5; padding-top: 10px; }
 
+/* Les deux canaux. Cibles genereuses : cet ecran se pilote au telephone, et
+   decocher « E-mail » par erreur ne se voit qu'apres coup. */
+.ann-canal {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 0;
+  min-height: 44px; cursor: pointer;
+}
+.ann-canal input { width: 20px; height: 20px; margin-top: 2px; flex: 0 0 auto; }
+.ann-canal em { font-style: normal; color: var(--muted); }
+
+/* L'apercu e-mail. Il reprend les couleurs du VRAI gabarit (fond #F5F2EF, rouge
+   #DF3228) : juger un objet et un bouton dans un cadre gris ne dit rien de ce
+   que la personne ouvrira. Le pied de desinscription y est montre parce qu'il
+   est obligatoire — un e-mail d'annonce ne part jamais sans lui. */
+.ann-mail {
+  border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 6px 0 4px;
+}
+.ann-mail-objet { font-size: 14px; font-weight: 800; padding: 10px 14px 0; overflow-wrap: anywhere; }
+.ann-mail-de { font-size: 11px; color: var(--muted); padding: 2px 14px 10px; overflow-wrap: anywhere; }
+.ann-mail-corps { background: #f5f2ef; color: #1a1a1a; padding: 16px 14px 14px; text-align: center; }
+.ann-mail-logo { font: 800 13px/1 Arial, sans-serif; color: #df3228; letter-spacing: -0.02em; text-align: left; }
+.ann-mail-emo { font-size: 26px; margin-top: 10px; }
+.ann-mail-titre { font-size: 16px; font-weight: 800; margin-top: 6px; overflow-wrap: anywhere; }
+.ann-mail-texte { font-size: 13px; line-height: 1.5; margin-top: 6px; color: #4a4744; overflow-wrap: anywhere; }
+.ann-mail-bouton {
+  display: inline-block; margin-top: 12px; background: #df3228; color: #fff;
+  font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 999px;
+}
+.ann-mail-pied {
+  margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9e5e0;
+  font-size: 11px; line-height: 1.5; color: #8a827a; text-align: left;
+}
+
 /* ————— Audience ————— */
 /* Une courbe en barres, sans bibliotheque : 30 colonnes tiennent a 375 px et
    se lisent d'un coup d'oeil. Une dependance de graphiques pour ca serait

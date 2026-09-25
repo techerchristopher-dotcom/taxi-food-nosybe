@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import {
-  CORPS_MAX, MOT_DE_CONFIRMATION, TITRE_MAX, erreurDeSaisie, messageErreur, quand, resume,
+  CORPS_MAX, MOT_DE_CONFIRMATION, TITRE_MAX, canalDe, erreurDeSaisie, libelleCanal,
+  messageErreur, quand, resume,
 } from '../lib/annonce';
-import type { AnnonceListee, Cible, Resultat } from '../lib/annonce';
+import type { AnnonceListee, Canal, Cible, Comptes, Resultat } from '../lib/annonce';
 
 /**
  * 📣 Annonce — une notification push écrite à la main, envoyée à tous les clients.
@@ -21,7 +22,13 @@ import type { AnnonceListee, Cible, Resultat } from '../lib/annonce';
  * 3. ON TAPE « ENVOYER ». Un bouton se clique par réflexe ; un mot se tape
  *    exprès. C'est le même geste que pour les remboursements.
  * 4. LE TEST EST À UN TAP. « M'envoyer un test » n'écrit que vers le compte
- *    connecté : on lit sa propre notification avant de réveiller l'île.
+ *    connecté — sa notification ET son adresse e-mail : on lit son propre
+ *    message avant de réveiller l'île.
+ * 5. DEUX CANAUX, DEUX APERÇUS, DEUX CHIFFRES. Depuis le 2026-09-25 l'annonce
+ *    part aussi par e-mail, parce que le push n'atteint que les téléphones où
+ *    l'app est installée — et beaucoup de clients commandent depuis le site.
+ *    ⚠️ Les deux nombres ne s'additionnent JAMAIS : les appareils et les
+ *    adresses ne désignent pas les mêmes personnes.
  *
  * L'envoi lui-même est fait par la fonction Edge `envoyer-annonce` (elle seule a
  * accès aux jetons) ; la base garde l'historique, y compris les échecs.
@@ -34,6 +41,10 @@ export function Annonces() {
   const [corps, setCorps] = useState('');
   const [ouverture, setOuverture] = useState<string>('/');
   const [restos, setRestos] = useState<Restaurant[]>([]);
+  // Les deux canaux cochés par défaut : une annonce sert à être vue, et laisser
+  // l'e-mail décoché par défaut reviendrait à oublier la moitié des clients.
+  const [parNotification, setParNotification] = useState(true);
+  const [parEmail, setParEmail] = useState(true);
 
   const [historique, setHistorique] = useState<AnnonceListee[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -44,7 +55,7 @@ export function Annonces() {
 
   // Confirmation d'un envoi à tout le monde.
   const [confirmer, setConfirmer] = useState(false);
-  const [compte, setCompte] = useState<{ jetons: number; comptes: number } | null>(null);
+  const [compte, setCompte] = useState<Comptes | null>(null);
   const [motTape, setMotTape] = useState('');
 
   // ⚠️ Double appui : `setEnvoi(true)` ne désactive le bouton qu'au rendu suivant.
@@ -66,7 +77,10 @@ export function Annonces() {
 
   useEffect(() => { void charger(); }, [charger]);
 
-  const saisie = erreurDeSaisie(titre, corps);
+  const canal = canalDe(parNotification, parEmail);
+  const saisie = canal === null
+    ? 'Choisis au moins un canal : notification, e-mail, ou les deux.'
+    : erreurDeSaisie(titre, corps);
   const route = ouverture === '/' ? null : ouverture;
 
   /** Écrit l'annonce en base puis demande son envoi. Renvoie le résultat ou lève. */
@@ -76,6 +90,7 @@ export function Annonces() {
       p_corps: corps.trim(),
       p_cible: cible,
       p_route: route,
+      p_canal: canal as Canal,
     });
     if (error) throw new Error(error.message);
     if (!id) throw new Error('La base n’a pas renvoyé d’identifiant.');
@@ -110,7 +125,11 @@ export function Annonces() {
     try {
       const r = await ecrireEtEnvoyer('moi');
       setResultat({ cible: 'moi', r });
-      setInfo('Test parti sur tes appareils. Regarde ton téléphone avant d’envoyer à tout le monde.');
+      setInfo(
+        parEmail
+          ? 'Test parti sur tes appareils et vers ta propre adresse e-mail, à toi seul. Regarde les deux avant d’envoyer à tout le monde.'
+          : 'Test parti sur tes appareils. Regarde ton téléphone avant d’envoyer à tout le monde.',
+      );
     } catch (e) {
       setErr(messageErreur((e as Error).message));
     } finally {
@@ -127,8 +146,8 @@ export function Annonces() {
     setMotTape('');
     const { data, error } = await supabase.rpc('admin_cibles_annonce', { p_cible: 'clients' });
     if (error) { setErr(messageErreur(error.message)); return; }
-    const ligne = (Array.isArray(data) ? data[0] : data) as { jetons: number; comptes: number } | undefined;
-    setCompte({ jetons: ligne?.jetons ?? 0, comptes: ligne?.comptes ?? 0 });
+    const ligne = (Array.isArray(data) ? data[0] : data) as Comptes | undefined;
+    setCompte({ jetons: ligne?.jetons ?? 0, comptes: ligne?.comptes ?? 0, emails: ligne?.emails ?? 0 });
     setConfirmer(true);
   }
 
@@ -145,6 +164,8 @@ export function Annonces() {
       setTitre('');
       setCorps('');
       setOuverture('/');
+      setParNotification(true);
+      setParEmail(true);
     } catch (e) {
       setErr(messageErreur((e as Error).message));
     } finally {
@@ -166,7 +187,10 @@ export function Annonces() {
           <h2>{resultat.cible === 'moi' ? 'Test envoyé' : 'Annonce envoyée'}</h2>
           <div className="recap">
             <div><strong>{resume(resultat.r)}</strong></div>
-            <div className="muted">{resultat.r.jetons_vises} appareil(s) visé(s)</div>
+            <div className="muted">
+              {libelleCanal(resultat.r.canal)} · {resultat.r.jetons_vises} appareil(s) visé(s) ·{' '}
+              {resultat.r.emails_vises} adresse(s) visée(s)
+            </div>
             {resultat.r.erreurs && Object.keys(resultat.r.erreurs).length ? (
               <div className="muted">
                 {Object.entries(resultat.r.erreurs).map(([k, n]) => `${k} : ${n}`).join(' · ')}
@@ -176,6 +200,9 @@ export function Annonces() {
           <p className="muted sel-texte-court">
             « Accepté par Expo » n’est pas « reçu » : une app désinstallée est acceptée puis rejetée
             quelques secondes plus tard. Les jetons morts sont supprimés tout seuls.
+            {resultat.r.canal !== 'push'
+              ? ' Côté e-mail, « accepté par le serveur » veut dire que le serveur de messagerie a pris le message en charge — pas qu’il a été lu, ni même qu’il a échappé au dossier indésirable.'
+              : ''}
           </p>
           <div className="sel-gestes">
             <button className="btn ghost sel-btn" onClick={() => setResultat(null)}>Fermer</button>
@@ -227,13 +254,61 @@ export function Annonces() {
           </select>
         </label>
 
-        {/* L'aperçu : ce que la personne verra, pas ce qu'on a tapé. */}
-        <div className="sel-label">Sur le téléphone</div>
-        <div className="ann-apercu">
-          <div className="ann-apercu-app">TAXI FOOD · maintenant</div>
-          <div className="ann-apercu-titre">{titre.trim() || 'Titre de l’annonce'}</div>
-          <div className="ann-apercu-corps">{corps.trim() || 'Le message qui s’affiche en dessous.'}</div>
+        <div className="sel-champ-bloc">
+          <span className="sel-label">Par où l’envoyer</span>
+          <label className="ann-canal">
+            <input type="checkbox" checked={parNotification} onChange={(e) => setParNotification(e.target.checked)} />
+            <span>
+              <strong>Notification</strong>
+              <em> — seulement les téléphones où l’app est installée</em>
+            </span>
+          </label>
+          <label className="ann-canal">
+            <input type="checkbox" checked={parEmail} onChange={(e) => setParEmail(e.target.checked)} />
+            <span>
+              <strong>E-mail</strong>
+              <em> — les clients qui commandent depuis le site, eux aussi</em>
+            </span>
+          </label>
+          <p className="muted sel-texte-court">
+            L’e-mail ne part pas aux restaurateurs ni aux livreurs, et jamais à quelqu’un qui s’est
+            désinscrit des annonces. Ses e-mails de commande, eux, continuent toujours.
+          </p>
         </div>
+
+        {/* Les aperçus : ce que la personne verra, pas ce qu'on a tapé. */}
+        {parNotification ? (
+          <>
+            <div className="sel-label">Sur le téléphone</div>
+            <div className="ann-apercu">
+              <div className="ann-apercu-app">TAXI FOOD · maintenant</div>
+              <div className="ann-apercu-titre">{titre.trim() || 'Titre de l’annonce'}</div>
+              <div className="ann-apercu-corps">{corps.trim() || 'Le message qui s’affiche en dessous.'}</div>
+            </div>
+          </>
+        ) : null}
+
+        {parEmail ? (
+          <>
+            <div className="sel-label">Dans la boîte mail</div>
+            <div className="ann-mail">
+              <div className="ann-mail-objet">{titre.trim() || 'Titre de l’annonce'}</div>
+              <div className="ann-mail-de">Taxi Food &lt;christopher@distripro207.com&gt;</div>
+              <div className="ann-mail-corps">
+                <div className="ann-mail-logo">TAXI FOOD</div>
+                <div className="ann-mail-emo">📣</div>
+                <div className="ann-mail-titre">{titre.trim() || 'Titre de l’annonce'}</div>
+                <div className="ann-mail-texte">{corps.trim() || 'Le message qui s’affiche en dessous.'}</div>
+                <div className="ann-mail-bouton">Voir dans Taxi Food</div>
+                {/* ⚠️ Ce pied n'est pas décoratif : sans lui, rien ne part. */}
+                <div className="ann-mail-pied">
+                  Ne plus recevoir les annonces Taxi Food — les e-mails liés à tes commandes, eux,
+                  continueront de t’arriver.
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {saisie ? <p className="muted sel-texte-court">{saisie}</p> : null}
 
@@ -243,7 +318,7 @@ export function Annonces() {
               M’envoyer un test
             </button>
             <button className="btn sel-btn" disabled={envoi || !!saisie} onClick={() => void ouvrirConfirmation()}>
-              Envoyer à tous les clients
+              Envoyer à tous les clients{canal ? ` — ${libelleCanal(canal)}` : ''}
             </button>
           </div>
         </div>
@@ -263,12 +338,16 @@ export function Annonces() {
                     {a.statut === 'envoyee' ? 'envoyée' : a.statut === 'echouee' ? 'échec' : 'jamais partie'}
                   </span>
                   <span className="pill sans_objet">{a.cible === 'moi' ? 'test' : 'clients'}</span>
+                  <span className="pill sans_objet">{libelleCanal(a.canal)}</span>
                 </div>
                 <div className="muted sel-detail">{a.corps}</div>
                 <div className="muted sel-detail">
-                  {quand(a.envoyee_le ?? a.creee_le)} · {a.auteur} · {a.envois_reussis}/{a.jetons_vises} acceptés
-                  {a.envois_echoues ? ` · ${a.envois_echoues} échecs` : ''}
-                  {a.jetons_supprimes ? ` · ${a.jetons_supprimes} jetons morts retirés` : ''}
+                  {quand(a.envoyee_le ?? a.creee_le)} · {a.auteur}
+                  {a.canal !== 'email' ? ` · ${a.envois_reussis}/${a.jetons_vises} appareils acceptés` : ''}
+                  {a.canal !== 'email' && a.envois_echoues ? ` · ${a.envois_echoues} échecs` : ''}
+                  {a.canal !== 'email' && a.jetons_supprimes ? ` · ${a.jetons_supprimes} jetons morts retirés` : ''}
+                  {a.canal !== 'push' ? ` · ${a.emails_envoyes}/${a.emails_vises} e-mails acceptés` : ''}
+                  {a.canal !== 'push' && a.emails_echoues ? ` · ${a.emails_echoues} e-mails en échec` : ''}
                   {a.route ? ` · ouvre ${a.route}` : ''}
                 </div>
               </div>
@@ -286,16 +365,29 @@ export function Annonces() {
               <div className="ann-apercu-titre">{titre.trim()}</div>
               <div className="ann-apercu-corps">{corps.trim()}</div>
             </div>
+            {/* ⚠️ Relu à CET instant, pas il y a dix minutes — et les deux
+                nombres restent côte à côte, jamais additionnés. */}
             <div className="recap">
               <div>
-                <strong>{compte?.jetons ?? 0} appareil{(compte?.jetons ?? 0) > 1 ? 's' : ''}</strong>
-                {' '}· {compte?.comptes ?? 0} compte{(compte?.comptes ?? 0) > 1 ? 's' : ''} client
+                <strong>
+                  {parNotification ? `${compte?.jetons ?? 0} appareil${(compte?.jetons ?? 0) > 1 ? 's' : ''}` : 'aucune notification'}
+                  {' · '}
+                  {parEmail ? `${compte?.emails ?? 0} e-mail${(compte?.emails ?? 0) > 1 ? 's' : ''}` : 'aucun e-mail'}
+                </strong>
               </div>
-              <div className="muted">Au tap : {route ? route : 'l’accueil de l’app'}</div>
+              {parNotification ? (
+                <div className="muted">
+                  {compte?.comptes ?? 0} compte{(compte?.comptes ?? 0) > 1 ? 's' : ''} client avec l’app installée
+                </div>
+              ) : null}
+              <div className="muted">Au tap, ou depuis le bouton de l’e-mail : {route ? route : 'l’accueil de l’app'}</div>
             </div>
             <div className="warn">
-              Une notification ne se reprend pas. Elle part tout de suite, sur tous ces téléphones,
-              même la nuit.
+              {parNotification && parEmail
+                ? 'Ni une notification ni un e-mail ne se reprennent. Ils partent tout de suite, sur tous ces téléphones et dans toutes ces boîtes, même la nuit.'
+                : parNotification
+                  ? 'Une notification ne se reprend pas. Elle part tout de suite, sur tous ces téléphones, même la nuit.'
+                  : 'Un e-mail ne se reprend pas. Il part tout de suite, dans toutes ces boîtes.'}
             </div>
             <label className="sel-champ-bloc">
               <span className="sel-label">Tape {MOT_DE_CONFIRMATION} pour confirmer</span>
@@ -309,7 +401,11 @@ export function Annonces() {
                 disabled={envoi || motTape.trim().toUpperCase() !== MOT_DE_CONFIRMATION}
                 onClick={() => void envoyerATous()}
               >
-                {envoi ? 'Envoi…' : `Envoyer à ${compte?.jetons ?? 0} appareils`}
+                {envoi
+                  ? 'Envoi…'
+                  : `Envoyer${parNotification ? ` à ${compte?.jetons ?? 0} appareils` : ''}${
+                      parNotification && parEmail ? ' et' : ''
+                    }${parEmail ? ` à ${compte?.emails ?? 0} e-mails` : ''}`}
               </button>
             </div>
           </div>

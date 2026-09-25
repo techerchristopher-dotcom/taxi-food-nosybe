@@ -986,7 +986,7 @@ Migration `20260923140000_reverser_les_commandes_choisies` (appliquée).
 `restaurants.latitude` / `longitude`, écrites par `admin_set_position_restaurant()` (admin
 seulement, refus hors de Nosy Be : une virgule perdue ferait facturer des kilomètres imaginaires).
 Chez Bidul & Truc −13.3930201 / 48.2078429 · La Cabane −13.397834 / 48.206980 ·
-Chez M&K −13.3861762 / 48.2386413 (liens Google Maps du porteur du projet). **La Plage n'en a pas** :
+Chez M&K −13.3861762 / 48.2386413 (liens Google Maps du porteur du projet). La Plage : −13.3945489 / 48.2645362 (Hell-Ville, 2026-09-25). Restent sans position : Angelo, Les Siciliens, Madame Oh, Oh Hazar, Taxi Be —
 tout calcul de distance doit traiter « position inconnue ».
 
 ⚠️ **Préalable au chantier « livraison au kilomètre »** : sans ces positions, aucune distance n'est

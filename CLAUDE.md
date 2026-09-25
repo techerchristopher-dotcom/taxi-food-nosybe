@@ -89,6 +89,9 @@ bol renversé ont le porc en OPTION, sans badge possible.
 - 🔥 **Rubrique « Plats du jour »** livrée le 2026-09-25 (voir sa section) : base + app (OTA sur
   les trois runtimes) + web + vitrine `/plats-du-jour`. **Reste à constater** : le rendu sur un
   vrai téléphone, et l'aperçu du lien dans WhatsApp / Facebook.
+- 🔗 **Partage de toute l'île : `/jour`** (2026-09-25, voir sa section). **Reste à constater** :
+  l'aperçu réel dans WhatsApp / Facebook — le débogueur de partage Facebook exige une session et
+  n'a donc PAS été passé.
 - 🚪 **Fermeture en un geste livrée le 2026-09-20** (voir sa section). L'écran Réglages est vérifié
   en production. **Restent à constater** : le **tap** lui-même (fermer puis rouvrir, à faire une
   fois en service — non fait pour ne pas ouvrir La Cabane hors de ses horaires) et l'onglet
@@ -1315,8 +1318,9 @@ elle n'a aucune balise Open Graph, et un partage qui la vise ne montre qu'un lie
 ## Partage des plats du jour, sélections, Facebook (2026-09-16/17)
 
 **Les pages de partage** (`landing/netlify/functions/partage.mjs`) : `/p/` plat, `/r/` restaurant,
-`/j/` plats du jour d'un restaurant, `/s/` **sélection multi-restaurants**. Chaque page a son image
-Open Graph `…/apercu.jpg`, fabriquée par une fonction Edge.
+`/j/` plats du jour d'un restaurant, `/s/` **sélection multi-restaurants**, et **`/jour`** les plats
+du jour de TOUTE L'ÎLE (2026-09-25, voir sa section). Chaque page a son image Open Graph
+`…/apercu.jpg`, fabriquée par une fonction Edge.
 
 - ⛔ **La vitrine se déploie DEPUIS `landing/`** — sinon `partage` et `repondre-commande` ne partent
   pas : tous ces liens ET les liens `/a/…` de réponse des restaurants tombent en 404 (payé le
@@ -1463,6 +1467,69 @@ ouvrant chaque restaurant, un par un. Migration
 - ⏳ **Non vérifié** : le rendu sur un **vrai téléphone** (l'OTA est partie sur les trois
   runtimes), l'aperçu réel de la page dans WhatsApp / Facebook, et l'indexation Google (la
   page vient d'être ajoutée au sitemap).
+
+## 🔗 `/jour` — partager les plats du jour de toute l'île (2026-09-25)
+
+**L'adresse à donner : `https://taxifoodnosybe.distripro207.com/jour`** (le bouton y ajoute
+l'empreinte `?v=`). Les plats du jour d'UN restaurant se partageaient depuis le 2026-09-16
+(`/j/<resto>`) ; ceux de toute l'île, livrés le matin même, n'avaient rien à donner à Facebook.
+
+- **Cinquième page de la famille `/p/ /r/ /j/ /s/`**, et la seule **sans identifiant** — elle ne
+  parle pas d'un restaurant. D'où une adresse courte, dictable au téléphone. ⚠️ Elle est traitée
+  **avant** la reconnaissance des routes à identifiant dans `partage.mjs` : un `/j/` sans
+  identifiant serait entré en collision avec `/j/:id`.
+- **Même source que l'app et que `/plats-du-jour` : la RPC `plats_du_jour_publics()`.** Aucun
+  filtre, aucun tri refaits — c'est la leçon de l'ordre du catalogue.
+- **La page** : plats groupés par restaurant (le panier est mono-restaurant, et la page le dit
+  avant le premier tap), l'état d'ouverture **dans le titre du groupe** (« La Cabane · Ouvre à
+  16h »), et un restaurant fermé porte **« Voir la carte »**, jamais « Commander » — même mot que
+  `/plats-du-jour`. Bouton principal : **« Voir tous les plats du jour »** vers `/plats-du-jour`.
+  Plus rien à l'affiche nulle part → **302 vers `/plats-du-jour`**, qui sait dire l'état vide.
+- ⚠️ **L'EMPREINTE `?v=` EST VITALE ICI, plus encore que sur `/j/`** : le lien ne change JAMAIS
+  alors que son contenu change chaque jour. Sans elle, Facebook republierait éternellement les
+  plats du premier partage. Elle est calculée sur **tous** les plats à l'affiche (pas seulement
+  les six de l'image) et portée par `og:url` **ET** par l'image. Le calcul (FNV-1a, base 36, ids
+  triés) est recopié à l'identique dans **trois** fichiers : `app/lib/partage.ts`,
+  `landing/netlify/functions/partage.mjs` et `landing/netlify/functions/plats-du-jour.mjs`.
+  Vérifié : les trois rendent la même chaîne, indépendante de l'ordre, et différente dès qu'un
+  plat change.
+- **L'image** : fonction Edge **`apercu-plats-du-jour-ile`** (`verify_jwt = false` dans
+  `supabase/config.toml`), **troisième sœur** de `apercu-plats-du-jour` et `apercu-selection` —
+  ⚠️ toute retouche graphique se porte désormais dans **LES TROIS**. Charte identique (photos bord
+  à bord, filet or, bandeau rouge #E8342A), **6 photos au plus**, et le **nom du restaurant sous
+  chaque plat** puisqu'ils viennent de plusieurs maisons. ⚠️ **Les plats photographiés passent
+  devant** : une grille à moitié vide ne donne pas envie — c'est le seul endroit où l'ordre de la
+  base est retouché, et la page, elle, montre tout le monde dans l'ordre. Cas prévus : une seule
+  photo (tuile pleine largeur) et aucune (aplats, noms et prix restent lisibles). Aucun plat
+  nulle part → 404 `no-store`, et `partage.mjs` bascule sur l'image générique.
+- ⚠️ **`netlify-cdn-cache-control` sur l'image (24 h) et sur la page (2 min)** : sans lui Netlify
+  ne garde RIEN pour une fonction, l'image est refabriquée à chaque appel (6 s mesurées à froid)
+  et le robot de Facebook renonce — « Expiration curl », code 418, carte vide. Piège payé le
+  2026-09-18. L'image peut être gardée longtemps parce que son adresse porte l'empreinte ; la
+  page non, l'état « Ouvert / Ouvre à 16h » change à l'heure près.
+- **Les boutons** : en-tête de la rangée « 🔥 Les plats du jour » de l'accueil de l'app (icône
+  seule — à 375 px, deux pastilles à libellé poussent le titre sur deux lignes ; l'intitulé
+  complet reste lu par les lecteurs d'écran), en-tête de l'écran « Voir tout », et **« Partager
+  cette page »** (WhatsApp · Facebook · Copier le lien) sur la vitrine `/plats-du-jour`, en
+  FR/EN/IT. ⚠️ Le bouton de la vitrine pointe vers **`/jour`**, pas vers la page où il se trouve :
+  c'est `/jour` qui porte l'affiche assemblée, `/plats-du-jour` est faite pour être lue et
+  indexée. ⚠️ `utm_source` sur WhatsApp et sur le lien copié, **jamais sur Facebook**.
+- **« Enregistrer l'image » marche aussi pour `/jour`** : `lienApercuImage()` reconnaît la route,
+  et `typeDeLien()` rend `jour` (⚠️ testé AVANT `/(j|r|s|p)/`, faute de seconde barre oblique —
+  sinon la mesure rangerait dans « autre » le partage le plus diffusé).
+- **Vérifié en production le 2026-09-25** : page et image **200 avec
+  `curl -A "facebookexternalhit/1.1"`**, image **JPEG 1200×630, 200 ko** (`ff d8 ff`), `/a/…` →
+  **400** (fonctions embarquées), empreinte **identique** entre `/jour`, son `og:image` et le
+  bouton de `/plats-du-jour`, **rien de privé** dans la réponse (ni commission, ni telegram, ni
+  code marchand, ni service_role), lecture **inter-domaines** de l'image depuis
+  `taxifood.distripro207.com` (l'en-tête CORS est bien là, « Enregistrer l'image » peut lire le
+  fichier). À **375 px** : page `/jour`, `/plats-du-jour` FR/EN/IT avec ses trois boutons et son
+  « Lien copié », accueil de l'app web avec la feuille de partage à quatre lignes, et écran
+  « Voir tout » avec son bouton d'en-tête.
+- ⏳ **Non vérifié** : le **débogueur de partage Facebook**
+  (https://developers.facebook.com/tools/debug/) — il exige une session, inaccessible ici ; seuls
+  les contrôles `curl` ont été faits. Ni l'aperçu réel dans WhatsApp / Facebook, ni le rendu sur
+  un vrai téléphone (l'OTA est partie sur les trois runtimes).
 
 ## 🔓 Fuite connue : commission et canal Telegram lisibles par anon (2026-09-16)
 

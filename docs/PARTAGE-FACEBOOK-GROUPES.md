@@ -43,9 +43,27 @@ L'agent doit donc, à chaque exécution :
 3. les comparer au journal de la veille (`journal-partages.md` ou équivalent) pour savoir où
    reprendre la rotation, et repérer les nouveaux groupes.
 
-⚠️ **Les 69 groupes du compte personnel ne sont PAS concernés** : ils n'apparaissent pas dans cette
-fenêtre parce que c'est la PAGE qui partage. Y publier demanderait de passer par le profil
-personnel — autre mécanique, et le risque porte alors sur le compte personnel.
+⚠️ **Cette fenêtre ne montre PAS tous les groupes de Christopher.** Elle ne montre que ceux où la
+**page** est autorisée à publier — une poignée. Le compte personnel, lui, est membre de
+**428 groupes** (chiffre affiché par Facebook sur `facebook.com/groups/joins`, vérifié le
+25/09/2026), plus 2 demandes en attente. Y publier passe par le profil personnel : autre mécanique,
+et le risque porte alors sur le compte personnel.
+
+### Corollaire : le problème n'est pas la quantité, c'est le tri
+
+Avec 428 groupes, « publier partout » n'a plus aucun sens — et ce n'est même plus l'objectif. La
+grande majorité n'a rien à voir avec Nosy Be (groupes de La Réunion, d'automobile, de métier…).
+Publier une livraison de repas dans un de ceux-là, c'est au mieux ignoré, au pire un signalement.
+
+Le vrai travail préalable est donc un **inventaire qualifié, fait une seule fois** puis entretenu :
+parcourir les 428, ne garder que ceux dont l'audience est à Nosy Be ou en voyage vers Nosy Be, et
+écrire pour chacun : nom, identifiant, nombre de membres, langue dominante, sujet toléré,
+modération oui/non, slug `?g=`. **C'est cette liste-là qui devient la source de vérité de la
+rotation**, pas la fenêtre de partage — qui, elle, reste la source de vérité pour ce que la PAGE
+sait faire seule.
+
+L'inventaire se refait **une fois par semaine**, pas tous les jours : c'est là qu'on récupère les
+groupes rejoints entre-temps.
 
 ## 3 bis. UN GROUPE = UN SLUG — le lien exact à partager
 

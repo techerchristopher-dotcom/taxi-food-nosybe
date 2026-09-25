@@ -52,9 +52,14 @@ Tout découle de là :
   fera sauter.
 
 **La seule exception, à exploiter :** Meta Business Suite sait programmer une publication vers la
-Page **et jusqu'à 3 groupes**, mais uniquement les groupes que **la Page elle-même a rejoints**
-(7 sur 27 pour Taxi Food). Chaque groupe qu'on fait rejoindre par la Page sort définitivement du
-travail de l'agent 3. Voir § 9 de [PARTAGE-FACEBOOK-GROUPES.md](PARTAGE-FACEBOOK-GROUPES.md).
+Page **et jusqu'à 3 groupes**, mais uniquement les groupes que **la Page elle-même a rejoints** —
+7 pour Taxi Food aujourd'hui. Voir § 9 de
+[PARTAGE-FACEBOOK-GROUPES.md](PARTAGE-FACEBOOK-GROUPES.md).
+
+⚠️ **L'ordre de grandeur, vérifié le 25/09/2026 :** le compte personnel de Christopher est membre
+de **428 groupes**. Les 7 groupes de la Page sont donc une exception marginale, pas la solution :
+l'essentiel du gisement restera toujours du côté de l'agent 3. Et à 428, l'enjeu n'est plus
+d'atteindre tout le monde, c'est de **trier** — voir le corollaire du § 3 du document frère.
 
 ---
 
@@ -127,14 +132,19 @@ lien_a_partager: "https://taxifoodnosybe.distripro207.com/jour"
 parametre_mesure: "g"                    # ?g=<slug du groupe> — voir PARTAGE-FACEBOOK-GROUPES § 3 bis
 langues: [fr, mg, en, it]                # dans quelles langues on sait écrire une accroche
 groupes_rejoints_par_la_page: 7          # utilisables par Meta Business Suite, § 9
-groupes_du_profil_personnel: 20          # à faire à la main par l'agent 3
+inventaire_qualifie: "…/groupes-qualifies.md"  # LA source de la rotation — voir ci-dessous
 plafond_publications_par_jour: 6
 ```
 
-**La liste des groupes ne s'écrit jamais en dur** — c'est la règle du § 3 de
-[PARTAGE-FACEBOOK-GROUPES.md](PARTAGE-FACEBOOK-GROUPES.md). Elle se lit à chaque passage dans la
-boîte de dialogue « Partager dans un groupe », qui est la seule source à jour. Un groupe rejoint
-demain doit être pris en compte demain, sans qu'on touche à un fichier.
+**L'inventaire qualifié est le préalable, et il n'existe encore pour aucun business.** Christopher
+est membre de **428 groupes** : on ne peut ni tous les servir, ni les relire chaque jour. Une passe
+d'inventaire, faite une fois puis rafraîchie **chaque semaine**, retient ceux dont l'audience est
+la bonne et note pour chacun : nom, identifiant, membres, langue dominante, sujet toléré,
+modération oui/non, slug `?g=`, groupes exclus **avec le motif**.
+
+⚠️ Ce fichier n'est pas une liste figée : il se régénère à partir de Facebook chaque semaine, pour
+récupérer les groupes rejoints entre-temps. La règle « jamais de liste en dur » tient toujours —
+elle devient simplement « jamais de liste en dur **plus vieille que sept jours** ».
 
 ---
 
@@ -142,7 +152,7 @@ demain doit être pris en compte demain, sans qu'on touche à un fichier.
 
 1. Pour chaque business de la liste, dans l'ordre :
 2. Lire le post **publié aujourd'hui** sur la Page (ou la ligne `published` du calendrier).
-3. Lire la liste des groupes **à l'instant t**, depuis la boîte de dialogue de partage.
+3. Lire l'**inventaire qualifié** du business (§ 6) — et non les 428 groupes bruts.
 4. Retirer ceux déjà servis dans les N derniers jours (journal), retirer les groupes hors sujet
    (recherche d'emploi, petites annonces sans rapport) — la liste des exclusions est dans le
    journal, avec le motif.
@@ -190,6 +200,8 @@ Autrement dit, ce qui manque aujourd'hui pour tenir la promesse du § 1 :
 - [ ] **Taxi Food** : table `editorial_calendar` + écran de validation + publisher Page — copier le
       patron Rentanoo, pas le réinventer.
 - [ ] **Agent 3** : une tâche planifiée unique, avec le prompt du § 7 et la fiche du § 6.
+- [ ] **L'inventaire qualifié des 428 groupes**, par business — le préalable à tout le reste, et la
+      première mission à confier à un agent.
 - [ ] **Réactiver** les deux tâches Rentanoo, aujourd'hui désactivées.
 - [ ] **Faire rejoindre par chaque Page** le plus de groupes possible : chaque groupe gagné passe
       de l'agent 3 (fragile, machine allumée) à Meta Business Suite (programmable, sans machine).

@@ -146,6 +146,17 @@
     "fermeBandeau": "Ce restaurant est fermé pour le moment. Tu peux consulter la carte, mais pas commander — reviens à l'ouverture.",
     "bientotBandeau": "Ce restaurant arrive bientôt sur Taxi Food. Tu peux découvrir sa carte, les commandes ne sont pas encore ouvertes."
   },
+  "platsDuJour": {
+    "title": "Les plats du jour",
+    "subtitle": "Ce que les restaurants de l'île mettent en avant aujourd'hui",
+    "seeAll": "Voir tout",
+    "intro": "Les plats du jour de tous les restaurants de Nosy Be, réunis ici. Les restaurants ouverts d'abord ; les autres restent visibles, avec leur heure d'ouverture.",
+    "opensTomorrow": "Ouvre demain à {{time}}",
+    "emptyTitle": "Aucun plat du jour aujourd'hui",
+    "empty": "Les restaurants n'ont rien mis à l'affiche pour le moment. Leur carte, elle, est toujours là.",
+    "emptyCta": "Voir les restaurants",
+    "error": "Les plats du jour n'ont pas pu être chargés. Réessaie dans un instant."
+  },
   "conflict": {
     "title": "Changer de restaurant ?",
     "bodyStart": "Ton panier contient des plats de ",

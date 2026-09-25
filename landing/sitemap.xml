@@ -71,6 +71,36 @@
   </url>
 
   <url>
+    <loc>https://taxifoodnosybe.distripro207.com/plats-du-jour</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>daily</changefreq>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifoodnosybe.distripro207.com/en/dishes-of-the-day"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifoodnosybe.distripro207.com/it/piatti-del-giorno"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+  </url>
+
+  <url>
+    <loc>https://taxifoodnosybe.distripro207.com/en/dishes-of-the-day</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>daily</changefreq>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifoodnosybe.distripro207.com/en/dishes-of-the-day"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifoodnosybe.distripro207.com/it/piatti-del-giorno"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+  </url>
+
+  <url>
+    <loc>https://taxifoodnosybe.distripro207.com/it/piatti-del-giorno</loc>
+    <lastmod>2026-09-25</lastmod>
+    <changefreq>daily</changefreq>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://taxifoodnosybe.distripro207.com/en/dishes-of-the-day"/>
+    <xhtml:link rel="alternate" hreflang="it" href="https://taxifoodnosybe.distripro207.com/it/piatti-del-giorno"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://taxifoodnosybe.distripro207.com/plats-du-jour"/>
+  </url>
+
+  <url>
     <loc>https://taxifoodnosybe.distripro207.com/devenir-livreur/</loc>
     <lastmod>2026-09-06</lastmod>
     <xhtml:link rel="alternate" hreflang="fr" href="https://taxifoodnosybe.distripro207.com/devenir-livreur/"/>

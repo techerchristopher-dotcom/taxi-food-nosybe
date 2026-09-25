@@ -8,7 +8,8 @@ import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
-import { listAddresses, listRestaurants } from '../../data/api';
+import { listAddresses, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { CartePlatDuJour } from '../../components/PlatDuJour';
 import { Address, FOOD_TYPE_ICON, FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
 import { useSession } from '../../store/session';
 import { signInFor } from '../../store/authIntent';
@@ -35,6 +36,10 @@ export default function HomeScreen() {
   const session = useSession((s) => s.session);
 
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
+  // Les plats du jour de TOUS les restaurants, en une requête (RPC
+  // `plats_du_jour_publics`). Indépendante de la liste des restaurants :
+  // si elle échoue, l'accueil reste entier, la rubrique disparaît.
+  const { data: platsDuJour } = useLoad(() => listPlatsDuJour(), []);
   // Le catalogue est public : `listRestaurants()` n'a besoin d'aucun compte. Les adresses,
   // si — inutile d'interroger la base à chaque focus d'onglet pour un visiteur, la RLS
   // renverrait de toute façon une liste vide.
@@ -162,6 +167,52 @@ export default function HomeScreen() {
           </Pressable>
         ) : null}
 
+        {/* 🔥 Les plats du jour de toute l'île, en HAUT de l'accueil.
+            Ce sont les contenus les plus attirants du catalogue — les seuls à
+            porter de vraies photos du plat servi — et jusqu'ici ils étaient
+            cachés au fond de chaque fiche restaurant.
+            ⚠️ Masquée PENDANT UNE RECHERCHE : l'écran répond alors à une
+            question précise, et une rangée qui ignore la recherche se lirait
+            comme un résultat. Le filtre par type de plat, lui, ne la masque pas :
+            il trie des restaurants, pas des plats. */}
+        {!searching && platsDuJour && platsDuJour.length > 0 ? (
+          <View style={styles.jourWrap}>
+            <View style={styles.jourHead}>
+              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                <Text style={styles.jourTitle}>🔥 {t('platsDuJour.title')}</Text>
+                <Text style={styles.jourSub}>{t('platsDuJour.subtitle')}</Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/plats-du-jour')}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={styles.jourAll}
+              >
+                <Text style={styles.jourAllText}>{t('platsDuJour.seeAll')}</Text>
+                <Icon name="chevron_right" size={16} color={colors.ink} />
+              </Pressable>
+            </View>
+            {/* 3 à 4 cartes visibles à 375 px : 150 px de large, 12 px de
+                gouttière. La quatrième dépasse volontairement du bord — c'est
+                ce qui dit qu'il y a autre chose à droite. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.jourScroll}
+              contentContainerStyle={styles.jourRow}
+            >
+              {platsDuJour.map((p) => (
+                <CartePlatDuJour
+                  key={p.id}
+                  p={p}
+                  width={150}
+                  onPress={() => router.push(`/product/${p.id}`)}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -271,6 +322,31 @@ const styles = StyleSheet.create({
   },
   guestBannerText: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 18, color: colors.textDark },
   guestBannerCta: { fontFamily: fonts.bold, fontSize: 13, color: colors.primary, marginTop: 3 },
+  jourWrap: { marginHorizontal: -spacing.screen, marginBottom: 18 },
+  jourHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: spacing.screen,
+    marginBottom: 10,
+  },
+  jourTitle: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.ink },
+  jourSub: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted },
+  jourAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    height: 34,
+    paddingLeft: 12,
+    paddingRight: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  jourAllText: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.ink },
+  jourScroll: { marginBottom: 2 },
+  jourRow: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.screen, paddingBottom: 4 },
   filtersScroll: { marginBottom: 16, marginHorizontal: -spacing.screen },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.screen },
   chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },

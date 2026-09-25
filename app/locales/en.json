@@ -146,6 +146,17 @@
     "fermeBandeau": "This restaurant is closed right now. You can browse the menu, but not order — come back when it opens.",
     "bientotBandeau": "This restaurant is coming soon to Taxi Food. You can browse its menu, ordering is not open yet."
   },
+  "platsDuJour": {
+    "title": "Today's dishes",
+    "subtitle": "What the island's restaurants are featuring today",
+    "seeAll": "See all",
+    "intro": "Today's dishes from every restaurant in Nosy Be, in one place. Open restaurants first; the others stay visible, with their opening time.",
+    "opensTomorrow": "Opens tomorrow at {{time}}",
+    "emptyTitle": "No dish of the day today",
+    "empty": "No restaurant is featuring anything right now. Their menus are still there.",
+    "emptyCta": "See the restaurants",
+    "error": "Today's dishes could not be loaded. Try again in a moment."
+  },
   "conflict": {
     "title": "Switch restaurant?",
     "bodyStart": "Your cart contains dishes from ",

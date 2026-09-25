@@ -457,6 +457,80 @@ export async function getFeaturedLibrary(restaurantId: string): Promise<Product[
   return (data as unknown as ProductRow[]).map((p) => mapProduct(p));
 }
 
+/**
+ * Les plats du jour de TOUS les restaurants, en une seule liste.
+ *
+ * ⚠️ UNE SEULE REQUÊTE, ET ELLE VIT EN BASE (`plats_du_jour_publics`). La
+ * vitrine appelle exactement la même : c'est la leçon de l'ordre du catalogue,
+ * où l'app et le site avaient chacun leur tri et ne montraient pas la même
+ * chose. Le filtrage (à l'affiche, non archivé, disponible, non épuisé,
+ * restaurant `visible`) et l'ordre (ouverts d'abord, puis `rang_catalogue`,
+ * puis `sort_order`) sont décidés là-bas, pas ici.
+ *
+ * ⚠️ UN RESTAURANT FERMÉ GARDE SA PLACE, grisé, avec son heure d'ouverture.
+ * Sans cela la rubrique est vide en milieu d'après-midi — trois restaurants sur
+ * quatre le sont à ce moment-là. Décision du porteur du projet, 2026-09-25.
+ */
+export type PlatDuJour = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  photoUrl: string | null;
+  dietTags: string[];
+  restaurantId: string;
+  restaurantName: string;
+  restaurantZone: string;
+  restaurantCuisine: string;
+  restaurantLogoUrl: string | null;
+  /** Ouverture EFFECTIVE du restaurant, calculée par la base — jamais par l'horloge du téléphone. */
+  isOpen: boolean;
+  /** 0 = aujourd'hui, 1 = demain… `null` quand la base ne promet rien. */
+  opensInDays: number | null;
+  /** 'HH:MM', ou null : ouverture manuelle, ou aucune ouverture sous sept jours. */
+  opensAt: string | null;
+};
+
+type PlatDuJourRow = {
+  product_id: string;
+  nom: string;
+  description: string | null;
+  prix: number;
+  photo_url: string | null;
+  diet_tags: string[] | null;
+  restaurant_id: string;
+  restaurant_nom: string;
+  restaurant_zone: string | null;
+  restaurant_cuisine: string | null;
+  restaurant_logo: string | null;
+  frais_livraison: number | null;
+  ouvert: boolean;
+  ouvre_dans_jours: number | null;
+  ouvre_a: string | null;
+  rang: number;
+};
+
+export async function listPlatsDuJour(): Promise<PlatDuJour[]> {
+  const { data, error } = await supabase.rpc('plats_du_jour_publics');
+  if (error) throw error;
+  return ((data as PlatDuJourRow[] | null) ?? []).map((r) => ({
+    id: r.product_id,
+    name: r.nom,
+    description: r.description ?? '',
+    price: r.prix,
+    photoUrl: r.photo_url,
+    dietTags: r.diet_tags ?? [],
+    restaurantId: r.restaurant_id,
+    restaurantName: r.restaurant_nom,
+    restaurantZone: r.restaurant_zone ?? '',
+    restaurantCuisine: r.restaurant_cuisine ?? '',
+    restaurantLogoUrl: r.restaurant_logo,
+    isOpen: r.ouvert,
+    opensInDays: r.ouvre_dans_jours ?? null,
+    opensAt: r.ouvre_a,
+  }));
+}
+
 function mapCategory(c: CategoryRow): Category {
   return {
     id: c.id,

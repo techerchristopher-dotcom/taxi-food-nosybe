@@ -226,3 +226,43 @@ condamner un groupe sur une publication qui n'est jamais parue.
 - **L'image et le texte** : déjà fabriqués par `/jour` et `apercu.jpg`.
 - **Le rappel** à 11 h pour lancer la session de partage.
 - **L'annonce aux clients** (notification + e-mail), depuis l'onglet 📣 Annonce de l'admin.
+
+---
+
+## JOURNAL DES PUBLICATIONS
+
+### 2026-09-25, vague 1 — PARTAGE de la publication de la page (NON MESURABLE)
+Le Bon coin Nosy be · Bon prix Nosy be · NOSY BE HELL-VILLE · Le BonCoin et Plan de NosyBe ·
+TOURISME - NOSY BE - MADAGASCAR · Business Madio à Nosy-Be · La Vie à Nosy-Be.
+⚠️ Fait avant les liens marqués : **ces sept-là ne comptent rien**, le lien emporté est celui de la
+publication, identique pour tous. Et NOSY-BE Petit Paris affichait « 1 publication en attente » :
+une partie de cette vague n'a même jamais été vue.
+
+### 2026-09-25 au soir, vague 2 — LIEN MARQUÉ publié DANS le groupe (mesurable)
+
+| Groupe | Membres | Étiquette | Résultat |
+|---|---|---|---|
+| NOSY-BE Petit Paris | 16 300 | `petitparis` | ⏳ **en attente d'un administrateur** |
+| Amici italiani (Nosy be Madagascar) | 3 100 | `amici` | ✅ publié (texte en italien) |
+| Bizness nosy be hell ville | 12 400 | `bizness` | ✅ publié |
+| INO VAOVAO NOSY BE HELL-VILLE | 21 600 | `inovaovao` | ✅ publié |
+| Zanaka nosy be mila tragno | 25 200 | `zanaka` | ✅ publié (accroche en malgache) |
+| Business Nosy-Be (Hell Ville 207) | 39 700 | `business207` | ✅ publié |
+| TANY ALAFO SY TRANO AFONDRO… 207 | 25 400 | `tanyalafo` | ✅ publié (accroche en malgache) |
+| Nosy be hell Mbizna | 10 100 | `mbizna` | ✅ publié |
+| Séjour Nosybe et Nord Madagascar | 5 500 | `sejour` | ✅ publié |
+| Have you been Nosy Be? | 725 | `haveyoubeen` | ✅ publié (texte en anglais) |
+| BAZAR BE NOSY BE | 2 200 | `bazarbe` | ✅ publié |
+
+**~162 000 membres touchés**, un texte différent à chaque fois, trois langues.
+**Reprendre la rotation après « BAZAR BE NOSY BE ».**
+
+**Restent à faire avec un lien marqué** (déjà touchés en vague 1, donc sans mesure) : Le Bon coin
+Nosy be, Bon prix Nosy be, NOSY BE HELL-VILLE, Le BonCoin et Plan de NosyBe, TOURISME - NOSY BE -
+MADAGASCAR, Business Madio à Nosy-Be, La Vie à Nosy-Be. Puis les groupes encore jamais publiés :
+Nosy be hell ville M bizna, Bizna Nosy be hell ville, Nosy-Be Plaisirs de vacances, Nosy Be mora
+tany alafo | trano afondro avec Mornique, Varotra rehetra eto Nosy Be, Business Nosy bé Magnifique,
+TRAGNO AFONDRO ETO NOSY BE HELLE VILLE, Nosy Be Tiako, Actualité Nosy Be, MADAGASCAR…
+
+**Leçon de la soirée** : un groupe sur onze modère les publications. Le journal sert justement à
+repérer ceux qui laissent nos publications en attente : ils coûtent du temps et ne rapportent rien.

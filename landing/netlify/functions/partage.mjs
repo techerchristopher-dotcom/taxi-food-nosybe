@@ -147,6 +147,40 @@ function empreintePlats(ids) {
   return (h >>> 0).toString(36);
 }
 
+/**
+ * ── L'ÉTIQUETTE DU GROUPE FACEBOOK (`?g=`) ───────────────────────────────────
+ *
+ * Le lien publié dans un groupe porte le nom court de ce groupe :
+ * `…/jour?g=boncoin`. C'est la seule façon de savoir lequel des vingt et quelques
+ * groupes amène vraiment des clients — sans ça on publie à l'aveugle.
+ *
+ * ⚠️ FACEBOOK REMPLACE LE LIEN CLIQUÉ PAR `og:url`. C'est le piège central de tout
+ * ce chantier : sans réinjection ici, la personne qui clique dans le groupe
+ * « Le Bon coin » arrive sur `…/jour?v=…` tout court, l'étiquette est perdue en
+ * route et la mesure vaut exactement zéro. `og:url` doit donc porter le `g` reçu,
+ * À CÔTÉ de l'empreinte `?v=` (qui, elle, force Facebook à relire la page quand les
+ * plats changent — voir `empreintePlats`). Les deux paramètres ne se remplacent pas :
+ * `v` sert au cache, `g` sert à la mesure.
+ *
+ * ⚠️ LE `canonical`, LUI, RESTE PROPRE. Un canonical qui varierait par groupe
+ * annoncerait vingt pages différentes à Google pour un seul contenu. D'où le
+ * paramètre `canonique` de `page()` : `og:url` porte l'étiquette, `canonical` non.
+ *
+ * ⚠️ L'IMAGE NE PORTE PAS LE `g`, volontairement. Elle est rigoureusement la même
+ * pour tous les groupes ; lui coller l'étiquette multiplierait les adresses d'une
+ * image de 200 Ko à refabriquer (6 s à froid) sans rien apprendre à personne. Seule
+ * l'empreinte `?v=` la distingue, et c'est suffisant.
+ *
+ * Étiquette acceptée : minuscules, chiffres et tirets, 24 caractères au plus. Tout
+ * le reste est IGNORÉ (pas d'erreur, pas de 404) — un lien recopié de travers doit
+ * continuer à ouvrir la page, il perd juste sa mesure.
+ */
+const ETIQUETTE_OK = /^[a-z0-9][a-z0-9-]{0,23}$/;
+function etiquetteGroupe(url) {
+  const g = (url.searchParams.get('g') || '').toLowerCase();
+  return ETIQUETTE_OK.test(g) ? g : '';
+}
+
 /** Même requête, mais la liste entière (plats du jour). */
 async function supabaseListe(chemin) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${chemin}`, {
@@ -219,8 +253,14 @@ function versAccueil() {
  * d'avant, à l'octet près. C'est la condition pour toucher à ce fichier sans
  * risquer de casser trois pages qui marchent — ne pas transformer un paramètre
  * facultatif en obligatoire.
+ *
+ * ⚠️ `canonique` est facultatif LUI AUSSI, et par défaut vaut `lien` : les quatre
+ * pages à identifiant ne changent pas d'un octet. Il n'existe que parce que `/jour`
+ * doit annoncer DEUX adresses différentes — `og:url` avec l'étiquette de groupe
+ * (`?g=`, sinon Facebook la mange), `canonical` sans elle (sinon Google voit vingt
+ * pages pour un seul contenu). Voir `etiquetteGroupe`.
  */
-function page({ titre, description, image, lien, prix, commander, plats, note, groupes, ctaTexte }) {
+function page({ titre, description, image, lien, canonique, prix, commander, plats, note, groupes, ctaTexte }) {
   const t = echapper(titre);
   const d = echapper(description);
   return `<!doctype html>
@@ -230,7 +270,7 @@ function page({ titre, description, image, lien, prix, commander, plats, note, g
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${t} — Taxi Food</title>
 <meta name="description" content="${d}">
-<link rel="canonical" href="${echapper(lien)}">
+<link rel="canonical" href="${echapper(canonique || lien)}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Taxi Food">
 <meta property="og:locale" content="fr_FR">
@@ -461,6 +501,9 @@ export default async (request) => {
   // Traité AVANT la reconnaissance des routes à identifiant : `/jour` n'en a pas.
   const chemin = url.pathname.replace(/\/+$/, '').toLowerCase();
   if (chemin === '/jour' || chemin === '/jour/apercu.jpg') {
+    // Le groupe Facebook d'où vient le clic, s'il est marqué. Lu ICI pour être
+    // réinjecté dans `og:url` plus bas — c'est tout l'objet de `etiquetteGroupe`.
+    const g = etiquetteGroupe(url);
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
       return versAccueil();
@@ -550,7 +593,13 @@ export default async (request) => {
         // L'empreinte est AUSSI sur l'image : Facebook met les images en cache par
         // adresse, indépendamment de la page.
         image: `${SITE}/jour/apercu.jpg?v=${v}`,
-        lien: `${SITE}/jour?v=${v}`,
+        // ⚠️ `og:url` PORTE L'ÉTIQUETTE DU GROUPE. Facebook remplace le lien cliqué par
+        // cette valeur : sans le `g` ici, le marquage disparaît de la publication et la
+        // mesure par groupe ne sert plus à rien. L'empreinte `?v=` reste à côté, elle
+        // n'a pas le même rôle (cache ↔ mesure).
+        lien: `${SITE}/jour?v=${v}${g ? `&g=${g}` : ''}`,
+        // …mais le canonical, lui, reste UNIQUE : une seule page pour Google.
+        canonique: `${SITE}/jour?v=${v}`,
         // Le bouton principal ne mène PAS à un restaurant — il n'y en a pas un seul.
         // Il mène à la page qui les réunit tous, sur la vitrine.
         commander: `${SITE}/plats-du-jour`,

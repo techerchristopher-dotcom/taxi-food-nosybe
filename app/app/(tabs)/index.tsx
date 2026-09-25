@@ -10,6 +10,8 @@ import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
 import { listAddresses, listPlatsDuJour, listRestaurants } from '../../data/api';
 import { CartePlatDuJour } from '../../components/PlatDuJour';
+import { PartageSheet } from '../../components/PartageSheet';
+import { lienPlatsDuJourIle, textePartagePlatsDuJourIle } from '../../lib/partage';
 import { Address, FOOD_TYPE_ICON, FOOD_TYPE_ORDER, formatAddressLine } from '../../data/types';
 import { useSession } from '../../store/session';
 import { signInFor } from '../../store/authIntent';
@@ -33,6 +35,7 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<string>(TOUT);
   const [query, setQuery] = useState('');
+  const [partageJour, setPartageJour] = useState(false);
 
   const session = useSession((s) => s.session);
 
@@ -192,8 +195,27 @@ export default function HomeScreen() {
             <View style={styles.jourHead}>
               <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
                 <Text style={styles.jourTitle}>🔥 {t('platsDuJour.title')}</Text>
-                <Text style={styles.jourSub}>{t('platsDuJour.subtitle')}</Text>
+                {/* Deux lignes au plus : le bouton de partage a pris de la place a
+                    droite, et un sous-titre qui file sur trois lignes decale la
+                    rangee de cartes vers le bas sans rien apprendre de plus. */}
+                <Text style={styles.jourSub} numberOfLines={2}>{t('platsDuJour.subtitle')}</Text>
               </View>
+              {/* ⚠️ ICÔNE SEULE, et pas une deuxième pastille à libellé : à 375 px,
+                  « Partager » et « Voir tout » côte à côte poussent le titre de la
+                  rangée sur deux lignes. L'intitulé complet reste lu par les lecteurs
+                  d'écran (`shareA11y`).
+                  Un seul tap partage TOUS les plats du jour de l'île, avec une image
+                  qui les assemble — c'est la publication la plus attirante du
+                  catalogue, la seule à porter de vraies photos des plats servis. */}
+              <Pressable
+                onPress={() => setPartageJour(true)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('platsDuJour.shareA11y')}
+                style={styles.jourShare}
+              >
+                <Icon name="ios_share" size={17} color={colors.ink} />
+              </Pressable>
               <Pressable
                 onPress={() => router.push('/plats-du-jour')}
                 hitSlop={8}
@@ -278,6 +300,28 @@ export default function HomeScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Les plats du jour de TOUTE l'ile, en une publication. Le lien porte
+          l'empreinte des plats a l'affiche (`?v=`) : sans elle Facebook
+          republierait eternellement les plats du premier partage. */}
+      <PartageSheet
+        visible={partageJour}
+        titre={t('platsDuJour.shareTitle')}
+        texte={textePartagePlatsDuJourIle(
+          (platsDuJour ?? []).map((p) => ({
+            name: p.name,
+            price: p.price,
+            restaurantName: p.restaurantName,
+          })),
+          {
+            titre: t('platsDuJour.shareTitle'),
+            cta: t('platsDuJour.shareCta'),
+            et: t('platsDuJour.shareMore'),
+          },
+        )}
+        url={lienPlatsDuJourIle((platsDuJour ?? []).map((p) => p.id))}
+        onClose={() => setPartageJour(false)}
+      />
     </View>
   );
 }
@@ -357,6 +401,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   jourAllText: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.ink },
+  // Même hauteur que « Voir tout », mais carrée : les deux se lisent comme une paire.
+  jourShare: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   jourScroll: { marginBottom: 2 },
   jourRow: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.screen, paddingBottom: 4 },
   filtersScroll: { marginBottom: 16, marginHorizontal: -spacing.screen },

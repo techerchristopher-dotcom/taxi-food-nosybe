@@ -72,6 +72,28 @@ function vignette(url, largeur) {
     + `?width=${w}&height=${w}&resize=cover&quality=60`;
 }
 
+/**
+ * Empreinte des plats à l'affiche, posée dans l'adresse de partage (`?v=`).
+ *
+ * ⚠️ MÊME CALCUL, AU CARACTÈRE PRÈS, que `empreintePlats` dans
+ * landing/netlify/functions/partage.mjs et app/lib/partage.ts — FNV-1a 32 bits en base 36,
+ * sur les identifiants TRIÉS. Les trois doivent donner la MÊME chaîne pour la même journée :
+ * sinon le bouton de cette page et celui de l'application désignent deux adresses, et
+ * Facebook met en cache deux aperçus au lieu d'un.
+ *
+ * ⚠️ POURQUOI ELLE EXISTE. Facebook met en cache PAR ADRESSE. Le lien `/jour` ne change
+ * jamais alors que son contenu change chaque jour : sans empreinte, il republierait
+ * éternellement les plats du premier partage.
+ */
+function empreintePlats(ids) {
+  let h = 0x811c9dc5;
+  for (const c of [...ids].sort().join(',')) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
 const echapper = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -105,6 +127,10 @@ const LANGUES = {
     videCta: 'Voir les restaurants',
     retour: 'Découvrir Taxi Food',
     pied: 'Livraison de repas à Nosy Be',
+    partagerLabel: 'Partager cette page :',
+    partagerWhatsapp: 'WhatsApp', partagerFacebook: 'Facebook',
+    partagerCopier: 'Copier le lien', partagerCopie: 'Lien copié',
+    partagerTexte: '🔥 Les plats du jour à Nosy Be, tous restaurants confondus',
   },
   en: {
     code: 'en', ogLocale: 'en_US', chemin: '/en/dishes-of-the-day',
@@ -123,6 +149,10 @@ const LANGUES = {
     videCta: 'See the restaurants',
     retour: 'Discover Taxi Food',
     pied: 'Meal delivery in Nosy Be',
+    partagerLabel: 'Share this page:',
+    partagerWhatsapp: 'WhatsApp', partagerFacebook: 'Facebook',
+    partagerCopier: 'Copy link', partagerCopie: 'Link copied',
+    partagerTexte: '🔥 Dishes of the day in Nosy Be, from every restaurant',
   },
   it: {
     code: 'it', ogLocale: 'it_IT', chemin: '/it/piatti-del-giorno',
@@ -141,6 +171,10 @@ const LANGUES = {
     videCta: 'Vedi i ristoranti',
     retour: 'Scopri Taxi Food',
     pied: 'Consegna di pasti a Nosy Be',
+    partagerLabel: 'Condividi questa pagina:',
+    partagerWhatsapp: 'WhatsApp', partagerFacebook: 'Facebook',
+    partagerCopier: 'Copia il link', partagerCopie: 'Link copiato',
+    partagerTexte: '🔥 I piatti del giorno a Nosy Be, di tutti i ristoranti',
   },
 };
 
@@ -190,6 +224,35 @@ function page(l, plats) {
   const groupes = [...parResto.values()];
 
   const image = apercuImage(plats.find((p) => p.photo_url)?.photo_url ?? '');
+
+  /* ── Partager cette page ────────────────────────────────────────────────────
+     ⚠️ LE LIEN PARTAGÉ N'EST PAS CELUI DE CETTE PAGE, et c'est délibéré. Facebook
+     n'affiche QUE les balises Open Graph de l'adresse qu'on lui donne : il faut donc
+     lui donner `/jour`, la page de partage qui assemble une vraie affiche (photos des
+     plats, prix, restaurants). Cette page-ci, elle, est faite pour être LUE et
+     indexée — son `og:image` n'est qu'une photo de plat.
+     ⚠️ L'empreinte `?v=` porte les plats du jour : les plats changent, l'adresse change,
+     et Facebook est obligé de relire au lieu de resservir ceux de la veille.
+     ⚠️ `utm_source` sur WhatsApp et sur le lien copié, JAMAIS sur Facebook — qui
+     remplace le lien par `og:url` et perdrait le marquage en fabriquant une adresse de
+     plus à mettre en cache. Même règle que `avecSource()` dans l'application. */
+  const lienPartage = plats.length
+    ? `${SITE}/jour?v=${empreintePlats(plats.map((p) => p.product_id))}`
+    : `${SITE}/jour`;
+  const partage = plats.length
+    ? `<div class="partage">
+    <span class="plabel">${echapper(l.partagerLabel)}</span>
+    <a class="pbtn" rel="nofollow" target="_blank" href="https://wa.me/?text=${
+      encodeURIComponent(`${l.partagerTexte}\n${lienPartage}&utm_source=whatsapp&utm_medium=partage`)
+    }">${echapper(l.partagerWhatsapp)}</a>
+    <a class="pbtn" rel="nofollow" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${
+      encodeURIComponent(lienPartage)
+    }">${echapper(l.partagerFacebook)}</a>
+    <button class="pbtn" type="button" id="copier"
+      data-lien="${echapper(`${lienPartage}&utm_source=lien&utm_medium=partage`)}"
+      data-ok="${echapper(l.partagerCopie)}">${echapper(l.partagerCopier)}</button>
+  </div>`
+    : '';
 
   // Données structurées : une liste de plats, chacun avec son prix et son
   // restaurant. Le site publie déjà du JSON-LD (Organization, WebSite,
@@ -310,6 +373,14 @@ ${Object.values(LANGUES).map((x) => `<link rel="alternate" hreflang="${x.code}" 
                font-size:12.5px; font-weight:600; color:#4A4744; text-decoration:none; }
   .langues a[aria-current] { background:#1A1A1A; color:#fff; border-color:#1A1A1A; }
 
+  /* Partage : une ligne de boutons, qui passe a la ligne toute seule a 375 px.
+     Cibles a 40 px de haut — une pastille de 28 px se rate au pouce. */
+  .partage { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 22px; }
+  .plabel { font-size:12.5px; font-weight:600; color:#6B6662; }
+  .pbtn { display:inline-flex; align-items:center; height:40px; padding:0 14px; border-radius:999px;
+          border:1px solid #E3DDD6; background:#fff; color:#1A1A1A; text-decoration:none;
+          font:600 13px/1 Archivo,-apple-system,sans-serif; cursor:pointer; }
+
   section.groupe { background:#fff; border:1px solid #E9E5E0; border-radius:20px; padding:16px;
                    margin:0 0 16px; }
   /* ⚠️ Le restaurant fermé n'est pas RETIRÉ, il est grisé : sans lui la page est
@@ -371,9 +442,40 @@ ${Object.values(LANGUES).map((x) => `<link rel="alternate" hreflang="${x.code}" 
       `<a href="${x.chemin}" hreflang="${x.code}" lang="${x.code}"${x.code === l.code ? ' aria-current="page"' : ''}>${x.code.toUpperCase()}</a>`
     ).join('')}
   </nav>
+  ${partage}
   ${corps}
   <footer>${echapper(l.pied)} · <a href="${l.code === 'fr' ? '/' : `/${l.code}/`}">taxifoodnosybe.distripro207.com</a></footer>
 </main>
+<script>
+  // « Copier le lien » — et l'ecran DIT que c'est copie. Sans confirmation, le bouton
+  // parait mort et on retape dessus (defaut deja signale le 2026-09-16 sur la feuille
+  // de partage de l'application).
+  (function () {
+    var b = document.getElementById('copier');
+    if (!b) return;
+    var initial = b.textContent;
+    b.addEventListener('click', function () {
+      var lien = b.getAttribute('data-lien');
+      var fini = function () {
+        b.textContent = b.getAttribute('data-ok');
+        setTimeout(function () { b.textContent = initial; }, 2000);
+      };
+      // ⚠️ navigator.clipboard n'existe qu'en HTTPS et peut echouer sans rien dire :
+      // on garde le repli par champ cache, sinon le bouton ne fait rien sur les
+      // navigateurs anciens des telephones d'ici.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lien).then(fini, secours);
+      } else { secours(); }
+      function secours() {
+        var z = document.createElement('textarea');
+        z.value = lien; z.setAttribute('readonly', ''); z.style.position = 'absolute'; z.style.left = '-9999px';
+        document.body.appendChild(z); z.select();
+        try { document.execCommand('copy'); fini(); } catch (e) { /* rien a dire de plus */ }
+        z.remove();
+      }
+    });
+  })();
+</script>
 </body>
 </html>`;
 }

@@ -1,8 +1,9 @@
 /**
  * Pages de partage : /p/<id> (un produit), /r/<id> (un restaurant), /j/<id> (les
- * plats du jour d'un restaurant, en UNE publication — image `/j/<id>/apercu.jpg`)
- * et /s/<id> (une SÉLECTION composée à la main, des plats de plusieurs
- * restaurants — image `/s/<id>/apercu.jpg`).
+ * plats du jour d'un restaurant, en UNE publication — image `/j/<id>/apercu.jpg`),
+ * /s/<id> (une SÉLECTION composée à la main, des plats de plusieurs
+ * restaurants — image `/s/<id>/apercu.jpg`) et « /jour » (les plats du jour de
+ * TOUTE L'ÎLE, sans identifiant — image `/jour/apercu.jpg`).
  *
  * ── /j/ et /s/ ne se ressemblent qu'en surface ────────────────────────────────
  * /j/ est la vitrine d'UN restaurant : tout y mène au même menu. /s/ mélange
@@ -419,8 +420,158 @@ function pageIndisponible(id) {
   });
 }
 
+/**
+ * ── /jour : LES PLATS DU JOUR DE TOUTE L'ÎLE ─────────────────────────────────
+ *
+ * La cinquième page de cette famille, et la seule qui ne porte AUCUN identifiant :
+ * elle ne parle pas d'un restaurant ni d'une sélection, mais de ce que l'île entière
+ * met à l'affiche aujourd'hui. D'où une adresse courte, tapable et dictable au
+ * téléphone — `/jour` — plutôt qu'un `/j/` sans identifiant, qui n'aurait pas pu
+ * cohabiter avec la route `/j/:id`.
+ *
+ * ⚠️ MÊME SOURCE QUE L'APPLICATION ET QUE `/plats-du-jour` : la RPC
+ * `plats_du_jour_publics()`. Le filtre et l'ordre sont en base. Les réécrire ici
+ * reproduirait la divergence app / vitrine déjà payée sur l'ordre du catalogue.
+ *
+ * ⚠️ L'EMPREINTE `?v=` EST VITALE. Le lien est toujours le même alors que son
+ * contenu change chaque jour : sans elle, Facebook resservirait les plats de la
+ * veille (piège du 2026-09-16 sur `/j/`). Elle est calculée sur les identifiants de
+ * TOUS les plats à l'affiche — pas seulement les six de l'image — et posée sur
+ * `og:url` ET sur l'image.
+ */
+
+/** « Ouvre à 18h », « Ouvre demain à 9h », « Fermé », ou rien si c'est ouvert.
+ *  Même règle, au mot près, que `libelleOuverture()` dans l'app et `/plats-du-jour`. */
+function etatOuverture(p) {
+  if (p.ouvert) return '';
+  // ⚠️ `ouvre_a` est null quand le restaurateur a fermé À LA MAIN : ses horaires ne le
+  // rouvriront pas tout seuls, et annoncer une heure serait un mensonge.
+  if (!p.ouvre_a) return 'Fermé';
+  const [h, mn] = String(p.ouvre_a).split(':');
+  const heure = mn && mn !== '00' ? `${Number(h)}h${mn}` : `${Number(h)}h`;
+  if (p.ouvre_dans_jours === 0) return `Ouvre à ${heure}`;
+  if (p.ouvre_dans_jours === 1) return `Ouvre demain à ${heure}`;
+  return 'Fermé';
+}
+
 export default async (request) => {
   const url = new URL(request.url);
+
+  // ── Les plats du jour de toute l'île ──────────────────────────────────────
+  // Traité AVANT la reconnaissance des routes à identifiant : `/jour` n'en a pas.
+  const chemin = url.pathname.replace(/\/+$/, '').toLowerCase();
+  if (chemin === '/jour' || chemin === '/jour/apercu.jpg') {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
+      return versAccueil();
+    }
+    try {
+      if (chemin === '/jour/apercu.jpg') {
+        // ⚠️ Ce `fetch` n'envoie NI apikey NI Authorization : `apercu-plats-du-jour-ile`
+        // doit rester en `verify_jwt = false` dans supabase/config.toml. Sinon elle répond
+        // 401, on tombe sur le repli ci-dessous, et l'aperçu ne disparaît pas — il devient
+        // le logo générique. Panne invisible.
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/apercu-plats-du-jour-ile`);
+        if (!r.ok) {
+          return new Response(null, { status: 302, headers: { location: OG_DEFAUT, 'cache-control': 'no-store, max-age=0' } });
+        }
+        return new Response(await r.arrayBuffer(), {
+          headers: {
+            'content-type': 'image/jpeg',
+            'cache-control': 'public, max-age=600, s-maxage=600',
+            // L'app web vit sur un AUTRE domaine : sans cet en-tête, son bouton
+            // « Enregistrer l'image » ne peut même pas lire le fichier.
+            'access-control-allow-origin': '*',
+            // ⚠️ SANS CET EN-TÊTE, NETLIFY NE GARDE RIEN pour une fonction : l'image serait
+            // refabriquée à chaque appel (4 à 5 s) et le robot de Facebook renoncerait —
+            // « Expiration curl », code 418, carte vide (payé le 2026-09-18). L'adresse
+            // portant l'empreinte `?v=`, on peut garder longtemps sans mentir.
+            'netlify-cdn-cache-control': 'public, s-maxage=86400, stale-while-revalidate=604800, durable',
+          },
+        });
+      }
+
+      const plats = await supabaseRpc('plats_du_jour_publics', {});
+      // Plus rien à l'affiche nulle part : la page vitrine, elle, sait dire « aucun plat
+      // du jour aujourd'hui » et renvoyer au catalogue. Un lien mort, non.
+      if (!plats.length) {
+        return new Response(null, {
+          status: 302,
+          headers: { location: `${SITE}/plats-du-jour`, 'cache-control': 'no-store, max-age=0' },
+        });
+      }
+
+      const v = empreintePlats(plats.map((p) => p.product_id));
+
+      // Regroupement par restaurant SANS toucher à l'ordre de la base (ouverts d'abord) :
+      // une Map conserve l'ordre d'insertion. Même structure que /s/, et pour la même
+      // raison — le panier est MONO-RESTAURANT.
+      const parResto = new Map();
+      for (const p of plats) {
+        if (!parResto.has(p.restaurant_id)) {
+          const nom = p.restaurant_nom;
+          const etat = etatOuverture(p);
+          parResto.set(p.restaurant_id, {
+            // L'état d'ouverture est DANS le titre du groupe : qui lit « La Cabane ·
+            // Ouvre à 16h » ne tape pas sur un bouton de commande pour rien.
+            nom: etat ? `${nom} · ${etat}` : nom,
+            bouton: /^chez\s/i.test(nom) ? `Commander ${nom}` : `Commander chez ${nom}`,
+            plats: [],
+            commander: `${APP}/restaurant/${encodeURIComponent(p.restaurant_id)}`,
+          });
+        }
+        parResto.get(p.restaurant_id).plats.push({
+          nom: p.nom,
+          prix: formatAr(p.prix),
+          image: p.photo_url ? apercuVignette(p.photo_url) : OG_DEFAUT,
+          lien: `${APP}/product/${encodeURIComponent(p.product_id)}`,
+        });
+      }
+      const groupes = [...parResto.values()];
+
+      // ⚠️ La description est LUE PAR FACEBOOK, qui la coupe court : au-delà de six noms on
+      // abrège nous-mêmes, plutôt que de laisser la coupe tomber au milieu d'un plat.
+      const noms = plats.map((x) => x.nom);
+      const liste = noms.length > 6
+        ? `${noms.slice(0, 6).join(', ')}…`
+        : noms.length > 1
+          ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`
+          : noms[0];
+
+      return new Response(page({
+        titre: 'Les plats du jour à Nosy Be',
+        prix: '',
+        description: `${liste} — à commander sur Taxi Food.`,
+        // L'empreinte est AUSSI sur l'image : Facebook met les images en cache par
+        // adresse, indépendamment de la page.
+        image: `${SITE}/jour/apercu.jpg?v=${v}`,
+        lien: `${SITE}/jour?v=${v}`,
+        // Le bouton principal ne mène PAS à un restaurant — il n'y en a pas un seul.
+        // Il mène à la page qui les réunit tous, sur la vitrine.
+        commander: `${SITE}/plats-du-jour`,
+        ctaTexte: 'Voir tous les plats du jour',
+        // Dit avant le premier tap, pas découvert au deuxième plat.
+        note: groupes.length > 1
+          ? 'Chaque commande se fait auprès d’un seul restaurant : pour des plats '
+            + 'de deux établissements, il faut passer deux commandes.'
+          : '',
+        groupes,
+      }), {
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          // ⚠️ CACHE COURT : l'état « Ouvert / Ouvre à 16h » change à l'heure près, une page
+          // gardée une heure mentirait. Le second en-tête est obligatoire — Netlify ignore
+          // `cache-control` pour ses fonctions (voir plus bas).
+          'cache-control': 'public, max-age=120, s-maxage=120',
+          'netlify-cdn-cache-control': 'public, s-maxage=120, stale-while-revalidate=3600, durable',
+        },
+      });
+    } catch (e) {
+      console.error('[partage] /jour', e);
+      return versAccueil();
+    }
+  }
+
   const m = url.pathname.match(/^\/(p|r|j|s)\/([0-9a-f-]{36})(\/apercu\.jpg)?\/?$/i);
 
   // Identifiant absent ou mal formé : on renvoie sur l'accueil du site plutôt
@@ -641,5 +792,11 @@ export default async (request) => {
 // et masquerait la fonction. Oublier une ligne ici = 404 statique sur un lien
 // déjà partagé.
 export const config = {
-  path: ['/p/:id', '/r/:id', '/j/:id', '/j/:id/apercu.jpg', '/s/:id', '/s/:id/apercu.jpg'],
+  path: [
+    '/p/:id', '/r/:id',
+    '/j/:id', '/j/:id/apercu.jpg',
+    '/s/:id', '/s/:id/apercu.jpg',
+    // Toute l'île, sans identifiant (2026-09-25).
+    '/jour', '/jour/apercu.jpg',
+  ],
 };

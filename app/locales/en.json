@@ -155,7 +155,12 @@
     "emptyTitle": "No dish of the day today",
     "empty": "No restaurant is featuring anything right now. Their menus are still there.",
     "emptyCta": "See the restaurants",
-    "error": "Today's dishes could not be loaded. Try again in a moment."
+    "error": "Today's dishes could not be loaded. Try again in a moment.",
+    "share": "Share",
+    "shareA11y": "Share the dishes of the day in Nosy Be",
+    "shareTitle": "Dishes of the day in Nosy Be",
+    "shareCta": "Order on Taxi Food",
+    "shareMore": "…and {{n}} more dishes"
   },
   "conflict": {
     "title": "Switch restaurant?",

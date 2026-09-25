@@ -51,6 +51,27 @@ export function lienPlatsDuJour(restaurantId: string, platIds?: string[]) {
 }
 
 /**
+ * Les PLATS DU JOUR DE TOUTE L'ÎLE, en une seule publication — `/jour`.
+ *
+ * ⚠️ AUCUN IDENTIFIANT, et c'est la seule page de partage dans ce cas : elle ne parle
+ * pas d'un restaurant mais de ce que l'île entière met à l'affiche aujourd'hui. D'où une
+ * adresse courte, dictable au téléphone, qui ne pouvait pas être un `/j/` sans
+ * identifiant — elle serait entrée en collision avec la route `/j/:id`.
+ *
+ * ⚠️ L'EMPREINTE `?v=` N'EST PAS UNE OPTION ICI. Le lien ne change jamais alors que son
+ * contenu change chaque jour : sans elle, Facebook republierait éternellement les plats
+ * du premier partage. Même piège que `/j/` le 2026-09-16, en pire — un seul lien pour
+ * tout le monde.
+ *
+ * La page et l'image sont servies par `landing/netlify/functions/partage.mjs`, l'affiche
+ * elle-même par la fonction Edge `apercu-plats-du-jour-ile`.
+ */
+export function lienPlatsDuJourIle(platIds?: string[]) {
+  const base = `${SITE}/jour`;
+  return platIds && platIds.length ? `${base}?v=${empreintePlats(platIds)}` : base;
+}
+
+/**
  * Empreinte courte d'une liste de plats — FNV-1a 32 bits en base 36, sur les
  * identifiants TRIÉS (l'ordre d'affichage ne doit pas changer l'adresse).
  *
@@ -140,6 +161,32 @@ export function textePartagePlatsDuJour(r: {
 }) {
   const lignes = r.plats.map((p) => `• ${p.name} — ${formatAr(p.price)}`);
   return [`🔥 ${titrePlatsDuJour(r.restaurantName)}`, ...lignes, 'À commander sur Taxi Food 👉'].join('\n');
+}
+
+/** Combien de plats on nomme dans le texte de `/jour` avant d'abréger. */
+const PLATS_CITES = 6;
+
+/**
+ * Le texte des plats du jour de TOUTE L'ÎLE.
+ *
+ * ⚠️ LE RESTAURANT EST SUR CHAQUE LIGNE — les plats viennent de plusieurs maisons, et le
+ * panier est MONO-RESTAURANT : une liste anonyme ferait croire à une commande unique.
+ *
+ * ⚠️ ON N'EN CITE QUE SIX. Le texte accompagne le lien dans WhatsApp ; à quinze lignes il
+ * remplit l'écran et la personne ne voit plus le lien. La page, elle, les montre tous.
+ *
+ * ⚠️ LES TEXTES VIENNENT DE L'ÉCRAN (`textes`), pas d'ici : cette rubrique est traduite en
+ * FR / EN / IT, et une phrase française collée dans un partage italien se remarque.
+ */
+export function textePartagePlatsDuJourIle(
+  plats: { name: string; price: number; restaurantName: string }[],
+  textes: { titre: string; cta: string; et: string },
+) {
+  const lignes = plats
+    .slice(0, PLATS_CITES)
+    .map((p) => `• ${p.name} — ${formatAr(p.price)} · ${p.restaurantName}`);
+  if (plats.length > PLATS_CITES) lignes.push(textes.et.replace('{{n}}', String(plats.length - PLATS_CITES)));
+  return [`🔥 ${textes.titre}`, ...lignes, `${textes.cta} 👉`].join('\n');
 }
 
 /**
@@ -306,8 +353,12 @@ export function avecSource(url: string, source: 'whatsapp' | 'lien' | 'systeme')
   return `${url}${url.includes('?') ? '&' : '?'}utm_source=${source}&utm_medium=partage`;
 }
 
-/** « j », « r », « s », « p » : ce qui est partagé, pour la mesure. */
+/** « j », « r », « s », « p », « jour » : ce qui est partagé, pour la mesure. */
 export function typeDeLien(url: string) {
+  // ⚠️ `/jour` d'abord : il n'a pas d'identifiant, donc pas de seconde barre oblique, et la
+  // recherche ci-dessous le rangerait dans « autre » — la mesure perdrait le partage le
+  // plus diffusé de tous.
+  if (/\/jour(\?|$)/.test(url)) return 'jour';
   return url.match(/\/(j|r|s|p)\//)?.[1] ?? 'autre';
 }
 
@@ -319,17 +370,20 @@ export function typeDeLien(url: string) {
  * l'IMAGE comme photo, avec le lien dans le texte, rend mieux et se diffuse
  * mieux. Il faut donc pouvoir récupérer l'image.
  *
- * ⚠️ SEULS `/j/` (plats du jour) et `/s/` (sélection) ont une image ASSEMBLÉE
- * (`…/apercu.jpg`, fabriquée par une fonction Edge). `/p/` et `/r/` n'en ont
- * pas : leur `og:image` est la photo du plat ou la couverture du restaurant,
- * telle quelle — il n'y a rien à « enregistrer » de plus que ce que la fiche
- * montre déjà. Cette fonction rend donc null pour eux, et l'écran n'affiche pas
- * le bouton. Voir `landing/netlify/functions/partage.mjs`, même garde.
+ * ⚠️ SEULS `/j/` (plats du jour d'un restaurant), `/s/` (sélection) et `/jour`
+ * (toute l'île) ont une image ASSEMBLÉE (`…/apercu.jpg`, fabriquée par une
+ * fonction Edge). `/p/` et `/r/` n'en ont pas : leur `og:image` est la photo du
+ * plat ou la couverture du restaurant, telle quelle — il n'y a rien à
+ * « enregistrer » de plus que ce que la fiche montre déjà. Cette fonction rend
+ * donc null pour eux, et l'écran n'affiche pas le bouton. Voir
+ * `landing/netlify/functions/partage.mjs`, même garde.
  *
  * La requête est CONSERVÉE : c'est elle qui porte l'empreinte `?v=` des plats à
  * l'affiche, et l'image en dépend.
  */
 export function lienApercuImage(url: string): string | null {
+  const ile = url.match(/^(https?:\/\/[^/]+)\/jour(\?[^#]*)?$/i);
+  if (ile) return `${ile[1]}/jour/apercu.jpg${ile[2] ?? ''}`;
   const m = url.match(/^(https?:\/\/[^/]+)\/(j|s)\/([0-9a-f-]{36})(\?[^#]*)?$/i);
   if (!m) return null;
   const [, base, genre, id, requete] = m;

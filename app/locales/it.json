@@ -155,7 +155,12 @@
     "emptyTitle": "Nessun piatto del giorno oggi",
     "empty": "Al momento nessun ristorante propone un piatto del giorno. I loro menu sono sempre lì.",
     "emptyCta": "Vedi i ristoranti",
-    "error": "Non è stato possibile caricare i piatti del giorno. Riprova tra poco."
+    "error": "Non è stato possibile caricare i piatti del giorno. Riprova tra poco.",
+    "share": "Condividi",
+    "shareA11y": "Condividi i piatti del giorno di Nosy Be",
+    "shareTitle": "I piatti del giorno a Nosy Be",
+    "shareCta": "Da ordinare su Taxi Food",
+    "shareMore": "…e altri {{n}} piatti"
   },
   "conflict": {
     "title": "Cambiare ristorante?",

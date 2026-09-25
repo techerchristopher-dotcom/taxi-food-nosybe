@@ -155,7 +155,12 @@
     "emptyTitle": "Aucun plat du jour aujourd'hui",
     "empty": "Les restaurants n'ont rien mis à l'affiche pour le moment. Leur carte, elle, est toujours là.",
     "emptyCta": "Voir les restaurants",
-    "error": "Les plats du jour n'ont pas pu être chargés. Réessaie dans un instant."
+    "error": "Les plats du jour n'ont pas pu être chargés. Réessaie dans un instant.",
+    "share": "Partager",
+    "shareA11y": "Partager les plats du jour de Nosy Be",
+    "shareTitle": "Les plats du jour à Nosy Be",
+    "shareCta": "À commander sur Taxi Food",
+    "shareMore": "…et {{n}} autres plats"
   },
   "conflict": {
     "title": "Changer de restaurant ?",

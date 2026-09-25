@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Header } from '../components/Header';
 import { Icon } from '../components/Icon';
+import { PartageSheet } from '../components/PartageSheet';
+import { lienPlatsDuJourIle, textePartagePlatsDuJourIle } from '../lib/partage';
 import { ProductThumb } from '../components/ProductThumb';
 import { LignePlatDuJour, libelleOuverture } from '../components/PlatDuJour';
 import { listPlatsDuJour, PlatDuJour } from '../data/api';
@@ -28,6 +30,7 @@ export default function PlatsDuJourScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: plats, loading, error } = useLoad(() => listPlatsDuJour(), []);
+  const [partage, setPartage] = useState(false);
 
   const groupes = useMemo(() => {
     const parResto = new Map<string, { resto: PlatDuJour; plats: PlatDuJour[] }>();
@@ -41,7 +44,24 @@ export default function PlatsDuJourScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title={t('platsDuJour.title')} />
+      {/* ⚠️ Le bouton n'apparait QUE s'il y a quelque chose a partager : un lien
+          vers une page vide se retourne contre celui qui l'a publie. */}
+      <Header
+        title={t('platsDuJour.title')}
+        right={
+          plats && plats.length ? (
+            <Pressable
+              onPress={() => setPartage(true)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('platsDuJour.shareA11y')}
+              style={styles.partage}
+            >
+              <Icon name="ios_share" size={20} color={colors.ink} />
+            </Pressable>
+          ) : undefined
+        }
+      />
       <ScrollView
         contentContainerStyle={{ padding: spacing.screen, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
@@ -114,12 +134,39 @@ export default function PlatsDuJourScreen() {
           </View>
         )}
       </ScrollView>
+
+      <PartageSheet
+        visible={partage}
+        titre={t('platsDuJour.shareTitle')}
+        texte={textePartagePlatsDuJourIle(
+          (plats ?? []).map((p) => ({
+            name: p.name,
+            price: p.price,
+            restaurantName: p.restaurantName,
+          })),
+          {
+            titre: t('platsDuJour.shareTitle'),
+            cta: t('platsDuJour.shareCta'),
+            et: t('platsDuJour.shareMore'),
+          },
+        )}
+        url={lienPlatsDuJourIle((plats ?? []).map((p) => p.id))}
+        onClose={() => setPartage(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  partage: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.fieldBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   intro: { fontFamily: fonts.regular, fontSize: 13.5, lineHeight: 19, color: colors.textMuted, marginBottom: 18 },
   center: { paddingVertical: 60, alignItems: 'center' },
   entete: { flexDirection: 'row', alignItems: 'center', gap: 10 },

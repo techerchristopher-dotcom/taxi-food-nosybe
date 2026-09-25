@@ -117,3 +117,9 @@ verify_jwt = false
 # depuis le 2026-09-15 : un `supabase functions deploy apercu-plats-du-jour` la
 # repassait au defaut `true`. Repare ici, en meme temps qu'on ajoute sa jumelle.
 verify_jwt = false
+
+[functions.apercu-plats-du-jour-ile]
+# La troisieme soeur (2026-09-25) : l'affiche des plats du jour de TOUTE l'ile, servie au lien
+# de partage `/jour`. Meme raison que les deux precedentes : l'appelant est `partage.mjs`, qui
+# n'envoie ni apikey ni Authorization, et les robots d'apercu n'ont aucun jeton.
+verify_jwt = false

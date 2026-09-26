@@ -1343,8 +1343,8 @@ export async function saveFeaturedProduct(input: {
   stockQuantity?: number | null;
   photoUrl?: string | null;
   featuredLabel?: string | null;
-}): Promise<void> {
-  const { error } = await supabase.rpc('save_featured_product', {
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('save_featured_product', {
     p_product_id: input.productId ?? null,
     p_name: input.name,
     p_description: input.description ?? null,
@@ -1352,6 +1352,65 @@ export async function saveFeaturedProduct(input: {
     p_stock_quantity: input.stockQuantity ?? null,
     p_photo_url: input.photoUrl ?? null,
     p_featured_label: input.featuredLabel ?? null,
+  });
+  if (error) throw error;
+  // La RPC renvoie la ligne `products` : on en garde l'identifiant, sans quoi un
+  // plat tout juste cree n'aurait aucun id ou poser ses garnitures.
+  return (data as { id: string }).id;
+}
+
+/** Accompagnements et sauces d'un plat : ce que le client devra choisir. */
+export type Garnitures = { accompagnements: string[]; sauces: string[] };
+
+type GarnitureRow = { kind: string; name: string; usages: number };
+
+/**
+ * La bibliotheque de garnitures du restaurant : tout ce qui existe DEJA sur sa
+ * carte, accompagnements d'un cote, sauces de l'autre, les plus utilises en tete.
+ *
+ * ⚠️ Le classement vient du NOM du groupe d'options (« accompagnement », « sauce »),
+ * la convention deja en place chez les partenaires. Pas de colonne en plus — mais
+ * la contrepartie est qu'un groupe nomme autrement reste invisible ici. C'est voulu :
+ * on ne propose pas de recocher des supplements pizza comme un accompagnement.
+ */
+export async function fetchGarnituresDisponibles(): Promise<Garnitures> {
+  const { data, error } = await supabase.rpc('restaurant_garnitures');
+  if (error) throw error;
+  const rows = (data ?? []) as GarnitureRow[];
+  return {
+    accompagnements: rows.filter((r) => r.kind === 'accompagnement').map((r) => r.name),
+    sauces: rows.filter((r) => r.kind === 'sauce').map((r) => r.name),
+  };
+}
+
+/** Ce qui est deja coche sur ce plat — pour rouvrir la fenetre sur son etat reel. */
+export async function fetchGarnituresDuPlat(productId: string): Promise<Garnitures> {
+  const { data, error } = await supabase
+    .from('product_option_groups')
+    .select('name, product_options ( name, sort_order )')
+    .eq('product_id', productId);
+  if (error) throw error;
+  const groups = (data ?? []) as unknown as {
+    name: string;
+    product_options: { name: string; sort_order: number }[];
+  }[];
+  const noms = (g: { product_options: { name: string; sort_order: number }[] }) =>
+    [...g.product_options].sort((a, b) => a.sort_order - b.sort_order).map((o) => o.name);
+  return {
+    accompagnements: groups.filter((g) => /accompagnement/i.test(g.name)).flatMap(noms),
+    sauces: groups.filter((g) => /sauce/i.test(g.name)).flatMap(noms),
+  };
+}
+
+/**
+ * Remplace les accompagnements et les sauces d'un plat par ceux qui ont ete coches.
+ * Un tableau vide retire le groupe : c'est la facon de dire « ce plat se sert seul ».
+ */
+export async function setProductGarnitures(productId: string, g: Garnitures): Promise<void> {
+  const { error } = await supabase.rpc('set_product_garnitures', {
+    p_product_id: productId,
+    p_accompagnements: g.accompagnements,
+    p_sauces: g.sauces,
   });
   if (error) throw error;
 }

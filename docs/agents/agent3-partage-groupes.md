@@ -1,136 +1,136 @@
-# Agent 3 — Partage des plats du jour dans les groupes Facebook
+# Agent 3 — Porter la publication du jour dans les groupes Facebook
 
-Le maillon qui ne peut pas passer par une API (Meta a fermé l'API Groups aux tiers en 2020).
-Il pilote le navigateur avec la session Facebook de Christopher. Voir
-[AGENTS-CALENDRIER-EDITORIAL.md](../AGENTS-CALENDRIER-EDITORIAL.md) pour la place de cet agent
-dans la chaîne, et [PARTAGE-FACEBOOK-GROUPES.md](../PARTAGE-FACEBOOK-GROUPES.md) pour la
-procédure détaillée.
+**Ce document est le mode d'emploi générique.** Il vaut pour Taxi Food aujourd'hui, pour Rentanoo
+demain, pour n'importe quelle activité ensuite. Rien ici n'est propre à la livraison de repas :
+seule la **fiche du § 1** change d'un business à l'autre.
 
-## Déclenchement
+Éprouvé en vrai le 26/09/2026 : **36 publications** en une session, sans blocage. Le détail de
+cette session est dans le journal de [PARTAGE-FACEBOOK-GROUPES.md](../PARTAGE-FACEBOOK-GROUPES.md).
 
-Tâche planifiée, **chaque jour à 11 h 10** (cron `10 11 * * *`, heure locale EAT) — dix minutes
-après la publication programmée de la page, pour qu'elle soit parue.
+---
 
-⚠️ **La tâche ne tourne que si l'application Claude est ouverte.** Si l'ordinateur était éteint à
-11 h 10, elle se déclenche au prochain lancement. Ce n'est pas un serveur, c'est un rendez-vous
-quotidien avec sa propre machine.
+## 1. La fiche à remplir pour une nouvelle activité
 
-## Le prompt de la tâche — à copier tel quel
+```yaml
+business:        taxi-food                 # identifiant court
+page:            "Taxi Food Nosy Be"
+page_id:         "1350723891454039"        # URL de la page → profile.php?id=…
+business_id:     "1313131440466945"        # Meta Business Suite → composeur → URL
+lien_a_partager: "https://taxifoodnosybe.distripro207.com/jour"
+parametre:       "g"                       # ?g=<slug du groupe>, l'étiquette de mesure
+garde_fou:       "la page /jour affiche au moins un plat"   # à quoi renoncer si c'est vide
+langues:         [fr, mg, it, en]          # dans quoi on sait écrire une accroche
+plafond_jour:    36                        # au-delà, on s'arrête
+```
 
-> Tu es l'agent de partage Facebook de **Taxi Food Nosy Be** (livraison de repas, Nosy Be,
-> Madagascar). Chaque jour, tu portes les plats du jour dans les groupes Facebook. Christopher ne
-> fait rien : il a seulement programmé la publication de la page à 11 h 00.
->
-> ## 0. Lis d'abord la procédure — elle fait foi
->
-> Dépôt : `/Users/christopher/Desktop/1-DEV CLAUDE /taxi-food-nosybe`
-> Document : `docs/PARTAGE-FACEBOOK-GROUPES.md`
->
-> Lis-le en entier avant d'agir. Tu as besoin en particulier de :
-> - **§ 3 ter — LE PÉRIMÈTRE TAXI FOOD** : le tableau des ~30 groupes, avec leur slug `?g=`. C'est
->   ta liste de travail, et **rien d'autre**. Les 428 groupes du compte personnel sont hors
->   périmètre, décision du porteur du projet.
-> - **§ 3 bis** : pourquoi on publie un lien marqué DANS le groupe, et jamais un simple partage de
->   la publication de la page (un partage ne se mesure pas).
-> - **§ 4** : la procédure clic par clic.
-> - **§ 5** : les textes, à faire tourner.
-> - **JOURNAL DES PUBLICATIONS** : ce qui a déjà été fait, et les pièges rencontrés.
->
-> ## 1. Garde-fou avant de publier quoi que ce soit
->
-> Ouvre `https://taxifoodnosybe.distripro207.com/jour` et vérifie qu'il y a **au moins un plat du
-> jour affiché**. Si la page est vide, **ne publie rien du tout**, dis-le à Christopher et
-> arrête-toi. On n'envoie pas 30 groupes vers une page vide.
->
-> ## 2. Ce que tu publies
->
-> Dans chaque groupe, une **publication nouvelle** (pas un partage) : une ou deux phrases + le lien
-> marqué du groupe :
->
-> `https://taxifoodnosybe.distripro207.com/jour?g=<slug du groupe>`
->
-> Le slug est dans la colonne du § 3 ter. Facebook fabrique tout seul l'aperçu avec l'image des
-> plats du jour — n'ajoute pas de photo.
->
-> **Le texte change à chaque groupe.** Ne copie jamais deux fois la même phrase : Facebook repère
-> la répétition, et les membres qui sont dans plusieurs groupes aussi. Adapte la langue au groupe :
-> français par défaut, **malgache** pour les groupes malgachophones (Zanaka…, Tany alafo…, Tragno
-> afondro…), **italien** pour Amici italiani, **anglais** pour Have you been Nosy Be?. Le § 5 donne
-> des exemples ; écris-en de nouveaux plutôt que de les recopier.
->
-> ## 3. L'objectif : aucun groupe oublié
->
-> Christopher a demandé explicitement que **tous les groupes du § 3 ter** reçoivent la publication
-> — y compris :
-> - les **quatre que la page a rejoints et qui n'ont jamais rien reçu** : Nosy Bon Coins, TRAGNO
->   AFONDRO ETO NOSY BE HELLE VILLE, NosyBe Bonnes Affaires, MADAGASCAR TOURIST INFO ;
-> - les **sept de la vague 1**, qui n'avaient eu qu'un partage non mesurable : Le Bon coin Nosy be,
->   Bon prix Nosy be, NOSY BE HELL-VILLE, Le BonCoin et Plan de NosyBe, TOURISME - NOSY BE -
->   MADAGASCAR, Business Madio à Nosy-Be, La Vie à Nosy-Be.
->
-> Pour ces onze-là, les slugs proposés dans le tableau n'ont encore jamais servi : utilise-les tels
-> quels et confirme-les dans le journal.
->
-> 🚫 **Sauf « Fitadiavana Asa eto Nosy Be »** — groupe de recherche d'emploi, hors sujet, exclu
-> volontairement. Ne l'ajoute pas.
->
-> ## 4. Rythme et sécurité — lis-le avant de commencer
->
-> - **Attends 45 à 90 secondes entre deux publications.** C'est la seule protection contre le
->   blocage.
-> - Si Facebook affiche **« Quelque chose ne fonctionne pas »**, une demande de vérification, ou
->   bloque une publication : **arrête-toi immédiatement**, n'insiste pas, ne réessaie pas en
->   boucle. Note où tu en étais et préviens Christopher. Un blocage du compte coûte bien plus cher
->   que quelques groupes manqués.
-> - Un groupe qui met la publication **en attente d'un administrateur** n'est pas un échec : note-le
->   et continue.
-> - Utilise l'extension Chrome (`mcp__claude-in-chrome__*`), pas de pilotage d'écran en pixels. Si
->   l'extension n'est pas connectée ou si Facebook n'est pas connecté, dis-le et arrête-toi.
->
-> ## 5. Interdits absolus
->
-> - Ne réponds à aucun commentaire, ne rejoins aucun groupe, n'accepte aucune invitation.
-> - Ne publie jamais dans un groupe qui n'est pas dans le tableau du § 3 ter.
-> - Ne publie jamais deux fois dans le même groupe dans la même journée.
-> - Ne clique sur aucun lien trouvé dans un groupe.
-> - Ne modifie ni ne supprime aucune publication existante.
->
-> ## 6. Le journal, en fin de passage
->
-> Mets à jour la section **JOURNAL DES PUBLICATIONS** de `docs/PARTAGE-FACEBOOK-GROUPES.md` : une
-> entrée datée, un tableau `Groupe | Slug | Résultat` (✅ publié / ⏳ en attente d'un administrateur
-> / ❌ refusé, avec le motif). Corrige aussi la colonne « État » du § 3 ter et complète les nombres
-> de membres que tu relèves au passage.
->
-> Puis commit et push :
-> ```
-> git add docs/PARTAGE-FACEBOOK-GROUPES.md
-> git commit -m "Journal du partage du <date>"
-> git push
-> ```
-> ⚠️ Le dossier parent est couvert par le dépôt git du home : ne commit jamais depuis un répertoire
-> parent, toujours depuis `taxi-food-nosybe`.
->
-> ## 7. Compte rendu final
->
-> Termine par un résumé court en français à Christopher : combien de groupes publiés, lesquels sont
-> en attente de modération, lesquels ont échoué et pourquoi, et où tu t'es arrêté si tu t'es
-> arrêté. Sois factuel : si tu n'as pas fait les 30, dis-le clairement plutôt que d'arrondir.
+Puis la **liste de travail** : un tableau `Groupe | Membres | Slug | État`, tenu dans le document
+de l'activité. Pour Taxi Food c'est le § 3 ter de `PARTAGE-FACEBOOK-GROUPES.md`.
 
-## Ce qu'il faut pour que ça marche
+⚠️ **Le slug ne s'invente qu'une fois.** Une fois publié, il ne change plus, sinon on perd le fil
+des ouvertures de ce groupe.
 
-| | |
-|---|---|
-| Application Claude | **ouverte** à 11 h 10 |
-| Chrome | ouvert, extension Claude connectée |
-| Facebook | session de Christopher active |
-| Page `/jour` | au moins un plat du jour affiché (l'agent vérifie et renonce sinon) |
+---
 
-## Réserve à connaître
+## 2. Les deux identités, et pourquoi il en faut deux
 
-Trente publications dans la même journée, sous la même identité, c'est **au-dessus** de ce que la
-rotation du § 2 de `PARTAGE-FACEBOOK-GROUPES.md` recommande. C'est un choix assumé du porteur du
-projet (« aucun groupe ne doit être oublié », 26/09/2026). Le risque n'est pas l'agent, c'est
-Facebook : au-delà d'une vingtaine de publications rapprochées, les protections
-anti-automatisation se déclenchent. D'où la pause de 45 à 90 secondes et l'arrêt immédiat au
-premier signe de blocage. Si un blocage survient deux jours de suite, revenir à la rotation.
+C'est la découverte qui fait tout marcher, et elle n'était pas écrite avant le 26/09 :
+
+| | Groupes rejoints par **le profil** de Christopher | Groupes rejoints par **la page** |
+|---|---|---|
+| Où publier | sur la page du groupe, composeur « Exprimez-vous… » | **Meta Business Suite** |
+| Comment les trouver | `facebook.com/groups/joins` | composeur → « Voir d'autres groupes » |
+| Combien on en voit | tous | **7 à la fois, liste tournante** |
+
+Un groupe rejoint par la page mais pas par le profil est **invisible** depuis Facebook normal et
+sort à peine dans la recherche : on ne l'atteint que par Meta Business Suite. Inversement, la
+plupart des groupes du profil ne sont pas dans Business Suite. **Il faut faire les deux passes,
+sinon on croit avoir tout couvert alors qu'il manque un tiers de l'audience.**
+
+---
+
+## 3. Passe A — les groupes du profil
+
+Pour chaque groupe de la liste :
+
+1. `navigate` vers `facebook.com/groups/<id>` puis **attendre 10 s**.
+2. `find "Exprimez-vous"` → **cliquer par `ref`**, jamais par coordonnées.
+3. Attendre 7 s, taper le texte, attendre 10 s que l'aperçu du lien se fabrique.
+4. Capture d'écran **avant** de publier : on vérifie l'aperçu, et on relève la position du bouton
+   « Publier » (elle bouge de 30 px quand Facebook glisse son bandeau « Gagnez du temps… »).
+5. Cliquer « Publier », attendre 18 s avant le groupe suivant.
+
+### Les pièges payés en vrai
+
+- **Les coordonnées mentent.** Facebook re-rend la page entre la capture et le clic, et la fenêtre
+  du navigateur change de taille en cours de session. Un clic en pixels a atterri sur l'onglet
+  « Personnes », un autre dans le fil. **Toujours `find` puis clic par `ref`.**
+- **Si deux `ref` portent le même nom**, c'est le second (celui du fil) qui ouvre la fenêtre.
+- **Taper sans champ focalisé fait défiler la page** — au mieux. Au pire, la frappe part dans une
+  zone de commentaire, ou ouvre la fenêtre des raccourcis clavier. D'où la capture de contrôle.
+- **Les fenêtres Messenger s'ouvrent toutes seules** quand quelqu'un écrit, et volent le clic.
+  Les fermer par `find "Fermer"` → clic par `ref`, pas en pixels.
+- **Les groupes d'achat-vente** n'ont pas de composeur sur leur page d'accueil : le bouton propose
+  « Vendre un article ». Passer par `facebook.com/groups/<id>/buy_sell_discussion`.
+- **Ne jamais réécrire par-dessus un brouillon** : fermer la fenêtre conserve le texte, et le
+  nouveau s'ajoute à l'ancien. Pour corriger : clic dans la zone, `cmd+a`, `Delete`, retaper.
+
+## 4. Passe B — les groupes de la page, par Meta Business Suite
+
+`business.facebook.com/latest/composer/?asset_id=<page_id>&business_id=<business_id>`
+
+1. « Publier dans » → « Voir d'autres groupes ».
+2. **Cocher UN SEUL groupe**, puis « Enregistrer ». Meta en autorise trois, mais trois groupes
+   dans une même publication reçoivent le même lien, donc la même étiquette : la mesure est
+   perdue. Un groupe = une publication.
+3. Rouvrir « Publier dans » et **décocher la page**. Sans ça, la publication part AUSSI sur la
+   page, en doublon du post du matin.
+4. Écrire le texte + le lien marqué dans « Texte », puis « Publier ».
+5. **Recharger le composeur** (ajouter `&r=1`, `&r=2`… à l'URL) : la liste des sept groupes change
+   à chaque chargement. C'est la seule façon connue de découvrir les autres.
+
+⚠️ **On ne peut pas certifier qu'aucun groupe n'a été oublié.** Aucun écran ne liste d'un coup tous
+les groupes d'une page. Le compte rendu doit dire ce qui a été servi **et** ce qu'on a vu passer
+sans le servir — jamais « tout est fait ».
+
+---
+
+## 5. Les textes
+
+Un texte différent par groupe, **jamais deux fois le même** : Facebook repère la répétition, et un
+membre présent dans cinq groupes aussi. Adapter la langue au groupe.
+
+**En ASCII.** La frappe pilotée passe mal les accents et les apostrophes typographiques : écrire
+« livres chez vous » plutôt que « livrés », « coup d'oeil » plutôt que « d'œil ». C'est moins beau,
+c'est lisible, et ça évite une publication mutilée.
+
+**Ne citer que ce qui est réellement disponible.** Le 26/09, un texte annonçait un boudin noir
+retiré de l'affiche entre-temps : rattrapé avant publication, mais c'est exactement ce qui détruit
+la confiance. Relire la page du jour avant d'écrire les accroches.
+
+---
+
+## 6. Sécurité — ce qui arrête la session
+
+- **45 à 90 secondes entre deux publications.** C'est la seule protection réelle.
+- Au premier **« Quelque chose ne fonctionne pas »**, demande de vérification, ou publication
+  refusée : **arrêt immédiat**, on note où on en était. Un blocage de compte coûte infiniment plus
+  que quelques groupes manqués.
+- Un groupe qui met la publication **en attente d'un administrateur** n'est pas un échec : on note
+  et on continue. Mais un groupe qui modère et ne publie jamais coûte du temps pour rien — le
+  journal sert à les repérer et à les sortir.
+- **Interdits** : répondre à un commentaire, rejoindre un groupe, accepter une invitation, cliquer
+  un lien trouvé dans un groupe, publier dans un groupe hors liste, publier deux fois le même jour
+  dans le même groupe, publier dans un groupe hors sujet (un groupe d'emploi supprime l'annonce et
+  peut faire exclure le compte).
+
+---
+
+## 7. Le compte rendu, puis le journal
+
+Dans le journal de l'activité : une entrée datée, la liste des groupes servis avec leur slug et
+leur résultat (publié / en attente d'un administrateur / refusé), les groupes **vus mais non
+servis**, et ce qu'on a appris. Puis commit et push depuis le dépôt de l'activité — jamais depuis
+un répertoire parent.
+
+Au porteur du projet, en clair : combien de publications, lesquelles attendent une modération,
+ce qui reste à faire demain. **S'il manque des groupes, le dire — ne pas arrondir.**

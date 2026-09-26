@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   DimensionValue,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,12 +23,16 @@ import { lienPlatsDuJour, textePartagePlatsDuJour, titrePlatsDuJour } from '../.
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import {
   archiveProduct,
+  fetchGarnituresDisponibles,
+  fetchGarnituresDuPlat,
+  Garnitures,
   getFeaturedLibrary,
   getMyRestaurant,
   getMenu,
   saveFeaturedProduct,
   setProductAvailable,
   setProductFeatured,
+  setProductGarnitures,
   setProductSortOrder,
   setRestaurantAutoOpen,
   setRestaurantOpen,
@@ -286,6 +291,20 @@ export default function RestaurantSettingsScreen() {
   const [telSaisi, setTelSaisi] = useState<string | null>(null);
   const [fiche, setFiche] = useState<FicheAffiche | null>(null);
 
+  // --- Garnitures du plat du jour -------------------------------------------
+  // `dispo` = la bibliothèque du restaurant (ce qui existe déjà sur sa carte),
+  // chargée une fois ; `garnitures` = la fenêtre ouverte sur un plat précis.
+  const [dispoGarnitures, setDispoGarnitures] = useState<Garnitures>({
+    accompagnements: [],
+    sauces: [],
+  });
+  const [garnitures, setGarnitures] = useState<{
+    productId: string;
+    nom: string;
+    choix: Garnitures;
+  } | null>(null);
+  const [garnituresBusy, setGarnituresBusy] = useState(false);
+
   // Lu pendant la purge : on veut l'état courant sans faire dépendre l'effet
   // de `enVol`, sinon la purge se rejouerait à chaque tap.
   const enVolRef = useRef(enVol);
@@ -303,6 +322,23 @@ export default function RestaurantSettingsScreen() {
       if (enVolRef.current.ouvert && o.isOpen !== undefined) suite.isOpen = o.isOpen;
       return Object.keys(suite).length === Object.keys(o).length ? o : suite;
     });
+  }, [data]);
+
+  // La bibliothèque de garnitures suit la carte : on la relit à chaque réponse
+  // du serveur, sinon un accompagnement créé ailleurs n'apparaîtrait qu'au
+  // prochain lancement de l'app. Un échec ici ne doit rien casser d'autre :
+  // la fenêtre s'ouvrira simplement vide, et le restaurateur peut passer.
+  useEffect(() => {
+    if (!data) return;
+    let vivant = true;
+    fetchGarnituresDisponibles()
+      .then((g) => {
+        if (vivant) setDispoGarnitures(g);
+      })
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
   }, [data]);
 
   const resto = data?.resto ?? null;
@@ -569,12 +605,13 @@ export default function RestaurantSettingsScreen() {
       return;
     }
 
+    const nom = fiche.name.trim();
     await run(
       'fiche',
       async () => {
-        await saveFeaturedProduct({
+        const productId = await saveFeaturedProduct({
           productId: fiche.productId,
-          name: fiche.name.trim(),
+          name: nom,
           description: fiche.description.trim() || null,
           price: Math.round(prix),
           stockQuantity: stock,
@@ -582,9 +619,46 @@ export default function RestaurantSettingsScreen() {
           featuredLabel: fiche.label.trim() || null,
         });
         setFiche(null);
+
+        // Le plat est à l'affiche : on enchaîne sur ses garnitures. Rien à
+        // proposer (restaurant sans accompagnement ni sauce sur sa carte) ⇒ pas
+        // de fenêtre, on ne fait pas cliquer dans le vide.
+        if (!dispoGarnitures.accompagnements.length && !dispoGarnitures.sauces.length) return;
+        // Ce qui est déjà coché fait foi : rouvrir la fenêtre ne doit jamais
+        // décocher ce que le restaurateur avait posé la dernière fois.
+        const dejaLa = await fetchGarnituresDuPlat(productId).catch(() => ({
+          accompagnements: [],
+          sauces: [],
+        }));
+        setGarnitures({ productId, nom, choix: dejaLa });
       },
       'Enregistrement impossible.',
     );
+  }
+
+  /** Coche / décoche une garniture dans la fenêtre ouverte. */
+  function basculerGarniture(kind: keyof Garnitures, nom: string) {
+    setGarnitures((g) => {
+      if (!g) return g;
+      const liste = g.choix[kind];
+      const suite = liste.includes(nom) ? liste.filter((n) => n !== nom) : [...liste, nom];
+      return { ...g, choix: { ...g.choix, [kind]: suite } };
+    });
+  }
+
+  async function enregistrerGarnitures() {
+    if (!garnitures) return;
+    setError(null);
+    setGarnituresBusy(true);
+    try {
+      await setProductGarnitures(garnitures.productId, garnitures.choix);
+      setGarnitures(null);
+      await reload();
+    } catch (e) {
+      setError((e as { message?: string })?.message || 'Enregistrement des garnitures impossible.');
+    } finally {
+      setGarnituresBusy(false);
+    }
   }
 
   return (
@@ -1248,6 +1322,105 @@ export default function RestaurantSettingsScreen() {
           })}
         </ScrollView>
       )}
+
+      {/* ------------------------------------------- Garnitures du plat du jour
+          S'ouvre juste après la mise à l'affiche. On ne propose QUE ce qui existe
+          déjà sur la carte du restaurant : le restaurateur coche, il ne saisit
+          rien — c'est une manipulation faite en plein service, sur un téléphone.
+          Ce qui est coché devient le choix imposé au client au moment de commander. */}
+      <Modal
+        visible={garnitures !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setGarnitures(null)}
+      >
+        <View style={styles.modalFond}>
+          <View style={styles.modalCarte}>
+            <Text style={styles.modalTitre}>Accompagnements et sauces</Text>
+            <Text style={styles.modalSous}>
+              {garnitures?.nom} est à l'affiche. Cochez ce que le client pourra choisir avec.
+            </Text>
+
+            <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={{ paddingBottom: 8 }}>
+              {dispoGarnitures.accompagnements.length ? (
+                <>
+                  <Text style={styles.modalGroupe}>Accompagnements</Text>
+                  <View style={styles.pastilles}>
+                    {dispoGarnitures.accompagnements.map((nom) => {
+                      const coche = garnitures?.choix.accompagnements.includes(nom) ?? false;
+                      return (
+                        <Pressable
+                          key={`acc-${nom}`}
+                          onPress={() => basculerGarniture('accompagnements', nom)}
+                          style={[styles.pastille, coche && styles.pastilleCochee]}
+                        >
+                          <Icon
+                            name={coche ? 'check_box' : 'check_box_outline_blank'}
+                            size={18}
+                            color={coche ? colors.white : colors.textMuted}
+                          />
+                          <Text style={[styles.pastilleTexte, coche && styles.pastilleTexteCoche]}>
+                            {nom}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
+
+              {dispoGarnitures.sauces.length ? (
+                <>
+                  <Text style={styles.modalGroupe}>Sauces</Text>
+                  <View style={styles.pastilles}>
+                    {dispoGarnitures.sauces.map((nom) => {
+                      const coche = garnitures?.choix.sauces.includes(nom) ?? false;
+                      return (
+                        <Pressable
+                          key={`sau-${nom}`}
+                          onPress={() => basculerGarniture('sauces', nom)}
+                          style={[styles.pastille, coche && styles.pastilleCochee]}
+                        >
+                          <Icon
+                            name={coche ? 'check_box' : 'check_box_outline_blank'}
+                            size={18}
+                            color={coche ? colors.white : colors.textMuted}
+                          />
+                          <Text style={[styles.pastilleTexte, coche && styles.pastilleTexteCoche]}>
+                            {nom}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
+            </ScrollView>
+
+            <Text style={styles.aide}>
+              Le client devra en choisir un de chaque liste cochée, sans supplément.
+              Rien de coché : le plat se sert seul.
+            </Text>
+
+            <Pressable
+              onPress={enregistrerGarnitures}
+              disabled={garnituresBusy}
+              style={[styles.bouton, garnituresBusy && { opacity: 0.6 }]}
+            >
+              <Text style={styles.boutonTexte}>
+                {garnituresBusy ? 'Enregistrement…' : 'Valider'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setGarnitures(null)}
+              disabled={garnituresBusy}
+              style={styles.lienAnnuler}
+            >
+              <Text style={styles.lienAnnulerTexte}>Plus tard</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1365,6 +1538,52 @@ const styles = StyleSheet.create({
   miniBoutonTexte: { fontFamily: fonts.semibold, fontSize: 12, color: colors.white },
   lienAnnuler: { alignItems: 'center', paddingVertical: 10 },
   lienAnnulerTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textMuted },
+  // Fenêtre des garnitures : elle s'ouvre par-dessus l'écran, sans le quitter.
+  modalFond: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCarte: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+    padding: 18,
+    paddingBottom: 26,
+  },
+  modalTitre: { fontFamily: fonts.extrabold, fontSize: 18, color: colors.textDark },
+  modalSous: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  modalGroupe: {
+    fontFamily: fonts.extrabold,
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  pastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pastille: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    backgroundColor: colors.fieldBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  pastilleCochee: { backgroundColor: colors.primary, borderColor: colors.primary },
+  pastilleTexte: { fontFamily: fonts.semibold, fontSize: 13.5, color: colors.textDark },
+  pastilleTexteCoche: { color: colors.white },
   etoile: { padding: 6 },
   fleche: { paddingHorizontal: 3, paddingVertical: 6 },
   categorie: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.textDark, marginBottom: 6 },

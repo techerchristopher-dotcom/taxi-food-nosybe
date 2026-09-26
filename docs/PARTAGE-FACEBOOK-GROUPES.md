@@ -31,6 +31,32 @@ vaut mieux le savoir avant d'y passer du temps :
 - **Au premier refus de Facebook, on arrête la session** et on reprend le lendemain. On ne réessaie
   pas deux fois de suite : c'est le signal qui précède la limitation.
 
+## 2 bis. PLUSIEURS PUBLICATIONS LE MÊME JOUR — on ne multiplie JAMAIS le quota
+
+Constaté le 26/09/2026 : Christopher programme désormais **plusieurs publications par jour** sur
+la page (burger à 18h, une carte de restaurant à 19h30…), en plus du post `/jour` de 11h. Sa
+consigne : que chacune soit, elle aussi, partagée dans les groupes « à tour de rôle ».
+
+⚠️ **« À tour de rôle » veut dire : les publications se PARTAGENT le quota du jour, elles ne
+l'additionnent pas.** Le 25 et le 26/09, on a déjà servi jusqu'à 36 groupes en une session pour un
+seul post. Faire la même chose pour quatre posts le même jour, ce serait 100+ publications
+envoyées aux mêmes groupes en quelques heures — le signal exact que Facebook punit, quel que soit
+le soin mis dans la rédaction de chaque texte.
+
+**La bonne lecture, et celle appliquée :**
+1. Le quota du jour (voir § 2, ou le maximum ponctuel du § 9) reste un **seul** chiffre, pas un
+   chiffre par publication.
+2. Quand plusieurs publications existent le même jour, on **fait tourner les groupes ENTRE elles** :
+   le premier groupe de la rotation reçoit le post A, le suivant le post B, etc. — au lieu de
+   republier le post A tout seul dans tous les groupes du jour.
+3. Les publications qui n'ont pas eu leur tour aujourd'hui l'auront **les jours suivants**, dans la
+   rotation normale — rien n'est perdu, tout est juste étalé.
+4. Une publication qui n'a pas de lien mesurable propre (un post produit sans `?g=`, comme
+   « la carte de La Plage, voir le 1er commentaire ») se partage **nativement** (bouton Partager du
+   post) plutôt que recopiée en texte : impossible d'y coller une étiquette sans un lien dédié.
+   Conséquence à en tirer : **donner à chaque post promotionnel un lien traqué** (comme `/jour`)
+   dès sa préparation, sinon son partage en groupe ne se mesure pas.
+
 ## 3. La liste des groupes ne s'écrit JAMAIS en dur
 
 ⚠️ **Source de vérité unique** : la fenêtre **« Partager dans un groupe »** de la publication.

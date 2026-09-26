@@ -34,7 +34,12 @@ export const RETOURS = [
   '/address',
 ] as const;
 
-export type Retour = (typeof RETOURS)[number];
+/**
+ * Plus la fiche d'un restaurant : « Me prévenir à l'ouverture » exige un compte, et
+ * la personne doit revenir exactement où elle était. Le motif reste fermé — un
+ * chemin `/restaurant/…` composé dans le code, jamais reçu de l'extérieur.
+ */
+export type Retour = (typeof RETOURS)[number] | `/restaurant/${string}`;
 
 type AuthIntentState = {
   /** Chemin à rejouer après connexion, ou null. */

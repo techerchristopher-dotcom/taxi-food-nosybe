@@ -1273,6 +1273,28 @@ export async function markPickedUp(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
+// --- Restaurants en négociation : intérêt et alerte d'ouverture -------------
+/**
+ * Note une visite (silencieuse) ou une demande d'alerte sur un restaurant
+ * `coming_soon`. Renvoie « le client est inscrit à l'alerte ». Ne lève pas si le
+ * restaurant a ouvert entre-temps : la base répond simplement l'état.
+ */
+export async function noterInteretRestaurant(restaurantId: string, kind: 'visite' | 'alerte'): Promise<boolean> {
+  const { data, error } = await supabase.rpc('noter_interet_restaurant', {
+    p_restaurant_id: restaurantId,
+    p_kind: kind,
+  });
+  if (error) throw error;
+  return data === true;
+}
+
+/** Le client a-t-il déjà demandé à être prévenu de l'ouverture de ce restaurant ? */
+export async function monInteretRestaurant(restaurantId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('mon_interet_restaurant', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return data === true;
+}
+
 /** « J'arrive » : le client reçoit « ton livreur arrive dans 5 minutes ». Un seul appui. */
 export async function markArriving(orderId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_order_arriving', { p_order_id: orderId });

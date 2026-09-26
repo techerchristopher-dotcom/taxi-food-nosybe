@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatAr } from '../lib/util';
 import { MenuManager } from './MenuManager';
+import { resume, type Resultat } from '../lib/annonce';
+
+/** Compteurs d'intérêt d'un restaurant en négociation (admin_interet_restaurants). */
+type Interet = { restaurant_id: string; visites: number; visiteurs: number; alertes: number };
 
 type Resto = {
   id: string;
@@ -47,6 +51,8 @@ export function Restaurants() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [interet, setInteret] = useState<Record<string, Interet>>({});
+  const [info, setInfo] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     // ⚠️ PAS de lecture directe de `restaurants` ICI. Depuis la migration
@@ -58,6 +64,11 @@ export function Restaurants() {
     const { data, error } = await supabase.rpc('admin_lister_restaurants');
     if (error) { setErr(error.message); return; }
     setList((data ?? []) as Resto[]);
+    // Qui regarde les restaurants en négociation, et qui veut être prévenu.
+    const { data: ints } = await supabase.rpc('admin_interet_restaurants');
+    const map: Record<string, Interet> = {};
+    for (const i of (ints ?? []) as Interet[]) map[i.restaurant_id] = i;
+    setInteret(map);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -114,6 +125,42 @@ export function Restaurants() {
     setBusy(false);
     setMode('list');
     await load();
+  }
+
+  /**
+   * Passage d'un restaurant d'un statut de catalogue à l'autre. L'ouverture
+   * (« En négociation » → « Disponible ») prévient ceux qui l'ont demandé : la
+   * base écrit l'annonce, l'écran l'envoie par le même chemin que l'onglet
+   * Annonces — jamais deux fois, la fonction Edge refuse un second envoi.
+   */
+  async function changerStatut(r: Resto, statut: Resto['listing_status']) {
+    if (statut === r.listing_status) return;
+    const attendus = interet[r.id]?.alertes ?? 0;
+    const question = statut === 'visible' && r.listing_status === 'coming_soon'
+      ? `Ouvrir « ${r.name} » aux commandes ?${attendus ? ` ${attendus} client${attendus > 1 ? 's' : ''} seront prévenus (notification + e-mail).` : ' Personne n’a demandé à être prévenu.'}`
+      : `Passer « ${r.name} » en « ${STATUT[statut].libelle} » ?`;
+    if (!window.confirm(question)) return;
+    setErr(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const { data: annonceId, error } = await supabase.rpc('admin_set_listing_status', { p_id: r.id, p_status: statut });
+      if (error) throw new Error(error.message);
+      await load();
+      if (annonceId) {
+        const { data, error: envoiError } = await supabase.functions.invoke('envoyer-annonce', {
+          body: { annonce_id: annonceId },
+        });
+        if (envoiError) throw new Error(`Restaurant ouvert, mais l’annonce n’est pas partie : ${envoiError.message}`);
+        setInfo(`« ${r.name} » est ouvert. ${resume(data as Resultat)}`);
+      } else {
+        setInfo(`« ${r.name} » : statut mis à jour.`);
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (menuFor) {
@@ -178,6 +225,7 @@ export function Restaurants() {
         <button className="btn" onClick={openCreate}>+ Créer un restaurant</button>
       </div>
       {err ? <div style={{ color: 'var(--red)', margin: '10px 0' }}>{err}</div> : null}
+      {info ? <div style={{ color: 'var(--green, #2e7d32)', margin: '10px 0' }}>{info}</div> : null}
       {list.length === 0 ? (
         <div className="empty">Aucun restaurant.</div>
       ) : (
@@ -189,7 +237,25 @@ export function Restaurants() {
               <tr key={r.id}>
                 <td className="num">{r.sort_order}</td>
                 <td>{r.name}<div className="muted" style={{ fontSize: 12 }}>{r.cuisine_type ?? ''}{r.zone_served ? ` · ${r.zone_served}` : ''}</div></td>
-                <td><span className={`pill ${STATUT[r.listing_status]?.pastille ?? 'sans_objet'}`}>{STATUT[r.listing_status]?.libelle ?? r.listing_status}</span></td>
+                <td>
+                  <select
+                    value={r.listing_status}
+                    disabled={busy}
+                    onChange={(e) => changerStatut(r, e.target.value as Resto['listing_status'])}
+                    className={`pill ${STATUT[r.listing_status]?.pastille ?? 'sans_objet'}`}
+                    style={{ border: 'none', cursor: 'pointer' }}
+                    title="Changer le statut catalogue"
+                  >
+                    {(Object.keys(STATUT) as Resto['listing_status'][]).map((s) => (
+                      <option key={s} value={s}>{STATUT[s].libelle}</option>
+                    ))}
+                  </select>
+                  {r.listing_status === 'coming_soon' && interet[r.id] ? (
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }} title="Visites de la fiche · personnes distinctes · demandes « Me prévenir »">
+                      {interet[r.id].visiteurs} ont consulté · <b>{interet[r.id].alertes}</b> veulent être prévenus
+                    </div>
+                  ) : null}
+                </td>
                 <td>{r.is_open ? <span className="pill livree">Ouvert</span> : <span className="pill annulee">Fermé</span>}</td>
                 <td className="num">{Math.round(r.commission_rate * 10000) / 100}%</td>
                 <td className="num">{formatAr(r.delivery_fee)}</td>

@@ -100,7 +100,8 @@ type Annonce = {
   id: string;
   titre: string;
   corps: string;
-  cible: 'clients' | 'moi';
+  /** 'clients', 'moi', ou 'restaurant:<uuid>' (ceux qui attendent l'ouverture de ce restaurant). */
+  cible: string;
   route: string | null;
   statut: string;
   canal: 'push' | 'email' | 'push_email';
@@ -181,6 +182,17 @@ Deno.serve(async (req: Request) => {
   if (veutPush) {
     if (annonce.cible === 'moi') {
       userIds = [user.id];
+    } else if (annonce.cible.startsWith('restaurant:')) {
+      // Ouverture d'un restaurant en négociation : seuls ceux qui ont demandé
+      // « Me prévenir » — pas les simples visiteurs (décision produit, 26/09).
+      const { data: attentes, error: attentesError } = await admin
+        .from('restaurant_interest')
+        .select('user_id')
+        .eq('restaurant_id', annonce.cible.slice('restaurant:'.length))
+        .eq('kind', 'alerte')
+        .returns<{ user_id: string }[]>();
+      if (attentesError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_attentes' });
+      userIds = [...new Set((attentes ?? []).map((r) => r.user_id))];
     } else {
       const { data: clients, error: clientsError } = await admin
         .from('user_roles')

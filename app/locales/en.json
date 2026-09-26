@@ -144,6 +144,8 @@
     "share": "Share this restaurant",
     "categoryServedFrom": "{{categorie}} is served from {{de}} to {{a}}. You can browse the menu, but these dishes can't be ordered yet.",
     "fermeBandeau": "This restaurant is closed right now. You can browse the menu, but not order — come back when it opens.",
+    "prevenirBtn": "Notify me when it opens",
+    "prevenuOk": "You will be notified when it opens",
     "bientotBandeau": "This restaurant is coming soon to Taxi Food. You can browse its menu, ordering is not open yet."
   },
   "platsDuJour": {

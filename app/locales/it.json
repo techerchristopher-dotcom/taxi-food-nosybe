@@ -144,6 +144,8 @@
     "share": "Condividi questo ristorante",
     "categoryServedFrom": "{{categorie}} si serve dalle {{de}} alle {{a}}. Puoi guardare il menu, ma questi piatti non sono ancora ordinabili.",
     "fermeBandeau": "Questo ristorante è chiuso in questo momento. Puoi consultare il menu, ma non ordinare — torna all’apertura.",
+    "prevenirBtn": "Avvisami all'apertura",
+    "prevenuOk": "Sarai avvisato all'apertura",
     "bientotBandeau": "Questo ristorante arriva presto su Taxi Food. Puoi scoprire il menu, gli ordini non sono ancora aperti."
   },
   "platsDuJour": {

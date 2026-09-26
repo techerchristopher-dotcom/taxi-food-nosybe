@@ -8,7 +8,7 @@ import {
   titrePlatsDuJour,
 } from '../../lib/partage';
 import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -32,7 +32,8 @@ import { imageUrl, Product, Restaurant, todayServicesLabel } from '../../data/ty
 
 /** Doit rester aligné sur `styles.banner.height`. */
 const BANNER_HEIGHT = 200;
-import { getFraisLivraison, getMenu, getRestaurant } from '../../data/api';
+import { getFraisLivraison, getMenu, getRestaurant, monInteretRestaurant, noterInteretRestaurant } from '../../data/api';
+import { signInFor } from '../../store/authIntent';
 import { useLoad } from '../../lib/useLoad';
 import { nombre } from '../../lib/nombre';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
@@ -51,6 +52,38 @@ export default function RestaurantMenuScreen() {
   // ancien lien partage ou un lien profond ne doit pas le rouvrir. Seul SON
   // personnel le voit encore — dont le compte de demonstration Apple.
   const monRestaurantId = useSession((s) => s.session?.restaurantId);
+  const userId = useSession((s) => s.session?.userId ?? null);
+
+  // Restaurant en négociation : on note la visite (silencieuse, dédoublonnée en
+  // base) et on lit si la personne a déjà demandé à être prévenue.
+  const enNegociation = restaurant?.listingStatus === 'coming_soon';
+  const [alerte, setAlerte] = useState<boolean | null>(null);
+  const [alerteBusy, setAlerteBusy] = useState(false);
+  useEffect(() => {
+    if (!enNegociation || !userId || !id) return;
+    let vivant = true;
+    noterInteretRestaurant(id, 'visite')
+      .then((v) => { if (vivant) setAlerte(v); })
+      .catch(() => monInteretRestaurant(id).then((v) => { if (vivant) setAlerte(v); }).catch(() => {}));
+    return () => { vivant = false; };
+  }, [enNegociation, userId, id]);
+
+  async function demanderAlerte() {
+    if (!id) return;
+    if (!userId) {
+      // Le compte n'est exigé qu'ici : la personne revient sur CETTE fiche après connexion.
+      signInFor(router, `/restaurant/${id}`);
+      return;
+    }
+    setAlerteBusy(true);
+    try {
+      setAlerte(await noterInteretRestaurant(id, 'alerte'));
+    } catch {
+      /* la base a refusé (restaurant ouvert entre-temps) : l'écran se rafraîchira */
+    } finally {
+      setAlerteBusy(false);
+    }
+  }
   const retire = restaurant?.listingStatus === 'hidden' && monRestaurantId !== restaurant?.id;
   const { data: menu } = useLoad(() => getMenu(id!), [id]);
   const categories = menu?.categories ?? [];
@@ -308,6 +341,26 @@ export default function RestaurantMenuScreen() {
                   ? t('restaurant.bientotBandeau')
                   : t('restaurant.fermeBandeau')}
               </Text>
+              {/* En négociation : à la place d'un « Commander » grisé, on capte
+                  l'intérêt. Un tap, et la personne sera prévenue à l'ouverture
+                  (notification + e-mail), sans rien avoir à surveiller. */}
+              {restaurant.listingStatus === 'coming_soon' ? (
+                alerte ? (
+                  <View style={[styles.prevenirBtn, styles.prevenirBtnOk]}>
+                    <Icon name="notifications_active" size={18} color={colors.success} />
+                    <Text style={[styles.prevenirTexte, { color: colors.success }]}>{t('restaurant.prevenuOk')}</Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={demanderAlerte}
+                    disabled={alerteBusy}
+                    style={({ pressed }) => [styles.prevenirBtn, pressed && { opacity: 0.85 }]}
+                  >
+                    <Icon name="notifications" size={18} color={colors.white} />
+                    <Text style={styles.prevenirTexte}>{t('restaurant.prevenirBtn')}</Text>
+                  </Pressable>
+                )
+              ) : null}
             </View>
           ) : null}
 
@@ -539,6 +592,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   horsServiceTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.warnText, lineHeight: 18 },
+  prevenirBtn: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+  },
+  prevenirBtnOk: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.success },
+  prevenirTexte: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
   featuredWrap: { backgroundColor: colors.bg, paddingTop: 14, paddingBottom: 16 },
   featuredHead: {
     paddingHorizontal: spacing.screen,

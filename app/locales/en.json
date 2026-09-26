@@ -177,6 +177,8 @@
     "optional": "Optional",
     "upTo": "Up to {{count}} to choose",
     "addWithPrice": "Add · {{price}}",
+    "precisionLabel": "Anything to add?",
+    "precisionPlaceholder": "No tomato, well done, sauce on the side…",
     "chooseOptions": "Choose the options",
     "share": "Share this dish",
     "restaurantFerme": "Restaurant closed",
@@ -188,6 +190,7 @@
     "contientPorc": "Contains pork"
   },
   "cart": {
+    "precisionPlaceholder": "Anything to add? (no tomato…)",
     "title": "My cart",
     "emptyTitle": "Your cart is empty",
     "emptyText": "Browse the restaurants of Nosy Be and add your favourite dishes.",

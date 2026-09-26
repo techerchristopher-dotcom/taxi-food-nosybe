@@ -33,6 +33,9 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
             {it.options && it.options.length > 0 ? (
               <Text style={styles.itemOptions}>{it.options.map((o) => o.name).join(', ')}</Text>
             ) : null}
+            {/* Précision du client : EN ÉVIDENCE, c'est ce que le cuisinier doit
+                lire avant de commencer (« sans tomate »). */}
+            {it.comment ? <Text style={styles.itemComment}>✎ {it.comment}</Text> : null}
           </View>
           <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
         </View>
@@ -133,6 +136,7 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
   itemName: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDark },
   itemOptions: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
+  itemComment: { fontFamily: fonts.bold, fontSize: 12.5, lineHeight: 17, color: colors.dangerText, marginTop: 3 },
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   subLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   subValue: { fontFamily: fonts.regular, fontSize: 12, color: colors.textDark },

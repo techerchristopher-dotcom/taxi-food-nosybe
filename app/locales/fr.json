@@ -177,6 +177,8 @@
     "optional": "Facultatif",
     "upTo": "Jusqu'à {{count}} au choix",
     "addWithPrice": "Ajouter · {{price}}",
+    "precisionLabel": "Une précision ?",
+    "precisionPlaceholder": "Sans tomate, bien cuit, sauce à part…",
     "chooseOptions": "Choisis les options",
     "share": "Partager ce plat",
     "restaurantFerme": "Restaurant fermé",
@@ -188,6 +190,7 @@
     "contientPorc": "Contient du porc"
   },
   "cart": {
+    "precisionPlaceholder": "Une précision ? (sans tomate…)",
     "title": "Mon panier",
     "emptyTitle": "Ton panier est vide",
     "emptyText": "Parcours les restaurants de Nosy Be et ajoute tes plats préférés.",

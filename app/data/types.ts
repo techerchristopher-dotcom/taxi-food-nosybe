@@ -312,6 +312,8 @@ export type OrderItemSnapshot = {
   unitPrice: number;
   photoUrl?: string | null;
   options?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[];
+  /** Précision du client sur CE plat (« sans tomate ») — jamais un prix, jamais une option. */
+  comment?: string | null;
 };
 
 export type Order = {

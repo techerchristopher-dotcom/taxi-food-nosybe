@@ -715,6 +715,7 @@ type OrderJoinRow = {
     product_name_snapshot: string;
     quantity: number;
     unit_price: number;
+    comment: string | null;
     order_item_options: {
       option_id: string | null;
       option_name_snapshot: string;
@@ -728,7 +729,7 @@ const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
-  'order_items ( product_id, product_name_snapshot, quantity, unit_price, ' +
+  'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
 function mapOrder(o: OrderJoinRow): Order {
@@ -754,6 +755,7 @@ function mapOrder(o: OrderJoinRow): Order {
       name: it.product_name_snapshot,
       quantity: it.quantity,
       unitPrice: it.unit_price,
+      comment: it.comment ?? null,
       options: (it.order_item_options ?? []).map((op) => ({
         optionId: op.option_id,
         name: op.option_name_snapshot,
@@ -883,6 +885,8 @@ export type CreateOrderItem = {
   productId: string;
   quantity: number;
   options: { optionId: string; quantity: number }[];
+  /** Précision libre du client sur ce plat. La base la borne à 140 caractères. */
+  comment?: string | null;
 };
 
 export type CreateOrderInput = {
@@ -1065,6 +1069,9 @@ export async function createOrder(input: CreateOrderInput): Promise<{
       product_id: i.productId,
       quantity: i.quantity,
       options: i.options.map((o) => ({ option_id: o.optionId, quantity: o.quantity })),
+      // `create_order` lit `v_item->>'comment'` depuis le 2026-09-05 : la clé
+      // existait côté base, l'app ne l'envoyait simplement jamais.
+      comment: i.comment?.trim() || null,
     })),
     p_code_promo: input.codePromo ?? null,
   });

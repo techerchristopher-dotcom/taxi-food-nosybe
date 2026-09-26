@@ -168,6 +168,7 @@ function CheckoutForm() {
           productId: l.product.id,
           quantity: l.quantity,
           options: l.options.map((o) => ({ optionId: o.optionId, quantity: o.quantity })),
+          comment: l.comment ?? null,
         })),
         // On envoie le CODE, jamais le montant : la base recalcule la remise.
         // Tout code retenu part, même quand la vérification d'aperçu n'a pas
@@ -262,6 +263,7 @@ function CheckoutForm() {
                 {l.options.length > 0 ? (
                   <Text style={styles.itemOptions}>{l.options.map((o) => o.name).join(', ')}</Text>
                 ) : null}
+                {l.comment ? <Text style={styles.itemComment}>✎ {l.comment}</Text> : null}
               </View>
               <Text style={styles.itemPrice}>{formatAr(lineUnitPrice(l) * l.quantity)}</Text>
             </View>
@@ -395,6 +397,7 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
   itemName: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
   itemOptions: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
+  itemComment: { fontFamily: fonts.regular, fontStyle: 'italic', fontSize: 12, lineHeight: 16, color: colors.ink, marginTop: 2 },
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   addrCard: { marginTop: 12, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   addrLabel: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },

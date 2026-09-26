@@ -196,6 +196,7 @@ export default function OrderTrackingScreen() {
                 {it.options && it.options.length > 0 ? (
                   <Text style={styles.itemOptions}>{it.options.map((o) => o.name).join(', ')}</Text>
                 ) : null}
+                {it.comment ? <Text style={styles.itemComment}>✎ {it.comment}</Text> : null}
               </View>
               <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
             </View>
@@ -334,6 +335,7 @@ const styles = StyleSheet.create({
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
   itemName: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
   itemOptions: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
+  itemComment: { fontFamily: fonts.regular, fontStyle: 'italic', fontSize: 12, lineHeight: 16, color: colors.ink, marginTop: 2 },
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   totalLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },

@@ -61,7 +61,7 @@ export default function OrdersScreen() {
       const selected: SelectedOption[] = opts
         .filter((o) => o.optionId)
         .map((o) => ({ optionId: o.optionId as string, groupId: '', name: o.name, priceDelta: o.priceDelta, quantity: o.quantity }));
-      add(product, ctx, it.quantity, selected);
+      add(product, ctx, it.quantity, selected, it.comment ?? null);
     });
     router.push('/(tabs)/cart');
   }

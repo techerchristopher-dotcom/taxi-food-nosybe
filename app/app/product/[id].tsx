@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -52,6 +53,8 @@ export default function ProductDetailScreen() {
   const cartRestaurantName = useCart((s) => s.restaurantName);
 
   const [qty, setQty] = useState(1);
+  // Précision libre (« sans tomate ») : transmise au restaurant avec la ligne.
+  const [comment, setComment] = useState('');
   // Sélections : { [groupId]: optionId[] }.
   const [sel, setSel] = useState<Record<string, string[]>>({});
   const [conflict, setConflict] = useState(false);
@@ -182,7 +185,7 @@ export default function ProductDetailScreen() {
   function handleAdd() {
     if (!product || !ctx || !valid) return;
     if (canAdd(product)) {
-      add(product, ctx, qty, selectedOptions);
+      add(product, ctx, qty, selectedOptions, comment.trim() || null);
       retour();
     } else {
       setConflict(true);
@@ -320,6 +323,25 @@ export default function ProductDetailScreen() {
               </View>
             );
           })}
+
+          {/* Précision libre du client — demandée le 26/09 après un tacos « sans
+              tomate » impossible à dire. Pas une option : aucun prix, aucune
+              validation ; la base borne à 140 caractères, le restaurant la lit
+              sous le plat (Telegram « ✎ … », écran Commandes) et peut refuser. */}
+          {commandable ? (
+            <View style={styles.precisionWrap}>
+              <Text style={styles.precisionLabel}>{t('product.precisionLabel')}</Text>
+              <TextInput
+                value={comment}
+                onChangeText={(v) => setComment(v.slice(0, 140))}
+                placeholder={t('product.precisionPlaceholder')}
+                placeholderTextColor={colors.textFaint}
+                style={styles.precisionInput}
+                maxLength={140}
+                returnKeyType="done"
+              />
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -376,7 +398,7 @@ export default function ProductDetailScreen() {
         newName={restaurant?.name ?? ''}
         onKeep={() => setConflict(false)}
         onClear={() => {
-          if (ctx) replaceWith(product, ctx, qty, selectedOptions);
+          if (ctx) replaceWith(product, ctx, qty, selectedOptions, comment.trim() || null);
           setConflict(false);
           retour();
         }}
@@ -478,6 +500,19 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipThumb: { width: '100%', height: '100%' },
+  precisionWrap: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 16 },
+  precisionLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink, marginBottom: 8 },
+  precisionInput: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: colors.white,
+    paddingHorizontal: 14,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.ink,
+  },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.divider },
   stepperWrap: {
     borderWidth: 1.5,

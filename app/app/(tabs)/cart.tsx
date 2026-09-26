@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
@@ -33,6 +33,7 @@ export default function CartScreen() {
   const restaurantInitials = useCart((s) => s.restaurantInitials);
   const restaurantLogoUrl = useCart((s) => s.restaurantLogoUrl);
   const setQuantity = useCart((s) => s.setQuantity);
+  const setLineComment = useCart((s) => s.setComment);
   const remove = useCart((s) => s.remove);
   const add = useCart((s) => s.add);
   const deliveryFeeValue = useCart((s) => s.deliveryFeeValue);
@@ -179,6 +180,20 @@ export default function CartScreen() {
                 </View>
                 {l.options.length > 0 ? (
                   <Text style={styles.lineComment}>{l.options.map((o) => o.name).join(', ')}</Text>
+                ) : null}
+                {/* La précision se retouche ici sans repasser par la fiche. Une
+                    ligne SANS précision n'affiche pas de champ : le panier reste
+                    lisible, la fiche du plat est l'endroit pour en poser une. */}
+                {l.comment != null ? (
+                  <TextInput
+                    value={l.comment ?? ''}
+                    onChangeText={(v) => setLineComment(l.key, v.slice(0, 140))}
+                    placeholder={t('cart.precisionPlaceholder')}
+                    placeholderTextColor={colors.textFaint}
+                    style={styles.linePrecision}
+                    maxLength={140}
+                    returnKeyType="done"
+                  />
                 ) : null}
                 <View style={styles.lineFoot}>
                   <QtyStepper
@@ -343,6 +358,17 @@ const styles = StyleSheet.create({
   lineHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   lineName: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   lineComment: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  linePrecision: {
+    marginTop: 6,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    paddingHorizontal: 10,
+    fontFamily: fonts.regular,
+    fontSize: 12.5,
+    color: colors.ink,
+  },
   lineFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
   linePrice: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
   suggestWrap: { marginTop: 18 },

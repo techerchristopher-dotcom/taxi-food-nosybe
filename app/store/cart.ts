@@ -19,16 +19,32 @@ import { optionsTotal, Product, SelectedOption } from '../data/types';
 const CART_KEY = 'taxi-food.cart';
 
 export type CartLine = {
-  /** Clé stable : product.id + options triées. */
+  /** Clé stable : product.id + options triées (+ un suffixe unique si la ligne porte une précision). */
   key: string;
   product: Product;
   quantity: number;
   options: SelectedOption[];
+  /**
+   * Précision du client sur CE plat (« sans tomate »). Pas une option : pas de
+   * prix, pas de validation en base — juste un mot transmis au restaurant.
+   */
+  comment?: string | null;
 };
 
 /** Clé composite d'une ligne : produit + ids d'options triés. */
 export function lineKey(productId: string, optionIds: string[] = []): string {
   return productId + '::' + [...optionIds].sort().join(',');
+}
+
+/**
+ * Une ligne AVEC précision est toujours une ligne à part, jamais fusionnée :
+ * « 2 tacos dont 1 sans tomate » doit rester deux lignes. La clé reste stable
+ * pendant qu'on retouche le texte au panier — sinon le champ se démonterait à
+ * chaque lettre tapée (la ligne est rendue avec `key={l.key}`).
+ */
+function cleDeLigne(productId: string, options: SelectedOption[], comment?: string | null): string {
+  const base = lineKey(productId, options.map((o) => o.optionId));
+  return comment?.trim() ? `${base}::c${Date.now()}` : base;
 }
 
 /** Prix unitaire d'une ligne = base + suppléments. */
@@ -97,9 +113,11 @@ type CartState = Persisted & {
   hydrate: () => Promise<void>;
   /** true si le produit peut être ajouté sans conflit de restaurant. */
   canAdd: (product: Product) => boolean;
-  add: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[]) => void;
+  add: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[], comment?: string | null) => void;
   /** Vide puis ajoute (utilisé après confirmation du conflit). */
-  replaceWith: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[]) => void;
+  replaceWith: (product: Product, ctx: RestaurantContext, quantity?: number, options?: SelectedOption[], comment?: string | null) => void;
+  /** Retouche la précision d'une ligne depuis le panier (clé inchangée). */
+  setComment: (key: string, comment: string) => void;
   /** Quantité de la ligne « ajout rapide » (sans option) d'un produit. */
   quantityOf: (productId: string) => number;
   setQuantity: (key: string, quantity: number) => void;
@@ -179,13 +197,13 @@ export const useCart = create<CartState>((set, get) => ({
     return lines.length === 0 || restaurantId === product.restaurantId;
   },
 
-  add: (product, ctx, quantity = 1, options = []) => {
-    const key = lineKey(product.id, options.map((o) => o.optionId));
+  add: (product, ctx, quantity = 1, options = [], comment = null) => {
+    const key = cleDeLigne(product.id, options, comment);
     const { lines } = get();
     const existing = lines.find((l) => l.key === key);
     const nextLines = existing
       ? lines.map((l) => (l.key === key ? { ...l, quantity: l.quantity + quantity } : l))
-      : [...lines, { key, product, quantity, options }];
+      : [...lines, { key, product, quantity, options, comment: comment?.trim() || null }];
     const next: Persisted = {
       restaurantId: ctx.id,
       restaurantName: ctx.name,
@@ -207,14 +225,14 @@ export const useCart = create<CartState>((set, get) => ({
   // revérifié contre le nouveau restaurant (`store/promo.ts` : le restaurant
   // fait partie des entrées de la vérification), et si le code ne s'y applique
   // pas le client lit la raison exacte au lieu d'une remise disparue.
-  replaceWith: (product, ctx, quantity = 1, options = []) => {
+  replaceWith: (product, ctx, quantity = 1, options = [], comment = null) => {
     const next: Persisted = {
       restaurantId: ctx.id,
       restaurantName: ctx.name,
       restaurantInitials: ctx.initials,
       restaurantLogoUrl: ctx.logoUrl ?? null,
       deliveryFeeValue: ctx.deliveryFee,
-      lines: [{ key: lineKey(product.id, options.map((o) => o.optionId)), product, quantity, options }],
+      lines: [{ key: cleDeLigne(product.id, options, comment), product, quantity, options, comment: comment?.trim() || null }],
       promoCode: get().promoCode,
     };
     set(next);
@@ -230,6 +248,13 @@ export const useCart = create<CartState>((set, get) => ({
       return;
     }
     const lines = get().lines.map((l) => (l.key === key ? { ...l, quantity } : l));
+    const next: Persisted = { ...toPersisted(get()), lines };
+    set(next);
+    void persist(next);
+  },
+
+  setComment: (key, comment) => {
+    const lines = get().lines.map((l) => (l.key === key ? { ...l, comment: comment || null } : l));
     const next: Persisted = { ...toPersisted(get()), lines };
     set(next);
     void persist(next);

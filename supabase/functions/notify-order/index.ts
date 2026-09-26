@@ -33,6 +33,8 @@ type Payload = {
   picked_up?: boolean;
   /** 'nouvelle' pour un INSERT, 'statut' (défaut) pour un UPDATE. */
   event?: 'nouvelle' | 'statut';
+  /** Jalon posé par le livreur après la récupération : « J'arrive » / « Je suis là ». */
+  phase?: 'arriving' | 'arrived' | null;
 };
 
 type Order = {
@@ -104,6 +106,18 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     fr: { title: 'Le livreur est en route 🛵', body: 'Ta commande vient d’être récupérée chez {resto}.' },
     en: { title: 'Your courier is on the way 🛵', body: 'Your order has just been picked up at {resto}.' },
     it: { title: 'Il corriere sta arrivando 🛵', body: 'Il tuo ordine è stato appena ritirato da {resto}.' },
+  },
+  // Deux jalons du livreur (26/09/2026) : « J'arrive » à cinq minutes, « Je suis là »
+  // devant la porte. Ce sont les deux moments où le client doit bouger.
+  arriving: {
+    fr: { title: 'Ton livreur arrive dans 5 minutes 🛵', body: 'Tiens-toi prêt, il est tout près.' },
+    en: { title: 'Your courier arrives in 5 minutes 🛵', body: 'Get ready, they are very close.' },
+    it: { title: 'Il tuo rider arriva tra 5 minuti 🛵', body: 'Tieniti pronto, è vicinissimo.' },
+  },
+  arrived: {
+    fr: { title: 'Ton livreur est devant chez toi 📍', body: 'Il t’attend — sors le retrouver.' },
+    en: { title: 'Your courier is at your door 📍', body: 'They are waiting for you — come out to meet them.' },
+    it: { title: 'Il tuo rider è davanti a casa tua 📍', body: 'Ti sta aspettando — esci a riceverlo.' },
   },
 
   // --- Restaurant ---
@@ -178,12 +192,12 @@ Deno.serve(async (req: Request) => {
     // Le client vient de la passer, il est devant son écran : lui seul n'a rien à recevoir.
     envois.push({ audience: 'restaurant', key: 'nouvelle_commande' });
   } else {
-    const key = payload.picked_up ? 'picked_up' : payload.status;
+    const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up' : payload.status;
     if (MESSAGES[key]) envois.push({ audience: 'client', key });
     // Course libérée par le restaurant et pas encore prise : les livreurs disponibles
     // sont prévenus. Si `courier_id` est déjà rempli, la course est attribuée — inutile
     // de réveiller tout le monde pour rien.
-    if (!payload.picked_up && payload.status === 'en_livraison' && !order.courier_id) {
+    if (!payload.phase && !payload.picked_up && payload.status === 'en_livraison' && !order.courier_id) {
       envois.push({ audience: 'livreur', key: 'course_disponible' });
     }
   }

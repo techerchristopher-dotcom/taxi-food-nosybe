@@ -12,6 +12,8 @@ import {
   listMyActiveDeliveries,
   listAvailableDeliveries,
   MAX_TOURNEE,
+  markArrived,
+  markArriving,
   markDelivered,
   markPickedUp,
   releaseDelivery,
@@ -117,12 +119,44 @@ export default function CourierDeliveriesScreen() {
                     order={order}
                     footer={
                       order.pickedUp ? (
-                        <Button
-                          label="Marquer livrée"
-                          icon="check_circle"
-                          onPress={() => setDeliverTarget(order)}
-                          loading={busy === order.id}
-                        />
+                        // Apres la recuperation, deux jalons pour prevenir le client
+                        // (un seul appui chacun, la base refuse le second), puis la
+                        // livraison. « Marquer livree » reste toujours accessible :
+                        // une course de deux minutes n'a pas besoin de « J'arrive ».
+                        <View style={{ gap: 8 }}>
+                          {order.arrivedAt ? (
+                            <Text style={styles.jalon}>✓ Client prévenu : tu es devant chez lui</Text>
+                          ) : order.arrivingAt ? (
+                            <Text style={styles.jalon}>✓ Client prévenu : tu arrives dans 5 min</Text>
+                          ) : null}
+                          <View style={styles.row}>
+                            <Button
+                              label="Marquer livrée"
+                              icon="check_circle"
+                              variant={order.arrivedAt ? 'primary' : 'outline'}
+                              onPress={() => setDeliverTarget(order)}
+                              loading={busy === order.id}
+                              style={{ flex: 1 }}
+                            />
+                            {!order.arrivingAt ? (
+                              <Button
+                                label="J'arrive"
+                                icon="near_me"
+                                onPress={() => run(order.id, () => markArriving(order.id), 'Action impossible.')}
+                                loading={busy === order.id}
+                                style={{ flex: 1.2 }}
+                              />
+                            ) : !order.arrivedAt ? (
+                              <Button
+                                label="Je suis là"
+                                icon="location_on"
+                                onPress={() => run(order.id, () => markArrived(order.id), 'Action impossible.')}
+                                loading={busy === order.id}
+                                style={{ flex: 1.2 }}
+                              />
+                            ) : null}
+                          </View>
+                        </View>
                       ) : (
                         <View style={styles.row}>
                           <Button
@@ -228,6 +262,7 @@ const styles = StyleSheet.create({
   availSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
   section: { fontFamily: fonts.bold, fontSize: 13, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
   row: { flexDirection: 'row', gap: 10 },
+  jalon: { fontFamily: fonts.medium, fontSize: 12, color: colors.success },
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 8 },
   emptyTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginTop: 6 },
   emptySub: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted, textAlign: 'center' },

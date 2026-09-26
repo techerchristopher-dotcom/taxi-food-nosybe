@@ -83,16 +83,27 @@ export default function OrderTrackingScreen() {
   // Sous-états de "en_livraison" : en attente d'un livreur vs récupérée, en route.
   const enLivraison = order.status === 'en_livraison';
   const bannerIcon = cancelled ? 'cancel' : enLivraison && !order.pickedUp ? 'schedule' : head.icon;
+  // Jalons posés par le livreur après la récupération : « J'arrive » puis « Je suis là ».
+  const livreurLa = enLivraison && !!order.arrivedAt;
+  const livreurArrive = enLivraison && !livreurLa && !!order.arrivingAt;
   const bannerTitle = cancelled
     ? t('tracking.refusedTitle')
-    : enLivraison
-      ? order.pickedUp
-        ? t('tracking.onTheWay')
-        : t('tracking.soonOnTheWay')
-      : t(`tracking.steps.${head.key}Title`);
+    : livreurLa
+      ? t('tracking.courierHere')
+      : livreurArrive
+        ? t('tracking.courierArriving')
+        : enLivraison
+          ? order.pickedUp
+            ? t('tracking.onTheWay')
+            : t('tracking.soonOnTheWay')
+          : t(`tracking.steps.${head.key}Title`);
   // Le motif de refus est saisi par le restaurant : donnée métier, jamais traduite.
   const bannerSub = cancelled
     ? (order.cancellationReason ?? t('tracking.refusedDefault'))
+    : livreurLa
+      ? t('tracking.courierHereSub')
+      : livreurArrive
+        ? t('tracking.courierArrivingSub')
     : enLivraison
       ? order.pickedUp
         ? order.courierName
@@ -150,9 +161,13 @@ export default function OrderTrackingScreen() {
                   ? t('tracking.payToCourierCarte')
                   : t('tracking.payToCourier', { method: paymentShort(order.paymentMethod) })
                 : i === 3 && enLivraison
-                  ? order.pickedUp
-                    ? t('tracking.step4Picked')
-                    : t('tracking.step4Waiting')
+                  ? livreurLa
+                    ? t('tracking.courierHere')
+                    : livreurArrive
+                      ? t('tracking.courierArriving')
+                      : order.pickedUp
+                        ? t('tracking.step4Picked')
+                        : t('tracking.step4Waiting')
                   : t(`tracking.steps.${s.key}Sub`);
             return (
               <View key={i} style={styles.stepRow}>

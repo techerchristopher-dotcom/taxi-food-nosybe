@@ -694,6 +694,8 @@ type OrderJoinRow = {
   cancellation_reason: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
+  arriving_at?: string | null;
+  arrived_at?: string | null;
   created_at: string;
   restaurants: {
     name: string;
@@ -726,7 +728,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, arriving_at, arrived_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, ' +
@@ -788,6 +790,8 @@ function mapOrder(o: OrderJoinRow): Order {
     clientPhone: addr?.phone ?? o.profiles?.phone ?? null,
     courierId: o.courier_id,
     pickedUp: o.picked_up_at != null,
+    arrivingAt: o.arriving_at ?? null,
+    arrivedAt: o.arrived_at ?? null,
   };
 }
 
@@ -1266,6 +1270,18 @@ export async function releaseDelivery(orderId: string): Promise<void> {
 /** Confirme la récupération au restaurant. */
 export async function markPickedUp(orderId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_order_picked_up', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** « J'arrive » : le client reçoit « ton livreur arrive dans 5 minutes ». Un seul appui. */
+export async function markArriving(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_order_arriving', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** « Je suis là » : le client reçoit « ton livreur est devant chez toi ». Un seul appui. */
+export async function markArrived(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_order_arrived', { p_order_id: orderId });
   if (error) throw error;
 }
 

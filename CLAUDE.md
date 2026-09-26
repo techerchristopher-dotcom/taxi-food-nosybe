@@ -1491,6 +1491,57 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## 🌙 Nuit du 26 au 27/09 — trois chantiers livrés (précision par plat, jalons livreur, négociation)
+
+Plan validé tel quel : `docs/PLAN-3-CHANTIERS-2026-09-26.md`. Code poussé, base migrée, fonctions
+Edge déployées. **Pas encore publié aux téléphones** (OTA) ni redéployé sur Netlify (admin) —
+voir « Reste à livrer » en fin de section.
+
+**1. Précision par plat (« sans tomate »)** — migration `20260926230000`.
+- `order_items.comment` existait, `create_order` l'écrivait, le n8n de production l'imprimait
+  déjà (`✎ …`, Telegram restaurant + e-mail client) : **il manquait l'app**. Champ sur la fiche
+  du plat (`product/[id].tsx`, visible seulement si commandable), retouche au panier (champ
+  présent seulement sur une ligne qui en porte une), affichage restaurant/livreur **en évidence**
+  (`RestaurantOrderCard`, rouge), suivi client, récapitulatif, « Commander à nouveau ».
+- ⚠️ **Une ligne avec précision ne fusionne jamais** (`cleDeLigne`, suffixe unique) : « 2 tacos
+  dont 1 sans tomate » = deux lignes. Et la clé reste stable pendant la frappe, sinon le champ se
+  démonte à chaque lettre.
+- Base : trigger `order_items_normaliser_comment` (btrim, vide → NULL, **140 caractères**). On ne
+  touche PAS à `create_order` (piège PGRST203). La copie Telegram **admin** (envoyée par la base,
+  pas par n8n) imprime désormais options et précision — patch par remplacement d'ancre dans
+  `notify_order_status`, jamais retapée.
+
+**2. Livreur : « J'arrive » puis « Je suis là »** — migration `20260926234000`.
+- `orders.arriving_at` / `arrived_at`, RPC `mark_order_arriving` / `mark_order_arrived`
+  (livreur assigné, commande récupérée, un seul appui — la base refuse le second),
+  `release_order` les remet à NULL. Le statut ne bouge pas (`en_livraison`), comme `picked_up_at`.
+- Trigger `orders_notify_status` écoute les deux colonnes ; la fonction émet `phase`
+  (`arriving`|`arrived`) vers `notify-order` (v3, deux messages FR/EN/IT) et **court-circuite
+  n8n** pour ces jalons — sinon l'e-mail « en livraison » repartirait au client.
+- Écran livreur : après « Récupérée », `J'arrive` puis `Je suis là`, « Marquer livrée » toujours
+  accessible (course courte). Suivi client : « Ton livreur arrive dans 5 minutes » / « … est
+  devant chez toi ».
+
+**3. Restaurants en négociation** — migration `20260927003000`.
+- Table `restaurant_interest` (visite dédoublonnée sur 6 h, alerte unique), RLS sans politique,
+  RPC `noter_interet_restaurant`, `mon_interet_restaurant`, `admin_interet_restaurants`.
+- Fiche client : bouton **« Me prévenir à l'ouverture »** sous le bandeau ; non connecté →
+  `signInFor(router, '/restaurant/<id>')` (le type `Retour` accepte désormais ce motif).
+  ⚠️ L'écran de connexion affiche alors le pitch « Plus qu'une étape avant d'être livré » — à
+  affiner un jour, sans gravité.
+- Admin : **le statut catalogue se change enfin à l'écran** (select dans la colonne) via
+  `admin_set_listing_status`. Passage `coming_soon → visible` avec des demandes en attente ⇒ la
+  RPC écrit une `annonces` (cible `restaurant:<id>`, route `/restaurant/<id>`, push + e-mail) et
+  renvoie son id ; l'écran l'envoie par `envoyer-annonce` (v4, nouvelle cible), même historique,
+  mêmes compteurs. Contrainte `annonces_cible_check` élargie. Seuls ceux qui ont **appuyé** sont
+  prévenus ; la désinscription « annonces » ne s'applique pas (demande explicite).
+- Vérifié en base avec une vraie session (visite dédoublonnée, alerte idempotente, compteurs,
+  cibles = 1 jeton / 1 e-mail, no-op sur même statut) puis lignes de test effacées.
+
+**Reste à livrer (deux gestes, à faire de jour)** : l'OTA (`expo export` + `eas update --branch
+production`, runtime 1.2.3) et le redéploiement Netlify de `admin/`. Sans l'OTA, les livreurs et
+restaurants ne voient rien de nouveau ; les notifications, elles, sont déjà en place côté serveur.
+
 ## 🔥 Les plats du jour de toute l'île, en un seul endroit (2026-09-25)
 
 Constat du porteur du projet : les plats du jour sont le contenu **le plus attirant** du

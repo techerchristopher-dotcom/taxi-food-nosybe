@@ -1,7 +1,7 @@
 # Trois chantiers — plan à valider avant implémentation
 
-Demandés le 26/09/2026 au soir. **Rien n'est implémenté** : ce document est le plan, écrit après
-diagnostic de l'existant, pour validation. La partie technique est reléguée tout en bas, à part.
+Demandés le 26/09/2026 au soir, **validés tels quels et implémentés dans la nuit** (voir la section
+« Nuit du 26 au 27/09 » de `CLAUDE.md`). Ce document reste le plan d'origine. La partie technique est reléguée tout en bas, à part.
 
 ---
 

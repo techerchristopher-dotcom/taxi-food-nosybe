@@ -329,6 +329,62 @@ TOURISME - NOSY BE - MADAGASCAR · Business Madio à Nosy-Be · La Vie à Nosy-B
 publication, identique pour tous. Et NOSY-BE Petit Paris affichait « 1 publication en attente » :
 une partie de cette vague n'a même jamais été vue.
 
+### 2026-09-26, 11 h — LES GROUPES DE LA PAGE, 36 publications
+
+Publication de la page programmée à 11 h par Christopher ; partage lancé à 11 h 05. Consigne :
+« aucun groupe de la page Taxi Food ne doit être oublié ».
+
+**Les 27 groupes atteints depuis le profil** (composeur du groupe, lien marqué, texte différent à
+chaque fois — français, malgache, italien, anglais) :
+
+`business207` · `tanyalafo` · `zanaka` · `inovaovao` · `ambiance` · `bizness` · `mbizna` ·
+`grandmarche` · `haveyoubeen` · `mbiznaville` · `nosybepub` · `venteenligne` · `tsarabusiness` ·
+`plaisirs` · `toutsur` · `leboncoin` · `hellville` · `tourisme` ⏳ · `businessmadio` · `bonprix` ·
+`lavie` · `boncoinplan` · `petitparis` ⏳ · `bonnesaffaires` · `amici` · `sejour` · `bazarbe`
+
+⏳ = groupe qui modère : TOURISME - NOSY BE - MADAGASCAR (3 publications en attente) et NOSY-BE
+Petit Paris (2 en attente, dont celle d'hier). Ces deux-là coûtent du temps et n'ont encore jamais
+rien rapporté.
+
+**Les 9 groupes atteints depuis Meta Business Suite, en tant que PAGE** — parce que le profil
+personnel n'en est pas membre :
+
+| Groupe | Membres | Slug |
+|---|---|---|
+| TRAGNO AFONDRO ETO NOSY BE HELLE VILLE | 15 057 | `tragnoafondro` |
+| BON PLAN VACANCES À NOSY BE MADAGASCAR | 14 987 | `bonplanvacances` |
+| Nosy Bon Coins | 13 269 | `bonscoins` |
+| BIZNA SY SERA ETO NOSY BE HELL VILLE (privé) | 11 947 | `biznasera` |
+| Visit Nosy be Madagascar Island | 6 249 | `visitnosybe` |
+| Nosy Be Madagascar '' | 4 865 | `nosybemada` |
+| MADAGASCAR TRAVEL with Tour Guide | 4 589 | `madatravel` |
+| Nosy be business | 4 404 | `nosybebusiness` |
+| MADAGASCAR TOURIST INFO | 4 238 | `touristinfo` |
+
+### ⚠️ La découverte du jour : le sélecteur de Meta est une liste TOURNANTE
+
+La fenêtre « Publier dans des groupes Facebook » de Meta Business Suite n'affiche que **7 groupes
+à la fois, et pas toujours les mêmes** : à chaque rechargement du composeur, elle en propose sept
+autres. **Il n'existe donc aucun écran qui liste d'un coup tous les groupes de la page.** La seule
+méthode connue est de recharger le composeur en boucle et de noter les nouveaux noms.
+
+Conséquence directe : **on ne peut pas certifier qu'aucun groupe n'a été oublié.** On peut
+seulement dire ce qui a été servi, et ce qu'on a vu passer sans le servir.
+
+**Vus mais pas encore servis, à prendre en priorité au prochain passage :**
+Top business Nosy be hell ville (8 836) · Nosy Be , Tiako (5 832) · bizna nosy be hell ville ·
+Nosy Be mora tany alafo | trano afondro.
+
+**Autre enseignement** : depuis le composeur d'un groupe, Facebook publie désormais **au nom de la
+page Taxi Food Nosy Be** et non du profil de Christopher — sauf dans le tout premier groupe de la
+session. C'est mieux (la marque signe), mais ce n'est pas nous qui l'avons choisi.
+
+**Méthode Meta Business Suite, à réutiliser** : composeur → « Publier dans » → « Voir d'autres
+groupes » → cocher UN seul groupe → Enregistrer → rouvrir « Publier dans » → **décocher la page
+Taxi Food Nosy Be** (sinon la publication part aussi sur la page, en doublon du post de 11 h) →
+écrire le texte + le lien marqué → Publier. Un groupe par publication : cocher les trois groupes
+autorisés leur donnerait le même lien, donc la même étiquette, et la mesure serait perdue.
+
 ### 2026-09-25 au soir, vague 2 — LIEN MARQUÉ publié DANS le groupe (mesurable)
 
 | Groupe | Membres | Étiquette | Résultat |

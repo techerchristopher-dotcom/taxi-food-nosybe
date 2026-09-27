@@ -336,6 +336,22 @@ function CheckoutForm() {
           <Text style={styles.infoCarte}>{t('checkout.cbMinimum')}</Text>
         ) : null}
 
+        {/* Dernier filet avant de payer : si aucune ligne ne porte de précision,
+            on le rappelle — c'est ici que le client réalise qu'il a oublié le
+            « sans tomate ». Le champ est au panier, un tap y ramène. */}
+        {lines.length > 0 && !lines.some((l) => l.comment) ? (
+          <View style={styles.rappelPrecision}>
+            <Icon name="edit_note" size={22} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rappelTitre}>{t('checkout.precisionRappelTitre')}</Text>
+              <Text style={styles.rappelTexte}>{t('checkout.precisionRappelTexte')}</Text>
+            </View>
+            <Pressable onPress={() => router.push('/(tabs)/cart')} hitSlop={8}>
+              <Text style={styles.rappelLien}>{t('checkout.precisionRappelBtn')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
@@ -408,6 +424,20 @@ const styles = StyleSheet.create({
   },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
   remiseTexte: { color: colors.primary },
+  rappelPrecision: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: colors.dangerBg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  rappelTitre: { fontFamily: fonts.bold, fontSize: 13.5, color: colors.ink },
+  rappelTexte: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: colors.textMuted, marginTop: 2 },
+  rappelLien: { fontFamily: fonts.bold, fontSize: 13, color: colors.primary },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
   noteLivraison: {
     marginTop: 6,

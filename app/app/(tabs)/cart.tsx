@@ -182,20 +182,18 @@ export default function CartScreen() {
                 {l.options.length > 0 ? (
                   <Text style={styles.lineComment}>{l.options.map((o) => o.name).join(', ')}</Text>
                 ) : null}
-                {/* La précision se retouche ici sans repasser par la fiche. Une
-                    ligne SANS précision n'affiche pas de champ : le panier reste
-                    lisible, la fiche du plat est l'endroit pour en poser une. */}
-                {l.comment != null ? (
-                  <TextInput
-                    value={l.comment ?? ''}
-                    onChangeText={(v) => setLineComment(l.key, v.slice(0, 140))}
-                    placeholder={t('cart.precisionPlaceholder')}
-                    placeholderTextColor={colors.textFaint}
-                    style={styles.linePrecision}
-                    maxLength={140}
-                    returnKeyType="done"
-                  />
-                ) : null}
+                {/* Le champ est là sur CHAQUE ligne, précision ou pas : celui qui a
+                    zappé la fiche du plat doit pouvoir le dire ici (demande du 27/09).
+                    Un champ vide n'envoie rien. */}
+                <TextInput
+                  value={l.comment ?? ''}
+                  onChangeText={(v) => setLineComment(l.key, v.slice(0, 140))}
+                  placeholder={t('cart.precisionPlaceholder')}
+                  placeholderTextColor={colors.textFaint}
+                  style={[styles.linePrecision, !l.comment && styles.linePrecisionVide]}
+                  maxLength={140}
+                  returnKeyType="done"
+                />
                 <View style={styles.lineFoot}>
                   <QtyStepper
                     value={l.quantity}
@@ -354,6 +352,7 @@ const styles = StyleSheet.create({
   lineHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   lineName: { flex: 1, fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
   lineComment: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
+  linePrecisionVide: { borderStyle: 'dashed', borderColor: colors.primary, backgroundColor: colors.dangerBg },
   linePrecision: {
     marginTop: 6,
     height: 34,

@@ -330,7 +330,14 @@ export default function ProductDetailScreen() {
               sous le plat (Telegram « ✎ … », écran Commandes) et peut refuser. */}
           {commandable ? (
             <View style={styles.precisionWrap}>
-              <Text style={styles.precisionLabel}>{t('product.precisionLabel')}</Text>
+              {/* Carte teintée, icône, titre en gras : le porteur du projet a constaté
+                  (27/09) que le champ discret passait inaperçu — et un tacos « sans
+                  tomate » impossible à dire, c'est un appel ou une annulation. */}
+              <View style={styles.precisionEntete}>
+                <Icon name="edit_note" size={22} color={colors.primary} />
+                <Text style={styles.precisionLabel}>{t('product.precisionLabel')}</Text>
+              </View>
+              <Text style={styles.precisionSous}>{t('product.precisionSous')}</Text>
               <TextInput
                 value={comment}
                 onChangeText={(v) => setComment(v.slice(0, 140))}
@@ -500,13 +507,24 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipThumb: { width: '100%', height: '100%' },
-  precisionWrap: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 16 },
-  precisionLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink, marginBottom: 8 },
+  precisionWrap: {
+    marginHorizontal: 20,
+    marginTop: 6,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: colors.dangerBg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  precisionEntete: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  precisionLabel: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.ink },
+  precisionSous: { fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 17, color: colors.textMuted, marginBottom: 10 },
   precisionInput: {
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.primary,
     backgroundColor: colors.white,
     paddingHorizontal: 14,
     fontFamily: fonts.regular,

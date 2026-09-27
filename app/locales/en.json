@@ -183,6 +183,7 @@
     "upTo": "Up to {{count}} to choose",
     "addWithPrice": "Add · {{price}}",
     "precisionLabel": "Anything to add?",
+    "precisionSous": "No tomato, well done, sauce on the side, allergy… the restaurant reads it before cooking.",
     "precisionPlaceholder": "No tomato, well done, sauce on the side…",
     "chooseOptions": "Choose the options",
     "share": "Share this dish",
@@ -238,6 +239,9 @@
     "accuracyPoor": "Approximate position (± {{m}} m). The courier may not find you: step outside, wait a few seconds and tap “Refresh my position”."
   },
   "checkout": {
+    "precisionRappelTitre": "Anything to tell the kitchen?",
+    "precisionRappelTexte": "No tomato, allergy, well done… you haven't added a note to your dishes.",
+    "precisionRappelBtn": "Add a note",
     "title": "Confirm my order",
     "noAddress": "No address selected",
     "paymentSection": "Payment method",

@@ -183,6 +183,7 @@
     "upTo": "Fino a {{count}} a scelta",
     "addWithPrice": "Aggiungi · {{price}}",
     "precisionLabel": "Una precisazione?",
+    "precisionSous": "Senza pomodoro, ben cotto, salsa a parte, allergie… il ristorante lo legge prima di cucinare.",
     "precisionPlaceholder": "Senza pomodoro, ben cotto, salsa a parte…",
     "chooseOptions": "Scegli le opzioni",
     "share": "Condividi questo piatto",
@@ -238,6 +239,9 @@
     "accuracyPoor": "Posizione approssimativa (± {{m}} m). Il corriere potrebbe non trovarti: esci all'aperto, attendi qualche secondo e tocca «Aggiorna la mia posizione»."
   },
   "checkout": {
+    "precisionRappelTitre": "Qualcosa da dire alla cucina?",
+    "precisionRappelTexte": "Senza pomodoro, allergie, ben cotto… non hai aggiunto note ai tuoi piatti.",
+    "precisionRappelBtn": "Aggiungi",
     "title": "Conferma il mio ordine",
     "noAddress": "Nessun indirizzo selezionato",
     "paymentSection": "Metodo di pagamento",

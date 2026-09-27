@@ -183,6 +183,7 @@
     "upTo": "Jusqu'à {{count}} au choix",
     "addWithPrice": "Ajouter · {{price}}",
     "precisionLabel": "Une précision ?",
+    "precisionSous": "Sans tomate, bien cuit, sauce à part, allergie… le restaurant le lit avant de cuisiner.",
     "precisionPlaceholder": "Sans tomate, bien cuit, sauce à part…",
     "chooseOptions": "Choisis les options",
     "share": "Partager ce plat",
@@ -238,6 +239,9 @@
     "accuracyPoor": "Position approximative (± {{m}} m). Le livreur risque de ne pas te trouver : sors à l'air libre, attends quelques secondes et touche « Actualiser ma position »."
   },
   "checkout": {
+    "precisionRappelTitre": "Une précision pour la cuisine ?",
+    "precisionRappelTexte": "Sans tomate, allergie, bien cuit… tu n'as rien précisé sur tes plats.",
+    "precisionRappelBtn": "Préciser",
     "title": "Valider ma commande",
     "noAddress": "Aucune adresse sélectionnée",
     "paymentSection": "Mode de paiement",

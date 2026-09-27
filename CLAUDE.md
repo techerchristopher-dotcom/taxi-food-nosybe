@@ -1538,9 +1538,21 @@ voir « Reste à livrer » en fin de section.
 - Vérifié en base avec une vraie session (visite dédoublonnée, alerte idempotente, compteurs,
   cibles = 1 jeton / 1 e-mail, no-op sur même statut) puis lignes de test effacées.
 
-**Reste à livrer (deux gestes, à faire de jour)** : l'OTA (`expo export` + `eas update --branch
-production`, runtime 1.2.3) et le redéploiement Netlify de `admin/`. Sans l'OTA, les livreurs et
-restaurants ne voient rien de nouveau ; les notifications, elles, sont déjà en place côté serveur.
+**Livré le 27/09 au matin (« GO » du porteur du projet)** : OTA publiée sur les **trois
+runtimes** (1.2.1 `95f4d472…`, 1.2.2 `17d3b3b6…`, 1.2.3 `14b46f5c…`), site web et admin
+redéployés sur Netlify (vérifié : le bundle web en ligne porte le champ de précision).
+**Message Telegram envoyé** par le robot aux quatre restaurants équipés (Bidul, M&K, La Plage
+en groupe ; La Cabane en direct) pour annoncer la précision par plat et les jalons livreur —
+texte validé par Christopher avant envoi. Les trois restaurants en négociation n'ont pas de
+Telegram : ils l'apprendront à leur ouverture.
+
+**Ajout du 27/09 — la liste, pas seulement le compte** : bouton « Voir » à côté des compteurs
+d'intérêt (admin → Restaurants) → RPC `admin_interet_restaurant_detail(p_restaurant_id)` (admin
+seul : nom, e-mail, téléphone, date), alertes d'abord, puis les simples visiteurs — avec la
+mention qu'eux ne seront pas prévenus. Migration `20260927090000`, admin redéployé.
+
+⚠️ Reste à voir **sur un vrai téléphone livreur** : les boutons « J'arrive » / « Je suis là »
+n'ont été vérifiés qu'en base et à la compilation (aucune course en cours pendant la nuit).
 
 ## 🔥 Les plats du jour de toute l'île, en un seul endroit (2026-09-25)
 

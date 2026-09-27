@@ -8,6 +8,8 @@ import { resume, type Resultat } from '../lib/annonce';
 
 /** Compteurs d'intérêt d'un restaurant en négociation (admin_interet_restaurants). */
 type Interet = { restaurant_id: string; visites: number; visiteurs: number; alertes: number };
+/** Une personne qui attend (ou a regardé) un restaurant — admin_interet_restaurant_detail. */
+type Attente = { user_id: string; nom: string; email: string | null; telephone: string | null; kind: 'visite' | 'alerte'; quand: string };
 
 type Resto = {
   id: string;
@@ -53,6 +55,8 @@ export function Restaurants() {
   const [err, setErr] = useState<string | null>(null);
   const [interet, setInteret] = useState<Record<string, Interet>>({});
   const [info, setInfo] = useState<string | null>(null);
+  /** Liste ouverte : qui attend ce restaurant. */
+  const [attentes, setAttentes] = useState<{ resto: Resto; lignes: Attente[] } | null>(null);
 
   const load = useCallback(async () => {
     // ⚠️ PAS de lecture directe de `restaurants` ICI. Depuis la migration
@@ -163,6 +167,43 @@ export function Restaurants() {
     }
   }
 
+  async function voirAttentes(r: Resto) {
+    setErr(null);
+    const { data, error } = await supabase.rpc('admin_interet_restaurant_detail', { p_restaurant_id: r.id });
+    if (error) { setErr(error.message); return; }
+    setAttentes({ resto: r, lignes: (data ?? []) as Attente[] });
+  }
+
+  if (attentes) {
+    const alertes = attentes.lignes.filter((l) => l.kind === 'alerte');
+    const visites = attentes.lignes.filter((l) => l.kind === 'visite' && !alertes.some((a) => a.user_id === l.user_id));
+    const ligne = (l: Attente) => (
+      <tr key={`${l.kind}-${l.user_id}`}>
+        <td>{l.nom}</td>
+        <td>{l.email ?? '—'}</td>
+        <td>{l.telephone ?? '—'}</td>
+        <td className="muted">{new Date(l.quand).toLocaleDateString('fr-FR')}</td>
+      </tr>
+    );
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <button className="btn ghost" style={sm} onClick={() => setAttentes(null)}>← Restaurants</button>
+          <h3 style={{ margin: 0 }}>{attentes.resto.name} — qui attend l’ouverture</h3>
+        </div>
+        <h4>{alertes.length} veulent être prévenus</h4>
+        {alertes.length === 0 ? <div className="empty">Personne n’a encore demandé à être prévenu.</div> : (
+          <table><thead><tr><th>Nom</th><th>E-mail</th><th>Téléphone</th><th>Depuis</th></tr></thead><tbody>{alertes.map(ligne)}</tbody></table>
+        )}
+        <h4 style={{ marginTop: 20 }}>{visites.length} ont seulement consulté la fiche</h4>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Ils ne seront pas prévenus : ils n’ont rien demandé. Ils comptent dans l’intérêt, c’est tout.</div>
+        {visites.length === 0 ? <div className="empty">Aucune visite.</div> : (
+          <table><thead><tr><th>Nom</th><th>E-mail</th><th>Téléphone</th><th>Dernière visite</th></tr></thead><tbody>{visites.map(ligne)}</tbody></table>
+        )}
+      </div>
+    );
+  }
+
   if (menuFor) {
     return <MenuManager restaurant={menuFor} onBack={() => { setMenuFor(null); load(); }} />;
   }
@@ -253,6 +294,7 @@ export function Restaurants() {
                   {r.listing_status === 'coming_soon' && interet[r.id] ? (
                     <div className="muted" style={{ fontSize: 12, marginTop: 4 }} title="Visites de la fiche · personnes distinctes · demandes « Me prévenir »">
                       {interet[r.id].visiteurs} ont consulté · <b>{interet[r.id].alertes}</b> veulent être prévenus
+                      {' '}<button className="btn ghost" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => voirAttentes(r)}>Voir</button>
                     </div>
                   ) : null}
                 </td>

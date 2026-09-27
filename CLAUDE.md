@@ -1491,6 +1491,39 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## 🍾 La Cabane remet ses boissons en vente (2026-09-27)
+
+Ses 14 boissons étaient invisibles : **ses deux catégories** (Bières, Softs) étaient éteintes —
+seule dans ce cas au catalogue — et cinq images en base montraient un autre produit, fichiers du
+bucket `boissons/` **partagés avec Angelo**. Migration `20260927170000_la_cabane_remet_ses_boissons_en_vente`
+(chaque étape compte ses lignes et lève sinon), dans l'ordre :
+1. ses 12 vraies bouteilles (détourées depuis ses photos, `visuels-reseaux/la-cabane/boissons/`)
+   déposées par `deposer-visuel` sous **`produits/la-cabane/boissons/`** — Angelo garde `boissons/…`
+   intact (vérifié : 9 URL en 200, `photo_url` inchangées) ; Eau Vive PM et GM partagent `eau-vive.png` ;
+   **World Cola non touchée** (question posée au patron par Telegram : verre consigné, canette, ou plus vendue ?) ;
+2. **Caprice Citron** créé à **4 500** (promo décidée par le porteur du projet) ;
+3. **consigne 2 000 « Consigne bouteille » sur les 11 en verre** (Eau Vive = PET, exclue) —
+   `select count(*) … packaging_fee = 2000` → 11 ;
+4. **Sirop** : `in_menu = false` **et** `is_available = false` (décision du porteur du projet) ;
+5. les deux catégories rallumées **en dernier**.
+Les 14 prix n'ont pas bougé (comparés avant/après). Vérifié en transaction annulée : 3 Caprice →
+15 000 / 6 000 / 31 000, commission **1 050 = 5 % de 21 000, consigne comprise** ; Sirop forcé →
+refusé par `create_order`. Vu **en production** : Softs 9 produits, Sirop absent, ligne « Consigne
+bouteille — 1 × 2 000 Ar » au panier.
+⚠️ Retouches non faites sur trois visuels (résidu clair contre le goulot sur `gold.png` et
+`thb-gm.png`, éclat de table en bas à gauche sur `fresh.png`) : un détourage à la main les
+rattrapera, pas un script. Hors périmètre : cocktails/alcools de la carte papier, doublons de
+suppléments (« + Frites » 3 000 / 5 000, « Oignon(s) caramélisé(s) »).
+
+## ✎ La précision se voit (2026-09-27, après-midi)
+
+Le champ discret du 26/09 passait inaperçu (constat du porteur du projet). Désormais : sur la
+fiche du plat une **carte teintée** avec icône, titre en gras et sous-titre ; au panier le champ
+est **sur chaque ligne** (pointillés rouges tant qu'il est vide) ; sur l'écran de paiement un
+**rappel** « Une précision pour la cuisine ? » avec retour au panier, affiché seulement si
+aucune ligne n'en porte. Clés `product.precisionSous`, `checkout.precisionRappel*` FR/EN/IT.
+Publié en OTA (trois runtimes) et sur le web.
+
 ## 📦 L'emballage garde son libellé après la commande (2026-09-27)
 
 Deux frais cohabitent chez La Cabane — **« Emballage à emporter »** 1 000 Ar par plat et

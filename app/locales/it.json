@@ -6,6 +6,9 @@
     "add": "Aggiungi",
     "openSettings": "Apri le impostazioni",
     "deliveryFee": "Costo di consegna",
+    "packagingDetail": "{{count}} × {{unit}}",
+    "packagingNoteConsigne": "Le bottiglie hanno una cauzione. Riportale per recuperare la cauzione.",
+    "packagingNoteEmporter": "Contenitore e sacchetto per il trasporto.",
     "total": "Totale"
   },
   "delivery": {

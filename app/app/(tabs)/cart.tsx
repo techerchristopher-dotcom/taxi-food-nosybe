@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
+import { LignesEmballage } from '../../components/LignesEmballage';
 import { CodePromo } from '../../components/CodePromo';
 import { Card, Divider } from '../../components/primitives';
 import { ProductThumb } from '../../components/ProductThumb';
@@ -247,12 +248,7 @@ export default function CartScreen() {
           </View>
           {/* Emballage : frais porté par le produit (boîte à pizza), pas une
               option choisie. Affiché juste au-dessus de la livraison. */}
-          {packaging.map((p) => (
-            <View key={p.label} style={[styles.sumRow, { marginTop: 10 }]}>
-              <Text style={styles.sumLabel}>{p.label}</Text>
-              <Text style={styles.sumValue}>{formatAr(p.amount)}</Text>
-            </View>
-          ))}
+          <LignesEmballage lignes={packaging} />
           <View style={[styles.sumRow, { marginTop: 10 }]}>
             <Text style={styles.sumLabel}>{t('common.deliveryFee')}</Text>
             <Text style={styles.sumValue}>{formatAr(deliveryFee)}</Text>

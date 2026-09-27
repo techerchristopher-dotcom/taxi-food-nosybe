@@ -6,6 +6,9 @@
     "add": "Ajouter",
     "openSettings": "Ouvrir les réglages",
     "deliveryFee": "Frais de livraison",
+    "packagingDetail": "{{count}} × {{unit}}",
+    "packagingNoteConsigne": "Les bouteilles sont consignées. Rapporte-les pour récupérer la consigne.",
+    "packagingNoteEmporter": "Barquette et sachet pour le transport.",
     "total": "Total"
   },
   "delivery": {

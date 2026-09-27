@@ -6,6 +6,9 @@
     "add": "Add",
     "openSettings": "Open settings",
     "deliveryFee": "Delivery fee",
+    "packagingDetail": "{{count}} × {{unit}}",
+    "packagingNoteConsigne": "Bottles carry a deposit. Bring them back to get the deposit back.",
+    "packagingNoteEmporter": "Container and bag for transport.",
     "total": "Total"
   },
   "delivery": {

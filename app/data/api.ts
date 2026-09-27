@@ -718,6 +718,8 @@ type OrderJoinRow = {
     quantity: number;
     unit_price: number;
     comment: string | null;
+    packaging_fee_snapshot?: number | null;
+    packaging_label_snapshot?: string | null;
     order_item_options: {
       option_id: string | null;
       option_name_snapshot: string;
@@ -731,7 +733,7 @@ const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, arriving_at, arrived_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
-  'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, ' +
+  'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
 function mapOrder(o: OrderJoinRow): Order {
@@ -758,6 +760,8 @@ function mapOrder(o: OrderJoinRow): Order {
       quantity: it.quantity,
       unitPrice: it.unit_price,
       comment: it.comment ?? null,
+      packagingFee: it.packaging_fee_snapshot ?? 0,
+      packagingLabel: it.packaging_label_snapshot ?? null,
       options: (it.order_item_options ?? []).map((op) => ({
         optionId: op.option_id,
         name: op.option_name_snapshot,

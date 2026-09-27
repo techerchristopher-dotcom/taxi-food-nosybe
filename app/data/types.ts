@@ -314,6 +314,9 @@ export type OrderItemSnapshot = {
   options?: { optionId: string | null; name: string; priceDelta: number; quantity: number }[];
   /** Précision du client sur CE plat (« sans tomate ») — jamais un prix, jamais une option. */
   comment?: string | null;
+  /** Emballage figé à la commande : montant par exemplaire et libellé tel que facturé. */
+  packagingFee?: number;
+  packagingLabel?: string | null;
 };
 
 export type Order = {

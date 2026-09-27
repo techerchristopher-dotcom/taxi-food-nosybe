@@ -65,15 +65,57 @@ export function lineUnitPrice(line: CartLine): number {
  * sélecteur, elle provoque une boucle de rendu infinie (« Maximum update depth
  * exceeded »). Erreur commise puis corrigée le 2026-09-05.
  */
-export function packagingLines(lines: CartLine[]): { label: string; amount: number }[] {
-  const parLibelle = new Map<string, number>();
-  for (const l of lines) {
-    const fee = l.product.packagingFee ?? 0;
-    if (fee <= 0) continue;
-    const label = l.product.packagingLabel || 'Emballage';
-    parLibelle.set(label, (parLibelle.get(label) ?? 0) + fee * l.quantity);
+export type PackagingLine = {
+  label: string;
+  /** Total de la ligne. */
+  amount: number;
+  /** Nombre d'exemplaires facturés — pour écrire « 3 × 2 000 Ar » et que 6 000 ne tombe pas du ciel. */
+  count: number;
+  /** Montant par exemplaire. */
+  unit: number;
+};
+
+export function packagingLines(lines: CartLine[]): PackagingLine[] {
+  return regrouperEmballages(
+    lines.map((l) => ({
+      fee: l.product.packagingFee ?? 0,
+      label: l.product.packagingLabel,
+      quantity: l.quantity,
+    })),
+  );
+}
+
+/**
+ * Même regroupement qu'au panier, mais depuis une commande PASSÉE (instantanés
+ * `packagingFee` / `packagingLabel` de chaque ligne). Le client doit lire le
+ * même libellé au suivi qu'au paiement — et le restaurant sur sa carte.
+ */
+export function packagingLinesFromItems(
+  items: { quantity: number; packagingFee?: number; packagingLabel?: string | null }[],
+): PackagingLine[] {
+  return regrouperEmballages(
+    items.map((it) => ({ fee: it.packagingFee ?? 0, label: it.packagingLabel, quantity: it.quantity })),
+  );
+}
+
+/**
+ * Regroupe par libellé ET par montant unitaire : deux frais au même nom mais à
+ * des tarifs différents resteraient deux lignes, sinon « n × montant » mentirait.
+ */
+function regrouperEmballages(
+  lignes: { fee: number; label?: string | null; quantity: number }[],
+): PackagingLine[] {
+  const groupes = new Map<string, PackagingLine>();
+  for (const l of lignes) {
+    if (l.fee <= 0) continue;
+    const label = l.label || 'Emballage';
+    const cle = `${label}::${l.fee}`;
+    const g = groupes.get(cle) ?? { label, amount: 0, count: 0, unit: l.fee };
+    g.amount += l.fee * l.quantity;
+    g.count += l.quantity;
+    groupes.set(cle, g);
   }
-  return [...parLibelle].map(([label, amount]) => ({ label, amount }));
+  return [...groupes.values()];
 }
 
 /** Contexte restaurant fourni à l'ajout (l'écran qui ajoute connaît déjà le restaurant). */

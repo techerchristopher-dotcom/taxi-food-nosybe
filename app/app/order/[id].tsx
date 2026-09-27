@@ -4,6 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
+import { LignesEmballage } from '../../components/LignesEmballage';
+import { packagingLinesFromItems } from '../../store/cart';
 import { Button } from '../../components/Button';
 import { Card, Divider, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
@@ -216,12 +218,9 @@ export default function OrderTrackingScreen() {
               <Text style={styles.itemPrice}>{formatAr(it.unitPrice * it.quantity)}</Text>
             </View>
           ))}
-          {order.packagingFee > 0 ? (
-            <View style={styles.itemRow}>
-              <Text style={styles.itemName}>Emballage</Text>
-              <Text style={styles.itemPrice}>{formatAr(order.packagingFee)}</Text>
-            </View>
-          ) : null}
+          {/* Les lignes d'emballage, avec le libellé FIGÉ à la commande — plus
+              jamais un « Emballage » générique qui fondait consigne et barquette. */}
+          <LignesEmballage lignes={packagingLinesFromItems(order.items)} compact />
           <View style={styles.itemRow}>
             <Text style={styles.itemName}>{t('common.deliveryFee')}</Text>
             <Text style={styles.itemPrice}>{formatAr(order.deliveryFee)}</Text>

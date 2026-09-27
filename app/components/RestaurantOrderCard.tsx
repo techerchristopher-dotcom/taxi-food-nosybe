@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from './Icon';
+import { LignesEmballage } from './LignesEmballage';
+import { packagingLinesFromItems } from '../store/cart';
 import { StatusBadge } from './StatusBadge';
 import { Card, Divider } from './primitives';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
@@ -41,12 +43,9 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
         </View>
       ))}
 
-      {order.packagingFee > 0 ? (
-        <View style={[styles.itemRow, { marginTop: 2 }]}>
-          <Text style={styles.subLabel}>Emballage</Text>
-          <Text style={styles.subValue}>{formatAr(order.packagingFee)}</Text>
-        </View>
-      ) : null}
+      {/* Une ligne par emballage, avec le nombre d'unités : le restaurant encaisse
+          la consigne et devra la rendre, il doit savoir combien de bouteilles. */}
+      <LignesEmballage lignes={packagingLinesFromItems(order.items)} compact />
       <View style={[styles.itemRow, { marginTop: 2 }]}>
         <Text style={styles.subLabel}>Frais de livraison</Text>
         <Text style={styles.subValue}>{formatAr(order.deliveryFee)}</Text>

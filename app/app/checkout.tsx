@@ -26,6 +26,7 @@ import { useLoad } from '../lib/useLoad';
 import { nombre } from '../lib/nombre';
 import { useFraisLivraisonAJour } from '../lib/fraisLivraison';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
+import { LignesEmballage } from '../components/LignesEmballage';
 import { usePromo, usePromoStore } from '../store/promo';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
@@ -347,12 +348,7 @@ function CheckoutForm() {
           <Text style={styles.detailLabel}>{t('cart.subtotal')}</Text>
           <Text style={styles.detailValue}>{formatAr(subtotal)}</Text>
         </View>
-        {packaging.map((p) => (
-          <View key={p.label} style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{p.label}</Text>
-            <Text style={styles.detailValue}>{formatAr(p.amount)}</Text>
-          </View>
-        ))}
+        <LignesEmballage lignes={packaging} compact />
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>{t('common.deliveryFee')}</Text>
           <Text style={styles.detailValue}>{formatAr(deliveryFee)}</Text>

@@ -1491,6 +1491,42 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## 📦 L'emballage garde son libellé après la commande (2026-09-27)
+
+Deux frais cohabitent chez La Cabane — **« Emballage à emporter »** 1 000 Ar par plat et
+**« Consigne bouteille »** 2 000 Ar par bouteille (+40 % sur une boisson à 5 000) — et le panier
+les distinguait, mais `orders` ne garde que le total : après paiement ils fusionnaient en un seul
+« Emballage » (suivi client, carte restaurant), et le Telegram de cuisine ne les listait pas.
+
+**Décision du porteur du projet : emballage ET consigne restent commissionnés.** Aucune formule
+de total ni de commission n'a bougé — vérifié en transaction annulée : 1 tacos + 3 Caprice →
+45 000 / 7 000 / 62 000, commission **2 600 = 5 % de 52 000** ; une pizza Bidul : 1 400 inchangé.
+
+- Migration `20260927120000_le_libelle_de_l_emballage_survit_a_la_commande` :
+  `order_items.packaging_fee_snapshot` + `packaging_label_snapshot`, remplis par `create_order`
+  (patch par **remplacement d'ancre** de la surcharge à 5 arguments — jamais retapée, piège
+  PGRST203) ; historique reconstitué depuis les produits quand le total de la commande le confirme.
+- `store/cart.ts` : `packagingLines()` rend désormais `{label, amount, count, unit}` (regroupé par
+  libellé **et** montant unitaire), `packagingLinesFromItems()` fait la même chose depuis une
+  commande passée. `components/LignesEmballage.tsx` est le **seul** rendu, sur les quatre écrans
+  (panier, paiement, suivi, carte restaurant) : libellé, « n × montant », montant, et une
+  sous-ligne grise. Clés `common.packagingDetail` / `packagingNoteConsigne` / `packagingNoteEmporter`
+  FR/EN/IT.
+- ⚠️ **Les sous-lignes ne promettent rien** : aucun retour de bouteille n'existe dans le modèle.
+  Formulations descriptives prises **par défaut** en attendant le mot du porteur du projet :
+  « Les bouteilles sont consignées. Rapporte-les pour récupérer la consigne. » et « Barquette et
+  sachet pour le transport. » Un libellé inconnu (« Boîte à pizza ») n'a pas de phrase.
+- Restaurant : la charge n8n porte `emballages[] {libelle, unites, unitaire, montant}` ; le
+  `jsCode` de **T7uX a été modifié en production** (sauvegarde datée hors dépôt, test hors ligne
+  ancien/nouveau code identique sur une ancienne charge, PUT, désactivé/réactivé, relu :
+  `versionId 5d155ed8…`). Telegram : `📦 Consigne bouteille — 3 × 2 000 Ar = 6 000 Ar` ; e-mail :
+  une ligne par libellé. La copie Telegram **admin** (envoyée par la base) porte les mêmes lignes.
+- ⚠️ **Pas encore vu à l'écran** au moment d'écrire : tous les restaurants étaient fermés (matin),
+  donc aucun panier composable. TypeScript passe, même composant partout. À regarder à la première
+  commande avec consigne. **Ni OTA ni redéploiement web** faits pour ce chantier : à lancer.
+- La consigne elle-même (2 000 / « Consigne bouteille » sur les bouteilles en verre de La Cabane)
+  **n'est pas posée** : liste des produits à arrêter par le porteur du projet.
+
 ## 🌙 Nuit du 26 au 27/09 — trois chantiers livrés (précision par plat, jalons livreur, négociation)
 
 Plan validé tel quel : `docs/PLAN-3-CHANTIERS-2026-09-26.md`. Code poussé, base migrée, fonctions

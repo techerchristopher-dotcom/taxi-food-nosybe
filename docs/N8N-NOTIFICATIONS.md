@@ -84,6 +84,14 @@ de service dans un outil tiers serait une clé de tout le système, pour
 > Telegram limitée à 1 024 caractères : la ligne ajoute ~55 caractères à une commande
 > déjà longue.
 
+> ✅ **T7uX modifié le 2026-09-27** (procédure ci-dessus suivie à la lettre : GET → sauvegarde
+> datée hors dépôt → test hors ligne ancien/nouveau `jsCode` sur charges factices, sortie
+> **identique** sur une ancienne charge → PUT → désactivé/réactivé → GET, diff de 9 lignes).
+> Changement : les lignes d'emballage (`c.emballages`, regroupées par libellé avec le nombre
+> d'unités) dans le Telegram restaurant (`📦 …`) et dans l'e-mail client ; repli sur l'ancienne
+> ligne « Emballage » si la charge n'a pas `emballages`. `versionId` après : `5d155ed8…`.
+> `n8n/taxifood-notifications.json` reste **caduc** (voir plus haut) : la référence est l'instance.
+
 ### Workflow « Taxi Food — code offert » (`xDZt2TzDehkvNUHN`)
 
 Workflow **dédié**, distinct de T7uX pour ne jamais risquer les notifications de

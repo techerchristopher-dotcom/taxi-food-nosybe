@@ -252,7 +252,13 @@ export type Restaurant = {
   foodTypes: string[]; // types de plats proposés (ex. ['Tacos','Kebab','Burger']) — filtre accueil
   categoryTags: CategoryTag[]; // catégories ACTIVES du resto (emoji + nom) — tags de la carte
   popular?: boolean; // non stocké — toujours false pour l'instant
-  closedLabel?: string; // dérivé si fermé
+  /**
+   * Prochaine ouverture RÉELLE, calculée par la base (`ouvre_a`, `ouvre_dans_jours`) :
+   * les services déjà passés ne comptent pas. `opensInDays` 0 = aujourd'hui, 1 = demain ;
+   * `opensAt` null = fermeture manuelle, ou rien sous sept jours. Libellé : `lib/ouverture.ts`.
+   */
+  opensAt: string | null;
+  opensInDays: number | null;
 };
 
 /** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */

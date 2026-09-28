@@ -50,6 +50,13 @@ type RestaurantRow = {
   phone?: string | null;
   ouvert_maintenant?: boolean | null;
   auto_open?: boolean | null;
+  /**
+   * Prochaine ouverture RÉELLE (`ouvre_a` / `ouvre_dans_jours`, exposées le
+   * 2026-09-28) : les services déjà passés ne comptent pas. Null : fermeture
+   * manuelle, ou rien sous sept jours.
+   */
+  ouvre_a?: string | null;
+  ouvre_dans_jours?: number | null;
   // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
   // comme un OBJET, pas un tableau (verifie au curl sur l'API du projet). Quand
   // aucun horaire n'existe pour aujourd'hui, l'objet est present mais tous ses
@@ -179,11 +186,11 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     foodTypes: r.food_types ?? [],
     categoryTags: [],
     popular: false,
-    closedLabel: (r.ouvert_maintenant ?? r.is_open)
-      ? undefined
-      : r.horaires_du_jour?.opens_at
-        ? `Ouvre à ${formatTime(r.horaires_du_jour.opens_at)}`
-        : 'Fermé',
+    // La PROCHAINE ouverture, calculée par la base — pas le premier service du
+    // jour. À 18 h 20, `horaires_du_jour` disait « 12h » (le midi, terminé)
+    // alors que le soir ouvre à 19 h : `ouvre_a` porte la bonne réponse.
+    opensAt: r.ouvre_a ?? null,
+    opensInDays: r.ouvre_dans_jours ?? null,
   };
 }
 
@@ -258,19 +265,21 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
     // supprime rien.
     .neq('listing_status', 'hidden')
-    // ⚠️ L'ORDRE EST DÉCIDÉ EN BASE, pas ici. `rang_catalogue` est une colonne
-    // générée : le statut d'abord (disponibles, puis en négociation), le rang
-    // choisi dans l'admin ensuite. La vitrine trie sur la même colonne — deux
-    // règles écrites séparément finissaient par diverger. Avant, le tri par date
-    // mettait Taxi Be, le plus ancien, en tête alors qu'on ne pouvait rien y
-    // commander. `created_at` ne sert plus qu'à départager deux rangs égaux.
-    .order('rang_catalogue', { ascending: true })
+    // ⚠️ L'ORDRE EST DÉCIDÉ EN BASE, pas ici. `rang_ouverture` = le statut d'abord
+    // (disponibles, puis en négociation), puis les restaurants OUVERTS en tête,
+    // puis le rang choisi dans l'admin. Ce n'est pas la colonne générée
+    // `rang_catalogue` : une colonne générée ne peut pas dépendre de l'heure, et
+    // c'est l'heure qui dit qui est ouvert. La vitrine trie sur la même fonction
+    // — deux règles écrites séparément finissaient par diverger. Avant, le tri
+    // par date mettait Taxi Be, le plus ancien, en tête alors qu'on ne pouvait
+    // rien y commander. `created_at` ne sert plus qu'à départager deux rangs égaux.
+    .order('rang_ouverture', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
   const rows = data as unknown as RestaurantRow[];
@@ -299,7 +308,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -1515,7 +1524,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

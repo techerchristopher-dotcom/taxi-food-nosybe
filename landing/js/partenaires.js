@@ -15,8 +15,10 @@
  * commander, c'est tout l'interet de le montrer. Decision du porteur du projet,
  * 2026-09-16. Ce qui reste coupe, c'est l'acces a la commande.
  *
- * ⚠️ L'ORDRE VIENT DE LA BASE (`rang_catalogue`), comme dans l'application. Le
- * tri precedent, `listing_status.asc`, etait ALPHABETIQUE : « coming_soon »
+ * ⚠️ L'ORDRE VIENT DE LA BASE (`rang_ouverture`), comme dans l'application :
+ * statut d'abord, puis les restaurants OUVERTS en tete, puis le rang de l'admin
+ * (2026-09-28 ; `rang_catalogue`, colonne generee, ne peut pas dependre de
+ * l'heure). Le tri precedent, `listing_status.asc`, etait ALPHABETIQUE : « coming_soon »
  * passait avant « visible », et la vitrine montrait en premier les partenaires
  * ou l'on ne peut pas commander.
  *
@@ -246,7 +248,7 @@
     if (g && g.length) ouvrir(g, parseInt(b.getAttribute('data-i'), 10) || 0);
   });
 
-  api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status&order=rang_catalogue.asc,created_at.asc')
+  api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status,rang_ouverture&order=rang_ouverture.asc,created_at.asc')
     .then(function (restos) {
       if (!restos.length) return;
       var ids = restos.map(function (r) { return r.id; }).join(',');

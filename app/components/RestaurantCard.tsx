@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { CategoryTag, Restaurant, formatTime, todayServicesLabel } from '../data/types';
+import { CategoryTag, Restaurant, todayServicesLabel } from '../data/types';
+import { libelleOuverture } from '../lib/ouverture';
+import { useMaintenant } from '../lib/horloge';
 import { formatAr } from '../theme/tokens';
 
 /**
@@ -118,6 +120,9 @@ export function RestaurantRow({
   onPress: () => void;
 }) {
   const { t } = useTranslation();
+  // Le compte à rebours ne tourne que s'il y a quelque chose à compter : fermé,
+  // et une ouverture encore à venir AUJOURD'HUI. Sinon, aucun minuteur.
+  const maintenant = useMaintenant(!r.isOpen && r.opensInDays === 0);
   return (
     // ⚠️ Un restaurant FERMÉ se grise ; un restaurant EN NÉGOCIATION, jamais.
     // Ses photos doivent donner envie avant même qu'on puisse commander — c'est
@@ -141,11 +146,11 @@ export function RestaurantRow({
         {r.isOpen ? (
           <Meta eta={r.etaLabel} fee={r.deliveryFee} />
         ) : (
-          <Text style={styles.closedText}>
-            {r.todayHours?.opensAt && !r.todayHours.isClosed
-              ? t('restaurantCard.opensAt', { time: formatTime(r.todayHours.opensAt) })
-              : t('restaurantCard.closed')}
-          </Text>
+          // « Ouvre dans 35 min », « Ouvre à 19h », « Ouvre demain à 10h » ou
+          // « Fermé » — même règle que les plats du jour (`lib/ouverture.ts`).
+          // ⚠️ Plus jamais `todayHours.opensAt` : c'est le PREMIER service du
+          // jour, qui annonçait « 12h » à 18 h 20 pour un soir ouvrant à 19 h.
+          <Text style={styles.closedText}>{libelleOuverture(r, t, maintenant)}</Text>
         )}
       </View>
     </Pressable>

@@ -131,6 +131,41 @@ bol renversé ont le porc en OPTION, sans badge possible.
 **Codes offerts** (voir leur section) : identifiant n8n à coller, ligne Telegram « Repas offert »,
 test `MERCISULLI` avec Sulli.
 
+## 🍽️ Prospection des restaurants — recensement web, étape 1 (2026-09-28)
+
+But : lister **tous** les établissements où l'on mange ou boit à Nosy Be (restaurant, bar,
+snack, gargote, pizzeria, boulangerie, glacier, discothèque, hôtel-restaurant) pour les
+contacter ensuite. Livrable : **`PROSPECTION-RESTAURANTS-NOSY-BE.xlsx`** (racine) — feuilles
+Synthèse (formules), Établissements, Écartés, Sources. Données brutes et scripts :
+`prospection-restaurants/sources/` et `prospection-restaurants/scripts/` (`merge.py` fusionne,
+`build.py` écrit le classeur, `olc.py` décode les plus codes Google en GPS).
+
+**Résultat : 608 fiches brutes → 406 établissements distincts** (+ 25 écartés : chambres
+d'hôtes, supérettes, golf, continent…). 214 avec téléphone (208 mobiles = WhatsApp probable),
+24 pages Facebook, 160 positions GPS, 101 à moins de 3 km d'un resto partenaire,
+68 déjà présents dans `prospects_hebergement` (hôtels qui font restaurant).
+Statut Taxi Food posé sur les 9 restaurants en base (4 en ligne, 3 en négociation, 2 masqués).
+
+Sources : Google recherche locale (~60 requêtes type × quartier, via le Chrome du porteur —
+**coupé par un captcha Google** après ~60 pages, ne pas forcer ; relancer plus tard sur
+Djamandjary, Bemoko, Marodoka, Anjiabe, bars par quartier), annuaire **nosybe-pro.com**
+(catégories restos/bars/gargotes/pizzerias/snacks/boulangeries — téléphones publiés),
+OpenStreetMap, TripAdvisor (Nosy Be + Hell-Ville), Petit Futé, Wanderlog, office du tourisme.
+Restaurant Guru : pas de page Nosy Be. Facebook : non balayé (robots) → étape enrichissement.
+
+Décisions de fusion : clé = nom normalisé (sans « restaurant/bar/chez/gargote/nosy be… »),
+flou ≥ 92 seulement si même initiale, jamais si GPS > 1,5 km ou zones incompatibles ;
+fusions et interdictions manuelles listées en tête de `merge.py` (ex. Océan bar ≠ Hotel Ocean
+Beach). Zone = GPS (ancres des hébergements) sinon mots-clés de l'adresse. Même numéro sur
+deux fiches = même exploitant (noté dans « À vérifier »).
+
+Reste à faire (plan validé en 6 étapes, un chantier à la fois) :
+2. nettoyage à la main des 77 « zone à préciser » et des fiches « guide seulement » ;
+3. table Supabase `prospects_restaurant` sur le moule de `prospects_hebergement` ;
+4. enrichissement contacts (193 sans contact public : Facebook, sur place) ;
+5. qualification / priorité (zone livrable, cuisine qui voyage, trous du catalogue) ;
+6. séquence de contact et scripts restaurateur.
+
 ## 🏨 Prospection des hébergements — 799 fiches en base (2026-09-28)
 
 Table **`prospects_hebergement`** (RLS admin seul). But : passer chez les hôtes de Nosy Be avec
@@ -305,6 +340,132 @@ be ») qui recommandait « Passer sur place » pour un message envoyé une minut
 5. **Airbnb a coupé l'envoi de messages** après les 5 premiers, avec un écran d'avertissement
    (« Pourquoi prendre ce risque ? Restez sur Airbnb », menace de suppression du compte). Ne pas
    reformuler pour passer le filtre. La tournée physique et le téléphone restent ouverts.
+
+### 📨 Prospection Facebook — bloc 1 et bloc 2 faits (2026-09-28)
+
+**88 fiches portaient une page Facebook → 42 pages distinctes.** Un message par ADRESSE, jamais
+par annonce. La liste classée est dans `PROSPECTION-FACEBOOK-LISTE.md`, les messages dans
+`PROSPECTION-FACEBOOK-MESSAGES-BLOC-1.md`, le compte rendu dans
+`PROSPECTION-FACEBOOK-BILAN-BLOC-1.md`.
+
+**Neuf messages partis, neuf adresses touchées** (bloc 1 : Hôtel de la Mer, Villa Gerty,
+Résidence Mareva, Madirokely House, Mahé Lodge, Villas du Beach Klub · bloc 2 : Chez Paul et
+Denise, Corto Novo, Maison le Rêve). **44 fiches en `contacte`.** Chaque page démarchée est
+suivie depuis le compte Christopher Tchr.
+
+**Le message, dans sa forme arrêtée avec le porteur du projet** — quatre blocs, ~100 mots :
+se présenter (« je suis Christopher, j'ai créé Taxi Food, le Uber Eats de Nosy Be »), expliquer
+en clair (une app, le client commande **depuis chez vous sans bouger**, les restaurants nommés,
+la distance réelle), proposer (**un code au nom de l'établissement, totalement gratuit,
+aucun engagement, un service de plus pour sa clientèle**), une seule demande (je passe avec les
+flyers), signer (WhatsApp `+261 36 15 74 521` et `https://taxifoodnosybe.distripro207.com/`).
+
+#### Les règles que ces deux blocs ont imposées
+
+- **Écrire dans la langue de la page.** Villa Gerty publie en anglais : le message français était
+  déjà parti, il a fallu en renvoyer un second. On lit la page AVANT d'écrire — anglais, italien
+  ou autre.
+- **Ne citer que les 4 restaurants commandables** (`listing_status = 'visible'`) : La Cabane,
+  Chez Bidul & Truc, Chez M&K, La Plage. Les Siciliens, Madame Oh et Oh Hazar sont
+  `coming_soon` : ils n'apparaissent dans aucun message.
+- **Lire la page repère les cuisines que la base ignorait.** Madirokely House sert le
+  petit-déjeuner et prépare les repas sur demande ; Corto Novo est **ouvert vendredi, samedi et
+  dimanche midi**. Dans les deux cas le message est devenu « le code sert quand votre cuisine ne
+  tourne pas » — on ne vend pas contre l'hôte.
+- **Vérifier qu'aucune fiche de l'adresse n'est déjà `contacte`.** Maison le Rêve a reçu un
+  message Messenger alors qu'un message Airbnb était parti le matin même : doublon.
+- **Un titre indexé n'est pas une page.** `Villa-Nofy-Nosy-Be-Officiel` répond « contenu non
+  disponible » et aucune page de ce nom n'existe : lien retiré, les 20 couchages d'Eric à
+  Ambondrona n'ont plus **aucun** canal en ligne.
+- **Certaines « pages » sont des profils personnels** (Corto Novo, Maison Le Reve) : la
+  conversation est chiffrée de bout en bout, le rendu du fil traîne, et un profil ne se suit pas
+  comme une page.
+
+#### `whatsapp` et `whatsapp_source` — la 2ᵉ vague
+
+Nouvelles colonnes (2026-09-28), avec la contrainte `prospects_hebergement_whatsapp_trace` :
+**aucun numéro sans sa source**. Le numéro se relève dans le `href` du bouton WhatsApp de la
+page Facebook — jamais deviné depuis `telephone`, un standard n'étant pas un WhatsApp.
+**19 fiches** en portent un. Sur les 9 pages démarchées, **3 ont un bouton WhatsApp** (Villa
+Gerty, Madirokely House `+39 392 856 6299`, Mahé Lodge) : c'est le canal de la deuxième vague.
+
+#### Ce que les pages ont rendu que la base n'avait pas
+
+| Adresse | Trouvé sur sa page officielle |
+|---|---|
+| Hôtel de la Mer | mobile `+261 32 56 926 12` (la base n'avait que le fixe) |
+| Résidence Mareva | 2ᵉ numéro `+261 32 40 224 07` |
+| Madirokely House | WhatsApp `+39 392 856 6299` et `madirokelyhouse@gmail.com` — fiche vide auparavant |
+| Mahé Lodge | `+261 37 36 402 83` — **11 fiches sans contact en ont un**, et l'adresse de la page confirme le rapprochement Tripadvisor |
+| Villas du Beach Klub | `villasbeachklub@gmail.com` : `info@22noysebegroup.com` était bien une faute |
+| Corto Novo | `0326256805` publié dans leur post, qui confirme le numéro déjà propagé |
+
+**Reste 59 fiches sur 33 pages**, dont 26 hôtels Google Places sans GPS, et **7 drapeaux
+« titre indexé » encore à ouvrir**.
+
+#### Les 42 pages ouvertes, 22 messages réellement partis (2026-09-28, fin de journée)
+
+⚠️ **Ce bloc a d'abord été écrit faux : j'avais annoncé 39 envois.** Le contrôle d'envoi lisait
+`document.body.innerText`, or **la colonne de gauche de Messenger affiche l'aperçu des messages
+déjà envoyés ailleurs** : le test répondait « oui » même sur un fil vide. Vérifié ensuite fil par
+fil, en ne lisant que `[role="main"]` **et** en attendant son chargement complet (8 s ne suffisent
+pas, il en faut ~16).
+
+**22 adresses réellement contactées, 64 fiches en `contacte`.** Les 17 autres n'ont rien reçu et
+sont repassées en `a_visiter`, avec la mention « ENVOI NON ABOUTI » dans leur fiche.
+
+**Deux causes de non-envoi, toutes deux imputables à Facebook ou à la mécanique du clic :**
+- le clic sur la référence du champ de saisie **ne le met pas toujours au focus** : la frappe part
+  dans le vide, et seuls les caractères accentués finissent parfois par s'y déposer (observé :
+  un champ contenant `éé—êéàêàâôéééàa—èÇa—`). Il faut **cliquer, vérifier que le texte est bien
+  dans le champ, et seulement ensuite envoyer** ;
+- en fin de session Facebook a refusé explicitement : **« Envoi impossible »** (Villa Sakina,
+  16:12), après avoir déjà refusé les messages aux profils personnels
+  (« limite d'invitations par message », 24 h). **Ne pas insister, ne pas reformuler.**
+
+Trois pages n'ont volontairement rien reçu :
+
+| Page | Pourquoi rien n'est parti |
+|---|---|
+| Nosy Relax Chez Lea | **Facebook a bloqué** : « Vous avez atteint la limite d'invitations par message » (24 h, profils personnels non amis). À reprendre après 24 h, **sans reformuler**. |
+| VERO Hotel | l'URL `/villaveronosybe/` mène à une page nommée **« Tropical Paradise Nosy Be »**, à Ambondrona, alors que la fiche dit Hell-Ville. Rapprochement douteux. |
+| Doany Beach | la page dit qu'on y accède **en bateau**. Aucune livraison possible : promettre le service aurait été mentir. |
+
+**La limite « invitations par message » ne touche que les profils personnels** — vérifié sur le
+moment. Mais en fin de session Facebook a fini par refuser aussi les Pages (« Envoi impossible »).
+Les 17 adresses restantes sont à reprendre après 24 h.
+
+#### Ce que la lecture des pages a rapporté — et ça, c'est acquis
+
+Les 42 pages ont toutes été **ouvertes, vérifiées et suivies**, même celles dont le message n'est
+pas parti. Ce butin-là est en base et ne dépend pas des envois.
+
+- **+14 téléphones, +9 mails, +39 numéros WhatsApp** (300 · 58 · 39 en base).
+- **Six établissements « font aussi restaurant » que la base ignorait** : Danae Beach
+  (« Risto Ecolodge », pension complète), Corto Novo (ouvert ven./sam./dim. midi), Domaine Manga Be,
+  Sambatra, Tropic Hôtel, Bungalows d'Ambonara, Le Coin Sauvage. Chacun a reçu l'argumentaire
+  « le code sert quand votre cuisine est fermée ».
+- **Trois langues, pas une.** Villa Gerty, Ravoravo, Nosy Be Hôtel, Zen Hotel, Vanila, Sambatra,
+  Royal Andilana et Maison le Rêve écrivent en **anglais** ; Danae Beach et Le Coin Sauvage en
+  **italien**. Les messages sont partis dans la langue de la page.
+- **Villa Nosy confirme la correction faite le matin** : le +261 32 05 914 15 publié sur sa page
+  est bien le sien, donc sa diffusion vers « Villa nosy Breizh », « Villa Nosy Komba » et
+  « Villa Nosy — chez Ricardo Eric » était bien une erreur.
+- **Deux prospects sont hors de portée** et c'est dit dans le message plutôt que caché :
+  Royal Andilana (Andilana, une quinzaine de km, resort 5 étoiles avec ses restaurants) a reçu un
+  message qui annonce la distance et le surcoût, sans promettre un repas chaud.
+
+#### Trois réserves à connaître
+
+1. **Nosy Be Hôtel & Spa, Andriana Resort et Vanila** ont reçu un message qui suppose qu'ils ont
+   leur restaurant : c'est vraisemblable pour un 4 étoiles, mais **leur page ne le dit pas**.
+   Ailleurs (Zen Hotel, Swisscocobeach, Hôtel Benjamin) la formulation est conditionnelle,
+   « si vous servez à manger ».
+2. **Corto Novo et Maison Le Reve sont des profils personnels** : conversation chiffrée de bout en
+   bout, fil lent à s'afficher, et un profil ne se suit pas comme une page (Corto Novo n'offre
+   aucune option Suivre).
+3. **Les codes ne sont toujours pas créés, et c'est voulu** : décision du porteur du projet, on les
+   crée quand un hébergeur répond et qu'un rendez-vous est pris, pas avant.
 
 ## Où en est la soumission
 
@@ -1670,6 +1831,41 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
 - Un restaurant en négociation **n'est plus grisé** (ni carte de l'app, ni vitrine) : ses photos
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
+
+## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
+
+Constat du porteur du projet un lundi à 18 h 20 : la carte de Chez Bidul & Truc disait
+« Ouvre à 12h » — l'heure du service de MIDI, terminé — alors que le soir ouvre à 19 h.
+Migration `20260928190000_prochaine_ouverture_exposee_et_ouverts_en_tete`.
+
+- **La base avait raison, l'écran lisait la mauvaise colonne.** `prochaine_ouverture(r)`
+  ignore bien les services passés, mais elle rend une TABLE : PostgREST n'expose comme
+  colonne calculée qu'une fonction SCALAIRE. L'app retombait sur `horaires_du_jour`,
+  le PREMIER service du jour. Deux relais scalaires suffisent : **`ouvre_a(r)`** et
+  **`ouvre_dans_jours(r)`** (0 = aujourd'hui, 1 = demain, null = fermé à la main ou rien
+  sous sept jours). La garde vérifie qu'ils disent exactement ce que `prochaine_ouverture()`
+  dit sur toutes les lignes. ⚠️ Ne plus jamais dériver une heure d'ouverture de
+  `todayHours.opensAt` / `horaires_du_jour` côté écran.
+- **Un seul libellé pour la carte restaurant ET les plats du jour** : `app/lib/ouverture.ts`
+  (`libelleOuverture`). « Ouvre dans 31 min » sous 60 min, sinon « Ouvre à 19h », « Ouvre
+  demain à 10h », et **« Fermé » au-delà — un jour de repos reste « Fermé », demandé tel
+  quel**. Le compte à rebours est le seul calcul fait sur l'appareil, en heure de Nosy Be
+  (`Intl` avec fuseau, repli heure locale) ; il est cosmétique : `isOpen` reste le verdict
+  de la base, et un délai négatif retombe sur l'heure, jamais sur un nombre négatif.
+  `useMaintenant(actif)` (`app/lib/horloge.ts`) ne pose un minuteur (30 s) QUE sur une
+  carte fermée qui rouvre aujourd'hui. Clé i18n ajoutée : `restaurantCard.opensIn`
+  (FR/EN/IT). `Restaurant.closedLabel`, écrit mais jamais lu, a été supprimé.
+- **Les restaurants ouverts en tête** : `rang_catalogue` est une colonne GÉNÉRÉE, donc
+  immuable — elle ne peut pas dépendre de l'heure. **`rang_ouverture(r)`** reprend sa
+  structure (statut × 200 000) et glisse l'ouverture (100 000) entre le statut et
+  `sort_order` : un « en négociation » ne passe jamais devant un « visible » (garde en
+  migration). L'app (`listRestaurants`) et la vitrine (`partenaires.js`) trient toutes
+  deux dessus — `rang_catalogue` reste pour l'admin. Vérifié par l'API à la clé publiable :
+  Chez M&K (ouvert) en tête, puis La Cabane, Bidul (19:00 / 0 j), La Plage (10:00 / 1 j),
+  puis les trois en négociation.
+- Vu sur l'app web à 375 px, un lundi à 18 h 28 : « Ouvre dans 31 min » sous Bidul,
+  « Ouvre demain à 10h » sous La Plage, « Ouvre demain à 16h » sous La Cabane.
+- ⏳ **Publié nulle part encore** : OTA (trois runtimes), web et vitrine à déployer.
 
 ## 🍾 La Cabane remet ses boissons en vente (2026-09-27)
 

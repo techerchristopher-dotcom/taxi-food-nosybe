@@ -130,6 +130,7 @@
     "open": "Aperto",
     "unavailable": "Presto di nuovo",
     "opensAt": "Apre alle {{time}}",
+    "opensIn": "Apre tra {{min}} min",
     "comingSoon": "Presto disponibile",
     "enNegociation": "In trattativa"
   },

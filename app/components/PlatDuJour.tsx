@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ProductThumb } from './ProductThumb';
 import { PlatDuJour } from '../data/api';
-import { formatTime } from '../data/types';
+import { libelleOuverture } from '../lib/ouverture';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
 
 /**
@@ -17,26 +17,6 @@ import { colors, fonts, formatAr, radius } from '../theme/tokens';
  * pas commander est une impasse. L'heure, elle, dit quand revenir — c'est la
  * seule information utile à cet instant.
  */
-
-/**
- * « Ouvre à 18h », « Ouvre demain à 9h », ou « Fermé ».
- *
- * ⚠️ Au-delà de demain on ne nomme PAS le jour : il faudrait traduire sept noms
- * de jours dans trois langues pour un cas qui ne se produit qu'au lendemain
- * d'un jour de fermeture. « Fermé » est alors la vérité la moins bavarde.
- * ⚠️ `opensAt` est null quand le restaurateur a fermé À LA MAIN : ses horaires
- * ne le rouvriront pas tout seuls, et annoncer une heure serait un mensonge.
- */
-export function libelleOuverture(
-  p: PlatDuJour,
-  t: (cle: string, options?: Record<string, unknown>) => string,
-): string {
-  if (p.isOpen) return '';
-  if (!p.opensAt) return t('restaurantCard.closed');
-  if (p.opensInDays === 0) return t('restaurantCard.opensAt', { time: formatTime(p.opensAt) });
-  if (p.opensInDays === 1) return t('platsDuJour.opensTomorrow', { time: formatTime(p.opensAt) });
-  return t('restaurantCard.closed');
-}
 
 /** Carte verticale — la rangée qui défile sur l'accueil. */
 export function CartePlatDuJour({

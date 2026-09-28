@@ -16,7 +16,7 @@ import type { AppMode } from '../data/types';
  * compte était « vraiment » multi-rôle. Or ce rôle s'obtient en tapant la carte « Je
  * commande » de `/role-select`, il ne donne AUCUN droit (aucune policy RLS ne le
  * mentionne — commander est autorisé par `orders.user_id = auth.uid()`), et il est
- * définitif côté app. Le patron de « Chez Bidul & Truc » l'a tapé une fois le 2026-09-06 :
+ * définitif côté app. Le patron de « Chez Bidule & Truc » l'a tapé une fois le 2026-09-06 :
  * à partir de là son compte n'a plus jamais retrouvé son espace pro, et l'app lui a
  * redemandé son téléphone comme à un nouveau client. On ne lit donc plus le rôle client
  * ici — seuls les rôles pro actifs et le `mode` décident.

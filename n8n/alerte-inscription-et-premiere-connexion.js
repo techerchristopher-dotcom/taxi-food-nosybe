@@ -102,7 +102,7 @@ const sorties = [{
   json: {
     destinataire: ADMIN,
     // ⚠️ PAS d'echappement HTML ici : une ligne d'objet est du texte brut.
-    // « Chez Bidul & Truc » y devenait « Chez Bidul &amp; Truc », lisible tel
+    // « Chez Bidule & Truc » y devenait « Chez Bidule &amp; Truc », lisible tel
     // quel dans la boite de reception.
     objet: premiere
       ? `✅ ${c.restaurant ? c.restaurant + ' ' : ''}s’est connecté — ${nom}`

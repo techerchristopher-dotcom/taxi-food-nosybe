@@ -150,7 +150,7 @@ export function textePartageProduit(p: { name: string; restaurantName?: string |
  * Le texte des plats du jour : un plat par ligne, avec son prix. Lisible tel quel dans
  * WhatsApp, où il accompagne le lien (Facebook, lui, n'affiche que l'aperçu).
  */
-/** « Plats du jour chez La Cabane », mais « Plats du jour de Chez Bidul & Truc » (pas « chez Chez »). */
+/** « Plats du jour chez La Cabane », mais « Plats du jour de Chez Bidule & Truc » (pas « chez Chez »). */
 export function titrePlatsDuJour(restaurantName: string) {
   return `Plats du jour ${/^chez\s/i.test(restaurantName) ? 'de' : 'chez'} ${restaurantName}`;
 }

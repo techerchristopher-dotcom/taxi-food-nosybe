@@ -41,7 +41,7 @@ function Meta({ eta, fee }: { eta: string; fee: number }) {
  * déjà à la question, et mieux — empiler une plage horaire, un badge « Fermé » et une
  * heure d'ouverture ferait trois informations de temps pour une seule question.
  *
- * ⚠️ `todayServicesLabel` et pas `todayHoursLabel` : Chez Bidul & Truc sert midi ET
+ * ⚠️ `todayServicesLabel` et pas `todayHoursLabel` : Chez Bidule & Truc sert midi ET
  * soir. Le libellé rend « 11h30 – 15h · 18h – 22h ». N'afficher que le premier service
  * donnerait, à 19 h, un horaire déjà terminé à côté d'un badge « Ouvert » juste.
  *
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   // ⚠️ `flexWrap` : le nom, le badge et l'horaire ne tiennent pas toujours sur une
-  // ligne (« Chez Bidul & Truc » + « Ouvert » + « 11h30 – 15h · 18h – 22h »). Sans lui,
+  // ligne (« Chez Bidule & Truc » + « Ouvert » + « 11h30 – 15h · 18h – 22h »). Sans lui,
   // le nom du restaurant se ferait tronquer pour laisser la place a l'horaire — le nom
   // compte plus. Avec, l'horaire passe simplement a la ligne.
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

@@ -778,7 +778,7 @@ export default function RestaurantSettingsScreen() {
                 n'apparaissait qu'en mode manuel : pour fermer, il fallait
                 d'abord couper l'ouverture automatique (ce qui ne fermait rien),
                 puis trouver un second interrupteur apparu plus bas. Le patron de
-                Chez Bidul & Truc a cru que le bouton ne marchait pas et est
+                Chez Bidule & Truc a cru que le bouton ne marchait pas et est
                 resté OUVERT pour ses clients, à midi. */}
             <View style={[styles.etatCarte, ouvert ? styles.etatOuvert : styles.etatFerme]}>
               <View style={styles.ligne}>

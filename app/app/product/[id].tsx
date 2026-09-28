@@ -67,7 +67,7 @@ export default function ProductDetailScreen() {
   // tap pour rien et, si le client ne le voit pas, un bouton « Ajouter » grisé
   // qu'il ne peut pas expliquer — le pire des deux mondes.
   //
-  // Le cas est réel depuis le 2026-09-06 : chez Chez Bidul & Truc, l'accompagnement
+  // Le cas est réel depuis le 2026-09-06 : chez Chez Bidule & Truc, l'accompagnement
   // des hamburgers a été ramené aux seules frites. « Coché par défaut » n'existe
   // NULLE PART en base — `product_options` n'a pas de colonne pour ça — donc la
   // règle vit ici, et elle vaut pour tous les restaurants, pas pour un cas
@@ -114,7 +114,7 @@ export default function ProductDetailScreen() {
   // Meme famille que la faille du 2026-09-09 : une regle qui ne vit que dans UN ecran
   // se contourne par le lien qui saute cet ecran.
   //
-  // ⚠️ ET L'HORAIRE DE LA CATEGORIE. Chez Bidul & Truc est ouvert a midi, mais ses
+  // ⚠️ ET L'HORAIRE DE LA CATEGORIE. Chez Bidule & Truc est ouvert a midi, mais ses
   // pizzas ne sortent du four qu'a partir de 18 h. Sans cette ligne, une pizza
   // s'ajoutait au panier a 12 h, et le client se faisait refuser au paiement —
   // signale le 2026-09-11. `servedNow` vient de la base, jamais de l'horloge du

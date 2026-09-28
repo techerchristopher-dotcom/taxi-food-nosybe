@@ -142,7 +142,7 @@ export default function RestaurantMenuScreen() {
   // `isOpen` vaut deja faux pour un `coming_soon` (voir data/api.ts).
   const commandable = restaurant.isOpen;
 
-  // ⚠️ Ouvert ne veut pas dire que TOUT se commande. Chez Bidul & Truc ouvre a
+  // ⚠️ Ouvert ne veut pas dire que TOUT se commande. Chez Bidule & Truc ouvre a
   // midi, mais ses pizzas ne sortent du four qu'a 18 h : le bandeau le disait, et
   // le bouton d'ajout restait actif juste en dessous. Le client remplissait son
   // panier pour se le faire refuser au paiement (signale le 2026-09-11). Le
@@ -301,7 +301,7 @@ export default function RestaurantMenuScreen() {
         <View style={styles.catBar}>
           {/* ⚠️ Retour à la ligne, PAS de défilement horizontal (2026-09-17). Les
               clients ne voyaient pas qu'il fallait faire glisser la rangée et
-              ratent des catégories — chez Chez Bidul & Truc, « Hamburger » et
+              ratent des catégories — chez Chez Bidule & Truc, « Hamburger » et
               « Dessert » tombaient hors de l'écran à 375 px. Toutes visibles
               d'un coup d'œil, quitte à prendre deux ou trois lignes. */}
           <View style={styles.catWrap}>

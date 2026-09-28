@@ -97,7 +97,7 @@ function apercuImage(url) {
 
   // ⚠️ ON PASSE D'ABORD PAR LE TRANSFORMATEUR SUPABASE, et ce n'est pas une
   // precaution gratuite : Netlify ne sait PAS decoder le HEIC et repond 500
-  // (verifie le 2026-09-07 sur la couverture de Chez Bidul & Truc, une photo
+  // (verifie le 2026-09-07 sur la couverture de Chez Bidule & Truc, une photo
   // prise a l'iPhone et deposee telle quelle). Supabase, lui, le convertit.
   // La chaine Supabase -> Netlify couvre donc tous les formats deposes par un
   // restaurateur depuis son telephone, HEIC compris.
@@ -759,7 +759,7 @@ export default async (request) => {
           const nom = l.restaurant_nom ?? 'Taxi Food';
           parResto.set(cle, {
             nom,
-            // « Commander chez Chez Bidul & Truc » : même règle que le titre des
+            // « Commander chez Chez Bidule & Truc » : même règle que le titre des
             // plats du jour plus haut — un nom qui commence déjà par « Chez »
             // prend « de ». Un bouton qui bégaie se lit comme une faute.
             bouton: /^chez\s/i.test(nom) ? `Commander ${nom}` : `Commander chez ${nom}`,

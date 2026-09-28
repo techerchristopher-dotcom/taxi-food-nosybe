@@ -27,7 +27,7 @@
  * desinscription present ? » coupe la branche et rien ne part.
  *
  * ⚠️ Pas d'echappement HTML dans l'objet ni dans le texte brut : ce sont des
- * textes. « Chez Bidul & Truc » y deviendrait « Chez Bidul &amp; Truc », lisible
+ * textes. « Chez Bidule & Truc » y deviendrait « Chez Bidule &amp; Truc », lisible
  * tel quel dans la boite de reception (piege deja paye sur l'alerte
  * d'inscription).
  *

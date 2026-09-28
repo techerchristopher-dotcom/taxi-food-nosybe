@@ -18,7 +18,7 @@
  * messageries bloquent les images, et le client doit pouvoir le recopier.
  *
  * ⚠️ Pas d'echappement HTML dans l'objet ni dans le texte brut : ce sont des
- * textes, « Chez Bidul & Truc » deviendrait « Chez Bidul &amp; Truc ».
+ * textes, « Chez Bidule & Truc » deviendrait « Chez Bidule &amp; Truc ».
  *
  * Le webhook est authentifie (Header Auth sur x-taxifood-secret) : une requete
  * sans le bon en-tete est refusee par n8n avant d'arriver ici.
@@ -65,8 +65,8 @@ const prenom    = String(cli.prenom || '').trim();
 
 const quoi   = livraison ? 'ta prochaine livraison' : 'ton prochain repas';
 const titre  = `${donateur} t’offre ${quoi}`;
-// « Chez Bidul & Truc » porte deja son « chez » : sans ce cas, l'e-mail
-// ecrirait « chez Chez Bidul & Truc ».
+// « Chez Bidule & Truc » porte deja son « chez » : sans ce cas, l'e-mail
+// ecrirait « chez Chez Bidule & Truc ».
 const chez   = !resto ? ''
              : /^chez\s/i.test(resto) ? ' ' + resto.replace(/^chez/i, 'chez')
              : ` chez ${resto}`;

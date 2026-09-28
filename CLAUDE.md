@@ -1,6 +1,6 @@
 # Taxi Food — Livraison de repas (Nosy Be)
 
-Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase. **Huit restaurants en base** au 2026-09-17 : deux ouverts à la commande (La Cabane, Chez Bidul & Truc), quatre « en négociation » (Les Siciliens, Madame Oh, Oh Hazar, La Plage), deux masqués (Angelo, et Taxi Be depuis le 2026-09-17) — voir « Les vrais restaurants ». Branche de travail : `main`.
+Marketplace de livraison de repas à Nosy Be. **App cliente construite et fonctionnelle**, branchée sur le vrai backend Supabase. **Huit restaurants en base** au 2026-09-17 : deux ouverts à la commande (La Cabane, Chez Bidule & Truc), quatre « en négociation » (Les Siciliens, Madame Oh, Oh Hazar, La Plage), deux masqués (Angelo, et Taxi Be depuis le 2026-09-17) — voir « Les vrais restaurants ». Branche de travail : `main`.
 
 Trois livrables distincts, à ne pas confondre :
 
@@ -45,7 +45,7 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   directement la dernière version (≤ 5 s d'écran de lancement en plus).
 - ☎️ **Commande par téléphone** — ✅ livrée dans l'admin le 2026-09-17 (onglet « ☎ Commande tél. »,
   voir sa section). **Aucune vraie commande passée** : testée en transaction annulée seulement
-  (un test réel aurait réveillé Chez Bidul & Truc). Première vraie commande à surveiller :
+  (un test réel aurait réveillé Chez Bidule & Truc). Première vraie commande à surveiller :
   message Telegram du restaurant = nom et numéro du CLIENT, pas ceux du porteur du projet.
   Décision à valider : commande rattachée au compte admin. **GPS facultatif depuis le
   2026-09-17** (retour du porteur du projet), repère obligatoire.
@@ -106,7 +106,7 @@ bol renversé ont le porc en OPTION, sans badge possible.
   **Temps réel** de l'admin (« Fermer maintenant » / « Rendre aux horaires »), jamais vu connecté.
 - Page de partage `/r/<id>` d'un restaurant en négociation : dit encore « Commandez… » et montre
   « Commander maintenant ». À aligner sur « En négociation ».
-- Chez Bidul : confirmer le contenant et les couches du boudin façon hachis ; constater à l'écran
+- Chez Bidule : confirmer le contenant et les couches du boudin façon hachis ; constater à l'écran
   Réglages (compte restaurateur) que les 3 anciens plats du jour sont bien « dormants ».
 - Partage Facebook sur **iPhone** (app installée) : correctif « attendre avant de fermer la feuille »
   non vérifié sur un vrai iPhone.
@@ -131,6 +131,8 @@ bol renversé ont le porc en OPTION, sans badge possible.
 **Codes offerts** (voir leur section) : identifiant n8n à coller, ligne Telegram « Repas offert »,
 test `MERCISULLI` avec Sulli.
 
+> ✏️ 2026-09-28 : le partenaire s'écrit désormais **« Chez Bidule & Truc »** (avec un e) — renommé en base (restaurants, prospects_restaurant, sélection) ; les noms de fichiers/dossiers « bidul » et l'historique (annonces envoyées) restent inchangés.
+
 ## 🍽️ Prospection des restaurants — recensement web, étape 1 (2026-09-28)
 
 But : lister **tous** les établissements où l'on mange ou boit à Nosy Be (restaurant, bar,
@@ -140,18 +142,26 @@ Synthèse (formules), Établissements, Écartés, Sources. Données brutes et sc
 `prospection-restaurants/sources/` et `prospection-restaurants/scripts/` (`merge.py` fusionne,
 `build.py` écrit le classeur, `olc.py` décode les plus codes Google en GPS).
 
-**Résultat : 608 fiches brutes → 406 établissements distincts** (+ 25 écartés : chambres
-d'hôtes, supérettes, golf, continent…). 214 avec téléphone (208 mobiles = WhatsApp probable),
-24 pages Facebook, 160 positions GPS, 101 à moins de 3 km d'un resto partenaire,
-68 déjà présents dans `prospects_hebergement` (hôtels qui font restaurant).
+**Résultat (28/09 au soir, après 2ᵉ passe) : 651 fiches brutes → 422 établissements
+distincts** (+ 27 écartés : chambres d'hôtes, supérettes, golf, continent…). 220 avec
+téléphone (213 mobiles = WhatsApp probable), 48 pages Facebook, 167 positions GPS,
+102 à moins de 3 km d'un resto partenaire, 71 déjà présents dans `prospects_hebergement`.
 Statut Taxi Food posé sur les 9 restaurants en base (4 en ligne, 3 en négociation, 2 masqués).
 
-Sources : Google recherche locale (~60 requêtes type × quartier, via le Chrome du porteur —
-**coupé par un captcha Google** après ~60 pages, ne pas forcer ; relancer plus tard sur
-Djamandjary, Bemoko, Marodoka, Anjiabe, bars par quartier), annuaire **nosybe-pro.com**
-(catégories restos/bars/gargotes/pizzerias/snacks/boulangeries — téléphones publiés),
-OpenStreetMap, TripAdvisor (Nosy Be + Hell-Ville), Petit Futé, Wanderlog, office du tourisme.
-Restaurant Guru : pas de page Nosy Be. Facebook : non balayé (robots) → étape enrichissement.
+Sources : Google recherche locale (~90 requêtes type × quartier, via le Chrome du porteur ;
+un captcha a coupé la 1ʳᵉ passe, la 2ᵉ passe — Djamandjary, Bemoko, Marodoka, Anjiabe,
+Antafondro, Fascene, bars quartier par quartier — n'a rapporté que +13 : **Google est saturé**),
+annuaire **nosybe-pro.com**, OpenStreetMap, TripAdvisor, Petit Futé, Wanderlog, office du
+tourisme. **Facebook** : la recherche interne de pages renvoie surtout du bruit mondial
+(inutilisable pour découvrir) ; les pages indexées par Google ont rattaché une page à ~20
+établissements connus et ajouté 7 nouveaux (Saka'do, Di'Vin, Amodomio…). Les gargotes sans
+présence en ligne ne se trouveront **que sur place**. Restaurant Guru : pas de page Nosy Be.
+
+⚠️ **Précision du porteur du projet (2026-09-28) : Facebook n'a PAS été balayé.** Ce qui précède
+n'est qu'un ramassage de pages déjà indexées par Google — la plateforme elle-même reste à
+parcourir. **Ce sera l'étape 4 (enrichissement des contacts), et c'est là que se trouvent les
+petites gargotes**, celles qui n'ont ni site, ni fiche d'annuaire, ni référencement, mais une
+page Facebook vivante. Ne pas conclure du recensement web que le gisement est épuisé.
 
 Décisions de fusion : clé = nom normalisé (sans « restaurant/bar/chez/gargote/nosy be… »),
 flou ≥ 92 seulement si même initiale, jamais si GPS > 1,5 km ou zones incompatibles ;
@@ -159,12 +169,67 @@ fusions et interdictions manuelles listées en tête de `merge.py` (ex. Océan b
 Beach). Zone = GPS (ancres des hébergements) sinon mots-clés de l'adresse. Même numéro sur
 deux fiches = même exploitant (noté dans « À vérifier »).
 
-Reste à faire (plan validé en 6 étapes, un chantier à la fois) :
-2. nettoyage à la main des 77 « zone à préciser » et des fiches « guide seulement » ;
-3. table Supabase `prospects_restaurant` sur le moule de `prospects_hebergement` ;
-4. enrichissement contacts (193 sans contact public : Facebook, sur place) ;
-5. qualification / priorité (zone livrable, cuisine qui voyage, trous du catalogue) ;
-6. séquence de contact et scripts restaurateur.
+### Étape 3 — la base et l'onglet admin (livrés 2026-09-28)
+
+**Table `prospects_restaurant`** (422 fiches importées, RLS admin seul) + journal append-only
+**`prospect_restaurant_actions`** + vue **`prospects_restaurant_pilotage`** (`security_invoker`,
+ajoute `nb_actions`, dernier geste et `km_resto_en_ligne` = distance au resto **visible** le plus
+proche) + RPC **`admin_prospect_restaurant_agir`** (écrit le journal ET avance le statut en une
+transaction ; refuse sur `hors_zone`/`exclu`/`doublon` ; `accepte` → `interesse`, jamais
+`partenaire`). Migrations `20260928160000_prospects_restaurant.sql` puis l'import en 4 morceaux
+(`…160309` à `…160820`, découpé pour la taille ; garde : 422 fiches, 4 partenaires).
+
+- `canal_contact` **calculé** : telephone → facebook → email → **visite**.
+- Contraintes : `contact_trace` (pas de coordonnée sans `contact_source`), position dans la boîte
+  de l'archipel, et **`partenaire` exige `restaurant_id`** — une fiche devient partenaire quand le
+  restaurant est créé au catalogue, pas avant.
+- `google_cid` unique = identifiant Google de la fiche (`google_maps_url` = `maps?cid=`).
+- Statuts à l'import : 370 `a_contacter`, 43 `hors_zone` (Nosy Komba/Sakatia/Faly), 4 `partenaire`
+  (La Cabane, Bidul, La Plage, M&K reliés par `restaurant_id`), 3 `interesse` (Siciliens, Madame Oh,
+  Oh Hazar), 2 `exclu` (Angelo, Taxi Be). À contacter : 192 par téléphone, 10 par Facebook,
+  168 sur place seulement ; 101 à moins de 3 km d'un resto en ligne.
+- Vérifié par appel HTTP réel avec la clé anon : 0 ligne sur la table et la vue, RPC refusée (42501).
+
+**Onglet admin « 🍽️ Restos à démarcher »** (`admin/components/ProspectionRestaurants.tsx`, deux
+lignes ajoutées dans `admin/app/page.tsx` — `Prospection.tsx` des hébergeurs **non touché**) :
+file « À faire » (triée : proche d'un resto en ligne, joignable sans se déplacer, pas encore
+contacté), « Autour de moi » (géoloc), « Toutes les fiches », filtres zone/type/canal, recherche.
+Fiche : Appeler / WhatsApp avec message pré-rempli / Facebook / Carte, geste « J'ai fait »
+(canal → interlocuteur → résultat, verrou synchrone), historique, correction (téléphone, statut,
+notes). **« + Trouvé sur place »** : ajoute une gargote inconnue du web avec la position GPS,
+`sources = {Terrain}`. Le message ne cite **aucun taux de commission** (il se négocie par resto).
+Déployé le 2026-09-28 (build fait hors du Mac, dossier `out` pré-construit poussé sur le site
+`d2e677f5…`, domaine admin.distripro207.com). ⚠️ `admin/out` local n'est pas à jour : refaire
+`npm run build` avant le prochain déploiement depuis le Mac.
+
+### Étape 4 — enrichissement des contacts (2026-09-28)
+
+- **TripAdvisor** : les 72 fiches restaurant (Nosy Be, Hell-Ville, Ambatoloaka `g2470218`) lues une à
+  une — elles portent le téléphone de l'établissement. **Pages Facebook** des fiches sans téléphone
+  lues dans le Chrome du porteur (numéro et e-mail affichés par la page). Migration
+  `20260928162243_…` : on remplit un champ vide, on ne remplace jamais ; un 2ᵉ numéro va dans
+  `telephone_2` s'il est libre. **27 fiches enrichies**, dont Nosy Tagada, Safari, Chez Tantine,
+  Restaurant 22, Parad'ice, Amodomio, Madagascar Resort ; zones corrigées (Chez Nous, La Mélée, Bar Hala…).
+- Appris en route : **Embruns de saveurs** est à Amporaha Nord (continent) → `hors_zone` ;
+  **Chez Mamamia** (annuaire) = **Mamma Mia** (même numéro) → `doublon` ; **Tamana** : page Facebook
+  « fermé définitivement » → `ferme` ; **L'Oasis** : une publication dit qu'il a fermé → à vérifier ;
+  **Restaurant 22** et **Beach Klub22** partagent le numéro (groupe « 22 ») → un seul interlocuteur.
+- La recherche Facebook par nom (`site:facebook.com`) ne rend presque plus rien pour le reste :
+  **les 145 fiches encore « sur place seulement » n'ont aucun contact public.**
+- **`TOURNEE-RESTAURANTS-NOSY-BE.xlsx`** (racine) : 5 circuits ordonnés au plus proche voisin
+  depuis un resto partenaire — Ambatoloaka-Madirokely-Dar es Salam (45, à pied depuis La Cabane),
+  Hell-Ville (35), Côte Ouest jusqu'à Andilana (31), Est et aéroport (7), À localiser (27, sans
+  adresse). Colonnes à remplir : prénom du patron, téléphone relevé, réponse. Sur le terrain,
+  l'admin (« Autour de moi », « Corriger la fiche », « J'ai fait ») fait la même chose en direct.
+- État après l'étape 4 : à contacter = **216 par téléphone, 5 par Facebook, 145 sur place**.
+
+### Reste à faire (plan en 6 étapes, un chantier à la fois)
+
+4bis. **Tournées** Ambatoloaka puis Hell-Ville (le reste ensuite), en relevant téléphone + prénom.
+5. **Qualification / priorité** (`priorite`) : zone livrable, cuisine qui voyage bien, trous du
+   catalogue (burgers, pizzas, malgache, petit-déjeuner…).
+6. **Séquence de contact** et scripts restaurateur (appel, visite, dégustation), sur le modèle de
+   STRATEGIE-PROSPECTION-HEBERGEMENTS.md.
 
 ## 🏨 Prospection des hébergements — 799 fiches en base (2026-09-28)
 
@@ -366,7 +431,7 @@ flyers), signer (WhatsApp `+261 36 15 74 521` et `https://taxifoodnosybe.distrip
   déjà parti, il a fallu en renvoyer un second. On lit la page AVANT d'écrire — anglais, italien
   ou autre.
 - **Ne citer que les 4 restaurants commandables** (`listing_status = 'visible'`) : La Cabane,
-  Chez Bidul & Truc, Chez M&K, La Plage. Les Siciliens, Madame Oh et Oh Hazar sont
+  Chez Bidule & Truc, Chez M&K, La Plage. Les Siciliens, Madame Oh et Oh Hazar sont
   `coming_soon` : ils n'apparaissent dans aucun message.
 - **Lire la page repère les cuisines que la base ignorait.** Madirokely House sert le
   petit-déjeuner et prépare les repas sur demande ; Corto Novo est **ouvert vendredi, samedi et
@@ -633,7 +698,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 | Rang | Restaurant | `listing_status` | id |
 |---|---|---|---|
 | 10 | La Cabane | visible | `958faac6-61ab-4ff5-9226-b8adab46ed24` |
-| 20 | Chez Bidul & Truc | visible | `700e8f32-e966-476a-b371-02884d08dea1` |
+| 20 | Chez Bidule & Truc | visible | `700e8f32-e966-476a-b371-02884d08dea1` |
 | 30 | Les Siciliens | coming_soon | `aee1c612-5ee0-402b-a7b4-aec9c6825b0b` |
 | 40 | Madame Oh (thaï, Hell-Ville) | coming_soon | `ba08c074-bc2f-4d0c-b087-ecdf7925269f` |
 | 50 | Oh Hazar (marocain, Hell-Ville) | coming_soon | `c2a49e11-d839-459f-a332-024796102155` |
@@ -644,7 +709,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 `coming_soon` s'affiche **« En négociation »** partout (app et vitrine) et n'est **jamais
 commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` — la garde est en base.
 
-- **Chez Bidul & Truc** (`700e8f32-…`) — **visible**, et le seul en `auto_open = true` : son
+- **Chez Bidule & Truc** (`700e8f32-…`) — **visible**, et le seul en `auto_open = true` : son
   ouverture est déduite de ses horaires, pas d'un interrupteur. Deux services par jour, midi et
   soir, et une catégorie « Pizza » servie de 18 h à 22 h seulement — c'est lui qui a fait naître
   tout le chantier « heures de service » plus bas. **Carte entière ouverte le 2026-09-15**
@@ -922,7 +987,7 @@ elle part dans le **circuit de l'app**. Migration `20260917150000_commande_par_t
 - **Nom du vrai client** : l'app (`mapOrder`) et l'admin Temps réel lisent le libellé `☎ <nom>` ;
   le téléphone de l'adresse prime sur celui du profil (l'admin Temps réel faisait l'inverse,
   corrigé). OTA `8773196a…` (1.2.2/1.2.3) et `7db125ab…` (1.2.1), web et admin redéployés.
-- **Vérifié** (transaction annulée, 2026-09-17, Chez Bidul & Truc ouvert) : non-admin refusé ;
+- **Vérifié** (transaction annulée, 2026-09-17, Chez Bidule & Truc ouvert) : non-admin refusé ;
   option obligatoire manquante → `Choix requis manquant : Sauce au choix` ; Les Siciliens →
   `service:restaurant_ferme` ; sans GPS → refus ; commande valide → 2 × « Le classique »,
   sous-total 48 000 + livraison 10 000 = 58 000, 3 options, jeton posé, bloc client = nom et numéro
@@ -1038,7 +1103,7 @@ Ce qu'il faut savoir sans l'ouvrir :
 
 ## ⚠️ Le restaurant recevait une commande VIDE (corrige le 2026-09-06)
 
-Constate sur le telephone du patron de Chez Bidul & Truc a sa premiere commande :
+Constate sur le telephone du patron de Chez Bidule & Truc a sa premiere commande :
 **« il me dit qu'il a recu une commande a 0 Ar »**. Ce n'etait pas un souci d'affichage
 Telegram — c'est bien une commande vide qui partait. Mesure dans une transaction annulee :
 
@@ -1191,7 +1256,7 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 ## 🎁 Codes offerts « MERCI + prénom » (2026-09-15)
 
 **Geste commercial nominatif, PAYÉ PAR LE RESTAURANT qui l'offre.** Né d'un client mécontent
-(Sulli, TF-162 chez Chez Bidul & Truc) à qui le restaurant a voulu offrir le repas suivant.
+(Sulli, TF-162 chez Chez Bidule & Truc) à qui le restaurant a voulu offrir le repas suivant.
 
 - **Un code par client**, nommé `MERCI` + prénom nettoyé (`MERCISULLI`), **réservé à son
   bénéficiaire** : tout autre compte reçoit `inconnu`, sans révéler que le code existe. Le nom
@@ -1233,7 +1298,7 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
    caractères). Sauvegarde du workflow prise hors dépôt. **À appliquer restaurants FERMÉS** :
    la réactivation du webhook fait perdre toute notification émise pendant la coupure.
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
-   rappeler**. Sans la ligne Telegram, prévenir Chez Bidul & Truc par téléphone que la commande
+   rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
 
 ## 💸 Versements aux restaurants : référence Orange Money + message Telegram (2026-09-22)
@@ -1413,7 +1478,7 @@ Migration `20260923140000_reverser_les_commandes_choisies` (appliquée).
 
 `restaurants.latitude` / `longitude`, écrites par `admin_set_position_restaurant()` (admin
 seulement, refus hors de Nosy Be : une virgule perdue ferait facturer des kilomètres imaginaires).
-Chez Bidul & Truc −13.3930201 / 48.2078429 · La Cabane −13.397834 / 48.206980 ·
+Chez Bidule & Truc −13.3930201 / 48.2078429 · La Cabane −13.397834 / 48.206980 ·
 Chez M&K −13.3861762 / 48.2386413 (liens Google Maps du porteur du projet). La Plage : −13.3945489 / 48.2645362 (Hell-Ville, 2026-09-25). Restent sans position : Angelo, Les Siciliens, Madame Oh, Oh Hazar, Taxi Be —
 tout calcul de distance doit traiter « position inconnue ».
 
@@ -1489,7 +1554,7 @@ Adresse d'un autre compte ⇒ tarif de base, aucune distance rendue (vérifié).
 **Preuves chiffrées** (transactions annulées, 2026-09-24, aucune commande réelle créée) :
 | Cas | Distance recalculée | Frais |
 |---|---|---|
-| TF-268 — Chez Bidul & Truc | 0,478 km | 10 000 |
+| TF-268 — Chez Bidule & Truc | 0,478 km | 10 000 |
 | TF-251 — La Cabane | **3,013 km** | **11 000** |
 | TF-265 — Chez M&K | 4,317 km | 12 000 |
 | TF-151 — La Cabane | 9,250 km | 17 000 |
@@ -1499,7 +1564,7 @@ recalculée, donc **un kilomètre entamé** et 11 000 Ar. Treize mètres au-dess
 1 000 Ar. C'est la règle demandée qui s'applique, pas un défaut — mais si ce couperet dérange,
 le remède est un réglage, pas du code : monter `livraison_km_inclus` à 3,2 par exemple.
 
-## 🍟 Accompagnements de Chez Bidul & Truc (2026-09-20)
+## 🍟 Accompagnements de Chez Bidule & Truc (2026-09-20)
 
 - **Plats du jour : UN SEUL accompagnement**, inclus dans le prix (frites, légumes sautés, pâtes,
   riz, purée). Le groupe facultatif « 2e accompagnement (+5 000 Ar) » a été **retiré des plats du
@@ -1529,7 +1594,7 @@ le CONSTATE à l'écran — pas seulement en base.
 
 ## 🚪 Fermer doit être UN SEUL GESTE, visible même en automatique (2026-09-20)
 
-**Le défaut.** Le patron de Chez Bidul & Truc a voulu fermer son restaurant à midi depuis son
+**Le défaut.** Le patron de Chez Bidule & Truc a voulu fermer son restaurant à midi depuis son
 espace. Il est resté **OUVERT pour ses clients**, et il a cru que le bouton ne marchait pas.
 
 **Pourquoi.** `ouvert_maintenant(r)` vaut `is_open` quand `auto_open` est faux, et **l'horaire du
@@ -1579,7 +1644,7 @@ sans `auto_open`, la trace d'une fermeture sans effet était indiscernable d'une
 `auto_open = true`) : l'écran Réglages affiche « **Fermé en ce moment** · Ce sont vos horaires qui
 vous ferment », le bouton **« Ouvrir maintenant »** juste en dessous, et « Ouverture automatique »
 allumée **sous** lui. C'est exactement la régression corrigée : le bouton existe **en mode
-automatique**. Côté client (375 px) : La Cabane et Chez Bidul & Truc portent le badge « Fermé »,
+automatique**. Côté client (375 px) : La Cabane et Chez Bidule & Truc portent le badge « Fermé »,
 la fiche dit « pas commander — reviens à l'ouverture » et les plats n'ont plus de bouton d'ajout.
 
 **Non vérifié** :
@@ -1592,13 +1657,13 @@ la fiche dit « pas commander — reviens à l'ouverture » et les plats n'ont p
   déployé contient bien « Fermer maintenant », « Rendre aux horaires » et
   `admin_set_restaurant_auto_open`, et les deux RPC sont exercées en base.
 
-⚠️ **Chez Bidul & Truc a été fermé à la main le 2026-09-20** (`is_open=false, auto_open=false`).
+⚠️ **Chez Bidule & Truc a été fermé à la main le 2026-09-20** (`is_open=false, auto_open=false`).
 Il ne rouvrira pas tout seul : c'est au restaurateur de rouvrir, ou de réactiver son ouverture
 automatique.
 
 ## Heures de service — deux services par jour, cartes à l'heure (2026-09-07)
 
-Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et dont les
+Chantier ouvert en branchant **Chez Bidule & Truc**, qui sert **midi ET soir** et dont les
 **pizzas ne sortent qu'à partir de 18 h**. Migration
 `20260907190000_deux_services_par_jour_et_cartes_a_l_heure`.
 
@@ -1630,7 +1695,7 @@ Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et
 
 - **`categories.serving_from` / `serving_to`** (`time`, nullables). **Vide = servie dès que le
   restaurant est ouvert** — c'est le cas de toutes les catégories sauf une, vérifiée en base :
-  « Pizza » chez Chez Bidul & Truc, **18:00 → 22:00**. Le verdict est rendu par
+  « Pizza » chez Chez Bidule & Truc, **18:00 → 22:00**. Le verdict est rendu par
   `categorie_servie_maintenant(categories)`, que `getMenu` sélectionne comme colonne calculée.
 - ⚠️ Avant, `is_active` était le seul levier, et il est tout ou rien : masquer les pizzas le
   midi obligeait à **les éteindre et les rallumer à la main, deux fois par jour, tous les
@@ -1639,7 +1704,7 @@ Chantier ouvert en branchant **Chez Bidul & Truc**, qui sert **midi ET soir** et
 ### Et le vrai trou : `create_order` ne regardait NI l'ouverture NI l'heure
 
 ⚠️ **On pouvait commander à 3 h du matin sur un restaurant fermé.** Mesuré le 2026-09-07 dans
-une transaction annulée, Chez Bidul & Truc fermé : « restaurant ouvert ? f | commande acceptée
+une transaction annulée, Chez Bidule & Truc fermé : « restaurant ouvert ? f | commande acceptée
 ? t » — TF-107, 19 000 Ar. Le restaurant aurait reçu son message Telegram, avec ses boutons,
 sans personne en cuisine. **L'écran grisait le bouton — l'écran n'a jamais été l'autorité** :
 la clé anon est publique par conception, l'API REST s'appelle directement.
@@ -1688,7 +1753,7 @@ carte ne pouvait pas la ranger.
   les modifications passées** : il n'y a aucun moyen de retrouver l'ordre d'origine de la carte
   papier, `products` n'ayant même pas de `created_at`. Le figer est le mieux qu'on puisse faire
   sans inventer.
-- Les 18 plats de la catégorie « Plat » de Chez Bidul & Truc ont ensuite été remis dans l'ordre
+- Les 18 plats de la catégorie « Plat » de Chez Bidule & Truc ont ensuite été remis dans l'ordre
   de sa **carte papier**, relevé sur la photo versionnée à côté — ni alphabétique, ni par prix :
   celui que le restaurateur a choisi.
 - Index `products_categorie_ordre_idx (category_id, sort_order)`.
@@ -1834,7 +1899,7 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
 
 ## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
 
-Constat du porteur du projet un lundi à 18 h 20 : la carte de Chez Bidul & Truc disait
+Constat du porteur du projet un lundi à 18 h 20 : la carte de Chez Bidule & Truc disait
 « Ouvre à 12h » — l'heure du service de MIDI, terminé — alors que le soir ouvre à 19 h.
 Migration `20260928190000_prochaine_ouverture_exposee_et_ouverts_en_tete`.
 
@@ -1861,9 +1926,9 @@ Migration `20260928190000_prochaine_ouverture_exposee_et_ouverts_en_tete`.
   `sort_order` : un « en négociation » ne passe jamais devant un « visible » (garde en
   migration). L'app (`listRestaurants`) et la vitrine (`partenaires.js`) trient toutes
   deux dessus — `rang_catalogue` reste pour l'admin. Vérifié par l'API à la clé publiable :
-  Chez M&K (ouvert) en tête, puis La Cabane, Bidul (19:00 / 0 j), La Plage (10:00 / 1 j),
+  Chez M&K (ouvert) en tête, puis La Cabane, Bidule (19:00 / 0 j), La Plage (10:00 / 1 j),
   puis les trois en négociation.
-- Vu sur l'app web à 375 px, un lundi à 18 h 28 : « Ouvre dans 31 min » sous Bidul,
+- Vu sur l'app web à 375 px, un lundi à 18 h 28 : « Ouvre dans 31 min » sous Bidule,
   « Ouvre demain à 10h » sous La Plage, « Ouvre demain à 16h » sous La Cabane.
 - ⏳ **Publié nulle part encore** : OTA (trois runtimes), web et vitrine à déployer.
 
@@ -2219,7 +2284,7 @@ public, et adapter les 9 fonctions SECURITY DEFINER qui les lisent ou écrivent 
   mieux qu'une supposition**. La déduction se trompe dans les **deux** sens — les pizzas
   « Reine » et « Pepperoni » d'Angelo et de Taxi Be sont au jambon de volaille (les taguer
   aurait fait fuir exactement les clients que le label sert), et à l'inverse la « Terrine foie
-  gras » de Chez Bidul & Truc n'en contient pas, alors que la déduction courante l'aurait
+  gras » de Chez Bidule & Truc n'en contient pas, alors que la déduction courante l'aurait
   taguée et aurait écarté un plat à 29 000 Ar sans raison. Colonne `products.diet_tags`, posée
   par `set_product_diet_tags`.
 - **Un groupe d'options OBLIGATOIRE qui ne propose qu'une seule option disponible se
@@ -2237,7 +2302,7 @@ public, et adapter les 9 fonctions SECURITY DEFINER qui les lisent ou écrivent 
   l'écran**, français quelle que soit la langue lue.
 - ⚠️ **Les catégories de la page restaurant passent à la ligne** (2026-09-17), plus de rangée qui
   défile horizontalement : les clients ne voyaient pas qu'il fallait la faire glisser et rataient
-  « Hamburger », « Dessert »… Chez Bidul & Truc tient en 3 lignes à 375 px. Ne pas remettre de
+  « Hamburger », « Dessert »… Chez Bidule & Truc tient en 3 lignes à 375 px. Ne pas remettre de
   `ScrollView horizontal` (`styles.catWrap`, `app/app/restaurant/[id].tsx`). La vitrine et les pages
   de partage n'ont pas de rangée équivalente.
 - **Choix structurés, pas de commentaire libre** : les produits « à choix » (kebab, tacos, burgers, pizzas…) utilisent des groupes d'options (radios / cases). Le champ commentaire a été retiré.
@@ -2378,7 +2443,7 @@ l'ouverture**, dont le Telegram de La Cabane qui pointe encore sur le patron.
 
 ## 📓 Journal du 2026-09-10 — jour de lancement
 
-Boissons de Chez Bidul & Truc, puis **trois defauts remontes par de vrais
+Boissons de Chez Bidule & Truc, puis **trois defauts remontes par de vrais
 testeurs** : la route `/auth/callback` inexistante (personne ne pouvait creer de
 compte), une adresse enregistree **en pleine mer**, et l'ecran noir de plusieurs
 secondes au chargement du web. Plus la conformite DSA qui rendait l'app
@@ -2846,7 +2911,7 @@ fichier d'avant correction.
 **11 packshots** générés à partir de photos réelles prises au bar (Higgsfield `gpt_image_2`,
 2048², fond blanc), dans `partenaire /bidul et truc /pub /boissons-packshots/`.
 
-- ✅ **Chez Bidul & Truc : ses 10 boissons sont déjà nommées en canettes** (« THB 50 cl »,
+- ✅ **Chez Bidule & Truc : ses 10 boissons sont déjà nommées en canettes** (« THB 50 cl »,
   « Beaufort 33 cl », « Caprice Grenadine 33 cl »…) → correspondance 10/10, **aucun renommage**.
   4 n'avaient aucune image, 3 en avaient une fausse.
 - ⛔ **Angelo, La Cabane, Taxi Be gardent leurs images** : leurs produits s'appellent « THB PM »

@@ -562,7 +562,7 @@ export async function getProductDetail(id: string): Promise<{
   restaurant: Restaurant | null;
   /**
    * ⚠️ La catégorie porte l'HORAIRE DE SERVICE (pizzas de 18 h à 22 h chez Chez
-   * Bidul & Truc). Sans elle, la fiche ne pouvait savoir que si le restaurant était
+   * Bidule & Truc). Sans elle, la fiche ne pouvait savoir que si le restaurant était
    * ouvert — et laissait ajouter une pizza à midi. Or cette fiche est la porte d'un
    * lien partagé ET de toute pizza à options : c'était la voie directe pour
    * contourner la carte.

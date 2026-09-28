@@ -184,7 +184,7 @@ export type Category = {
   icon?: string | null; // emoji de la catégorie (ex. 🍕)
   sortOrder: number;
   /**
-   * Heures de service de la catégorie — les pizzas au four de Chez Bidul & Truc
+   * Heures de service de la catégorie — les pizzas au four de Chez Bidule & Truc
    * ne sortent qu'entre 18 h et 22 h. `null` = servie dès que le restaurant est
    * ouvert, ce qui est le cas de la quasi-totalité des catégories.
    */
@@ -481,7 +481,7 @@ export function todayHoursLabel(h: DayHours | null): string {
 /**
  * Libellé de TOUS les services du jour — « 11h30 – 15h · 18h – 22h ».
  *
- * ⚠️ Ne jamais retomber sur le seul premier service. Chez Bidul & Truc sert midi
+ * ⚠️ Ne jamais retomber sur le seul premier service. Chez Bidule & Truc sert midi
  * et soir : à 18 h, n'afficher que le midi donnait « Ouvert · 11h30 – 15h », un
  * horaire déjà terminé à côté d'un badge juste. Le client en conclut que
  * l'application se trompe — ou qu'elle est fermée alors qu'elle est ouverte.

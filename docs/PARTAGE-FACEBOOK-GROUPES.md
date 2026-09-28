@@ -462,9 +462,8 @@ repérer ceux qui laissent nos publications en attente : ils coûtent du temps e
 
 Consigne du porteur du projet : « tous les groupes de la page », au-delà du quota habituel de
 6/jour (§ 2) — décision assumée pour cette session. Lien partagé : `/p/edebfa42-…` (Marmite du
-pêcheur, Chez Bidule & Truc — **Chez Bidul & Truc n'a plus de U** dans les textes visibles, mais
-la fiche produit en base garde son nom d'origine, à corriger séparément si besoin), choisi parce
-que La Plage et La Cabane étaient fermées ce soir-là (vérifié `ouvert_maintenant()` avant de
+pêcheur, Chez Bidule & Truc), choisi parce que La Plage et La Cabane étaient fermées ce soir-là
+(vérifié `ouvert_maintenant()` avant de
 publier). **Première utilisation en conditions réelles du correctif `?g=` sur `/p/`** (livré ce
 même jour, commit `309c4d2`) : l'aperçu Facebook a montré la vraie photo et le bon titre dans les
 15 groupes, confirmant que la réinjection dans `og:url` fonctionne aussi hors `/jour`.

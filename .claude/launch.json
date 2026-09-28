@@ -16,6 +16,16 @@
       "cwd": "app"
     },
     {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "cwd": "admin"
+    },
+    {
       "name": "taxi-food-landing",
       "runtimeExecutable": "python3",
       "runtimeArgs": [

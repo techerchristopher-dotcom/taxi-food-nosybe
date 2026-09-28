@@ -120,11 +120,191 @@ bol renversé ont le porc en OPTION, sans badge possible.
   reçu qu'un test au 2026-09-16. Un client disant avoir « envoyé un message » a écrit par WhatsApp
   ou e-mail — hors base. Piste ouverte : un vrai formulaire de contact enregistré + notifié n8n.
 
+- 🏨 **Prospection des hébergements** (2026-09-28, voir sa section) : **799 fiches en base**,
+  671 à visiter regroupées en **439 adresses**, 286 téléphones. Espace admin **livré** (file de
+  travail, scripts, codes promo par adresse). **Reste** : trancher **ce que l'hôte y gagne**,
+  et la tournée sur place — c'est le geste que l'outil ne remplace pas.
+
 - ⏱️ **Préparation automatique** (2026-09-22, voir sa section) : livrée base + OTA + web + vitrine.
   Reste à constater sur une vraie commande, et à dire aux restaurateurs.
 
 **Codes offerts** (voir leur section) : identifiant n8n à coller, ligne Telegram « Repas offert »,
 test `MERCISULLI` avec Sulli.
+
+## 🏨 Prospection des hébergements — 799 fiches en base (2026-09-28)
+
+Table **`prospects_hebergement`** (RLS admin seul). But : passer chez les hôtes de Nosy Be avec
+des flyers portant **un code de réduction par adresse**, pour que leurs voyageurs commandent.
+Livrables : `PROSPECTION-HEBERGEMENTS-NOSY-BE.xlsx` (3 feuilles) et
+`PROSPECTION-HEBERGEMENTS-NOTES.md` à la racine. **La base est la référence, le classeur est une
+photo du 28/09 au soir.** `TOURNEE-HOTES-NOSY-BE.md` est une version antérieure (361 fiches,
+trois quartiers seulement) : **périmée**, ne plus s'en servir.
+
+### Ce qui est en base
+
+| | Fiches |
+|---|---|
+| Total | **799** |
+| À visiter | 671 (**439 adresses** après regroupement) |
+| Hors zone (Nosy Komba 95, Sakatia 15, Ankify 1) | 111 |
+| Exclues (Rentanoo 11, annonce morte 1) | 12 |
+| Contactées (messages Airbnb du 28/09 au matin) | 5 |
+
+Contacts : **286 téléphones · 97 pages Facebook · 49 mails · 209 sites · 588 positions GPS**.
+**458 fiches joignables seulement par la messagerie Airbnb** (334 parmi les « à visiter ») ·
+**22 sans aucun canal**.
+
+Trois sources fusionnées, dédoublonnées sur `airbnb_room_id` puis sur le nom normalisé (accents
+aplatis, suffixe « Nosy Be » retiré) : relevé **Google Places 23/02/2026** (175 fiches, avec
+téléphone), relevé **Airbnb Madirokely/Ambatoloaka/Andilana 28/09** (172), relevé **Airbnb complet
+de l'île 28/09** (430 sur 613 annonces, 183 étant déjà fichées), plus 22 fiches saisies à la main.
+
+### Colonnes qui portent une décision
+
+- **`canal_contact`** est **calculé** (`generated always as`) : téléphone → facebook → email →
+  messagerie Airbnb → vide. C'est la colonne qui répond à « par où je joins cette fiche ».
+- **`etablissement`** regroupe les logements d'une même maison, **`airbnb_host_id`** ceux d'un même
+  hôte. **Un code de réduction par groupe, jamais par logement** : Villa Sophie = 8 annonces mais
+  une seule maison, Mahé Lodge = 11 annonces et un seul interlocuteur.
+- **`contact_source`** dit d'où vient chaque valeur et avec quelle certitude : « site officiel » est
+  sûr, « annuaire » et « titre indexé » sont **à confirmer par un appel**.
+- **`telephone_2`** = second numéro publié. À Madagascar un mobile (032/033/034/037/038) est aussi
+  un numéro WhatsApp.
+- ⚠️ `canal_contact` **ignore `site_web`** : une fiche qui n'a qu'un site reste « messagerie
+  Airbnb ». Normal — un site sans coordonnées lues n'est pas encore un canal.
+- `latitude`/`longitude` : contrainte en base sur la boîte de l'archipel
+  (lat −13,60..−13,15 · lng 48,10..48,45), Nosy Komba et Ankify compris.
+
+### Les quatre mesures qui ont changé le résultat
+
+1. **Le quartier déclaré par les hôtes est faux.** Le libellé « Andoany » (= Hell-Ville, à 8 km)
+   avait le même centre de gravité que Madirokely, et Emeraude Lodge se déclarait à Ambatozavavy
+   alors que sa position est à Andilana. La zone vient donc du **GPS** : on garde le quartier
+   déclaré quand la position le confirme à moins de 3 km de l'ancre de cette zone, sinon on
+   rattache à l'ancre la plus proche, au-delà la zone reste vide.
+   **Témoin : l'ancre Ambatoloaka calculée tombe à 184 m de la position réelle de La Cabane.**
+2. **20 positions effacées.** Huit annonces partagent exactement `-13.315, 48.2593`, dont une qui
+   se dit « plage à 50 m » d'Ambatoloaka — 8 km plus loin. Airbnb masque ces adresses et renvoie
+   le centre de l'île. Une fausse position est pire que pas de position : effacée, et la fiche dit
+   d'écrire à l'hôte.
+3. **Le dédoublonnage jetait la ligne qui portait le téléphone.** Dix numéros récupérés après coup,
+   dont Résidence Ambalamanga et Bungalow chez Mouch, qui se retrouvaient sans aucun contact.
+4. **Un rapprochement trop permissif diffusait un faux numéro.** « Villa Nosy » (Hell-Ville) avait
+   absorbé « Villa nosy Breizh » et « villa Nosy Komba », qui sont à Nosy Komba, et son téléphone
+   s'était répandu sur toutes les annonces de leurs hôtes. Trois rapprochements défaits, contacts
+   effacés, repropagation. **Garde en place : aucun numéro sur plus de deux groupes.**
+
+### Recherche de contacts complémentaire — 28/09 au soir
+
+Les plus gros exploitants Airbnb jamais cherchés. **36 fiches mises à jour** (migration gardée :
+compte par hôte, total attendu 32, puis 2), `etablissement` renseigné, URL dans `contact_source`
+et `source_urls`, suffixe « (relevé 2026-09-28) » pour les retrouver.
+
+| Établissement (ex-libellé du classeur) | Fiches | Trouvé | Certitude |
+|---|---|---|---|
+| Passot Hills (ex « Chez Rija », villas « Collines de Passot ») | 3 | +261 32 05 000 55 (location), mail | site officiel |
+| Chez Paul et Denise (ex « Chez Ingrid ») | 4 | +261 32 02 343 28 · +261 34 03 397 77, mail, Facebook | site officiel |
+| Villa Les Palétuviers (ex « Chez Alain ») | 3 | +261 32 91 860 73, mail, Facebook | site officiel |
+| Maison le Rêve | 4 | +31 6 44 33 72 27 (WhatsApp), mail, Facebook | site officiel |
+| Villa Gerty (ex « Chez Dominique ») | 3 | +261 34 80 509 50, mail, Facebook | site officiel |
+| Résidence Mareva (ex « Chez Denaye Diana Shloana ») | 4 | +261 37 92 466 22, mail, Facebook | site officiel |
+| Lodges Cap Doré (ex « Chez Thierry ») | 2 | site seulement | titre indexé |
+| Jardin Fleuri de Lety (ex « Chez Jean Leticia ») | 3 | site + Facebook | titre indexé |
+| Villa Lokobe (ex « Chez Max ») | 7 | site seulement | titre indexé |
+| Villa Vakana — L'Intendance de Nosy Be (conciergerie) | 1 | site seulement | titre indexé |
+
+- **Deux fusions « un code par adresse »** : « Chez Paul et Denise/Studio bord de mer »
+  (autre compte Airbnb, même maison) rejoint Chez Paul et Denise ; la fiche Maison le Rêve
+  **déjà contactée** par Airbnb rejoint les trois chambres → 441 → **439 adresses**.
+  Maison le Rêve se relance par WhatsApp/mail, **plus par Airbnb**.
+- **Villa Lokobe** : les 4 appartements de Hell-Ville (Andromède, Calypso, Cassiopée,
+  Pénélope) sont rattachés **par l'hôte**, pas par le site — à confirmer à l'appel.
+- **Rien de publié en propre** (seulement Airbnb/Booking/agrégateurs) : Résidence Suisse (11),
+  Melissa97 (7), Résidence Casablanca (6), Villa Premium (5), Villa Luna / Onja (5), Volatiana,
+  Résidence Bel Air, Vahi-Ni, Villa Donia, Villa Maddie, Mandroso Palazetto. Villa Arcadia :
+  numéro masqué sur `nosybe-pro.com`. → **tournée sur place**.
+- Sites qui refusent la lecture automatisée (à ouvrir à la main pour relever téléphone/mail) :
+  `lodgescapdore.com`, `villalokobe.com`, `jardin-fleuridelety-nosybe.com`,
+  `intendancenosybe.com`, `madagascar-hotels-online.com` (fiche Villa Luna).
+- Un mail qui ressemble à un mail perso (`thibaultalain13@gmail.com`, `rphnay@gmail.com`) est
+  **publié par l'établissement sur son propre site** : il entre dans la règle.
+
+### Règles à ne pas enfreindre
+
+- **Aucune coordonnée personnelle de particulier.** On ne relève que ce que l'établissement publie
+  lui-même : son site, sa page professionnelle, sa fiche Google, un annuaire. Chercher le téléphone
+  personnel de « Benjamin » en croisant Facebook, c'est constituer un fichier sur des personnes
+  privées : on ne le fait pas. Pour un hôte particulier, **la messagerie Airbnb EST le canal**.
+- **Aucune valeur écrite sans sa source.** Toute trouvaille arrive avec l'URL de la page où elle a
+  été lue, et cette URL va dans `contact_source`.
+- **Chaque migration compte ses lignes et refuse de passer si le compte diffère.** Les gardes ont
+  attrapé : 17 fiches annoncées contre 22 réelles, la contrainte GPS qui refusait Ankify, une
+  empreinte md5 qui ne tombait pas (mise en forme `numeric(9,6)`), 24 fiches sans canal.
+- **Ne jamais prospecter Rentanoo** (hôte Airbnb « Chris Rentanoo », 11 annonces) : c'est le
+  porteur du projet lui-même.
+- **« FAIT AUSSI RESTAURANT » dans les notes = concurrent sur la nourriture.** Le bon angle est
+  « un service pour vos clients quand votre cuisine est fermée », pas « plus de choix que vous ».
+
+### Espace Prospection (admin) — livré 2026-09-28
+
+Onglet **🏨 Prospection** du dashboard admin (`admin/components/Prospection.tsx`) : la file de
+travail (« À faire », top 30 par `rang`), « Autour de moi » (géolocalisation) et « Chercher ».
+Une fiche = un panneau plein écran : canal, script à copier (langue déduite du préfixe
+téléphonique — `+39` italien, `+33`/`+261` français, sinon anglais), lien direct (wa.me, tel:,
+Messenger, mailto), historique, et un geste « J'ai fait » en deux taps, sans champ obligatoire.
+
+**Couche base** (`supabase/migrations/20260928140*.sql`) :
+- `prospect_actions` — journal append-only (jamais réécrit), admin seul.
+- `prospects_pilotage` — VUE (pas de colonne dénormalisée sur `prospects_hebergement`) qui
+  agrège le journal, calcule `km_restaurant` et appelle `prospect_prochaine_action()` pour
+  `prochain_canal`/`prochaine_action`/`a_faire_le`/`rang`.
+- `admin_prospect_agir(...)` — RPC transactionnelle : écrit le journal ET fait avancer le statut
+  (`accepte` → `partenaire`, `refus` → `refuse`), refuse sur `hors_zone`/`exclu`.
+- `admin_prospect_creer_code(...)` — un code par **groupe** (même `etablissement`, sinon même
+  `airbnb_host_id`), jamais par logement : posé sur toutes les fiches du groupe en une fois.
+  Sans I/1/O/0, 12 caractères max, `max_utilisations` = couchages × 4, expire à +90 jours.
+- `prospects_rendement` — une ligne par code : utilisations réelles, montant livré. Sans elle,
+  les codes créés n'apprennent rien sur quel hôte envoie vraiment des clients.
+
+⚠️ **`prospects_pilotage` et `prospects_rendement` sont créées avec `WITH (security_invoker =
+true)`.** Sans cette option, une vue Postgres vérifie les droits du **propriétaire** de la vue
+(le rôle de migration, hors RLS), pas ceux de l'appelant — et comme `anon`/`authenticated`
+détiennent déjà un accès table complet sur `prospects_hebergement`/`prospect_actions` (fermé
+seulement par la RLS), la vue aurait rouvert en lecture les 799 fiches, y compris téléphones et
+mails, à n'importe quel compte authentifié. Trouvé et corrigé avant toute mise en ligne. Vérifié
+par appel HTTP réel avec la clé anon publique (pas par `execute_sql`, qui contourne la RLS) :
+zéro ligne renvoyée sans le rôle admin.
+
+**Trois écarts assumés par rapport au brief d'origine**, documentés dans l'en-tête de
+`20260928140100_prospection_prochaine_action.sql` : `partenaire` reste dans la file de travail
+(sinon les règles « flyers à déposer » et « contrôle à trois semaines » ne se déclenchent
+jamais, puisque `admin_prospect_agir` fait passer une fiche acceptée en `partenaire`) ;
+`code_utilise` ne relance rien (succès silencieux, comme `refus`) ; les trois règles d'escalade
+(2ᵉ WhatsApp, rappel, écrit) renvoient toujours leur date calculée au lieu de disparaître tant
+que le délai n'est pas écoulé — un bug trouvé en testant sur une vraie fiche (« Andilana Nosy
+be ») qui recommandait « Passer sur place » pour un message envoyé une minute plus tôt.
+
+### Reste à faire — dans l'ordre
+
+1. **Recherche de contacts : faite** (28/09 au soir, voir plus haut). Reste en manuel :
+   relever téléphone/mail sur les 4 sites qui refusent les robots (Cap Doré, Villa Lokobe,
+   Jardin Fleuri de Lety, L'Intendance), et les annuaires fermés : `annuaire.tourisme.gov.mg`
+   (503 sur les robots), `nosybe-pro.com` (numéros réservés aux inscrits — Villa Arcadia),
+   **facebook.com** (robots.txt). Les exploitants sans rien de public (Résidence Suisse,
+   Melissa97, Casablanca, Villa Premium, Villa Luna…) se font **en tournée**. Pas encore
+   cherchés : la vingtaine d'hôtes gestionnaires sans nom d'établissement (Miya, Barbara,
+   Didier, Fabrice, Manuel, Rosina…) — pour eux, la messagerie Airbnb reste le canal.
+2. **Les 22 fiches sans aucun canal** (liste dans la feuille Fiches, filtre Canal vide) :
+   quatre agents les ont cherchées, rien de public. À traiter sur place.
+3. **Trancher ce que l'hôte gagne** : commission sur les commandes de ses clients, avantage en
+   nature, ou rien d'autre que le service rendu. C'est la question qui arrivera avec la première
+   réponse, et elle n'est pas tranchée.
+4. **Créer les codes promo par adresse** (439) : le geste existe (`admin_prospect_creer_code`,
+   onglet Prospection, bouton « Créer un code » sur une fiche acceptée). Reste à le FAIRE, une
+   fois les visites en cours.
+5. **Airbnb a coupé l'envoi de messages** après les 5 premiers, avec un écran d'avertissement
+   (« Pourquoi prendre ce risque ? Restez sur Airbnb », menace de suppression du compte). Ne pas
+   reformuler pour passer le filtre. La tournée physique et le téléphone restent ouverts.
 
 ## Où en est la soumission
 

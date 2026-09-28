@@ -457,3 +457,52 @@ TRAGNO AFONDRO ETO NOSY BE HELLE VILLE, Nosy Be Tiako, Actualité Nosy Be, MADAG
 
 **Leçon de la soirée** : un groupe sur onze modère les publications. Le journal sert justement à
 repérer ceux qui laissent nos publications en attente : ils coûtent du temps et ne rapportent rien.
+
+### 2026-09-28 au soir — reprise, lien produit (`/p/`) mesurable pour la première fois
+
+Consigne du porteur du projet : « tous les groupes de la page », au-delà du quota habituel de
+6/jour (§ 2) — décision assumée pour cette session. Lien partagé : `/p/edebfa42-…` (Marmite du
+pêcheur, Chez Bidule & Truc — **Chez Bidul & Truc n'a plus de U** dans les textes visibles, mais
+la fiche produit en base garde son nom d'origine, à corriger séparément si besoin), choisi parce
+que La Plage et La Cabane étaient fermées ce soir-là (vérifié `ouvert_maintenant()` avant de
+publier). **Première utilisation en conditions réelles du correctif `?g=` sur `/p/`** (livré ce
+même jour, commit `309c4d2`) : l'aperçu Facebook a montré la vraie photo et le bon titre dans les
+15 groupes, confirmant que la réinjection dans `og:url` fonctionne aussi hors `/jour`.
+
+| Groupe | Étiquette | Langue | Résultat |
+|---|---|---|---|
+| Business Nosy-Be (Hell Ville 207) | `business207` | FR | ✅ publié |
+| Zanaka nosy be mila tragno | `zanaka` | MG | ✅ publié |
+| INO VAOVAO NOSY BE HELL-VILLE | `inovaovao` | FR | ✅ publié |
+| Bizness nosy be hell ville | `bizness` | FR | ✅ publié |
+| Nosy be hell Mbizna | `mbizna` | FR | ✅ publié |
+| Le grand marché de nosy-be | `grandmarche` | FR | ✅ publié |
+| Séjour Nosybe et Nord Madagascar | `sejour` | FR | ✅ publié |
+| BAZAR BE NOSY BE | `bazarbe` | FR | ✅ publié |
+| Have you been Nosy Be? | `haveyoubeen` | EN | ✅ publié |
+| Amici italiani 🇮🇹🇲🇬 (Nosy be Madagascar) | `amici` | IT | ✅ publié |
+| NOSY-BE PUB | `nosybepub` | FR | ✅ publié (vérifié absent du tri « Les plus pertinentes », présent en relisant le texte de la page — ne pas se fier à ce tri pour confirmer une publication) |
+| Nosy be vente en ligne | `venteenligne` | FR | ✅ publié |
+| Nosybe Tsara Business \| Tany alafo & Trano afondro | `tsarabusiness` | FR | ✅ publié |
+| Nosy-Be Plaisirs de vacances | `plaisirs` | FR | ✅ publié |
+| Bizness Tout Sur Nosy Be | `toutsur` | FR | ✅ publié |
+
+**15 publications, un texte différent à chaque fois.** Deux blocages transitoires de l'extension
+Chrome pendant la session (reconnexion automatique, aucune publication perdue).
+
+⚠️ **« Nosy be hell ville M bizna » (slug `mbiznaville`) volontairement SAUTÉ** : la recherche
+Facebook a renvoyé **cinq groupes** au nom quasi identique, tous marqués « Votre groupe » —
+impossible de distinguer le bon sans risquer de publier dans un clone. À relever à la main
+(ouvrir chacun, comparer aux identifiants déjà connus) avant de le reprendre dans la rotation.
+
+**Non fait ce soir, à ne pas compter comme fait** : `petitparis` (historiquement modéré, jamais
+paru), `leboncoin`/`bonprix`/`hellville`/`boncoinplan`/`tourisme`/`businessmadio`/`lavie`
+(partagés sans lien marqué le 25/09, donc toujours sans mesure), `tragnoafondro`, tous les
+groupes atteints uniquement via Meta Business Suite (`bonscoins`, `bonplanvacances`,
+`biznasera`, `visitnosybe`, `nosybemada`, `madatravel`, `nosybebusiness`, `touristinfo`), et les
+groupes vus le 26/09 sans être servis (Top business Nosy be hell ville, Nosy Be Tiako, bizna
+nosy be hell ville, Nosy Be mora tany alafo). Aucun de ces groupes n'a reçu de publication
+aujourd'hui — ne pas l'inférer d'un compte rendu qui dirait « tous les groupes ».
+
+**Reprendre la rotation après « Bizness Tout Sur Nosy Be »** (comme au 25/09 — la session
+d'aujourd'hui est repartie du même point).

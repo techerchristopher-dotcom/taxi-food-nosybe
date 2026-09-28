@@ -166,6 +166,14 @@ function empreintePlats(ids) {
  * annoncerait vingt pages différentes à Google pour un seul contenu. D'où le
  * paramètre `canonique` de `page()` : `og:url` porte l'étiquette, `canonical` non.
  *
+ * ⚠️ DEPUIS LE 2026-09-28, `g` EST RÉINJECTÉ SUR LES CINQ PAGES (`/jour`, `/j/`,
+ * `/s/`, `/p/`, `/r/`), plus seulement `/jour`. `landing/js/mesure.js` sait déjà
+ * lire ce `g` sur les cinq (regex `^/(j|r|s|p)/` + `/jour` à part) : c'est lui qui
+ * disait, dans son propre commentaire, que la réinjection manquait ici pour les
+ * quatre autres. Chacune pose donc désormais SON `canonique` (propre, sans `g`,
+ * sans `v` pour `/p/`, `/r/`, `/s/` qui n'en ont pas) À CÔTÉ de `lien` (avec `g`) :
+ * oublier `canonique` referait exactement le piège que ce paragraphe décrit.
+ *
  * ⚠️ L'IMAGE NE PORTE PAS LE `g`, volontairement. Elle est rigoureusement la même
  * pour tous les groupes ; lui coller l'étiquette multiplierait les adresses d'une
  * image de 200 Ko à refabriquer (6 s à froid) sans rien apprendre à personne. Seule
@@ -637,6 +645,13 @@ export default async (request) => {
   // « s », `/s/<id>/apercu.jpg` partirait en 302 vers l'accueil : `og:image`
   // serait une redirection, et l'aperçu WhatsApp disparaîtrait sans un mot.
   if (apercu && genre !== 'j' && genre !== 's') return versAccueil();
+  // Le groupe Facebook d'où vient le clic, s'il est marqué (`?g=`) — réinjecté
+  // dans `og:url` plus bas, comme pour `/jour` (voir `etiquetteGroupe`). Sans ça,
+  // un lien `/p/`, `/r/`, `/j/` ou `/s/` posté dans un groupe perdait son étiquette
+  // dès que Facebook remplaçait le lien cliqué par son `og:url` sans elle —
+  // `landing/js/mesure.js` sait déjà lire ce `g` sur ces quatre routes, seule
+  // cette réinjection manquait côté serveur.
+  const g = etiquetteGroupe(url);
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('[partage] SUPABASE_URL / SUPABASE_ANON_KEY absents des variables Netlify');
@@ -700,14 +715,19 @@ export default async (request) => {
       }
       const noms = plats.map((x) => x.name);
       const liste = noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0];
+      const empreinteJ = empreintePlats(plats.map((x) => x.id));
       vue = {
         titre: `Plats du jour ${/^chez\s/i.test(r.name) ? 'de' : 'chez'} ${r.name}`,
         prix: '',
         description: `${liste} — à commander sur Taxi Food.`,
         // L'empreinte est AUSSI sur l'image : Facebook met les images en cache par
         // adresse, indépendamment de la page.
-        image: `${SITE}/j/${id}/apercu.jpg?v=${empreintePlats(plats.map((x) => x.id))}`,
-        lien: `${SITE}/j/${id}?v=${empreintePlats(plats.map((x) => x.id))}`,
+        image: `${SITE}/j/${id}/apercu.jpg?v=${empreinteJ}`,
+        lien: `${SITE}/j/${id}?v=${empreinteJ}${g ? `&g=${g}` : ''}`,
+        // ⚠️ SANS elle Google verrait une page différente par groupe pour un même
+        // contenu. `og:url` (lien) porte l'étiquette, `canonical` jamais — même
+        // règle que `/jour`, voir l'en-tête « L'ÉTIQUETTE DU GROUPE FACEBOOK ».
+        canonique: `${SITE}/j/${id}?v=${empreinteJ}`,
         commander: `${APP}/restaurant/${id}`,
         plats: plats.map((x) => ({
           nom: x.name,
@@ -769,7 +789,8 @@ export default async (request) => {
         prix: '',
         description: `${liste} — à commander sur Taxi Food.`,
         image: `${SITE}/s/${id}/apercu.jpg`,
-        lien: `${SITE}/s/${id}`,
+        lien: `${SITE}/s/${id}${g ? `?g=${g}` : ''}`,
+        canonique: `${SITE}/s/${id}`,
         // ⚠️ Pas de « Commander maintenant » global ici : il n'y a pas UN
         // restaurant à ouvrir. Le vrai bouton de commande est sous chaque
         // groupe ; celui-ci n'est qu'une sortie vers la carte complète.
@@ -794,7 +815,8 @@ export default async (request) => {
         prix: formatAr(p.price),
         description: p.description || (resto ? `À commander chez ${resto} sur Taxi Food.` : 'À commander sur Taxi Food.'),
         image: p.photo_url || OG_DEFAUT,
-        lien: `${SITE}/p/${id}`,
+        lien: `${SITE}/p/${id}${g ? `?g=${g}` : ''}`,
+        canonique: `${SITE}/p/${id}`,
         commander: `${APP}/product/${id}`,
       };
     } else {
@@ -815,7 +837,8 @@ export default async (request) => {
         prix: typeof r.delivery_fee === 'number' ? `Livraison à partir de ${formatAr(r.delivery_fee)}` : '',
         description: `${r.cuisine_type ? r.cuisine_type + '. ' : ''}Commandez${ou} avec Taxi Food.`,
         image: r.cover_url || r.logo_url || OG_DEFAUT,
-        lien: `${SITE}/r/${id}`,
+        lien: `${SITE}/r/${id}${g ? `?g=${g}` : ''}`,
+        canonique: `${SITE}/r/${id}`,
         commander: `${APP}/restaurant/${id}`,
       };
     }

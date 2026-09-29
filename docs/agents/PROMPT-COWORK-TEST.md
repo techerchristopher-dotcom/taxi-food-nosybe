@@ -98,4 +98,31 @@ chaque étape franchie ou non, et — le plus important — CE QUI T'A ARRÊTÉ,
 
 ## Compte rendu de ce test (à remplir après l'avoir lancé)
 
-*(vide pour l'instant — coller ici ce que l'agent co-work a rapporté, avec la date)*
+### 2026-09-29 — Testé une fois, résultat : bloqué à l'étape 3, comme attendu
+
+**Rien n'a été publié.** Étapes 1-2 faites (Facebook déjà connecté dans le navigateur intégré du
+co-work, page des groupes affichée) — mais **sans vérifier que c'était bien le compte de la
+page**, juste « un compte avec des groupes Nosy Be ». Point à noter pour une prochaine tentative :
+ce n'est pas une preuve suffisante.
+
+**« Top business Nosy be hell ville » absent de la liste cette fois** — confirme, une fois de
+plus, que la liste des groupes que voit le compte est bien tournante/instable d'une ouverture à
+l'autre (déjà observé côté Meta Business Suite le même jour). L'agent a basculé sur
+« JESOSY MAMONJY Nosy-be Hell ville » (`facebook.com/groups/539258088350942`,
+`g=jesosycowork`), sans vérifier si une publication y avait déjà été faite aujourd'hui — la
+question ne s'est pas posée puisque rien n'a été publié, mais à surveiller si le test est rejoué.
+
+**Ce qui a arrêté l'agent** : pas une demande d'autorisation macOS comme prévu dans la doc, mais
+un **refus du classificateur de permissions du système co-work lui-même**, motif
+« Real-World Transactions » — c'est-à-dire un mur *encore plus en amont* que celui qu'on
+connaissait pour Claude Code + Chrome (qui, lui, demande une autorisation qu'on peut donner).
+L'agent n'a pas essayé de contourner, a envoyé une notification push, et a rendu un compte rendu
+honnête plutôt que de prétendre avoir réussi — exactement ce qui était demandé.
+
+**Conclusion : la décision du 25/09 reste valide, et se trouve même renforcée.** Le co-work ne
+lève pas la contrainte « quelqu'un doit autoriser l'action » — il ajoute une barrière
+supplémentaire (le refus classificateur) qui empêche même d'ARRIVER à la demande d'autorisation.
+Publier dans les groupes reste soit la procédure manuelle Claude Code + Chrome (`go` explicite),
+soit la voie officielle Meta Business Suite programmée à l'avance (§9 de
+`docs/PARTAGE-FACEBOOK-GROUPES.md`) pour les groupes que la page a rejoints. Pas de suite prévue
+sur la voie co-work sans un changement côté produit qui autorise explicitement ce type d'action.

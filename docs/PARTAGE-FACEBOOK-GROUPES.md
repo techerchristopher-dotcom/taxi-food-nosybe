@@ -505,3 +505,29 @@ aujourd'hui — ne pas l'inférer d'un compte rendu qui dirait « tous les group
 
 **Reprendre la rotation après « Bizness Tout Sur Nosy Be »** (comme au 25/09 — la session
 d'aujourd'hui est repartie du même point).
+
+### 2026-09-29 matin — deux publications PROGRAMMÉES via Meta Business Suite (officiel, gratuit)
+
+Même lien (`/p/edebfa42-…`, Marmite du pêcheur), même logique de mesure. Composeur :
+`business.facebook.com/latest/composer/?asset_id=1350723891454039&business_id=1313131440466945`
+→ « Publier dans » → « Voir d'autres groupes » (**liste tournante, confirmée en vrai** : deux
+ouvertures d'affilée ont montré deux jeux de 6 groupes complètement différents).
+
+⚠️ **Piège rencontré et corrigé les deux fois** : cocher un groupe active AUSSI, par défaut,
+« Partager sur → Story Facebook ». Toujours redescendre jusqu'à ce bloc et choisir
+« Ne pas partager cette publication », sinon le texte + lien part en double, en story.
+
+| Groupe | Membres | Étiquette | Programmé pour |
+|---|---|---|---|
+| Top business Nosy be hell ville | 8 871 | `topbusiness` | 29/09 12:15 (ouverture de Chez Bidule & Truc) |
+| Annonces Express Nosy-Be | 2 150 | `annoncesexpress` | 29/09 13:31 |
+
+**Croisés avec la liste et exclus parce que déjà servis via le profil (28/09) — ne jamais
+reprogrammer dans les mêmes 24-48 h** : Bizness Tout Sur Nosy Be (`toutsur`), Zanaka nosy be
+mila tragno (`zanaka`), Nosy be hell Mbizna, BAZAR BE NOSY BE (`bazarbe`).
+
+**Vus mais pas pris, à reprendre au prochain passage** (liste tournante, donc non garantie de
+réapparaître à l'identique) : Résidence à Nosy be (934), Le coin sera Malagasy Nosy Maurice sy
+andafy (3 638), JESOSY MAMONJY Nosy-be Hell ville (3 788), Le Bon Prix De Nosy be hell Ville
+(685 — nom distinct de `bonprix`, à vérifier avant de le traiter comme un doublon), Nosy-be mada
+découverte (1 125), Nosy be Lebon Coin (611 — nom distinct de `leboncoin`, même remarque).

@@ -565,3 +565,54 @@ réapparaître à l'identique) : Résidence à Nosy be (934), Le coin sera Malag
 andafy (3 638), JESOSY MAMONJY Nosy-be Hell ville (3 788), Le Bon Prix De Nosy be hell Ville
 (685 — nom distinct de `bonprix`, à vérifier avant de le traiter comme un doublon), Nosy-be mada
 découverte (1 125), Nosy be Lebon Coin (611 — nom distinct de `leboncoin`, même remarque).
+
+### 2026-09-29 soir — 13 publications PROGRAMMÉES vers les groupes découverts au balayage du matin
+
+Christopher a demandé de programmer les groupes du balayage §3ter, par lots de 3. **Décision
+prise avec lui avant de commencer** : poser 3 groupes sur une seule publication force un seul
+`?g=` partagé entre les trois, donc plus moyen de savoir lequel des trois a vraiment apporté des
+clients — contraire à l'objectif même de ce système de mesure. Christopher a tranché : **un
+groupe par publication**, quitte à programmer plus de publications. 16 groupes ciblés (les 12
+nouveaux du balayage + 4 lignes historiques jamais servies, lignes 7-42 du tableau §3ter),
+**13 programmées, 3 non trouvées** malgré une dizaine de rechargements supplémentaires en fin de
+session.
+
+Même produit pour toute la session : **Pâtes aux moules, Les Siciliens** (`/p/edebfa42-…` était
+fermé ce soir — Chez Bidule & Truc ferme à cette heure — remplacé par un restaurant réellement
+ouvert, Les Siciliens, lien `/p/d8cd102d-de6d-4e99-920f-604f1a8bbd3f`). **13 textes différents**,
+aucun recopié à l'identique. Programmées de 19h00 à 22h00, par tranches de 15 minutes, pour
+étaler les publications plutôt que les grouper à la même minute.
+
+| Groupe | Slug `?g=` | Programmé pour |
+|---|---|---|
+| JESOSY MAMONJY Nosy-be Hell ville | `jesosy` | 29/09 19:00 |
+| Bon Coin de Business à Nosy-Be | `boncoinbusiness` | 29/09 19:15 |
+| camping nosy be | `campingnb` | 29/09 19:30 |
+| Nosy-be Madagascar | `nosybemada` | 29/09 19:45 |
+| Groupe de Annuaire des professionnels de Nosy Be — Nosy Be PRO | `nosybepro` | 29/09 20:00 |
+| TRAGNO AFONDRO ETO NOSY BE HELLE VILLE | `tragnoafondro` | 29/09 20:15 |
+| 🛍️Coin de la mode à Nosy Be 🛍️👠👗 | `coindelamode` | 29/09 20:30 |
+| Résidence à Nosy be | `residence` | 29/09 20:45 |
+| BON PLAN VACANCES À NOSY BE MADAGASCAR | `bonplanvacances` | 29/09 21:00 |
+| zanaka Nosy be | `zanakanb` | 29/09 21:15 |
+| NosyBe Bonnes Affaires | `bonnesaffaires` | 29/09 21:30 |
+| Nosy-be mada découverte | `madadecouverte` | 29/09 21:45 |
+| Le coin sera Malagasy Nosy Maurice sy andafy | `coinmalagasy` | 29/09 22:00 |
+
+⚠️ **Piège Story Facebook rencontré 13 fois, corrigé les 13 fois** : le toggle se rallume à
+chaque nouvelle sélection de groupe, jamais une seule fois pour toute la session — vérifier à
+chaque publication, pas seulement à la première.
+
+**Non trouvés malgré le balayage prolongé, à reprendre en priorité au prochain passage** :
+Bizness nosy be hell (`biznesshell`, distinct de « … hell ville »), Nosy Bon Coins
+(`bonscoins`), MADAGASCAR TOURIST INFO (`touristinfo`, vu une fois en fin de sweep matinal mais
+pas revu ce soir). Il ne reste plus que ces 3 groupes sur les 16 ciblés.
+
+**Nouveaux groupes croisés ce soir, jamais vus au balayage du matin, pas dans le tableau §3ter,
+à qualifier avant d'y publier** : Nosy be business (4453-4454), G- Zanatany_ Nosy-Be (12262),
+Nosy Be Vente rapide (11221), Groupe de vacance à Madagascar/Nosy be (13805), Activités
+Touristiques Nosy be Madagascar (6120), Nosy be bizna (11412), Nosy Bonnes Zaffaires (17015),
+Varotra rehetra eto Nosy Be (5504), bizna nosy be hell ville (18594, nom très proche de
+`biznesshell`/`bizness` — à ne pas confondre sans vérifier), BIZNA SY SERA ETO NOSY BE HELL
+VILLE (11943, groupe **privé** — statut à vérifier avant toute candidature), Nosy Be , Tiako
+(5865), Nosy Be Occasion (9342-9343).

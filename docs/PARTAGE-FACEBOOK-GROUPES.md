@@ -103,31 +103,65 @@ les groupes rejoints entre-temps.
 | 15 | Amici italiani 🇮🇹🇲🇬 (Nosy be) | 3 132 | `amici` | ✅ servi 25/09 (italien) |
 | 16 | BAZAR BE NOSY BE | 2 200 | `bazarbe` | ✅ servi 25/09 |
 | 17 | Have you been Nosy Be? | 725 | `haveyoubeen` | ✅ servi 25/09 (anglais) |
-| 18 | Nosy be hell ville M bizna | — | `mbiznaville` | ✅ servi 25/09 |
+| 18 | Nosy be hell ville M bizna | 6 016 | `mbiznaville` | ✅ servi 25/09 — **confirmé distinct de la ligne 10** (balayage du 29/09 : 6 016 contre 10 241 membres, ce sont bien deux groupes différents) |
 | 19 | NOSY-BE PUB | — | `nosybepub` | ✅ servi 25/09 |
 | 20 | Nosy be vente en ligne | — | `venteenligne` | ✅ servi 25/09 |
 | 21 | Nosybe Tsara Business \| Tany alafo & Trano afondro | — | `tsarabusiness` | ✅ servi 25/09 |
 | 22 | Nosy-Be Plaisirs de vacances | — | `plaisirs` | ✅ servi 25/09 |
 | 23 | Bizness Tout Sur Nosy Be | — | `toutsur` | ✅ servi 25/09 |
-| 24 | Le Bon coin Nosy be | — | `leboncoin` | ⚠️ partagé sans lien marqué |
-| 25 | Bon prix Nosy be | — | `bonprix` | ⚠️ partagé sans lien marqué |
+| 24 | Le Bon coin Nosy be *(= « Nosy be Lebon Coin », vu au balayage du 29/09, 611 membres — nom affiché instable, probablement le même groupe)* | 611 | `leboncoin` | ⚠️ partagé sans lien marqué |
+| 25 | Bon prix Nosy be *(= « Le Bon Prix De Nosy be hell Ville », vu au balayage du 29/09, 685 membres — à confirmer sur le terrain, noms très proches)* | 685 | `bonprix` | ⚠️ partagé sans lien marqué |
 | 26 | NOSY BE HELL-VILLE | — | `hellville` | ⚠️ partagé sans lien marqué |
 | 27 | Le BonCoin et Plan de NosyBe | — | `boncoinplan` | ⚠️ partagé sans lien marqué |
 | 28 | TOURISME - NOSY BE - MADAGASCAR | — | `tourisme` | ⚠️ partagé sans lien marqué |
 | 29 | Business Madio à Nosy-Be | — | `businessmadio` | ⚠️ partagé sans lien marqué |
 | 30 | La Vie à Nosy-Be | — | `lavie` | ⚠️ partagé sans lien marqué |
+| 31 | zanaka Nosy be *(distinct de la ligne 3 « Zanaka nosy be mila tragno » — deux groupes, noms proches)* | 1 598 | `zanakanb` | ⬜ **jamais servi** |
+| 32 | Bon Coin de Business à Nosy-Be | 115 | `boncoinbusiness` | ⬜ **jamais servi** |
+| 33 | Le coin sera Malagasy Nosy Maurice sy andafy | 3 638 | `coinmalagasy` | ⬜ **jamais servi** |
+| 34 | BON PLAN VACANCES À NOSY BE MADAGASCAR | 15 038 | `bonplanvacances` | ⬜ **jamais servi** |
+| 35 | Bizness nosy be hell *(distinct de la ligne 9 « Bizness nosy be hell ville » — orthographe proche, deux groupes)* | 5 722 | `biznesshell` | ⬜ **jamais servi** |
+| 36 | Annuaire des professionnels de Nosy Be — Nosy Be PRO | 7 519 | `nosybepro` | ⬜ **jamais servi** |
+| 37 | camping nosy be | 1 027 | `campingnb` | ⬜ **jamais servi** |
+| 38 | Résidence à Nosy be | 934 | `residence` | ⬜ **jamais servi** |
+| 39 | Nosy-be mada découverte | 1 125 | `madadecouverte` | ⬜ **jamais servi** |
+| 40 | 🛍️Coin de la mode à Nosy Be 🛍️👠👗 | 12 211 | `coindelamode` | ⬜ **jamais servi** |
+| 41 | Nosy-be Madagascar | 3 768 | `nosybemada` | ⬜ **jamais servi** |
+| 42 | JESOSY MAMONJY Nosy-be Hell ville | 3 789 | `jesosy` | ⬜ **jamais servi** — candidat du test agent co-work du 29/09, bloqué avant publication (voir `docs/agents/PROMPT-COWORK-TEST.md`), rien n'est réellement parti |
+| 43 | Top business Nosy be hell ville | 8 870 | `topbusinesscowork` puis `topbusiness` | ✅ **programmé 29/09** via Meta Business Suite |
+| 44 | Annonces Express Nosy-Be | 2 151 | `annoncesexpress` | ✅ **programmé 29/09** via Meta Business Suite |
 
 🚫 **Exclu volontairement : Fitadiavana Asa eto Nosy Be** — groupe de recherche d'emploi. Hors
 sujet, publication supprimée, risque d'exclusion. Ne pas le reproposer.
 
-**Ce que dit ce tableau** : ~250 000 membres cumulés sur les seuls groupes dont on connaît la
-taille. **Quatre groupes que la page a rejoints n'ont jamais rien reçu** (lignes 7, 8, 12, 14) —
-c'est le gisement immédiat, et il est publiable depuis Meta Business Suite, sans piloter le
-navigateur. **Sept autres** (lignes 24 à 30) n'ont reçu qu'un partage non mesurable : à refaire
-avec leur lien marqué.
+**Ce que dit ce tableau** : ~290 000 membres cumulés sur les seuls groupes dont on connaît la
+taille. **Quatre groupes historiques n'ont jamais rien reçu** (lignes 7, 8, 12, 14), plus
+**quatorze groupes découverts au balayage du 29/09** (lignes 31 à 42, hors les deux déjà
+programmés) — tout ce gisement est publiable depuis Meta Business Suite, sans piloter le
+navigateur, à raison de trois groupes par publication programmée. **Sept autres** (lignes 24 à 30)
+n'ont reçu qu'un partage non mesurable : à refaire avec leur lien marqué.
 
 ⚠️ Les membres manquants (`—`) et les slugs des lignes 7-8, 12, 14 et 24-30 sont à relever au
 prochain passage ; les slugs proposés ici ne comptent rien tant qu'ils n'ont pas été publiés.
+
+### Le balayage du 29/09/2026 — comment cette liste a été complétée
+
+Le sélecteur « Voir d'autres groupes » de Meta Business Suite (composeur de la Page) affiche un
+sous-ensemble **tournant** d'environ 7 groupes à chaque rechargement complet de la page (fermer
+puis rouvrir le menu sans recharger renvoie la même liste — inutile). Christopher a confirmé
+vouloir ce balayage systématique (« oui ok car j'ai plus de 30 groupes a publier »).
+
+**Méthode** : recharger `business.facebook.com/latest/composer/?asset_id=1350723891454039&…` →
+ouvrir le sélecteur « Publier dans » → cliquer « Voir d'autres groupes » → lire la liste complète
+(jusqu'à 7 groupes avec leur nombre de membres) → recommencer. **10 rechargements** effectués ; les
+deux derniers n'ont apporté qu'un seul groupe nouveau chacun (rendement décroissant, signe d'une
+couverture proche de l'exhaustif sans garantie absolue — la liste reste tournante par nature).
+
+Résultat : **14 groupes jamais servis identifiés** (lignes 31 à 42), en plus de la confirmation que
+les lignes 10 et 18 (« Mbizna » / « M bizna ») sont bien deux groupes distincts, et un indice fort
+(comptes de membres très proches, noms quasi identiques) que les lignes 24 et 25 correspondent à
+des groupes déjà connus sous un nom légèrement différent — à vérifier sur le terrain avant de les
+fusionner formellement.
 
 ## 3 bis. UN GROUPE = UN SLUG — le lien exact à partager
 

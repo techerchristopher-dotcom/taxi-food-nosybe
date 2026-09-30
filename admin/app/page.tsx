@@ -5,17 +5,19 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Annonces } from '../components/Annonces';
 import { Audience } from '../components/Audience';
+import { Avis } from '../components/Avis';
 import { CodesOfferts } from '../components/CodesOfferts';
 import { CommandeTelephone } from '../components/CommandeTelephone';
 import { Realtime } from '../components/Realtime';
 import { Remboursements } from '../components/Remboursements';
 import { Prospection } from '../components/Prospection';
+import { ProspectionRestaurants } from '../components/ProspectionRestaurants';
 import { Report } from '../components/Report';
 import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'telephone' | 'annonces' | 'audience' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection';
+type Tab = 'realtime' | 'telephone' | 'annonces' | 'audience' | 'avis' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -114,6 +116,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'audience' ? 'active' : ''}`} onClick={() => setTab('audience')}>
           📈 Audience
         </button>
+        <button className={`tab ${tab === 'avis' ? 'active' : ''}`} onClick={() => setTab('avis')}>
+          ⭐ Avis
+        </button>
         <button className={`tab ${tab === 'remboursements' ? 'active' : ''}`} onClick={() => setTab('remboursements')}>
           Remboursements
         </button>
@@ -135,12 +140,16 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'prospection' ? 'active' : ''}`} onClick={() => setTab('prospection')}>
           🏨 Prospection
         </button>
+        <button className={`tab ${tab === 'prospection_restos' ? 'active' : ''}`} onClick={() => setTab('prospection_restos')}>
+          🍽️ Restos à démarcher
+        </button>
       </div>
 
       {tab === 'realtime' && <Realtime />}
       {tab === 'telephone' && <CommandeTelephone />}
       {tab === 'annonces' && <Annonces />}
       {tab === 'audience' && <Audience />}
+      {tab === 'avis' && <Avis />}
       {tab === 'remboursements' && <Remboursements />}
       {tab === 'codes' && <CodesOfferts />}
       {tab === 'report' && <Report />}
@@ -148,6 +157,7 @@ export default function AdminPage() {
       {tab === 'restaurants' && <Restaurants />}
       {tab === 'selections' && <Selections />}
       {tab === 'prospection' && <Prospection />}
+      {tab === 'prospection_restos' && <ProspectionRestaurants />}
     </div>
   );
 }

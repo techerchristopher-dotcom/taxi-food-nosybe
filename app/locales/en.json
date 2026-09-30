@@ -541,6 +541,10 @@
     "ecranTitre": "Reviews",
     "noteRestaurant": "Restaurant rating",
     "reponse": "Restaurant's reply",
+    "photoAjouter": "Add a photo of the dish",
+    "photoRetirer": "Remove the photo",
+    "photoErreur": "The photo could not be uploaded. You can send your review without it.",
+    "photoRefus": "Access to photos was denied.",
     "erreurChargement": "Reviews could not be loaded. Please try again in a moment."
   },
   "authCallback": {

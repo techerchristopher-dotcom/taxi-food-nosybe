@@ -102,8 +102,29 @@ copier, filtre « consentis non utilisés ».
    au patron, le restaurant prévenu seulement si SA note ≤ 2). Testé en transaction annulée :
    dépôt à 1,5/5 → deux messages Telegram en file, réponse du restaurateur, filtres admin,
    « utilisé » refusé sans consentement (`avis:sans_consentement`).
-3. ⬜ **Photo client + visuel citation + branchement au calendrier éditorial** (quand il
-   existera pour Taxi Food : `docs/AGENTS-CALENDRIER-EDITORIAL.md`, § 9).
+3. ✅ **Photo client + visuel citation + texte de publication** — livré le 2026-09-30, migration
+   `20260930180000_avis_lot3_photo_client`. Colonne `avis.photo_url`, bucket public `avis`
+   (chaque client n'écrit que dans SON dossier `<uid>/`), `deposer_avis` reçoit `p_photo_url` et
+   **refuse toute URL hors du dossier du client** (`avis:photo_invalide`). Côté app : bouton
+   « Ajouter une photo du plat » (galerie, recadrage carré, qualité 0,7 — `expo-image-picker`
+   déjà dans le binaire, aucun changement natif) ; la photo part avant l'avis, et **si elle échoue
+   l'avis part quand même** sans elle. La photo s'affiche sur l'écran des avis, dans l'Historique
+   du restaurateur et dans le bloc « Merci ». Côté admin : miniature, « Texte de publication »
+   (citation + appel à commander + lien `/r/<restaurant>`), « Télécharger le visuel » (carte
+   citation 1080×1080 en PNG, générée dans le navigateur, photo du client en fond si elle existe).
+   Le branchement au calendrier éditorial se fera quand il existera pour Taxi Food
+   (`docs/AGENTS-CALENDRIER-EDITORIAL.md`, § 9) — le workflow manuel ci-dessous le remplace.
+
+### Publier un avis sur les réseaux (workflow de l'agent 3)
+
+1. Admin → onglet **⭐ Avis** → filtre **« À publier »** (consentement coché, pas encore utilisé,
+   avec commentaire).
+2. **Télécharger le visuel** (PNG 1080×1080) et **Texte de publication** (copié dans le presse-papiers).
+3. Publier **dans chaque groupe Facebook** en ajoutant `?g=<slug-du-groupe>` au lien `/r/…` du texte —
+   un slug par groupe, jamais le même lien partout, sinon la mesure des groupes ne vaut rien
+   (CLAUDE.md, « Groupes Facebook mesurés »).
+4. Revenir dans l'admin et cliquer **« Utilisé sur les réseaux »** : l'avis sort du filtre
+   « À publier ». La base refuse ce geste sans consentement du client.
 
 Chaque lot se livre sur les **quatre surfaces** (CLAUDE.md, « Une correction se livre sur
 QUATRE surfaces »).

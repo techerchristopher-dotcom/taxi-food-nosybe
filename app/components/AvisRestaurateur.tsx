@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Etoiles } from './Etoiles';
 import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
@@ -58,6 +59,7 @@ export function AvisRestaurateur({ avis, onChange }: { avis: TAvisRestaurateur; 
         </Text>
       </View>
       {avis.commentaire ? <Text style={styles.commentaire}>« {avis.commentaire} »</Text> : null}
+      {avis.photoUrl ? <Image source={{ uri: avis.photoUrl }} style={styles.photo} contentFit="cover" /> : null}
 
       {edition ? (
         <View style={{ marginTop: 10 }}>
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
   notes: { marginTop: 6, gap: 4 },
   detail: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   commentaire: { fontFamily: fonts.regular, fontStyle: 'italic', fontSize: 14, lineHeight: 20, color: colors.ink, marginTop: 8 },
+  photo: { width: 120, height: 120, borderRadius: radius.tile, marginTop: 8, backgroundColor: colors.fieldBg },
   champ: {
     minHeight: 84,
     borderRadius: radius.input,

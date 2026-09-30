@@ -36,7 +36,11 @@ type Ligne = {
   reponse_le: string | null;
   utilise_reseaux_le: string | null;
   code: string | null;
+  /** Photo du plat prise par le client (bucket public `avis`), ou null. */
+  photo_url: string | null;
 };
+
+const SITE = 'https://taxifoodnosybe.distripro207.com';
 
 type Filtre = 'tous' | 'consentis_non_utilises' | 'faibles' | 'masques';
 
@@ -59,6 +63,121 @@ function date(iso: string) {
 /** Le texte prêt à coller dans une publication. */
 function texteAPartager(a: Ligne) {
   return `« ${a.commentaire ?? ''} »\n— ${a.prenom}, ${etoiles(Number(a.note_restaurant))} chez ${a.restaurant}, via Taxi Food`;
+}
+
+/**
+ * Le texte COMPLET d'une publication Facebook : la citation, puis l'appel à
+ * commander avec le lien de partage du restaurant (`/r/<id>`, page de partage
+ * avec image). ⚠️ L'agent de partage ajoute `?g=<slug>` PAR GROUPE — jamais ici,
+ * sinon tous les groupes compteraient sous la même étiquette.
+ */
+function textePublication(a: Ligne) {
+  return `${texteAPartager(a)}\n\nEnvie de goûter ? Commande chez ${a.restaurant} sur Taxi Food, livré chez toi à Nosy Be :\n${SITE}/r/${a.restaurant_id}`;
+}
+
+/** Découpe un texte en lignes qui tiennent dans `largeur` (canvas 2D). */
+function lignesDe(ctx: CanvasRenderingContext2D, texte: string, largeur: number): string[] {
+  const lignes: string[] = [];
+  for (const paragraphe of texte.split('\n')) {
+    let ligne = '';
+    for (const mot of paragraphe.split(' ')) {
+      const essai = ligne ? `${ligne} ${mot}` : mot;
+      if (ctx.measureText(essai).width > largeur && ligne) {
+        lignes.push(ligne);
+        ligne = mot;
+      } else {
+        ligne = essai;
+      }
+    }
+    lignes.push(ligne);
+  }
+  return lignes;
+}
+
+function chargerImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+/**
+ * Le visuel citation 1080×1080, généré dans le navigateur — aucun serveur, aucune
+ * dépendance. Fond : la photo du client si elle existe (assombrie), sinon l'encre
+ * Taxi Food. La citation en grand, les étoiles en jaune Taxi Food, le prénom, le
+ * restaurant, et l'appel à commander en pied.
+ */
+async function telechargerVisuel(a: Ligne) {
+  const W = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = W;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas indisponible');
+
+  ctx.fillStyle = '#1A1A1A';
+  ctx.fillRect(0, 0, W, W);
+  if (a.photo_url) {
+    const img = await chargerImage(a.photo_url);
+    if (img) {
+      const r = Math.max(W / img.width, W / img.height);
+      const dw = img.width * r, dh = img.height * r;
+      ctx.drawImage(img, (W - dw) / 2, (W - dh) / 2, dw, dh);
+      ctx.fillStyle = 'rgba(0,0,0,0.62)';
+      ctx.fillRect(0, 0, W, W);
+    }
+  }
+
+  const marge = 90;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#FFC72C';
+  ctx.font = '700 34px Arial, Helvetica, sans-serif';
+  ctx.fillText('TAXI FOOD · NOSY BE', marge, marge);
+
+  ctx.fillStyle = '#FFFFFF';
+  const corps = a.commentaire ?? '';
+  let taille = corps.length > 220 ? 40 : corps.length > 120 ? 48 : 58;
+  ctx.font = `700 ${taille}px Georgia, "Times New Roman", serif`;
+  let lignes = lignesDe(ctx, `« ${corps} »`, W - marge * 2);
+  // Trop long pour la case : on réduit une fois, puis on tronque proprement.
+  if (lignes.length * taille * 1.25 > 520) {
+    taille = Math.max(32, Math.floor(taille * 0.8));
+    ctx.font = `700 ${taille}px Georgia, "Times New Roman", serif`;
+    lignes = lignesDe(ctx, `« ${corps} »`, W - marge * 2);
+    const max = Math.floor(520 / (taille * 1.25));
+    if (lignes.length > max) lignes = [...lignes.slice(0, max - 1), `${lignes[max - 1]}…`];
+  }
+  const hauteurTexte = lignes.length * taille * 1.25;
+  let y = Math.max(200, (W - hauteurTexte) / 2 - 60);
+  for (const l of lignes) {
+    ctx.fillText(l, marge, y);
+    y += taille * 1.25;
+  }
+
+  y += 40;
+  ctx.fillStyle = '#FFC72C';
+  ctx.font = '400 56px Arial, Helvetica, sans-serif';
+  ctx.fillText(etoiles(Number(a.note_restaurant)), marge, y);
+  y += 80;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '700 36px Arial, Helvetica, sans-serif';
+  ctx.fillText(`— ${a.prenom}, chez ${a.restaurant}`, marge, y);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.font = '400 30px Arial, Helvetica, sans-serif';
+  ctx.fillText('Commande sur taxifoodnosybe.distripro207.com', marge, W - marge - 34);
+
+  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('export impossible');
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement('a');
+  lien.href = url;
+  lien.download = `avis-${a.prenom}-${a.restaurant}`.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+  lien.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 export function Avis() {
@@ -94,13 +213,25 @@ export function Avis() {
   const utilise = (a: Ligne) =>
     geste(a.id, () => supabase.rpc('admin_avis_utilise', { p_avis_id: a.id, p_utilise: !a.utilise_reseaux_le }));
 
-  async function copier(a: Ligne) {
+  async function copier(a: Ligne, mode: 'citation' | 'publication') {
     try {
-      await navigator.clipboard.writeText(texteAPartager(a));
-      setCopie(a.id);
+      await navigator.clipboard.writeText(mode === 'publication' ? textePublication(a) : texteAPartager(a));
+      setCopie(`${a.id}:${mode}`);
       setTimeout(() => setCopie(null), 1500);
     } catch {
       setErreur('Copie impossible dans ce navigateur.');
+    }
+  }
+
+  async function visuel(a: Ligne) {
+    if (busy) return;
+    setBusy(a.id);
+    try {
+      await telechargerVisuel(a);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : 'Visuel impossible.');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -155,6 +286,12 @@ export function Avis() {
                 </td>
                 <td style={{ maxWidth: 360 }}>
                   {a.commentaire ? <div>« {a.commentaire} »</div> : <span className="muted">(sans commentaire)</span>}
+                  {a.photo_url ? (
+                    <a href={a.photo_url} target="_blank" rel="noreferrer" title="Photo du client — ouvrir en grand">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={a.photo_url} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, marginTop: 6, display: 'block' }} />
+                    </a>
+                  ) : null}
                   {a.reponse_restaurant ? (
                     <div className="muted" style={{ fontSize: 12, marginTop: 4, borderLeft: '2px solid var(--border)', paddingLeft: 8 }}>
                       Réponse du restaurant : {a.reponse_restaurant}
@@ -170,8 +307,18 @@ export function Avis() {
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} disabled={!a.commentaire} onClick={() => copier(a)}>
-                      {copie === a.id ? 'Copié ✓' : 'Copier le texte'}
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} disabled={!a.commentaire} onClick={() => copier(a, 'citation')}>
+                      {copie === `${a.id}:citation` ? 'Copié ✓' : 'Copier la citation'}
+                    </button>
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} disabled={!a.commentaire || !a.consentement}
+                      title={!a.consentement ? 'Le client n’a pas autorisé la publication' : 'Texte complet avec le lien /r/ du restaurant — ajouter ?g=<groupe> par groupe'}
+                      onClick={() => copier(a, 'publication')}>
+                      {copie === `${a.id}:publication` ? 'Copié ✓' : 'Texte de publication'}
+                    </button>
+                    <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }} disabled={!a.commentaire || !a.consentement || busy === a.id}
+                      title={!a.consentement ? 'Le client n’a pas autorisé la publication' : 'Carte citation 1080×1080 (PNG)'}
+                      onClick={() => visuel(a)}>
+                      {busy === a.id ? 'Génération…' : 'Télécharger le visuel'}
                     </button>
                     <button className="btn ghost" style={{ padding: '6px 12px', fontSize: 12 }}
                       disabled={busy === a.id || (!a.consentement && !a.utilise_reseaux_le)}

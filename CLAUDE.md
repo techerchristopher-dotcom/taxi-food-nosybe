@@ -34,7 +34,9 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - ✅ **Lot 1 livré** (base, app client, relance push, code promo `AVIS<PRENOM>`) — voir sa section et
   `docs/NOTATION-AVIS.md`. ⚠️ Bloc de notation encore jamais vu sur un vrai téléphone.
 - ✅ **Lot 2 livré** (2026-09-30) : avis + réponse côté restaurateur, Telegram, onglet admin « ⭐ Avis ».
-- ⬜ **Lot 3** : photo client, visuel citation, branchement au calendrier éditorial.
+- ✅ **Lot 3 livré** (2026-09-30) : photo du plat par le client, visuel citation 1080×1080 et texte de
+  publication dans l'admin. Workflow de publication dans `docs/NOTATION-AVIS.md` § 5.
+  ⚠️ **Jamais vu sur un vrai téléphone** (ni la photo, ni le bloc de notation).
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
 - ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
@@ -1941,7 +1943,15 @@ restaurant prévenu **seulement si SA note ≤ 2** (la livraison ne le juge pas)
   `netlify deploy --dir=out` **après un build raté pousse le `out/` PRÉCÉDENT** sans rien dire :
   toujours lire la sortie du build avant de déployer.
 
-**Reste à faire** : lot 3 (photo client, visuel citation, branchement au calendrier éditorial).
+**Lot 3 livré le même jour** (migration `20260930180000`) : `avis.photo_url`, bucket public `avis`
+(politique d'insertion : dossier `<uid>/` du client seulement), `deposer_avis` refuse toute URL hors
+de ce dossier (`avis:photo_invalide`) ; app : « Ajouter une photo du plat » (galerie, carré), la
+photo part avant l'avis et **son échec ne bloque pas l'avis** ; admin : miniature, « Texte de
+publication » (citation + lien `/r/<restaurant>` — l'agent ajoute `?g=` PAR groupe), « Télécharger le
+visuel » (canvas 1080×1080 → PNG, photo client assombrie en fond). Le branchement au calendrier
+éditorial attend que le calendrier existe pour Taxi Food.
+- ⚠️ `create or replace function` avec une signature plus longue crée une **surcharge** (PGRST203
+  « ambiguous ») : `drop function` de l'ancienne signature d'abord.
 ⚠️ **Ni le bloc de notation ni l'Historique restaurateur n'ont été vus sur un vrai téléphone** :
 vérifiés par TypeScript, par SQL en transaction annulée, et l'écran des avis (état vide) sur le
 web — à contrôler sur mobile à la première commande livrée.

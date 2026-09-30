@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { Etoiles, formatNote } from '../../../components/Etoiles';
 import { Icon } from '../../../components/Icon';
@@ -85,6 +86,7 @@ export default function AvisRestaurantScreen() {
                 {t('avis.cuisine')} {a.noteCuisine}/5 · {t('avis.preparation')} {a.notePreparation}/5 · {t('avis.livraison')} {a.noteLivraison}/5
               </Text>
               {a.commentaire ? <Text style={styles.commentaire}>{a.commentaire}</Text> : null}
+              {a.photoUrl ? <Image source={{ uri: a.photoUrl }} style={styles.photo} contentFit="cover" /> : null}
               {a.reponseRestaurant ? (
                 <View style={styles.reponse}>
                   <Text style={styles.reponseLabel}>{t('avis.reponse')}</Text>
@@ -130,6 +132,7 @@ const styles = StyleSheet.create({
   date: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   detail: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 6 },
   commentaire: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.ink, marginTop: 8 },
+  photo: { width: '100%', aspectRatio: 1, borderRadius: radius.lg, marginTop: 10, backgroundColor: colors.fieldBg },
   reponse: { marginTop: 10, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: colors.accent },
   reponseLabel: { fontFamily: fonts.semibold, fontSize: 11, color: colors.textMuted },
   reponseTexte: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.textDark, marginTop: 2 },

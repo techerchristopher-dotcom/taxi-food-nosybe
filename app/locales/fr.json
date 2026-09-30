@@ -541,6 +541,10 @@
     "ecranTitre": "Les avis",
     "noteRestaurant": "Note du restaurant",
     "reponse": "Réponse du restaurant",
+    "photoAjouter": "Ajouter une photo du plat",
+    "photoRetirer": "Retirer la photo",
+    "photoErreur": "La photo n'a pas pu être envoyée. Tu peux envoyer ton avis sans elle.",
+    "photoRefus": "Autorisation d'accès aux photos refusée.",
     "erreurChargement": "Les avis n'ont pas pu être chargés. Réessaie dans un instant."
   },
   "authCallback": {

@@ -541,6 +541,10 @@
     "ecranTitre": "Le recensioni",
     "noteRestaurant": "Voto del ristorante",
     "reponse": "Risposta del ristorante",
+    "photoAjouter": "Aggiungi una foto del piatto",
+    "photoRetirer": "Rimuovi la foto",
+    "photoErreur": "La foto non è stata caricata. Puoi inviare la recensione senza.",
+    "photoRefus": "Accesso alle foto negato.",
     "erreurChargement": "Le recensioni non sono state caricate. Riprova tra un istante."
   },
   "authCallback": {

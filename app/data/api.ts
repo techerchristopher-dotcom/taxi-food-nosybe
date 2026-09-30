@@ -1313,6 +1313,8 @@ export async function deposerAvis(input: {
   commentaire: string | null;
   consentement: boolean;
   langue: string;
+  /** URL publique du bucket `avis`, sous le dossier du client — la base refuse tout autre chemin. */
+  photoUrl?: string | null;
 }): Promise<CodeRemerciement> {
   const { data, error } = await supabase.rpc('deposer_avis', {
     p_order_id: input.orderId,
@@ -1322,6 +1324,7 @@ export async function deposerAvis(input: {
     p_commentaire: input.commentaire,
     p_consentement: input.consentement,
     p_langue: input.langue,
+    p_photo_url: input.photoUrl ?? null,
   });
   if (error) throw error;
   const d = data as { code: string; valeur: number; expire_le: string };
@@ -1335,7 +1338,7 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
   if (!data) return null;
   const d = data as {
     note_cuisine: number; note_preparation: number; note_livraison: number;
-    commentaire: string | null; consentement_publication: boolean; created_at: string;
+    commentaire: string | null; photo_url?: string | null; consentement_publication: boolean; created_at: string;
     code: string | null; code_valeur: number | null; code_expire_le: string | null;
   };
   return {
@@ -1343,6 +1346,7 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
     notePreparation: d.note_preparation,
     noteLivraison: d.note_livraison,
     commentaire: d.commentaire,
+    photoUrl: d.photo_url ?? null,
     consentement: d.consentement_publication,
     createdAt: d.created_at,
     code: d.code,
@@ -1362,7 +1366,7 @@ export async function listAvisRestaurant(restaurantId: string, limite = 20, deca
   return ((data ?? []) as {
     id: string; prenom: string; note_cuisine: number; note_preparation: number; note_livraison: number;
     note_restaurant: number | string; commentaire: string | null; created_at: string;
-    reponse_restaurant: string | null; reponse_le: string | null;
+    reponse_restaurant: string | null; reponse_le: string | null; photo_url?: string | null;
   }[]).map((a) => ({
     id: a.id,
     prenom: a.prenom,
@@ -1371,10 +1375,32 @@ export async function listAvisRestaurant(restaurantId: string, limite = 20, deca
     noteLivraison: a.note_livraison,
     noteRestaurant: Number(a.note_restaurant),
     commentaire: a.commentaire,
+    photoUrl: a.photo_url ?? null,
     createdAt: a.created_at,
     reponseRestaurant: a.reponse_restaurant,
     reponseLe: a.reponse_le,
   }));
+}
+
+/**
+ * Dépose la photo du plat dans le bucket `avis`, sous le dossier du client
+ * (`<uid>/<horodatage>.jpg`) — le seul chemin que la policy d'écriture accepte, et
+ * le seul que `deposer_avis` reconnaît. Renvoie l'URL publique.
+ */
+export async function envoyerPhotoAvis(uri: string): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Connexion requise');
+  const arraybuffer = await fetch(uri).then((res) => res.arrayBuffer());
+  const isPng = uri.toLowerCase().endsWith('.png');
+  const path = `${session.user.id}/${Date.now()}.${isPng ? 'png' : 'jpg'}`;
+  const { error } = await supabase.storage.from('avis').upload(path, arraybuffer, {
+    contentType: isPng ? 'image/png' : 'image/jpeg',
+    upsert: false,
+  });
+  if (error) throw error;
+  return supabase.storage.from('avis').getPublicUrl(path).data.publicUrl;
 }
 
 /** Les avis reçus par MON restaurant (staff actif), avec la commande et le statut. */
@@ -1386,6 +1412,7 @@ export async function avisDeMonRestaurant(restaurantId: string): Promise<AvisRes
     note_cuisine: number; note_preparation: number; note_livraison: number; note_restaurant: number | string;
     commentaire: string | null; created_at: string;
     reponse_restaurant: string | null; reponse_le: string | null; statut: 'publie' | 'masque';
+    photo_url?: string | null;
   }[]).map((a) => ({
     id: a.id,
     orderId: a.order_id,
@@ -1396,6 +1423,7 @@ export async function avisDeMonRestaurant(restaurantId: string): Promise<AvisRes
     noteLivraison: a.note_livraison,
     noteRestaurant: Number(a.note_restaurant),
     commentaire: a.commentaire,
+    photoUrl: a.photo_url ?? null,
     createdAt: a.created_at,
     reponseRestaurant: a.reponse_restaurant,
     reponseLe: a.reponse_le,

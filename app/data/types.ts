@@ -277,6 +277,8 @@ export type Avis = {
   noteLivraison: number;
   noteRestaurant: number;
   commentaire: string | null;
+  /** Photo du plat prise par le client (bucket `avis`), ou null. */
+  photoUrl: string | null;
   createdAt: string;
   reponseRestaurant: string | null;
   reponseLe: string | null;
@@ -291,6 +293,7 @@ export type MonAvis = {
   notePreparation: number;
   noteLivraison: number;
   commentaire: string | null;
+  photoUrl: string | null;
   consentement: boolean;
   createdAt: string;
   code: string | null;

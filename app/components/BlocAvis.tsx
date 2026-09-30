@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { Button } from './Button';
 import { Etoiles } from './Etoiles';
 import { Icon } from './Icon';
 import { Card } from './primitives';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
-import { deposerAvis, monAvis } from '../data/api';
+import { deposerAvis, envoyerPhotoAvis, monAvis } from '../data/api';
 import { CodeRemerciement, MonAvis, Order } from '../data/types';
 import { useLoad } from '../lib/useLoad';
 
@@ -22,10 +24,11 @@ function dateCourte(iso: string): string {
 /**
  * « Alors, c'était comment ? » — le bloc de notation d'une commande LIVRÉE.
  *
- * Trois notes de 1 à 5 (cuisine, préparation, livraison), un commentaire libre, et
- * la case de consentement à la publication. La base vérifie tout (client de la
- * commande, livrée, sept jours, un seul avis) et renvoie le code promo de
- * remerciement — l'écran ne fait que montrer. Voir docs/NOTATION-AVIS.md.
+ * Trois notes de 1 à 5 (cuisine, préparation, livraison), un commentaire libre,
+ * une photo du plat (facultative, bucket `avis`, dossier du client) et la case de
+ * consentement à la publication. La base vérifie tout (client de la commande,
+ * livrée, sept jours, un seul avis, photo dans SON dossier) et renvoie le code
+ * promo de remerciement — l'écran ne fait que montrer. Voir docs/NOTATION-AVIS.md.
  */
 export function BlocAvis({ order }: { order: Order }) {
   const { t, i18n } = useTranslation();
@@ -36,6 +39,8 @@ export function BlocAvis({ order }: { order: Order }) {
   const [livraison, setLivraison] = useState<number | null>(null);
   const [commentaire, setCommentaire] = useState('');
   const [consentement, setConsentement] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [resultat, setResultat] = useState<CodeRemerciement | null>(null);
@@ -54,10 +59,41 @@ export function BlocAvis({ order }: { order: Order }) {
 
   const complet = cuisine != null && preparation != null && livraison != null;
 
+  async function choisirPhoto() {
+    setErreur(null);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setErreur(t('avis.photoRefus'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setPhotoUri(result.assets[0].uri);
+  }
+
   async function envoyer() {
     if (!complet || envoi) return;
     setEnvoi(true);
     setErreur(null);
+    let photoUrl: string | null = null;
+    // La photo part d'abord ; si elle échoue, l'avis part quand même sans elle —
+    // on ne perd pas trois notes et un texte pour une image.
+    if (photoUri) {
+      setPhotoBusy(true);
+      try {
+        photoUrl = await envoyerPhotoAvis(photoUri);
+      } catch {
+        photoUrl = null;
+        setErreur(t('avis.photoErreur'));
+      } finally {
+        setPhotoBusy(false);
+      }
+    }
     try {
       const r = await deposerAvis({
         orderId: order.id,
@@ -67,6 +103,7 @@ export function BlocAvis({ order }: { order: Order }) {
         commentaire: commentaire.trim() || null,
         consentement,
         langue: i18n.language.slice(0, 2),
+        photoUrl,
       });
       setResultat(r);
       reload();
@@ -102,6 +139,21 @@ export function BlocAvis({ order }: { order: Order }) {
         maxLength={500}
         textAlignVertical="top"
       />
+
+      {photoUri ? (
+        <View style={styles.photoRow}>
+          <Image source={{ uri: photoUri }} style={styles.photoMini} contentFit="cover" />
+          <Pressable onPress={() => setPhotoUri(null)} hitSlop={8} style={styles.photoBtn}>
+            <Icon name="close" size={16} color={colors.ink} />
+            <Text style={styles.photoBtnTexte}>{t('avis.photoRetirer')}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable onPress={choisirPhoto} style={styles.photoBtn} disabled={photoBusy}>
+          <Icon name="add_a_photo" size={18} color={colors.ink} />
+          <Text style={styles.photoBtnTexte}>{t('avis.photoAjouter')}</Text>
+        </Pressable>
+      )}
 
       <Pressable style={styles.consentRow} onPress={() => setConsentement((v) => !v)} accessibilityRole="checkbox"
         accessibilityState={{ checked: consentement }}>
@@ -142,6 +194,7 @@ function Merci({ avis, code }: { avis: MonAvis | null; code: CodeRemerciement | 
           <Recap label={t('avis.preparation')} n={avis.notePreparation} />
           <Recap label={t('avis.livraison')} n={avis.noteLivraison} />
           {avis.commentaire ? <Text style={styles.recapCommentaire}>« {avis.commentaire} »</Text> : null}
+          {avis.photoUrl ? <Image source={{ uri: avis.photoUrl }} style={styles.photoRecap} contentFit="cover" /> : null}
         </View>
       ) : null}
       {code?.code ? (
@@ -187,6 +240,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.ink,
   },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  photoMini: { width: 64, height: 64, borderRadius: radius.tile, backgroundColor: colors.fieldBg },
+  photoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+  },
+  photoBtnTexte: { fontFamily: fonts.bold, fontSize: 13, color: colors.ink },
+  photoRecap: { width: '100%', aspectRatio: 1, borderRadius: radius.lg, marginTop: 8, backgroundColor: colors.fieldBg },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12 },
   consentTexte: { flex: 1, fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textDark },
   erreur: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 10 },

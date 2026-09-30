@@ -282,6 +282,9 @@ export type Avis = {
   reponseLe: string | null;
 };
 
+/** Un avis vu par le restaurateur : le même, plus la commande et le statut (masqué par l'admin ?). */
+export type AvisRestaurateur = Avis & { orderId: string; orderNumber: string; statut: 'publie' | 'masque' };
+
 /** L'avis que J'AI laissé sur une commande, avec le code de remerciement. */
 export type MonAvis = {
   noteCuisine: number;

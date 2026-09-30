@@ -28,7 +28,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
-import type { Avis, CodeRemerciement, MonAvis } from './types';
+import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -1375,6 +1375,38 @@ export async function listAvisRestaurant(restaurantId: string, limite = 20, deca
     reponseRestaurant: a.reponse_restaurant,
     reponseLe: a.reponse_le,
   }));
+}
+
+/** Les avis reçus par MON restaurant (staff actif), avec la commande et le statut. */
+export async function avisDeMonRestaurant(restaurantId: string): Promise<AvisRestaurateur[]> {
+  const { data, error } = await supabase.rpc('avis_de_mon_restaurant', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return ((data ?? []) as {
+    id: string; order_id: string; order_number: string; prenom: string;
+    note_cuisine: number; note_preparation: number; note_livraison: number; note_restaurant: number | string;
+    commentaire: string | null; created_at: string;
+    reponse_restaurant: string | null; reponse_le: string | null; statut: 'publie' | 'masque';
+  }[]).map((a) => ({
+    id: a.id,
+    orderId: a.order_id,
+    orderNumber: a.order_number,
+    prenom: a.prenom,
+    noteCuisine: a.note_cuisine,
+    notePreparation: a.note_preparation,
+    noteLivraison: a.note_livraison,
+    noteRestaurant: Number(a.note_restaurant),
+    commentaire: a.commentaire,
+    createdAt: a.created_at,
+    reponseRestaurant: a.reponse_restaurant,
+    reponseLe: a.reponse_le,
+    statut: a.statut,
+  }));
+}
+
+/** Réponse publique du restaurant à un avis (≤ 500 caractères). Texte vide = retirer. */
+export async function repondreAvis(avisId: string, reponse: string | null): Promise<void> {
+  const { error } = await supabase.rpc('repondre_avis', { p_avis_id: avisId, p_reponse: reponse });
+  if (error) throw error;
 }
 
 /**

@@ -30,6 +30,12 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   et une vraie commande portant son étiquette. ⚠️ **Publier le lien marqué DANS le groupe** —
   partager la publication de la page ne mesure rien.
 
+**Notation et avis clients (chantier ouvert le 2026-09-30)**
+- ✅ **Lot 1 livré** (base, app client, relance push, code promo `AVIS<PRENOM>`) — voir sa section et
+  `docs/NOTATION-AVIS.md`. ⚠️ Bloc de notation encore jamais vu sur un vrai téléphone.
+- ⬜ **Lot 2** : avis côté restaurateur + réponse, alerte Telegram ≤ 2★, onglet admin « Avis ».
+- ⬜ **Lot 3** : photo client, visuel citation, branchement au calendrier éditorial.
+
 **Nouveaux chantiers (demandés le 2026-09-17)**
 - ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
   `20260917140000_taxi_be_quitte_le_catalogue`), vitrine redéployée (bloc de repli nettoyé, logos
@@ -1896,6 +1902,38 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
 - Un restaurant en négociation **n'est plus grisé** (ni carte de l'app, ni vitrine) : ses photos
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
+
+## ⭐ Notation et avis clients — lot 1 livré (2026-09-30)
+
+Conception et décisions : **`docs/NOTATION-AVIS.md`** (à lire avant de toucher quoi que ce soit).
+Migration `20260930120000_notation_et_avis_clients`, Edge Function `notify-order` v4, commit `9c20236`,
+publié web + OTA (1.2.1, 1.2.2, 1.2.3).
+
+**Ce qui existe** : table `avis` (RLS sans policy, tout par RPC), `deposer_avis` / `mon_avis` /
+`avis_restaurant`, colonnes calculées `note_moyenne(r)` / `nb_avis(r)` sur `restaurants`, relance push
+pg_cron `relance-avis` (toutes les 10 min → `notify-order`, event `noter`, route `/order/{id}?noter=1`),
+composants `Etoiles` / `BlocAvis`, écran `/restaurant/avis/[id]`, note sur `RestaurantCard` et la fiche.
+
+**Pièges à connaître**
+- **Notes de 1 à 5, jamais 0.** La note du restaurant = cuisine + préparation, **sans la livraison**
+  (`note_restaurant`, colonne générée). **Null sous trois avis** — l'app n'affiche rien, ce n'est pas un bug.
+- `orders.accepted_at` / `ready_at` / `delivered_at` sont posés par **un seul trigger BEFORE**
+  (`orders_jalons_statut`), y compris quand l'admin passe une commande en « livrée ». Ne pas les
+  écrire dans les RPC.
+- Les commandes **téléphone** (`commandes_telephone`) ne se notent pas : le compte est celui de l'admin.
+- Le code de remerciement `AVIS<PRENOM>` (2 000 Ar sur la livraison, 30 j, 1 usage, `taxi_food`,
+  `restaurant_id` null) est créé **dans `deposer_avis`** — montant en constante `c_montant`.
+- La relance pose `invitation_avis_le` **avant** l'appel HTTP : jamais deux relances, même si l'appel rate.
+- `notify_order_status()` (le trigger) **n'a pas été touché** — la relance appelle l'Edge Function elle-même.
+- Deux jeux de textes : `app/locales/*.json` (`avis.*`) **et** `notify-order/index.ts` (`noter`).
+- Concurrence Metro : **ne jamais lancer `expo export` web et natif en même temps** (ni avec le serveur
+  de dev ouvert) — l'export natif plante avec un « Cannot find module './utils/env' » trompeur (vu ce jour).
+
+**Reste à faire** : lot 2 (avis côté restaurateur dans Historique + réponse, alerte Telegram ≤ 2★,
+onglet admin « Avis » avec masquer / « utilisé sur les réseaux » / copier), lot 3 (photo client,
+visuel citation, branchement au calendrier éditorial). ⚠️ **Le bloc de notation n'a pas été vu sur un
+vrai téléphone** : vérifié par TypeScript, par SQL en transaction annulée, et l'écran des avis (état
+vide) sur le web — à contrôler sur mobile à la première commande livrée.
 
 ## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
 

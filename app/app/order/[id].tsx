@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { BlocAvis } from '../../components/BlocAvis';
 import { Icon } from '../../components/Icon';
 import { LignesEmballage } from '../../components/LignesEmballage';
 import { packagingLinesFromItems } from '../../store/cart';
@@ -138,6 +139,10 @@ export default function OrderTrackingScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+        {/* Livrée : « Alors, c'était comment ? » en tête, avant la timeline — c'est
+            désormais la seule chose que le client a encore à faire sur cet écran.
+            La relance push (`?noter=1`) atterrit dessus sans rien chercher. */}
+        {order.status === 'livree' ? <BlocAvis order={order} /> : null}
         {cancelled ? (
           <Card style={styles.cancelledCard}>
             <Icon name="cancel" size={22} color={colors.dangerText} />

@@ -22,6 +22,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
+import { NoteCompacte } from '../../components/Etoiles';
 import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ProductThumb } from '../../components/ProductThumb';
@@ -447,6 +448,7 @@ export default function RestaurantMenuScreen() {
 
 function RestaurantHeader({ r }: { r: Restaurant }) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   // Le bareme, lu EN BASE et jamais ecrit en dur ici : les trois valeurs
   // (socle, kilometres inclus, prix du kilometre) vivent sur `restaurants` et
   // peuvent changer sans redeploiement. Une phrase figee dans le bundle
@@ -486,6 +488,16 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
           <Icon name="shopping_basket" size={16} color={colors.secondary} />
           <Text style={styles.rMetaText}>{t('restaurant.minOrder', { amount: formatAr(r.minOrder) })}</Text>
         </View>
+        {/* La note (null sous trois avis — la base décide) et le lien vers les avis.
+            Sans aucun avis, rien : pas de « 0 avis » qui ferait vide. */}
+        {r.nbAvis > 0 ? (
+          <Pressable style={styles.rMetaItem} onPress={() => router.push(`/restaurant/avis/${r.id}`)} hitSlop={6}>
+            <NoteCompacte note={r.noteMoyenne} nb={r.nbAvis} taille={13} />
+            <Text style={styles.rMetaLien}>
+              {r.noteMoyenne == null ? t('avis.nombre', { count: r.nbAvis }) : t('avis.voirTous')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
       {bareme ? (
         <Text style={styles.rNoteLivraison}>
@@ -570,6 +582,7 @@ const styles = StyleSheet.create({
   },
   rMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rMetaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },
+  rMetaLien: { fontFamily: fonts.semibold, fontSize: 12, color: colors.primary, textDecorationLine: 'underline' },
   rNoteLivraison: {
     marginTop: 8,
     fontFamily: fonts.regular,

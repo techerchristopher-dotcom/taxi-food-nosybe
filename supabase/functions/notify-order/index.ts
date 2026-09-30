@@ -31,8 +31,12 @@ type Payload = {
   status: string;
   /** true quand c'est la prise en charge par le livreur, pas un changement de statut. */
   picked_up?: boolean;
-  /** 'nouvelle' pour un INSERT, 'statut' (défaut) pour un UPDATE. */
-  event?: 'nouvelle' | 'statut';
+  /**
+   * 'nouvelle' pour un INSERT, 'statut' (défaut) pour un UPDATE, 'noter' pour la
+   * relance « Comment c'était ? » envoyée par pg_cron (`relancer_avis_a_donner`)
+   * ~40 min après la livraison.
+   */
+  event?: 'nouvelle' | 'statut' | 'noter';
   /** Jalon posé par le livreur après la récupération : « J'arrive » / « Je suis là ». */
   phase?: 'arriving' | 'arrived' | null;
 };
@@ -119,6 +123,13 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     en: { title: 'Your courier is at your door 📍', body: 'They are waiting for you — come out to meet them.' },
     it: { title: 'Il tuo rider è davanti a casa tua 📍', body: 'Ti sta aspettando — esci a riceverlo.' },
   },
+  // Relance ~40 min après la livraison (pg_cron, `relancer_avis_a_donner`) : le
+  // client a eu le temps de manger. Une seule, jamais deux — voir docs/NOTATION-AVIS.md.
+  noter: {
+    fr: { title: 'Alors, c’était comment ? ⭐', body: 'Note ta commande chez {resto} en 10 secondes — 2 000 Ar offerts sur ta prochaine livraison.' },
+    en: { title: 'So, how was it? ⭐', body: 'Rate your order from {resto} in 10 seconds — 2,000 Ar off your next delivery.' },
+    it: { title: 'Allora, com’era? ⭐', body: 'Valuta il tuo ordine da {resto} in 10 secondi — 2.000 Ar di sconto sulla prossima consegna.' },
+  },
 
   // --- Restaurant ---
   nouvelle_commande: {
@@ -137,6 +148,12 @@ const ROUTES: Record<Audience, (order: Order) => string> = {
   restaurant: () => '/(restaurant)',
   livreur: () => '/(livreur)',
 };
+
+/** La relance « noter » ouvre le suivi de commande directement sur le bloc de notation. */
+function routeFor(audience: Audience, key: string, order: Order): string {
+  if (audience === 'client' && key === 'noter') return `/order/${order.id}?noter=1`;
+  return ROUTES[audience](order);
+}
 
 function buildText(order: Order, key: string, lang: Lang) {
   const set = MESSAGES[key];
@@ -191,6 +208,9 @@ Deno.serve(async (req: Request) => {
   if (payload.event === 'nouvelle') {
     // Le client vient de la passer, il est devant son écran : lui seul n'a rien à recevoir.
     envois.push({ audience: 'restaurant', key: 'nouvelle_commande' });
+  } else if (payload.event === 'noter') {
+    // La base a déjà vérifié : livrée, sans avis, jamais relancée.
+    if (order.status === 'livree') envois.push({ audience: 'client', key: 'noter' });
   } else {
     const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up' : payload.status;
     if (MESSAGES[key]) envois.push({ audience: 'client', key });
@@ -253,7 +273,7 @@ Deno.serve(async (req: Request) => {
           orderId: order.id,
           orderNumber: order.order_number,
           status: order.status,
-          route: ROUTES[envoi.audience](order),
+          route: routeFor(envoi.audience, envoi.key, order),
         },
       });
     }

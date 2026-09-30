@@ -28,6 +28,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
+import type { Avis, CodeRemerciement, MonAvis } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -57,6 +58,9 @@ type RestaurantRow = {
    */
   ouvre_a?: string | null;
   ouvre_dans_jours?: number | null;
+  /** Note (cuisine + préparation) et nombre d'avis publiés, calculés par la base. Null sous 3 avis. */
+  note_moyenne?: number | null;
+  nb_avis?: number | null;
   // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
   // comme un OBJET, pas un tableau (verifie au curl sur l'API du projet). Quand
   // aucun horaire n'existe pour aujourd'hui, l'objet est present mais tous ses
@@ -191,6 +195,9 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     // alors que le soir ouvre à 19 h : `ouvre_a` porte la bonne réponse.
     opensAt: r.ouvre_a ?? null,
     opensInDays: r.ouvre_dans_jours ?? null,
+    // La note, calculée par la base (cuisine + préparation, jamais la livraison).
+    noteMoyenne: r.note_moyenne == null ? null : Number(r.note_moyenne),
+    nbAvis: r.nb_avis ?? 0,
   };
 }
 
@@ -265,7 +272,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
@@ -308,7 +315,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -705,6 +712,7 @@ type OrderJoinRow = {
   picked_up_at: string | null;
   arriving_at?: string | null;
   arrived_at?: string | null;
+  delivered_at?: string | null;
   created_at: string;
   restaurants: {
     name: string;
@@ -739,7 +747,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, arriving_at, arrived_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -805,6 +813,7 @@ function mapOrder(o: OrderJoinRow): Order {
     pickedUp: o.picked_up_at != null,
     arrivingAt: o.arriving_at ?? null,
     arrivedAt: o.arrived_at ?? null,
+    deliveredAt: o.delivered_at ?? null,
   };
 }
 
@@ -1287,6 +1296,87 @@ export async function markPickedUp(orderId: string): Promise<void> {
 }
 
 // --- Restaurants en négociation : intérêt et alerte d'ouverture -------------
+// ---------------------------------------------------------------------------
+// Avis clients (docs/NOTATION-AVIS.md)
+// ---------------------------------------------------------------------------
+
+/**
+ * Dépose l'avis d'une commande livrée. La base vérifie TOUT (client de la commande,
+ * statut livrée, sept jours, un seul avis, pas une commande téléphone) et renvoie
+ * le code promo de remerciement. Erreurs métier : `avis:deja_depose`, `avis:trop_tard`…
+ */
+export async function deposerAvis(input: {
+  orderId: string;
+  cuisine: number;
+  preparation: number;
+  livraison: number;
+  commentaire: string | null;
+  consentement: boolean;
+  langue: string;
+}): Promise<CodeRemerciement> {
+  const { data, error } = await supabase.rpc('deposer_avis', {
+    p_order_id: input.orderId,
+    p_cuisine: input.cuisine,
+    p_preparation: input.preparation,
+    p_livraison: input.livraison,
+    p_commentaire: input.commentaire,
+    p_consentement: input.consentement,
+    p_langue: input.langue,
+  });
+  if (error) throw error;
+  const d = data as { code: string; valeur: number; expire_le: string };
+  return { code: d.code, valeur: d.valeur, expireLe: d.expire_le };
+}
+
+/** L'avis que j'ai laissé sur cette commande, ou null. */
+export async function monAvis(orderId: string): Promise<MonAvis | null> {
+  const { data, error } = await supabase.rpc('mon_avis', { p_order_id: orderId });
+  if (error) throw error;
+  if (!data) return null;
+  const d = data as {
+    note_cuisine: number; note_preparation: number; note_livraison: number;
+    commentaire: string | null; consentement_publication: boolean; created_at: string;
+    code: string | null; code_valeur: number | null; code_expire_le: string | null;
+  };
+  return {
+    noteCuisine: d.note_cuisine,
+    notePreparation: d.note_preparation,
+    noteLivraison: d.note_livraison,
+    commentaire: d.commentaire,
+    consentement: d.consentement_publication,
+    createdAt: d.created_at,
+    code: d.code,
+    codeValeur: d.code_valeur,
+    codeExpireLe: d.code_expire_le,
+  };
+}
+
+/** Les avis publiés d'un restaurant, du plus récent au plus ancien. Lecture publique. */
+export async function listAvisRestaurant(restaurantId: string, limite = 20, decalage = 0): Promise<Avis[]> {
+  const { data, error } = await supabase.rpc('avis_restaurant', {
+    p_restaurant_id: restaurantId,
+    p_limite: limite,
+    p_decalage: decalage,
+  });
+  if (error) throw error;
+  return ((data ?? []) as {
+    id: string; prenom: string; note_cuisine: number; note_preparation: number; note_livraison: number;
+    note_restaurant: number | string; commentaire: string | null; created_at: string;
+    reponse_restaurant: string | null; reponse_le: string | null;
+  }[]).map((a) => ({
+    id: a.id,
+    prenom: a.prenom,
+    noteCuisine: a.note_cuisine,
+    notePreparation: a.note_preparation,
+    noteLivraison: a.note_livraison,
+    noteRestaurant: Number(a.note_restaurant),
+    commentaire: a.commentaire,
+    createdAt: a.created_at,
+    reponseRestaurant: a.reponse_restaurant,
+    reponseLe: a.reponse_le,
+  }));
+}
+
 /**
  * Note une visite (silencieuse) ou une demande d'alerte sur un restaurant
  * `coming_soon`. Renvoie « le client est inscrit à l'alerte ». Ne lève pas si le
@@ -1524,7 +1614,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

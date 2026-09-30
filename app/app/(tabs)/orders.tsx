@@ -181,10 +181,20 @@ export default function OrdersScreen() {
                   <Text style={styles.summary}>{itemsSummary(o)}</Text>
                   <View style={styles.foot}>
                     <Text style={styles.total}>{formatAr(o.total)}</Text>
-                    <Pressable style={styles.reorderBtn} onPress={() => reorder(o)}>
-                      <Icon name="replay" size={17} color={colors.white} />
-                      <Text style={styles.reorderText}>{t('orders.reorder')}</Text>
-                    </Pressable>
+                    <View style={styles.footActions}>
+                      {/* Noter : la base décide si c'est encore possible (7 jours,
+                          un seul avis) — le bouton mène au bloc, qui se tait si non. */}
+                      {o.status === 'livree' ? (
+                        <Pressable style={styles.callBtn} onPress={() => router.push(`/order/${o.id}?noter=1`)}>
+                          <Icon name="star" size={17} color={colors.ink} />
+                          <Text style={styles.callText}>{t('orders.noter')}</Text>
+                        </Pressable>
+                      ) : null}
+                      <Pressable style={styles.reorderBtn} onPress={() => reorder(o)}>
+                        <Icon name="replay" size={17} color={colors.white} />
+                        <Text style={styles.reorderText}>{t('orders.reorder')}</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </Card>
               ))}

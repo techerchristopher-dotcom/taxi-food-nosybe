@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
+import { NoteCompacte } from './Etoiles';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { CategoryTag, Restaurant, todayServicesLabel } from '../data/types';
@@ -17,10 +18,12 @@ import { formatAr } from '../theme/tokens';
  * le plancher. Écrire « 10 000 Ar » ici ferait une promesse que le panier
  * démentirait deux écrans plus loin.
  */
-function Meta({ eta, fee }: { eta: string; fee: number }) {
+function Meta({ eta, fee, note, nb }: { eta: string; fee: number; note: number | null; nb: number }) {
   const { t } = useTranslation();
   return (
     <View style={styles.metaRow}>
+      {/* La note d'abord, si elle existe (null sous trois avis — la base décide). */}
+      <NoteCompacte note={note} nb={nb} />
       <View style={styles.metaItem}>
         <Icon name="schedule" size={15} color={colors.secondary} />
         <Text style={styles.metaText}>{eta}</Text>
@@ -104,7 +107,7 @@ export function FeaturedRestaurantCard({
             {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
           </Text>
           <CategoryTags tags={r.categoryTags} />
-          <Meta eta={r.etaLabel} fee={r.deliveryFee} />
+          <Meta eta={r.etaLabel} fee={r.deliveryFee} note={r.noteMoyenne} nb={r.nbAvis} />
         </View>
       </View>
     </Pressable>
@@ -144,7 +147,7 @@ export function RestaurantRow({
         </Text>
         <CategoryTags tags={r.categoryTags} />
         {r.isOpen ? (
-          <Meta eta={r.etaLabel} fee={r.deliveryFee} />
+          <Meta eta={r.etaLabel} fee={r.deliveryFee} note={r.noteMoyenne} nb={r.nbAvis} />
         ) : (
           // « Ouvre dans 35 min », « Ouvre à 19h », « Ouvre demain à 10h » ou
           // « Fermé » — même règle que les plats du jour (`lib/ouverture.ts`).

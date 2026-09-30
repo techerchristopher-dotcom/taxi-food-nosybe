@@ -259,7 +259,44 @@ export type Restaurant = {
    */
   opensAt: string | null;
   opensInDays: number | null;
+  /**
+   * Note du restaurant (cuisine + préparation, SANS la livraison), calculée par la
+   * base (`note_moyenne`) : null sous trois avis. `nbAvis` compte les avis publiés.
+   * Voir docs/NOTATION-AVIS.md.
+   */
+  noteMoyenne: number | null;
+  nbAvis: number;
 };
+
+/** Un avis tel qu'il s'affiche publiquement sur la fiche d'un restaurant. */
+export type Avis = {
+  id: string;
+  prenom: string;
+  noteCuisine: number;
+  notePreparation: number;
+  noteLivraison: number;
+  noteRestaurant: number;
+  commentaire: string | null;
+  createdAt: string;
+  reponseRestaurant: string | null;
+  reponseLe: string | null;
+};
+
+/** L'avis que J'AI laissé sur une commande, avec le code de remerciement. */
+export type MonAvis = {
+  noteCuisine: number;
+  notePreparation: number;
+  noteLivraison: number;
+  commentaire: string | null;
+  consentement: boolean;
+  createdAt: string;
+  code: string | null;
+  codeValeur: number | null;
+  codeExpireLe: string | null;
+};
+
+/** Ce que `deposer_avis` renvoie : le code promo de remerciement. */
+export type CodeRemerciement = { code: string; valeur: number; expireLe: string };
 
 /** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */
 export const FOOD_TYPE_ORDER = [
@@ -376,6 +413,8 @@ export type Order = {
   /** Jalons du livreur après la récupération : « J'arrive » (≈ 5 min) puis « Je suis là ». */
   arrivingAt?: string | null;
   arrivedAt?: string | null;
+  /** Quand la commande a été livrée. Sert à savoir si elle peut encore être notée (7 jours). */
+  deliveredAt?: string | null;
   /** Nom/téléphone du livreur assigné (visible côté restaurant et client). */
   courierName?: string | null;
   courierPhone?: string | null;

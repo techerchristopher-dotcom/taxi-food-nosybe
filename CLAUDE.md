@@ -713,6 +713,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 | 60 | La Plage (bistrot & bar, Hell-Ville) | coming_soon | `eb10f338-fb78-4c16-82d5-810ae37b49fe` |
 | 70 | Angelo | hidden | `cb482596-b39e-4355-96a5-3dfdad75dcee` |
 | 90 | Taxi Be — **retiré du catalogue le 2026-09-17** | hidden | `ac2766bb-c4d1-4f5e-9a40-3ea0febcb886` |
+| 100 | Le Nandipo (brasserie, zébu & pizzeria, Hell-Ville) — **en négociation, chargé le 2026-09-30** | hidden | `cb7fda65-3ed0-41aa-940c-b8974f7363c8` |
 
 `coming_soon` s'affiche **« En négociation »** partout (app et vitrine) et n'est **jamais
 commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` — la garde est en base.
@@ -751,6 +752,14 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   2026-09-06 par son canal privé, message de contrôle et commande de test remis. La commande de
   test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
 - **Les Siciliens** — `coming_soon` (« En négociation »).
+- **Le Nandipo** — ajouté le 2026-09-30 en **`hidden`** (pas `coming_soon` : rien n'est signé, on ne
+  promet rien en son nom), migration `20260930200000_le_nandipo_catalogue_hidden`. 8 catégories,
+  45 plats aux prix de sa carte (`visuels-reseaux/nandipo/donnees_nandipo.py`), 12 pizzas en
+  deux tailles (groupe « Taille », prix = petit modèle), 15 plats avec « Accompagnement (1 au
+  choix, inclus) » — **liste copiée de La Plage, à confirmer avec lui**. 6 photos + logo dans
+  `produits/le-nandipo/`, déposés par `deposer-visuel`. Prospect `d526a567-…` en `interesse`,
+  priorité haute, téléphones intacts. ⚠️ À lui demander : téléphone (3 numéros circulent),
+  prix Toscana, garniture Américaine (= Nordique), accompagnements, horaires, nom des 13 photos.
 - **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
   `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
   `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant

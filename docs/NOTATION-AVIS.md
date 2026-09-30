@@ -93,9 +93,16 @@ copier, filtre « consentis non utilisés ».
 
 ## 5. Les lots
 
-1. **Base + app client + relance push** — ce document, migration `20260930…notation_avis`.
-2. **Restaurateur + admin + Telegram**.
-3. **Photo client + visuel citation + branchement au calendrier éditorial** (quand il
+1. ✅ **Base + app client + relance push** — livré le 2026-09-30, migration
+   `20260930120000_notation_et_avis_clients`, commit `9c20236`.
+2. ✅ **Restaurateur + admin + Telegram** — livré le 2026-09-30, migration
+   `20260930150000_avis_lot2_restaurateur_admin_telegram`, commits `3036c32` (base + app) et
+   `8a8b0fd` (admin). RPC : `avis_de_mon_restaurant`, `repondre_avis`, `admin_avis_lister(filtre)`,
+   `admin_avis_statut`, `admin_avis_utilise` ; trigger `avis_alerte_telegram` (copie de chaque avis
+   au patron, le restaurant prévenu seulement si SA note ≤ 2). Testé en transaction annulée :
+   dépôt à 1,5/5 → deux messages Telegram en file, réponse du restaurateur, filtres admin,
+   « utilisé » refusé sans consentement (`avis:sans_consentement`).
+3. ⬜ **Photo client + visuel citation + branchement au calendrier éditorial** (quand il
    existera pour Taxi Food : `docs/AGENTS-CALENDRIER-EDITORIAL.md`, § 9).
 
 Chaque lot se livre sur les **quatre surfaces** (CLAUDE.md, « Une correction se livre sur

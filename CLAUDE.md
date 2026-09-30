@@ -33,7 +33,7 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 **Notation et avis clients (chantier ouvert le 2026-09-30)**
 - ✅ **Lot 1 livré** (base, app client, relance push, code promo `AVIS<PRENOM>`) — voir sa section et
   `docs/NOTATION-AVIS.md`. ⚠️ Bloc de notation encore jamais vu sur un vrai téléphone.
-- ⬜ **Lot 2** : avis côté restaurateur + réponse, alerte Telegram ≤ 2★, onglet admin « Avis ».
+- ✅ **Lot 2 livré** (2026-09-30) : avis + réponse côté restaurateur, Telegram, onglet admin « ⭐ Avis ».
 - ⬜ **Lot 3** : photo client, visuel citation, branchement au calendrier éditorial.
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
@@ -1929,11 +1929,22 @@ composants `Etoiles` / `BlocAvis`, écran `/restaurant/avis/[id]`, note sur `Res
 - Concurrence Metro : **ne jamais lancer `expo export` web et natif en même temps** (ni avec le serveur
   de dev ouvert) — l'export natif plante avec un « Cannot find module './utils/env' » trompeur (vu ce jour).
 
-**Reste à faire** : lot 2 (avis côté restaurateur dans Historique + réponse, alerte Telegram ≤ 2★,
-onglet admin « Avis » avec masquer / « utilisé sur les réseaux » / copier), lot 3 (photo client,
-visuel citation, branchement au calendrier éditorial). ⚠️ **Le bloc de notation n'a pas été vu sur un
-vrai téléphone** : vérifié par TypeScript, par SQL en transaction annulée, et l'écran des avis (état
-vide) sur le web — à contrôler sur mobile à la première commande livrée.
+**Lot 2 livré le même jour** (migration `20260930150000`, commits `3036c32` + `8a8b0fd`, OTA ×3,
+web, admin) : le restaurateur voit l'avis sous chaque commande de l'Historique et **répond**
+(`repondre_avis`, 500 car., modifiable) ; **Telegram** : copie de chaque avis au patron, le
+restaurant prévenu **seulement si SA note ≤ 2** (la livraison ne le juge pas) ; **onglet admin
+« ⭐ Avis »** : filtres (à publier / ≤ 2★ / masqués), masquer-republier (journalisé dans
+`admin_actions`), « utilisé sur les réseaux » **refusé par la base sans consentement**
+(`avis:sans_consentement`), copie du texte prêt à coller.
+- ⚠️ Piège admin rencontré : `supabase.rpc()` renvoie un `PostgrestFilterBuilder` (thenable), pas
+  une `Promise` — typer un paramètre de rappel en `PromiseLike`, sinon `next build` refuse. Et un
+  `netlify deploy --dir=out` **après un build raté pousse le `out/` PRÉCÉDENT** sans rien dire :
+  toujours lire la sortie du build avant de déployer.
+
+**Reste à faire** : lot 3 (photo client, visuel citation, branchement au calendrier éditorial).
+⚠️ **Ni le bloc de notation ni l'Historique restaurateur n'ont été vus sur un vrai téléphone** :
+vérifiés par TypeScript, par SQL en transaction annulée, et l'écran des avis (état vide) sur le
+web — à contrôler sur mobile à la première commande livrée.
 
 ## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
 

@@ -306,7 +306,7 @@ export default function ProductDetailScreen() {
                           </Text>
                           {o.priceDelta > 0 ? (
                             <Text style={[styles.chipPrice, selected && styles.chipPriceSelected]}>
-                              + {formatAr(o.priceDelta)}
+                              {formatAr(product.price + o.priceDelta)}
                             </Text>
                           ) : null}
                         </View>

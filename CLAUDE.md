@@ -1944,6 +1944,24 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## 🛵 Livraison à 2 000 Ar jusqu'à 3 km (2026-10-02)
+
+Décision du porteur du projet : **2 000 Ar jusqu'à 3 km de route, puis 1 000 Ar par km entamé**,
+pour TOUS les restaurants (La Plage perd ses 5 km inclus). Avant : 10 000 Ar jusqu'à 3 km. Migration
+`20261002200000_livraison_2000_jusqu_a_3_km` ; en production posé par `admin_set_tarif_livraison`
+(trace par restaurant dans `admin_actions`). **Aucune fonction modifiée** : même calcul (vol
+d'oiseau × 1,3, `ceil` du dépassement). Vérifié par `frais_livraison_detail` : 0,8 / 1,5 / 2,5 /
+3,0 km → 2 000 ; 3,9 → 3 000 ; 6,5 → 6 000 ; 10,4 → 10 000 ; sans GPS → 2 000.
+- L'app et la vitrine lisent le barème en base : rien à publier pour que les prix changent.
+- Admin : défaut du formulaire de création à 2 000 (déploiement admin à faire). `n8n/code-offert.js`
+  (`LIVR`, exemple chiffré) mis à 2 000 dans le dépôt — workflow inactif en production.
+- ⚠️ Le code AVIS<PRENOM> (2 000 Ar sur la livraison, gardé tel quel) rend la livraison **gratuite
+  sous 3 km**. TAXIFOOD50 = 1 000 Ar de remise sur une course courte.
+- ⚠️ Restent à « 10 000 » : les visuels et textes marketing de `visuels-reseaux/` (La Plage, Bidule,
+  M&K, charte), `docs/PARTAGE-FACEBOOK-GROUPES.md` § 5 — à ne plus réutiliser tels quels.
+- ⚠️ Écart d'affichage préexistant : l'aperçu d'un code « livraison » calcule sur le socle, la base
+  sur les frais réels (au-delà de 3 km, la remise réelle est plus grande qu'annoncée).
+
 ## ✨ « Nouveau sur Taxi Food » — les nouveaux restaurants en tête (2026-10-02)
 
 Demande du porteur du projet : quand un ou plusieurs restaurants rejoignent l'aventure, leurs

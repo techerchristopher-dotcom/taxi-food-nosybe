@@ -34,7 +34,7 @@ type FormState = {
 };
 
 const EMPTY: FormState = {
-  name: '', cuisine_type: '', delivery_fee: '10000', commissionPct: '15', zone: '',
+  name: '', cuisine_type: '', delivery_fee: '2000', commissionPct: '15', zone: '',
   is_open: true, min_order: '0', food_types: '', opens_at: '', closes_at: '', sort_order: '',
 };
 

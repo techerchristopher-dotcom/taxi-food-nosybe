@@ -82,7 +82,7 @@ const aPayer = livraison
 // Exemple chiffre : une pizza a 25 000, son carton a 2 000, la livraison a
 // 10 000. Calcule, pas ecrit en dur : un plafond bas ou un emballage exclu
 // changent la reponse, et un exemple faux serait refuse a la caisse.
-const PIZZA = 25000, CARTON = 2000, LIVR = 10000;
+const PIZZA = 25000, CARTON = 2000, LIVR = 2000; // socle de livraison depuis le 2026-10-02 (2 000 Ar jusqu’à 3 km)
 let exemple;
 if (livraison) {
   exemple = `Exemple : une pizza à ${ar(PIZZA)} et son carton à ${ar(CARTON)}. La livraison à ${ar(LIVR)} est offerte. Tu paies ${ar(PIZZA + CARTON)}.`;

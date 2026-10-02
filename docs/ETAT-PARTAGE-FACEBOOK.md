@@ -78,7 +78,7 @@ de la page. Ouvertures = `visites_partage`, toutes pages confondues, au 2026-10-
 | 44 | Annonces Express Nosy-Be | 2 151 | `annoncesexpress` | 29/09 13:31 | MBS | 1 | mesuré |
 | 45 | BIZNA SY SERA ETO NOSY BE HELL VILLE (privé) | 11 947 | `biznasera` | 26/09 | MBS | 1 | mesuré — **absent du § 3 ter** |
 | 46 | Visit Nosy be Madagascar Island | 6 249 | `visitnosybe` | 26/09 | MBS | 2 | mesuré — **absent du § 3 ter** |
-| 47 | Nosy Be Madagascar '' | 4 865 | ~~`nosybemada`~~ → `nosybemadagascar` | 26/09 | MBS | **0** | publié avec un slug déjà pris — **absent du § 3 ter** |
+| 47 | Nosy Be Madagascar '' | 4 865 | ~~`nosybemada`~~ → `nosybeisland` | 26/09 | MBS | **0** | publié avec un slug déjà pris — **absent du § 3 ter** |
 | 48 | MADAGASCAR TRAVEL with Tour Guide | 4 589 | `madatravel` | 26/09 | MBS | **0** | publié marqué, zéro ouverture — **absent du § 3 ter** |
 | 49 | Nosy be business | 4 404 | `nosybebusiness` | 26/09 | MBS | 2 | mesuré — **absent du § 3 ter** ; listé à tort comme « nouveau » le 29/09 (l. 612) |
 
@@ -96,7 +96,7 @@ pas s'ils sont des doublons de lignes existantes : « Le Bon Prix De Nosy be hel
 
 **Décompte** : **49 groupes avec un slug** — **41 mesurés** (au moins une ouverture), **6 publiés
 marqués à zéro ouverture** (`ambiance`, `bonscoins`, `hellville`, `lavie`, `madatravel`,
-`nosybemadagascar`), **1 qui modère sans jamais publier** (`tourisme`), **1 jamais servi**
+`nosybeisland`), **1 qui modère sans jamais publier** (`tourisme`), **1 jamais servi**
 (`biznesshell`). **0 « partagé sans étiquette »** : les sept groupes de la vague 1 (25/09) ont tous
 été republiés marqués le 26/09 (journal l. 402-403). **~15 groupes vus, sans slug, jamais servis.**
 
@@ -108,7 +108,7 @@ marqués à zéro ouverture** (`ambiance`, `bonscoins`, `hellville`, `lavie`, `m
 |---|---|---|---|
 | Le Bon coin Nosy be | `boncoin` (§ 3 bis l. 183) · `leboncoin` (§ 3 ter l. 112, journal l. 402) | **`leboncoin`** — 1 ouverture le 26/09 ; `boncoin` : 0 | § 3 bis : `boncoin` → `leboncoin` |
 | Business Madio à Nosy-Be | `madio` (§ 3 bis l. 188) · `businessmadio` (§ 3 ter l. 117, journal l. 402) | **`businessmadio`** — 4 ouvertures le 26/09 ; `madio` : 0 | § 3 bis : `madio` → `businessmadio` |
-| Nosy-be Madagascar (3 768) **et** Nosy Be Madagascar '' (4 865) | `nosybemada` porté par les deux (§ 3 ter l. 129 + journal l. 591 ; journal l. 419) | **Nosy-be Madagascar** — les 4 ouvertures datent toutes du 29/09 19:45-19:59, juste après sa publication ; rien n'a été compté pour la publication du 26/09 | garder `nosybemada` pour « Nosy-be Madagascar » ; donner **`nosybemadagascar`** à « Nosy Be Madagascar '' ». Les deux noms et tailles diffèrent nettement, mais ce sont peut-être deux noms d'un même groupe : **non documenté**, à vérifier en ouvrant les deux |
+| Nosy-be Madagascar (3 768) **et** Nosy Be Madagascar '' (4 865) | `nosybemada` porté par les deux (§ 3 ter l. 129 + journal l. 591 ; journal l. 419) | **Nosy-be Madagascar** — les 4 ouvertures datent toutes du 29/09 19:45-19:59, juste après sa publication ; rien n'a été compté pour la publication du 26/09 | garder `nosybemada` pour « Nosy-be Madagascar » ; donner **`nosybeisland`** à « Nosy Be Madagascar '' ». Les deux noms et tailles diffèrent nettement, mais ce sont peut-être deux noms d'un même groupe : **non documenté**, à vérifier en ouvrant les deux |
 | Top business Nosy be hell ville | `topbusinesscowork` **puis** `topbusiness` (§ 3 ter l. 131) | **`topbusiness`** — 2 ouvertures ; `topbusinesscowork` : 0 | § 3 ter : ne garder que `topbusiness` |
 
 ### États périmés dans le § 3 ter
@@ -207,7 +207,7 @@ base : on ne peut pas l'exclure — non documenté.
 
 1. **Corriger la procédure** : § 3 bis (`leboncoin`, `businessmadio`) ou suppression du tableau ;
    § 3 ter (états des lignes 6-8, 12, 14, 24-44 ; `topbusiness` seul ; ajout des lignes 45-49 ;
-   `nosybemadagascar`). Ajouter au mode d'emploi les trois pièges « journal seulement ».
+   `nosybeisland`). Ajouter au mode d'emploi les trois pièges « journal seulement ».
 2. **Vérifier** si « Nosy Be Madagascar '' » et « Nosy-be Madagascar » sont deux groupes, et si
    « Le Bon Prix De Nosy be hell Ville » / « Nosy be Lebon Coin » sont des doublons de `bonprix` /
    `leboncoin`.

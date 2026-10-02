@@ -86,7 +86,8 @@ export default function RestaurantMenuScreen() {
     }
   }
   const retire = restaurant?.listingStatus === 'hidden' && monRestaurantId !== restaurant?.id;
-  const { data: menu } = useLoad(() => getMenu(id!), [id]);
+  // Carte CLIENT : traduite dans la langue de l’app (les Réglages du restaurateur, eux, non).
+  const { data: menu } = useLoad(() => getMenu(id!, { traduire: true }), [id]);
   const categories = menu?.categories ?? [];
   const productsByCat = menu?.products ?? [];
   const featured = menu?.featured ?? [];

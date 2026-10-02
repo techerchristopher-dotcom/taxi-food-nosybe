@@ -210,6 +210,38 @@ async function lirePlats() {
   return Array.isArray(j) ? j : [];
 }
 
+/**
+ * Traduction des MENUS pour les pages /en et /it (dictionnaire `traductions_catalogue`,
+ * 2026-10-02). Noms de plats, descriptions et types de cuisine ; le nom du restaurant reste
+ * tel quel. Un échec de lecture laisse le français : la page ne casse jamais pour ça.
+ */
+async function traduirePlats(plats, langue) {
+  if (langue !== 'en' && langue !== 'it') return plats;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/traductions_catalogue_langue`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ p_langue: langue }),
+    });
+    if (!r.ok) throw new Error(`traductions ${r.status}`);
+    const dico = new Map((await r.json()).map((x) => [x.fr, x.texte]));
+    const t = (s) => (s ? dico.get(s) ?? s : s);
+    return plats.map((p) => ({
+      ...p,
+      nom: t(p.nom),
+      description: t(p.description),
+      restaurant_cuisine: t(p.restaurant_cuisine),
+    }));
+  } catch (e) {
+    console.error('[plats-du-jour] traductions indisponibles, page en français', e);
+    return plats;
+  }
+}
+
 function page(l, plats) {
   const canonique = `${SITE}${l.chemin}`;
   const compte = plats.length === 1 ? l.compte_un : l.compte_n.replace('{n}', String(plats.length));
@@ -509,6 +541,8 @@ export default async (request) => {
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store, max-age=0' },
     });
   }
+
+  plats = await traduirePlats(plats, l.code);
 
   return new Response(page(l, plats), {
     status: 200,

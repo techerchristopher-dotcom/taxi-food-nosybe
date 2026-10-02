@@ -304,9 +304,13 @@ export default function ProductDetailScreen() {
                           >
                             {o.name}
                           </Text>
+                          {/* Prix TOTAL pour un choix obligatoire à une seule réponse (taille,
+                              format : « Grand modèle 32 000 Ar » remplace le prix de base) ;
+                              « + 4 000 Ar » pour un supplément, qui s'AJOUTE — sinon une tomate en
+                              plus s'affichait « 32 000 Ar » (constaté le 2026-10-02). */}
                           {o.priceDelta > 0 ? (
                             <Text style={[styles.chipPrice, selected && styles.chipPriceSelected]}>
-                              {formatAr(product.price + o.priceDelta)}
+                              {g.required && single ? formatAr(product.price + o.priceDelta) : `+ ${formatAr(o.priceDelta)}`}
                             </Text>
                           ) : null}
                         </View>

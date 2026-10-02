@@ -17,9 +17,10 @@ import it from '../locales/it.json';
  *  - le choix manuel (écran Profil) est persisté localement, sans compte : il vaut donc
  *    pour un visiteur non connecté et survit à la déconnexion.
  *
- * ⚠️ On ne traduit QUE les libellés d'interface. Les noms de restaurants, de produits et
- * d'options viennent de la base et s'affichent tels quels — les traduire donnerait des
- * plats introuvables à la lecture de la commande côté cuisine.
+ * ⚠️ Ces fichiers ne traduisent QUE les libellés d'interface. Les MENUS (plats, descriptions,
+ * catégories, options) sont traduits à part, par le dictionnaire `traductions_catalogue`
+ * (`lib/catalogueTraduit.ts`, 2026-10-02), et seulement sur les écrans CLIENTS. La cuisine,
+ * elle, lit toujours le nom de SA carte : la commande fige les noms français en base.
  */
 
 export const LANGUAGES = [

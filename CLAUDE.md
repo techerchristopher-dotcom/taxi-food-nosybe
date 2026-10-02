@@ -1944,6 +1944,35 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## 🌍 Les MENUS traduits en anglais et en italien (2026-10-02)
+
+Constat du porteur du projet : l'app passée en anglais gardait les menus en français (ce sont des
+DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogue` (structure) et
+`20261002211000_traductions_catalogue_donnees` (785 textes × 2 langues).
+
+- **Un dictionnaire**, pas des colonnes par table : `traductions_catalogue (fr, langue, texte)`,
+  lecture publique, écriture admin. « Frites » (1 340 occurrences d'options) se traduit une fois.
+  ⚠️ Un même texte = une seule traduction : « Andalouse » (sauce ET pizza) et « Tomate » (option ET
+  pâtes) gardent le sens le plus général.
+- **Plats locaux** : nom gardé + explication (« Romazava (Malagasy leafy greens stew) ») — décision.
+- **App** : `lib/catalogueTraduit.ts` (`preparerTraductions()` + `tr()`), branché dans `data/api.ts`
+  sur les chargements CLIENTS seulement : `listRestaurants`, `getRestaurant`, `getMenu(id, { traduire:
+  true })`, `getProductDetail`, `listPlatsDuJour`, `listNouveautes`, `listOrders`, `getOrderById`.
+  ⛔ **Jamais côté restaurateur** : `getMenu` sans option (Réglages), `getFeaturedLibrary`,
+  `listRestaurantOrders` restent en français — sinon un restaurateur au téléphone en anglais
+  réenregistrerait son plat en anglais. La cuisine lit toujours SA carte : `create_order` fige les
+  noms depuis la base (`product_name_snapshot`).
+- **Vitrine** : `/en/dishes-of-the-day` et `/it/piatti-del-giorno` (`plats-du-jour.mjs`, côté
+  serveur) et les accueils EN/IT (`js/partenaires.js`). Les liens partagés `/p/ /r/` restent en
+  français (une seule version, lue par les robots d'aperçu).
+- **Nouveau plat** : affiché en français tant qu'il n'est pas traduit (aucune casse).
+  `admin_textes_a_traduire()` (admin) liste ce qui manque — 0 au 2026-10-02.
+- Vérifié sur l'app web : carte des Siciliens en anglais (cuisine, catégories, plats,
+  descriptions), Margherita en italien (« Aggiunte », « Pomodoro + 4 000 Ar »).
+- ⚠️ Corrigé au passage : le « prix total » d'une option (Grand modèle 32 000 Ar) ne vaut que pour
+  un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
+  plus s'affichait « 32 000 Ar »).
+
 ## 🛵 Livraison à 2 000 Ar jusqu'à 3 km (2026-10-02)
 
 Décision du porteur du projet : **2 000 Ar jusqu'à 3 km de route, puis 1 000 Ar par km entamé**,

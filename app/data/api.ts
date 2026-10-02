@@ -8,6 +8,7 @@
  * lecture publique ; addresses et orders/order_item_options sont filtrés sur l'utilisateur.
  */
 import { supabase } from '../lib/supabase';
+import { preparerTraductions, tr } from '../lib/catalogueTraduit';
 import {
   Address,
   addressIcon,
@@ -257,6 +258,31 @@ function mapOptionGroup(g: OptionGroupRow): OptionGroup {
   };
 }
 
+// --- Traduction du catalogue (écrans CLIENTS seulement, voir lib/catalogueTraduit.ts) ---
+function traduireProduit(p: Product): Product {
+  return { ...p, name: tr(p.name), description: tr(p.description), featuredLabel: tr(p.featuredLabel), packagingLabel: tr(p.packagingLabel) };
+}
+function traduireCategorie(c: Category): Category {
+  return { ...c, name: tr(c.name) };
+}
+function traduireGroupe(g: OptionGroup): OptionGroup {
+  return { ...g, name: tr(g.name), options: g.options.map((o) => ({ ...o, name: tr(o.name) })) };
+}
+function traduireRestaurant(r: Restaurant): Restaurant {
+  return { ...r, cuisineType: tr(r.cuisineType), categoryTags: r.categoryTags.map((c) => ({ ...c, name: tr(c.name) })) };
+}
+function traduireCommande(o: Order): Order {
+  return {
+    ...o,
+    items: o.items.map((it) => ({
+      ...it,
+      name: tr(it.name),
+      packagingLabel: tr(it.packagingLabel),
+      options: it.options?.map((op) => ({ ...op, name: tr(op.name) })),
+    })),
+  };
+}
+
 function mapAddress(a: AddressRow): Address {
   return {
     id: a.id,
@@ -274,6 +300,7 @@ function mapAddress(a: AddressRow): Address {
 
 // --- Restaurants & menu -----------------------------------------------------
 export async function listRestaurants(): Promise<Restaurant[]> {
+  await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
     .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
@@ -313,17 +340,18 @@ export async function listRestaurants(): Promise<Restaurant[]> {
     }
   }
 
-  return rows.map((r) => ({ ...mapRestaurant(r), categoryTags: tagsByResto.get(r.id) ?? [] }));
+  return rows.map((r) => traduireRestaurant({ ...mapRestaurant(r), categoryTags: tagsByResto.get(r.id) ?? [] }));
 }
 
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
+  await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
     .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? mapRestaurant(data as unknown as RestaurantRow) : null;
+  return data ? traduireRestaurant(mapRestaurant(data as unknown as RestaurantRow)) : null;
 }
 
 /**
@@ -400,7 +428,11 @@ export async function getFraisLivraison(
 
 export async function getMenu(
   restaurantId: string,
+  // ⚠️ `traduire` : la carte CLIENT seulement. Les Réglages du restaurateur appellent
+  // getMenu sans option — un menu traduit y serait réenregistré dans la mauvaise langue.
+  options: { traduire?: boolean } = {},
 ): Promise<{ categories: Category[]; products: Product[]; featured: Product[] }> {
+  if (options.traduire) await preparerTraductions();
   const [cats, prods] = await Promise.all([
     supabase
       .from('categories')
@@ -452,10 +484,16 @@ export async function getMenu(
     for (const g of groups as { product_id: string }[]) withOptions.add(g.product_id);
   }
 
-  return {
+  const menu = {
     categories,
     products: productRows.map((p) => mapProduct(p, withOptions.has(p.id))),
     featured: featuredRows.map((p) => mapProduct(p, withOptions.has(p.id))),
+  };
+  if (!options.traduire) return menu;
+  return {
+    categories: menu.categories.map(traduireCategorie),
+    products: menu.products.map(traduireProduit),
+    featured: menu.featured.map(traduireProduit),
   };
 }
 
@@ -531,19 +569,20 @@ type PlatDuJourRow = {
 };
 
 export async function listPlatsDuJour(): Promise<PlatDuJour[]> {
+  await preparerTraductions();
   const { data, error } = await supabase.rpc('plats_du_jour_publics');
   if (error) throw error;
   return ((data as PlatDuJourRow[] | null) ?? []).map((r) => ({
     id: r.product_id,
-    name: r.nom,
-    description: r.description ?? '',
+    name: tr(r.nom),
+    description: tr(r.description ?? ''),
     price: r.prix,
     photoUrl: r.photo_url,
     dietTags: r.diet_tags ?? [],
     restaurantId: r.restaurant_id,
     restaurantName: r.restaurant_nom,
     restaurantZone: r.restaurant_zone ?? '',
-    restaurantCuisine: r.restaurant_cuisine ?? '',
+    restaurantCuisine: tr(r.restaurant_cuisine ?? ''),
     restaurantLogoUrl: r.restaurant_logo,
     isOpen: r.ouvert,
     opensInDays: r.ouvre_dans_jours ?? null,
@@ -584,19 +623,20 @@ type NouveauteRow = {
 };
 
 export async function listNouveautes(): Promise<Nouveaute[]> {
+  await preparerTraductions();
   const { data, error } = await supabase.rpc('nouveautes_publiques');
   if (error) throw error;
   return ((data as NouveauteRow[] | null) ?? []).map((r) => ({
     restaurantId: r.restaurant_id,
     name: r.nom,
-    cuisineType: r.cuisine ?? '',
+    cuisineType: tr(r.cuisine ?? ''),
     zone: r.zone ?? '',
     logoUrl: r.logo_url,
     coverUrl: r.cover_url,
     isOpen: r.ouvert,
     opensInDays: r.ouvre_dans_jours ?? null,
     opensAt: r.ouvre_a,
-    plats: (r.plats ?? []).map((p) => ({ id: p.id, name: p.nom, price: p.prix, photoUrl: p.photo_url })),
+    plats: (r.plats ?? []).map((p) => ({ id: p.id, name: tr(p.nom), price: p.prix, photoUrl: p.photo_url })),
   }));
 }
 
@@ -630,6 +670,7 @@ export async function getProductDetail(id: string): Promise<{
   category: Category | null;
   groups: OptionGroup[];
 } | null> {
+  await preparerTraductions();
   const { data, error } = await supabase
     .from('products')
     // PRODUCT_COLS et pas une liste ecrite a la main : c'est exactement l'oubli
@@ -670,7 +711,12 @@ export async function getProductDetail(id: string): Promise<{
       return a.sortOrder - b.sortOrder;
     });
   const product = mapProduct(data as ProductRow, groups.length > 0);
-  return { product, restaurant, category, groups };
+  return {
+    product: traduireProduit(product),
+    restaurant,
+    category: category ? traduireCategorie(category) : null,
+    groups: groups.map(traduireGroupe),
+  };
 }
 
 // --- Adresses ---------------------------------------------------------------
@@ -899,7 +945,8 @@ export async function listOrders(): Promise<Order[]> {
     .eq('user_id', session.user.id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data as unknown as OrderJoinRow[]).map(mapOrder);
+  await preparerTraductions();
+  return (data as unknown as OrderJoinRow[]).map(mapOrder).map(traduireCommande);
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
@@ -910,7 +957,8 @@ export async function getOrderById(id: string): Promise<Order | null> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const [enriched] = await attachCourierProfiles([mapOrder(data as unknown as OrderJoinRow)]);
+  await preparerTraductions();
+  const [enriched] = await attachCourierProfiles([traduireCommande(mapOrder(data as unknown as OrderJoinRow))]);
   if (!enriched) return null;
   // Enrichit les photos produit (non stockées dans le snapshot).
   const productIds = enriched.items.map((i) => i.productId).filter(Boolean);

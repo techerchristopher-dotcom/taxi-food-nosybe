@@ -248,9 +248,23 @@
     if (g && g.length) ouvrir(g, parseInt(b.getAttribute('data-i'), 10) || 0);
   });
 
-  api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status,rang_ouverture&order=rang_ouverture.asc,created_at.asc')
+  // Traduction des MENUS (type de cuisine, noms de plats) sur les accueils /en et /it —
+  // dictionnaire `traductions_catalogue`, 2026-10-02. Un échec laisse le français.
+  var LANGUE_PAGE = (document.documentElement.lang || 'fr').slice(0, 2);
+  var dico = {};
+  function tr(s) { return (s && dico[s]) || s; }
+  var traductionsPretes = (LANGUE_PAGE === 'en' || LANGUE_PAGE === 'it')
+    ? api('rpc/traductions_catalogue_langue?p_langue=' + LANGUE_PAGE)
+        .then(function (rows) { (rows || []).forEach(function (x) { dico[x.fr] = x.texte; }); })
+        .catch(function () { /* français */ })
+    : Promise.resolve();
+
+  traductionsPretes.then(function () {
+    return api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status,rang_ouverture&order=rang_ouverture.asc,created_at.asc');
+  })
     .then(function (restos) {
       if (!restos.length) return;
+      restos.forEach(function (r) { r.cuisine_type = tr(r.cuisine_type); });
       var ids = restos.map(function (r) { return r.id; }).join(',');
       return Promise.all([
         api('categories?restaurant_id=in.(' + ids + ')&select=id,name'),
@@ -265,7 +279,7 @@
         res[1].forEach(function (p) {
           if (BOISSONS.indexOf(catNom[p.category_id] || '') !== -1) return; // pas de boissons
           (par[p.restaurant_id] = par[p.restaurant_id] || [])
-            .push({ url: p.photo_url, nom: p.name, resto: nomResto[p.restaurant_id] });
+            .push({ url: p.photo_url, nom: tr(p.name), resto: nomResto[p.restaurant_id] });
         });
 
         hote.innerHTML = restos.map(function (r, i) {

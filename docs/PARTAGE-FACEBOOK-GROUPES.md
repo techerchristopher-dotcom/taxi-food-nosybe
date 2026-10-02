@@ -616,3 +616,90 @@ Varotra rehetra eto Nosy Be (5504), bizna nosy be hell ville (18594, nom très p
 `biznesshell`/`bizness` — à ne pas confondre sans vérifier), BIZNA SY SERA ETO NOSY BE HELL
 VILLE (11943, groupe **privé** — statut à vérifier avant toute candidature), Nosy Be , Tiako
 (5865), Nosy Be Occasion (9342-9343).
+
+### 2026-10-02 — annonce LES SICILIENS, 18 publications, session ARRETEE par Facebook
+
+Premier usage du lien **`/r/<restaurant>`** (et non `/jour` ou `/p/`) : l'annonce porte sur un
+restaurant entier, pas sur un plat. Teste avant la session en se faisant passer pour le robot
+Facebook — `og:url` ressort bien avec son `?g=`. La mesure fonctionne.
+
+**Methode : le PARTAGE NATIF de la publication de la page, avec le lien marque dans le texte
+d'accompagnement.** C'est la reponse a la question laissee ouverte au § 4 : on croyait devoir
+choisir entre « partager la publication » (qui fait vivre la page mais ne se mesure pas) et
+« publier dans le groupe » (qui se mesure mais perd la publication). Les deux a la fois
+marchent : la vignette est la publication partagee, et le lien `?g=` colle dans le texte reste
+cliquable et compte. **A rejouer comme ca.** Bonus : depuis la fenetre de partage de la page,
+Facebook publie au nom de **Taxi Food Nosy Be**, jamais du profil de Christopher.
+
+| # | Groupe | Membres | Etiquette | Resultat |
+|---|---|---|---|---|
+| 1 | Business Nosy-Be (Hell Ville 207) | 39 700 | `business207` | publie |
+| 2 | TANY ALAFO SY TRANO AFONDRO 207 | 25 400 | `tanyalafo` | publie (accroche MG) |
+| 3 | Zanaka nosy be mila tragno | 25 200 | `zanaka` | publie (accroche MG) |
+| 4 | INO VAOVAO NOSY BE HELL-VILLE | 21 600 | `inovaovao` | publie |
+| 5 | AMBIANCE A NOSY BE | 20 700 | `ambiance` | publie |
+| 6 | NOSY-BE Petit Paris | 16 300 | `petitparis` | en attente d'un administrateur |
+| 7 | Bizness nosy be hell ville | 12 385 | `bizness` | publie |
+| 8 | Nosy be hell Mbizna | 10 100 | `mbizna` | publie |
+| 9 | Le grand marche de nosy-be | 8 447 | `grandmarche` | publie |
+| 10 | Les Bonnes Affaires a Nosy Be | — | `bonnesaffairesnb` | publie — **1re fois** |
+| 11 | Nosy Bonnes Zaffaires | 17 015 | `bonneszaffaires` | publie — **1re fois** |
+| 12 | Bizna Nosy be hell ville | 18 594 | `biznahv` | publie — **1re fois, plus gros groupe de la liste** |
+| 13 | Nosy be bizna | 11 412 | `nosybebizna` | publie — **1re fois** |
+| 14 | G- Zanatany_ Nosy-Be | 12 262 | `zanatany` | publie — **1re fois** (MG) |
+| 15 | Nosy Be Vente rapide | 11 221 | `venterapide` | publie — **1re fois** |
+| 16 | Nosy be hell ville M bizna | 6 016 | `mbiznaville` | publie — **debloque**, cf. ci-dessous |
+| 17 | Le bon appetit de Nosy-Be | — | `bonappetit` | publie — **1re fois, groupe de cuisine** |
+| 18 | Sejour Nosybe et Nord Madagascar | 5 500 | `sejour` | publie |
+
+**261 852 membres cumules. 18 textes differents, aucun recopie. Trois langues.**
+
+#### ARRET : « Quelque chose ne fonctionne pas »
+
+A la 19e tentative (Amici italiani), Facebook a affiche le bandeau d'erreur en ouvrant la liste
+des groupes. **Session arretee net, conformement au § 6 de `agents/agent3-partage-groupes.md`.**
+Aucune seconde tentative. Deux hoquets d'affichage etaient deja survenus avant (une page blanche,
+un dialogue qui ne s'ouvrait pas) : avec le recul, c'etaient les signes avant-coureurs.
+
+**Reprendre apres « Sejour Nosybe et Nord Madagascar ».**
+
+#### LES CLONES, RESOLUS — avec leurs identifiants
+
+Le § 3 ter notait « 5 groupes au nom quasi identique, impossible de distinguer le bon ». Mesure
+en direct : la recherche « bizna » renvoie **NEUF** resultats, dont **QUATRE portant exactement le
+meme nom**. Leurs identifiants, releves dans le DOM de la fenetre de partage :
+
+| Nom affiche | Identifiant | Etiquette |
+|---|---|---|
+| Nosy be hell ville M bizna | `302974809351919` | `mbiznaville` (celui deja connu) |
+| Nosy be hell ville M bizna | `698617752208847` | `mbiznaville2` |
+| Nosy be hell ville M bizna | `173866625787752` | `mbiznaville3` |
+| Nosy be hell ville M bizna | `1004213267502181` | `mbiznaville4` |
+| Nosy be hell Mbizna | `1479818289226451` | `mbizna` |
+| Bizna Nosy be hell ville | `620558133597971` | `biznahv` |
+| bizna nosy be hell ville | `417089090601383` | `biznanbhv` |
+| BizNa.Net (Nosy-Be H/V) | `211788195827238` | `biznanet` |
+| Nosy be bizna | `247320183371081` | `nosybebizna` |
+
+**Regle qui en decoule : on selectionne un groupe par son IDENTIFIANT, jamais par son nom.**
+Methode : taper un mot court dans la recherche, puis lire le `href` de chaque ligne et cliquer
+celle dont l'identifiant correspond.
+
+Decouvert au passage : **il existe DEUX groupes « INO VAOVAO NOSY BE HELL-VILLE »**, un avec
+tiret, un sans. On n'en servait qu'un sans le savoir.
+
+#### LA LISTE DES GROUPES EST DESORMAIS EN BASE, PAS DANS CE DOCUMENT
+
+Deux tables creees le 02/10 (`groupes_facebook`, `publications_groupe`). **`etiquette` y est
+UNIQUE** : la regle « un groupe = un slug » devient impossible a violer, au lieu d'etre une
+consigne qu'on oublie. 127 groupes enregistres.
+
+Les trois doublons que ce document portait sont tranches en base :
+`boncoin`/`leboncoin` → **`leboncoin`** · `madio`/`businessmadio` → **`businessmadio`** ·
+`nosybemada` porte par deux groupes → le second devient **`nosybeisland`**.
+
+#### Erreur evitee de justesse
+
+Un texte annoncait « pizzas napolitaines, pates fraiches » : rien dans la base ne dit ca.
+Efface avant envoi, remplace par ce qui est verifie. C'est le meme piege que le boudin noir du
+26/09 — **relire ce qu'on ecrit contre la base, pas contre son souvenir.**

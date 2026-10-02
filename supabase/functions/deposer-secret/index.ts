@@ -31,6 +31,7 @@ const NOMS = new Set([
   'asc_vendor_number',
   'umami_api_key_vitrine',
   'umami_api_key_app',
+  'anthropic_api_key',
 ]);
 
 const TAILLE_MAX = 16 * 1024;

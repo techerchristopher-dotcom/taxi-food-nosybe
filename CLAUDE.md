@@ -1967,6 +1967,20 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   français (une seule version, lue par les robots d'aperçu).
 - **Nouveau plat** : affiché en français tant qu'il n'est pas traduit (aucune casse).
   `admin_textes_a_traduire()` (admin) liste ce qui manque — 0 au 2026-10-02.
+- **Traduction automatique** (migration `20261002220000_traduction_automatique`) — **PAS de tâche
+  planifiée**, décision du porteur du projet. Trigger `traduction_auto` (niveau instruction) sur
+  products / categories / product_option_groups / product_options / restaurants → s'il manque une
+  traduction, pg_net appelle la fonction Edge **`traduire-catalogue`** (`x-hook-secret` =
+  Vault `traduction_hook_secret`, généré en base). La fonction RELIT la liste en base
+  (`textes_a_traduire_auto()`, 300 max par appel), fait traduire par Claude (`claude-opus-5-5`,
+  sortie JSON structurée), écrit avec `source = 'auto'` et **n'écrase jamais** une ligne existante.
+  Relance à la main : `admin_lancer_traduction()`. Corriger une traduction auto : `update … set
+  texte = …, source = 'manuel'`.
+  ⚠️ **Inerte tant que `anthropic_api_key` n'est pas dans le Vault** : ajouter
+  `ANTHROPIC_API_KEY=sk-ant-…` dans `.secrets.local`, puis `sh scripts/poser-cle-claude.sh`
+  (passe par `deposer-secret`, dont la liste blanche inclut désormais ce nom). Rien n'est perdu
+  avant : le premier appel traduit tout ce qui manque. Vérifié le 2026-10-02 : faux secret → 401,
+  bon secret sans clé → 503 `cle_absente`.
 - Vérifié sur l'app web : carte des Siciliens en anglais (cuisine, catégories, plats,
   descriptions), Margherita en italien (« Aggiunte », « Pomodoro + 4 000 Ar »).
 - ⚠️ Corrigé au passage : le « prix total » d'une option (Grand modèle 32 000 Ar) ne vaut que pour

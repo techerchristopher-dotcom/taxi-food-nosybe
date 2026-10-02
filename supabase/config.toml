@@ -123,3 +123,9 @@ verify_jwt = false
 # de partage `/jour`. Meme raison que les deux precedentes : l'appelant est `partage.mjs`, qui
 # n'envoie ni apikey ni Authorization, et les robots d'apercu n'ont aucun jeton.
 verify_jwt = false
+
+[functions.traduire-catalogue]
+# L'appelant est la BASE (trigger `traduction_auto` -> pg_net), sans jeton
+# utilisateur. La fonction verifie elle-meme l'en-tete `x-hook-secret` contre le
+# Vault (`traduction_hook_secret`). `true` la rendrait inappelable, en silence.
+verify_jwt = false

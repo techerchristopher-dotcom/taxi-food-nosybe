@@ -8,6 +8,7 @@ import { CategoryTag, Restaurant, todayServicesLabel } from '../data/types';
 import { libelleOuverture } from '../lib/ouverture';
 import { useMaintenant } from '../lib/horloge';
 import { formatAr } from '../theme/tokens';
+import { BadgeNouveau } from './Nouveaute';
 
 /**
  * Ligne « meta » : délai estimé + frais de livraison.
@@ -90,6 +91,7 @@ export function FeaturedRestaurantCard({
       <View style={styles.banner}>
         <View style={styles.bannerGauche}>
           <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
+          {r.estNouveau ? <BadgeNouveau /> : null}
           <HorairesDuJour r={r} sombre />
         </View>
         {r.popular ? (
@@ -139,6 +141,7 @@ export function RestaurantRow({
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowHead}>
           <Text style={styles.rowName}>{r.name}</Text>
+          {r.estNouveau ? <BadgeNouveau /> : null}
           <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
           <HorairesDuJour r={r} />
         </View>

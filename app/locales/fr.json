@@ -560,5 +560,12 @@
   "bulleWhatsApp": {
     "message": "Bonjour Taxi Food 👋 J'ai une question : ",
     "label": "Écrire à Taxi Food sur WhatsApp"
+  },
+  "nouveautes": {
+    "title": "Nouveau sur Taxi Food",
+    "subtitle_one": "Il vient de rejoindre l'aventure : découvre sa carte.",
+    "subtitle_other": "Ils viennent de rejoindre l'aventure : découvre leurs cartes.",
+    "badge": "Nouveau",
+    "voirCarte": "Voir la carte"
   }
 }

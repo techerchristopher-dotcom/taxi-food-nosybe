@@ -560,5 +560,12 @@
   "bulleWhatsApp": {
     "message": "Hello Taxi Food 👋 I have a question: ",
     "label": "Message Taxi Food on WhatsApp"
+  },
+  "nouveautes": {
+    "title": "New on Taxi Food",
+    "subtitle_one": "Just joined us — take a look at the menu.",
+    "subtitle_other": "Just joined us — take a look at their menus.",
+    "badge": "New",
+    "voirCarte": "See the menu"
   }
 }

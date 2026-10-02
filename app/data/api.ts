@@ -61,6 +61,8 @@ type RestaurantRow = {
   /** Note (cuisine + préparation) et nombre d'avis publiés, calculés par la base. Null sous 3 avis. */
   note_moyenne?: number | null;
   nb_avis?: number | null;
+  /** Arrivé sur Taxi Food depuis moins de 14 jours (colonne calculée `est_nouveau`). */
+  est_nouveau?: boolean | null;
   // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
   // comme un OBJET, pas un tableau (verifie au curl sur l'API du projet). Quand
   // aucun horaire n'existe pour aujourd'hui, l'objet est present mais tous ses
@@ -198,6 +200,8 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     // La note, calculée par la base (cuisine + préparation, jamais la livraison).
     noteMoyenne: r.note_moyenne == null ? null : Number(r.note_moyenne),
     nbAvis: r.nb_avis ?? 0,
+    // « Nouveau » : décidé par la base (14 jours après sa première mise en ligne).
+    estNouveau: r.est_nouveau === true,
   };
 }
 
@@ -272,7 +276,7 @@ function mapAddress(a: AddressRow): Address {
 export async function listRestaurants(): Promise<Restaurant[]> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
@@ -315,7 +319,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
 export async function getRestaurant(id: string): Promise<Restaurant | null> {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -544,6 +548,55 @@ export async function listPlatsDuJour(): Promise<PlatDuJour[]> {
     isOpen: r.ouvert,
     opensInDays: r.ouvre_dans_jours ?? null,
     opensAt: r.ouvre_a,
+  }));
+}
+
+/**
+ * ✨ « Nouveau sur Taxi Food » — les restaurants arrivés depuis moins de 14 jours, avec
+ * 4 plats en photo (un par catégorie). Une seule source : la RPC `nouveautes_publiques()`,
+ * qui décide du filtre ET de l'ordre (ouverts d'abord, puis le plus récent). Liste vide
+ * hors période : la rangée disparaît de l'accueil.
+ */
+export type Nouveaute = {
+  restaurantId: string;
+  name: string;
+  cuisineType: string;
+  zone: string;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  isOpen: boolean;
+  opensInDays: number | null;
+  opensAt: string | null;
+  plats: { id: string; name: string; price: number; photoUrl: string | null }[];
+};
+
+type NouveauteRow = {
+  restaurant_id: string;
+  nom: string;
+  cuisine: string | null;
+  zone: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  ouvert: boolean;
+  ouvre_dans_jours: number | null;
+  ouvre_a: string | null;
+  plats: { id: string; nom: string; prix: number; photo_url: string | null }[] | null;
+};
+
+export async function listNouveautes(): Promise<Nouveaute[]> {
+  const { data, error } = await supabase.rpc('nouveautes_publiques');
+  if (error) throw error;
+  return ((data as NouveauteRow[] | null) ?? []).map((r) => ({
+    restaurantId: r.restaurant_id,
+    name: r.nom,
+    cuisineType: r.cuisine ?? '',
+    zone: r.zone ?? '',
+    logoUrl: r.logo_url,
+    coverUrl: r.cover_url,
+    isOpen: r.ouvert,
+    opensInDays: r.ouvre_dans_jours ?? null,
+    opensAt: r.ouvre_a,
+    plats: (r.plats ?? []).map((p) => ({ id: p.id, name: p.nom, price: p.prix, photoUrl: p.photo_url })),
   }));
 }
 
@@ -1674,7 +1727,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

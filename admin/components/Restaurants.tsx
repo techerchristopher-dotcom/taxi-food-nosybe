@@ -55,6 +55,8 @@ export function Restaurants() {
   const [err, setErr] = useState<string | null>(null);
   const [interet, setInteret] = useState<Record<string, Interet>>({});
   const [info, setInfo] = useState<string | null>(null);
+  /** ✨ Fin de la mise en avant « Nouveau » par restaurant (null = jamais mis en avant). */
+  const [nouveaux, setNouveaux] = useState<Record<string, string | null>>({});
   /** Liste ouverte : qui attend ce restaurant. */
   const [attentes, setAttentes] = useState<{ resto: Resto; lignes: Attente[] } | null>(null);
 
@@ -69,6 +71,11 @@ export function Restaurants() {
     if (error) { setErr(error.message); return; }
     setList((data ?? []) as Resto[]);
     // Qui regarde les restaurants en négociation, et qui veut être prévenu.
+    // « Nouveau » : colonnes publiques, lues à part pour ne pas toucher à la signature
+    // d'admin_lister_restaurants (un changement de retour impose DROP + recréation).
+    const { data: nv } = await supabase.from('restaurants').select('id, nouveau_jusqu_au');
+    setNouveaux(Object.fromEntries(((nv ?? []) as { id: string; nouveau_jusqu_au: string | null }[])
+      .map((x) => [x.id, x.nouveau_jusqu_au])));
     const { data: ints } = await supabase.rpc('admin_interet_restaurants');
     const map: Record<string, Interet> = {};
     for (const i of (ints ?? []) as Interet[]) map[i.restaurant_id] = i;
@@ -137,6 +144,16 @@ export function Restaurants() {
    * base écrit l'annonce, l'écran l'envoie par le même chemin que l'onglet
    * Annonces — jamais deux fois, la fonction Edge refuse un second envoi.
    */
+  /** Prolonger (+jours) ou arrêter (null) la mise en avant « Nouveau » d'un restaurant. */
+  async function reglerNouveau(r: Resto, jours: number | null) {
+    const actuel = nouveaux[r.id];
+    const depart = actuel && new Date(actuel) > new Date() ? new Date(actuel) : new Date();
+    const jusqu = jours === null ? null : new Date(depart.getTime() + jours * 86_400_000).toISOString();
+    const { error } = await supabase.rpc('admin_set_nouveau', { p_id: r.id, p_jusqu_au: jusqu });
+    if (error) { setErr(error.message); return; }
+    await load();
+  }
+
   async function changerStatut(r: Resto, statut: Resto['listing_status']) {
     if (statut === r.listing_status) return;
     const attendus = interet[r.id]?.alertes ?? 0;
@@ -291,6 +308,22 @@ export function Restaurants() {
                       <option key={s} value={s}>{STATUT[s].libelle}</option>
                     ))}
                   </select>
+                  {r.listing_status === 'visible' ? (() => {
+                    const fin = nouveaux[r.id];
+                    const actif = !!fin && new Date(fin) > new Date();
+                    return (
+                      <div className="muted" style={{ fontSize: 12, marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {actif ? <span>✨ Nouveau jusqu'au <b>{new Date(fin!).toLocaleDateString('fr-FR')}</b></span> : null}
+                        <button className="btn ghost" style={{ padding: '2px 8px', fontSize: 11 }}
+                          onClick={() => reglerNouveau(r, actif ? 7 : 14)}>
+                          {actif ? '+7 j' : 'Mettre en avant 14 j'}
+                        </button>
+                        {actif ? (
+                          <button className="btn ghost" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => reglerNouveau(r, null)}>Arrêter</button>
+                        ) : null}
+                      </div>
+                    );
+                  })() : null}
                   {r.listing_status === 'coming_soon' && interet[r.id] ? (
                     <div className="muted" style={{ fontSize: 12, marginTop: 4 }} title="Visites de la fiche · personnes distinctes · demandes « Me prévenir »">
                       {interet[r.id].visiteurs} ont consulté · <b>{interet[r.id].alertes}</b> veulent être prévenus

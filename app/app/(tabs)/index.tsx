@@ -8,7 +8,8 @@ import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
-import { listAddresses, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { listAddresses, listNouveautes, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { CarteNouveaute } from '../../components/Nouveaute';
 import { CartePlatDuJour } from '../../components/PlatDuJour';
 import { PartageSheet } from '../../components/PartageSheet';
 import { lienPlatsDuJourIle, textePartagePlatsDuJourIle } from '../../lib/partage';
@@ -50,11 +51,19 @@ export default function HomeScreen() {
     Math.min(132, Math.round((largeurEcran - spacing.screen - 12 * 3) / 3.15)),
   );
 
+  // Une seule nouveauté : pleine largeur. Plusieurs : 82 % de l'écran, pour que le bord de la
+  // suivante dépasse — c'est ce qui dit qu'il y en a d'autres à droite.
+  const largeurNouveaute = (n: number) =>
+    n <= 1 ? largeurEcran - spacing.screen * 2 : Math.min(340, Math.round(largeurEcran * 0.82));
+
   const { data: restaurants, loading } = useLoad(() => listRestaurants(), []);
   // Les plats du jour de TOUS les restaurants, en une requête (RPC
   // `plats_du_jour_publics`). Indépendante de la liste des restaurants :
   // si elle échoue, l'accueil reste entier, la rubrique disparaît.
   const { data: platsDuJour } = useLoad(() => listPlatsDuJour(), []);
+  // ✨ Les restaurants arrivés depuis moins de 14 jours (RPC `nouveautes_publiques`).
+  // Indépendante elle aussi : si elle échoue, la rangée disparaît, l'accueil reste.
+  const { data: nouveautes } = useLoad(() => listNouveautes(), []);
   // Le catalogue est public : `listRestaurants()` n'a besoin d'aucun compte. Les adresses,
   // si — inutile d'interroger la base à chaque focus d'onglet pour un visiteur, la RLS
   // renverrait de toute façon une liste vide.
@@ -180,6 +189,38 @@ export default function HomeScreen() {
             </View>
             <Icon name="chevron_right" size={20} color={colors.textFaint} />
           </Pressable>
+        ) : null}
+
+        {/* ✨ NOUVEAU SUR TAXI FOOD — au-dessus des plats du jour (décision du porteur du
+            projet, 2026-10-02). Un restaurant y reste 14 jours après sa première mise en
+            ligne ; deux ou trois arrivés le même jour ont chacun leur carte. Masquée pendant
+            une recherche, pour la même raison que les plats du jour. */}
+        {!searching && nouveautes && nouveautes.length > 0 ? (
+          <View style={styles.jourWrap}>
+            <View style={styles.jourHead}>
+              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                <Text style={styles.jourTitle}>✨ {t('nouveautes.title')}</Text>
+                <Text style={styles.jourSub} numberOfLines={2}>
+                  {t('nouveautes.subtitle', { count: nouveautes.length })}
+                </Text>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.jourScroll}
+              contentContainerStyle={styles.nouveauRow}
+            >
+              {nouveautes.map((n) => (
+                <CarteNouveaute
+                  key={n.restaurantId}
+                  n={n}
+                  width={largeurNouveaute(nouveautes.length)}
+                  onPress={() => router.push(`/restaurant/${n.restaurantId}`)}
+                />
+              ))}
+            </ScrollView>
+          </View>
         ) : null}
 
         {/* 🔥 Les plats du jour de toute l'île, en HAUT de l'accueil.
@@ -414,6 +455,8 @@ const styles = StyleSheet.create({
   },
   jourScroll: { marginBottom: 2 },
   jourRow: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.screen, paddingBottom: 4 },
+  // paddingBottom : laisse respirer l'ombre des cartes, sinon le ScrollView la coupe.
+  nouveauRow: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.screen, paddingBottom: 8, paddingTop: 2 },
   filtersScroll: { marginBottom: 16, marginHorizontal: -spacing.screen },
   filters: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.screen },
   chip: { height: 34, paddingHorizontal: 14, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },

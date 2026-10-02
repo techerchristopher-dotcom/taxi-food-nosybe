@@ -1944,6 +1944,35 @@ propose donc une quatrième ligne, **« Enregistrer l'image »**.
   doivent donner envie. Seule la commande reste coupée — bouton grisé sur la fiche, refus en base.
   Un restaurant simplement **fermé** reste grisé.
 
+## ✨ « Nouveau sur Taxi Food » — les nouveaux restaurants en tête (2026-10-02)
+
+Demande du porteur du projet : quand un ou plusieurs restaurants rejoignent l'aventure, leurs
+cartes passent en tête **pendant 14 jours**, avec un badge « Nouveau ». Valable pour 2 ou 3
+arrivées le même jour. Migration `20261002190000_nouveautes_restaurants`.
+
+- **`restaurants.visible_depuis`** = la PREMIÈRE mise en ligne (pas `created_at` : Les Siciliens
+  ont été créés le 5/09, ouverts le 2/10) et **`nouveau_jusqu_au`** = +14 j. Posés par le
+  **trigger** `restaurants_marquer_arrivee`, quel que soit le chemin (admin OU SQL direct). Un
+  restaurant qui REVIENT après un passage en hidden/coming_soon n'est pas « nouveau ».
+- **`est_nouveau(r)`** : la seule définition, colonne calculée publique (app : `estNouveau`).
+- **`rang_ouverture(r)`** : statut × 200 000 + ouvert 0 / fermé 100 000 + **nouveau 0 / ancien
+  50 000** + sort_order. Un nouveau FERMÉ ne passe jamais devant un ancien OUVERT. Les anciennes
+  apps en magasin en profitent sans mise à jour (l'ordre est décidé en base).
+- **`plats_du_jour_publics()`** : ouverts, puis nouveaux, puis rang.
+- **`nouveautes_publiques()`** : la rangée de l'accueil — 4 plats en photo, **un par catégorie**
+  d'abord (sinon on montrait quatre entrées), jamais une boisson ; ouverts d'abord, puis le plus
+  récent. SECURITY INVOKER, colonnes publiques seulement.
+- **App** : rangée « ✨ Nouveau sur Taxi Food » AU-DESSUS des plats du jour (`components/
+  Nouveaute.tsx`, mosaïque 1/2/3/4 photos — un restaurant qui arrive n'a souvent ni logo ni
+  couverture), pleine largeur s'il est seul, 82 % sinon ; badge `BadgeNouveau` sur la carte vedette
+  et les lignes. Masquée pendant une recherche. Textes `nouveautes.*` FR/EN/IT. Vérifié sur le web
+  à 375 px, et le cas « trois arrivées » simulé en interceptant la réponse.
+- **Admin → Restaurants** : « ✨ Nouveau jusqu'au … », **+7 j**, **Arrêter**, ou **Mettre en avant
+  14 j** (`admin_set_nouveau`, admin seul — refusé à la clé publique, vérifié).
+- ⚠️ **Ouvrir un restaurant passe par l'admin** (`admin_set_listing_status`) : c'est elle qui crée
+  l'annonce « X ouvre sur Taxi Food 🎉 » pour ceux qui ont appuyé sur « Me prévenir ». Les
+  Siciliens ont été ouverts par SQL direct le 2/10 : leur 1 demandeur n'a pas eu ce message.
+
 ## ⭐ Notation et avis clients — lot 1 livré (2026-09-30)
 
 Conception et décisions : **`docs/NOTATION-AVIS.md`** (à lire avant de toucher quoi que ce soit).

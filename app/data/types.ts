@@ -266,6 +266,8 @@ export type Restaurant = {
    */
   noteMoyenne: number | null;
   nbAvis: number;
+  /** Arrivé sur Taxi Food depuis moins de 14 jours — badge « Nouveau » (calculé par la base). */
+  estNouveau?: boolean;
 };
 
 /** Un avis tel qu'il s'affiche publiquement sur la fiche d'un restaurant. */

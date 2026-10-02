@@ -762,8 +762,8 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   `orders.emballage_taxifood` (trigger `orders_figer_emballage_taxifood`). Dû au restaurant =
   plats + (emballage − emballage_taxifood) − commission − part offerte, dans les 4 fonctions SQL
   ET `admin/lib/reversement.ts` (où la part entre dans la MARGE : dû + marge = encaissé).
-  Migration `20261002170000_emballage_pour_taxifood`. ⚠️ TF-306/307/308 (passées le matin même)
-  restent sur l'ancien régime : 5 % et carton de 2 000 au restaurant — non réécrites.
+  Migration `20261002170000_emballage_pour_taxifood` ; les 9 plats de la catégorie Burger portent
+  l'emballage (`20261002180000`). TF-305 à TF-308 étaient des tests : toutes annulées.
   🍕 Suppléments : chaque ingrédient de chaque pizza à +4 000 Ar (17 pizzas, 65 options,
   migration `20261002171000_siciliens_supplements_pizza`).
   🇮🇹 **Servis en italien** (2026-10-02, demande du porteur du projet) : colonne

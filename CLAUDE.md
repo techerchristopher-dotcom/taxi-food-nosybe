@@ -1206,7 +1206,12 @@ Migrations `20260922100000_preparation_automatique_apres_acceptation` et
 - **Tâche pg_cron `preparation-automatique`, `'30 seconds'`** (pg_cron 1.6.4 accepte les
   secondes). ⏱️ **Délai réel : 30 à 60 s** + quelques secondes de pg_net ; l'écran client se
   rafraîchit toutes les 15 s, l'écran restaurant toutes les 12 s (sondage, pas de temps réel —
-  suffisant). Une tâche `preparation-automatique-purge-journal` (03:17 UTC) ne garde que 2 jours
+  suffisant).
+  ⚠️ **2026-10-02 (Les Siciliens)** : « la commande ne passe pas en préparation » = on regardait
+  dans les 30 premières secondes (TF-306 : bascule seule en 49 s, normal). Vrai défaut trouvé à
+  côté : au **retour dans l'app** après « Accepter » dans Telegram, le sondage avait été suspendu
+  par le système et l'écran montrait l'ancien état. `app/lib/useSondage.ts` relit la base dès
+  que l'app ou l'onglet redevient actif (commit `d94f932`, OTA ×3 ; web à déployer). Une tâche `preparation-automatique-purge-journal` (03:17 UTC) ne garde que 2 jours
   de journal de CETTE tâche (2 880 passages/jour).
 - **Désactiver** : pour un restaurant, `update restaurants set preparation_auto = false where
   id = '…'` (vrai par défaut pour tous) ; pour tout le monde,

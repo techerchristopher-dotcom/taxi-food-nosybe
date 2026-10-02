@@ -753,8 +753,19 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
 - **Les Siciliens** — **`visible` depuis le 2026-10-02** (migration `20261002150000_les_siciliens_ouvrent`) :
   lun–sam 9h30–13h50 et 18h00–20h50, dimanche fermé, `auto_open = true`, GPS −13.4048975 / 48.2732053,
-  tél. +261348610294 (repris de la fiche prospect). ⚠️ **Pas de compte restaurateur** : ils acceptent
-  sur Telegram mais ne peuvent pas marquer « prête » — à faire depuis l'admin tant qu'ils n'en ont pas.
+  tél. +261348610294 (repris de la fiche prospect). Compte restaurateur : **Michel Zacco**
+  (michel1976@outlook.it, Google), validé le 2026-10-02. ✅ Commande test TF-305 : reçue en italien,
+  **Accetto appuyé ~20 s après**, passée seule en préparation, puis annulée.
+  💰 **Accord particulier (2026-10-02)** : **commission 0**, mais **l'emballage revient à Taxi Food**
+  — 3 000 Ar par pizza (« Boîte à pizza »), 1 000 Ar par burger (« Emballage à emporter »).
+  `restaurants.emballage_pour_taxifood = true` ; chaque commande fige sa part dans
+  `orders.emballage_taxifood` (trigger `orders_figer_emballage_taxifood`). Dû au restaurant =
+  plats + (emballage − emballage_taxifood) − commission − part offerte, dans les 4 fonctions SQL
+  ET `admin/lib/reversement.ts` (où la part entre dans la MARGE : dû + marge = encaissé).
+  Migration `20261002170000_emballage_pour_taxifood`. ⚠️ TF-306/307/308 (passées le matin même)
+  restent sur l'ancien régime : 5 % et carton de 2 000 au restaurant — non réécrites.
+  🍕 Suppléments : chaque ingrédient de chaque pizza à +4 000 Ar (17 pizzas, 65 options,
+  migration `20261002171000_siciliens_supplements_pizza`).
   🇮🇹 **Servis en italien** (2026-10-02, demande du porteur du projet) : colonne
   `restaurants.langue` (`fr` par défaut, `it` pour eux — migration `20261002120000`). Lue par :
   n8n « Taxi Food — notifications de commande » (texte + boutons « Accetto / Rifiuto »),

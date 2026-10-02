@@ -405,7 +405,7 @@ universels n'arriveront qu'avec le prochain build groupé. Cette promesse a déj
 | La Cabane | murechoco@gmail.com | `cabane207` | +261 32 27 59 576 | ✅ 2026-09-05 | ✅ 2026-09-06 — `7381518363` (« Nancia Elie »), message de contrôle remis |
 | Chez Bidul & Truc | marcantoine14000@yahoo.fr | `truc207` | +261 32 26 64 143 | ✅ 2026-09-05 | ✅ 2026-09-06 — `8683552574` (« Marco Bidule »), message de contrôle remis |
 | La Plage | laplagehellville.nosybe@gmail.com (patron) + davidantoniods35@gmail.com | — (Google) | +261 32 71 548 96 | ✅ 2026-09-17 | ✅ 2026-09-17 — **groupe** `-1004301209124`, commande test acceptée |
-| Les Siciliens | — | — | +261 34 86 102 94 (prospect) | ❌ | ✅ 2026-10-02 — **groupe** `-1004365195586` (« Taxi food-Les siciliens », ajouté par Michel, déjà supergroupe), message de test remis. Commande test impossible tant qu'ils sont `coming_soon` |
+| Les Siciliens | — | — | +261 34 86 102 94 (prospect) | ❌ | ✅ 2026-10-02 — **groupe** `-1004365195586` (« Taxi food-Les siciliens », ajouté par Michel, déjà supergroupe), message de test remis. Ouverts (`visible`) le 2026-10-02 — commande test réelle à faire |
 | Chez M&K | — | — | +261 37 19 861 96 | ❌ | ✅ 2026-09-22 — **groupe** `-1004341065622`, message de test remis |
 | Taxi Be | — | — | — | ❌ | ❌ |
 | Angelo | — | — | — | ❌ (masqué) | ❌ |

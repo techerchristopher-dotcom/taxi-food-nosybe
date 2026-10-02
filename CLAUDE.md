@@ -707,7 +707,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 |---|---|---|---|
 | 10 | La Cabane | visible | `958faac6-61ab-4ff5-9226-b8adab46ed24` |
 | 20 | Chez Bidule & Truc | visible | `700e8f32-e966-476a-b371-02884d08dea1` |
-| 30 | Les Siciliens | coming_soon | `aee1c612-5ee0-402b-a7b4-aec9c6825b0b` |
+| 30 | Les Siciliens — **ouverts le 2026-10-02** | visible | `aee1c612-5ee0-402b-a7b4-aec9c6825b0b` |
 | 40 | Madame Oh (thaï, Hell-Ville) | coming_soon | `ba08c074-bc2f-4d0c-b087-ecdf7925269f` |
 | 50 | Oh Hazar (marocain, Hell-Ville) | coming_soon | `c2a49e11-d839-459f-a332-024796102155` |
 | 60 | La Plage (bistrot & bar, Hell-Ville) | coming_soon | `eb10f338-fb78-4c16-82d5-810ae37b49fe` |
@@ -751,7 +751,10 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   projet, posé pendant les tests : **ses commandes nous arrivaient à nous**. Remplacé le
   2026-09-06 par son canal privé, message de contrôle et commande de test remis. La commande de
   test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
-- **Les Siciliens** — `coming_soon` (« En négociation »).
+- **Les Siciliens** — **`visible` depuis le 2026-10-02** (migration `20261002150000_les_siciliens_ouvrent`) :
+  lun–sam 9h30–13h50 et 18h00–20h50, dimanche fermé, `auto_open = true`, GPS −13.4048975 / 48.2732053,
+  tél. +261348610294 (repris de la fiche prospect). ⚠️ **Pas de compte restaurateur** : ils acceptent
+  sur Telegram mais ne peuvent pas marquer « prête » — à faire depuis l'admin tant qu'ils n'en ont pas.
   🇮🇹 **Servis en italien** (2026-10-02, demande du porteur du projet) : colonne
   `restaurants.langue` (`fr` par défaut, `it` pour eux — migration `20261002120000`). Lue par :
   n8n « Taxi Food — notifications de commande » (texte + boutons « Accetto / Rifiuto »),

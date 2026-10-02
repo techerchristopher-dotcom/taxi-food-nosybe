@@ -10,6 +10,7 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import { listRestaurantOrders, marquerVisiteProVue, setOrderStatus } from '../../data/api';
 import { Order, OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
+import { useSondage } from '../../lib/useSondage';
 import { useSession } from '../../store/session';
 import { useRestaurantQueue } from '../../store/restaurantQueue';
 import { useVisiteGuidee } from '../../store/visiteGuidee';
@@ -35,11 +36,9 @@ export default function RestaurantOrdersScreen() {
     [restaurantId],
   );
 
-  // Rafraîchissement automatique tant que l'écran est monté (pas de push en V1).
-  useEffect(() => {
-    const t = setInterval(reload, POLL_MS);
-    return () => clearInterval(t);
-  }, [reload]);
+  // Rafraîchissement automatique tant que l'écran est monté (pas de push en V1), et
+  // immédiat au retour dans l'app — typiquement après « Accepter » dans Telegram.
+  useSondage(reload, POLL_MS);
 
   // Alimente le badge de l'onglet (nombre de commandes en attente d'action).
   useEffect(() => {

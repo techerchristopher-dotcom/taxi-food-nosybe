@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { Button } from '../../components/Button';
@@ -8,6 +7,7 @@ import { colors, fonts, spacing } from '../../theme/tokens';
 import { listRestaurantOrders } from '../../data/api';
 import { OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
+import { useSondage } from '../../lib/useSondage';
 import { useSession } from '../../store/session';
 
 // Commandes remises au livreur, en transit. Lecture seule (le restaurant n'a plus d'action).
@@ -25,10 +25,7 @@ export default function RestaurantDeliveringScreen() {
     [restaurantId],
   );
 
-  useEffect(() => {
-    const t = setInterval(reload, POLL_MS);
-    return () => clearInterval(t);
-  }, [reload]);
+  useSondage(reload, POLL_MS);
 
   const list = orders ?? [];
 

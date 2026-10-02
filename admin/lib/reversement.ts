@@ -29,6 +29,12 @@ export type CommandeLivree = {
   restaurant_id: string;
   subtotal: number;
   packaging_fee: number | null;
+  /**
+   * Part de l'emballage qui revient à TAXI FOOD, figée sur la commande
+   * (`orders.emballage_taxifood`, Les Siciliens depuis le 2026-10-02). Absente des
+   * anciennes lectures et des jeux d'essai : 0, tout l'emballage va au restaurant.
+   */
+  emballage_taxifood?: number | null;
   delivery_fee: number;
   /** Code appliqué, tel que `create_order` l'a figé (`code_normalise`). */
   promo_code: string | null;
@@ -92,7 +98,7 @@ export function arrondiCommission(base: number, taux: number): number {
  * la première, et les rejeter lèverait une alerte sur des commandes justes.
  */
 function commissionsAdmises(c: CommandeLivree, taux: number, offertRestaurant: number): number[] {
-  const emballage = c.packaging_fee ?? 0;
+  const emballage = (c.packaging_fee ?? 0) - (c.emballage_taxifood ?? 0);
   return [
     arrondiCommission(c.subtotal, taux),
     arrondiCommission(c.subtotal + emballage, taux),
@@ -101,7 +107,7 @@ function commissionsAdmises(c: CommandeLivree, taux: number, offertRestaurant: n
 }
 
 export function ventiler(c: CommandeLivree, tauxRestaurant: number, regles: ReglesDesCodes): Ventilation {
-  const emballage = c.packaging_fee ?? 0;
+  const emballage = (c.packaging_fee ?? 0) - (c.emballage_taxifood ?? 0);
   const remise = c.promo_discount ?? 0;
   const offertRestaurant = c.remise_charge_restaurant ?? 0;
 
@@ -125,7 +131,9 @@ export function ventiler(c: CommandeLivree, tauxRestaurant: number, regles: Regl
 
   // La part offerte par le restaurant ne touche PAS cette marge : seule la
   // remise que Taxi Food finance en sort.
-  const marge = commission + c.delivery_fee - remiseLivraison - remisePlatsTaxiFood;
+  // Le carton qui revient à Taxi Food (`emballage_taxifood`) entre ici : sorti du dû,
+  // il doit entrer dans la marge, sinon dû + marge ≠ encaissé et l'écart de caisse s'allume.
+  const marge = commission + c.delivery_fee - remiseLivraison - remisePlatsTaxiFood + (c.emballage_taxifood ?? 0);
 
   // Contrôles par commande. `remise_charge_restaurant` et `commission_amount`
   // entrent à la fois dans le dû et dans la marge : faussés, ils déplacent de

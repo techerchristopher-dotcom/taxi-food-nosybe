@@ -207,7 +207,7 @@ export async function lireErreurFonction(e: unknown): Promise<{ statut?: string;
  * (`admin_actions`, action `statut_commande`).
  */
 export const COLONNES_FICHE =
-  'id, order_number, status, created_at, picked_up_at, delivered_at, subtotal, packaging_fee, delivery_fee, '
+  'id, order_number, status, created_at, picked_up_at, delivered_at, subtotal, packaging_fee, emballage_taxifood, delivery_fee, '
   + 'promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, payment_status, '
   + 'commission_rate, courier_id, '
   + 'profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, instructions ), '
@@ -225,6 +225,7 @@ export type CommandeFiche = {
   delivered_at: string | null;
   subtotal: number;
   packaging_fee: number | null;
+  emballage_taxifood?: number | null;
   delivery_fee: number;
   promo_code: string | null;
   promo_discount: number | null;

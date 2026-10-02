@@ -15,6 +15,7 @@ import { CodeMarchandCarte } from './CodeMarchand';
 type DeliveredRow = CommandeLivree & {
   /** Emballages (boite a pizza...). Reverses au restaurant, commission comprise. */
   packaging_fee: number | null;
+  emballage_taxifood?: number | null;
   /**
    * Sur quoi portait la remise : « livraison » ou « sous_total ». Fige sur la
    * commande a sa creation — surtout PAS relu depuis `promo_codes`, sinon
@@ -51,7 +52,7 @@ type Line = Cumul & {
   dejaReverse: Cumul;
 };
 
-const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
+const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
 
 const AUCUNE_REGLE: ReglesDesCodes = new Map();
 

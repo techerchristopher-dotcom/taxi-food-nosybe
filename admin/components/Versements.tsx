@@ -353,6 +353,9 @@ export function FicheContenu({ fiche, reversee }: { fiche: FicheLue; reversee: C
         <h4>Ce que le client a payé</h4>
         <div className="fiche-ligne"><span>Plats</span><span>{formatAr(o.subtotal)}</span></div>
         {emballage > 0 ? <div className="fiche-ligne"><span>Emballage</span><span>{formatAr(emballage)}</span></div> : null}
+        {(o.emballage_taxifood ?? 0) > 0 ? (
+          <div className="fiche-ligne muted"><span>dont pour Taxi Food (pas reversé)</span><span>{formatAr(o.emballage_taxifood ?? 0)}</span></div>
+        ) : null}
         <div className="fiche-ligne"><span>Livraison</span><span>{formatAr(o.delivery_fee)}</span></div>
         {o.promo_code || remise > 0 ? (
           <div className="fiche-ligne">

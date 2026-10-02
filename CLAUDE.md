@@ -752,6 +752,16 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   2026-09-06 par son canal privé, message de contrôle et commande de test remis. La commande de
   test n'est pas une formalité : c'est elle qui a rattrapé le bug de la commande vide.
 - **Les Siciliens** — `coming_soon` (« En négociation »).
+  🇮🇹 **Servis en italien** (2026-10-02, demande du porteur du projet) : colonne
+  `restaurants.langue` (`fr` par défaut, `it` pour eux — migration `20261002120000`). Lue par :
+  n8n « Taxi Food — notifications de commande » (texte + boutons « Accetto / Rifiuto »),
+  `repondre-commande.mjs` (page après le bouton — migration `20261002130000`),
+  `alerter_nouvel_avis()` et `versement_prendre_envoi()` → `texte_message_versement_it()`.
+  L'espace restaurateur de l'app reste en français. Groupe Telegram `-1004365195586`.
+  ⚠️ Ajouter une langue = étendre le CHECK **et** écrire ses textes dans ces quatre endroits.
+  ⚠️ Le fichier `n8n/taxifood-notifications.json` du dépôt était EN RETARD sur la prod (sans
+  boutons ni photo) : recopié depuis l'API n8n le 2026-10-02. Le relire depuis l'API avant de
+  le modifier, jamais depuis le dépôt.
 - **Le Nandipo** — ajouté le 2026-09-30 en `hidden` (migration `20260930200000_le_nandipo_catalogue_hidden`),
   passé en **`coming_soon`** (« En négociation ») le 2026-10-01 à la demande du porteur du projet
   (migration `20261001110000_le_nandipo_coming_soon`). 8 catégories,

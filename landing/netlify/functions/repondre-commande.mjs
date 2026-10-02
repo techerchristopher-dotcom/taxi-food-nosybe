@@ -38,15 +38,34 @@ const APP = 'https://taxifood.distripro207.com';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-function page(emoji, titre, corps, couleur = '#157F3C', cta = null) {
+// Langue du restaurant (restaurants.langue, renvoyee par repondre_commande_par_jeton
+// APRES verification du jeton). 'it' pour Les Siciliens depuis le 2026-10-02. Les pages
+// d'erreur qui precedent l'appel (lien incomplet, base injoignable) restent en francais :
+// on ne sait pas encore a quel restaurant on parle.
+const IT = {
+  ouvrir: 'Apri il mio spazio',
+  acceptee: (n) => `Ordine ${n} accettato`,
+  accepteeAuto: 'Fatto. Il cliente è stato appena avvisato. L’ordine passa in preparazione da solo in meno di un minuto: dovrai solo segnarlo come pronto nel tuo spazio.',
+  accepteeManuel: 'Fatto. Il cliente è stato appena avvisato. Apri il tuo spazio per metterlo in preparazione, poi segnarlo come pronto.',
+  voir: (n) => `Vedi l’ordine ${n ?? ''}`.trim(),
+  refusee: (n) => `Ordine ${n} rifiutato`,
+  refuseeCorps: 'Il cliente è stato appena avvisato. Non deve pagare nulla.',
+  historique: 'Vedi la cronologia',
+  dejaTitre: 'Già gestito',
+  deja: (s) => `Questo ordine è già « ${s} ». Non c’è altro da fare.`,
+  statuts: { confirmee: 'confermato', en_preparation: 'in preparazione', en_livraison: 'in consegna',
+             livree: 'consegnato', annulee: 'annullato' },
+};
+
+function page(emoji, titre, corps, couleur = '#157F3C', cta = null, langue = 'fr') {
   // Par defaut on renvoie vers l'app : quelle que soit la situation, ce que le
   // restaurateur veut faire ensuite se passe dans son espace, pas sur le site.
   // `/pro` et non `/` : la racine repasse par l'aiguillage de l'app, qui fait gagner le
   // mode memorise sur les roles. Un restaurateur passe cote client la veille atterrissait
   // dans l'app CLIENT en venant d'ici (constate le 2026-09-09). `/pro` pose le mode
   // restaurant puis entre dans l'espace.
-  const lien = cta ?? { libelle: 'Ouvrir mon espace', href: `${APP}/pro` };
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
+  const lien = cta ?? { libelle: langue === 'it' ? IT.ouvrir : 'Ouvrir mon espace', href: `${APP}/pro` };
+  return `<!doctype html><html lang="${langue === 'it' ? 'it' : 'fr'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(titre)} — Taxi Food</title>
 <style>
@@ -97,6 +116,24 @@ export default async (request) => {
       }),
     });
     const d = await r.json();
+    const it = d?.langue === 'it';
+
+    if (d?.ok && it) {
+      return new Response(
+        action === 'accepter'
+          ? page('✅', IT.acceptee(esc(d.numero)),
+              d.preparation_auto === true ? IT.accepteeAuto : IT.accepteeManuel,
+              '#157F3C', { libelle: IT.voir(d.numero), href: `${APP}/pro` }, 'it')
+          : page('❌', IT.refusee(esc(d.numero)), IT.refuseeCorps, '#DF3228',
+              { libelle: IT.historique, href: `${APP}/history` }, 'it'),
+        { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    }
+
+    if (d?.raison === 'deja traitee' && it) {
+      return new Response(page('👍', IT.dejaTitre,
+        IT.deja(esc(IT.statuts[d.statut] || d.statut)), '#8A827A', null, 'it'),
+        { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    }
 
     if (d?.ok) {
       return new Response(

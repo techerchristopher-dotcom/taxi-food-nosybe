@@ -1987,6 +1987,28 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
 
+## 📢 Bandeau d'annonce — app ET site (2026-10-03)
+
+Décision du porteur du projet : un bandeau en haut de l'accueil, **piloté depuis l'admin
+(onglet 📢 Bandeau)**, jamais écrit en dur. Migration `20261003100000_bandeau_annonce`.
+
+- Table `bandeaux` (titre ≤ 60, texte ≤ 140, route `/` ou `/restaurant/<uuid>`, actif, debut,
+  fin), **fermée** (RLS sans policy, aucun grant). Lecture publique par `bandeau_actif(p_langue)`
+  seule ; écriture par `admin_enregistrer_bandeau` / `admin_activer_bandeau` (is_admin).
+- **Un seul affiché** : le plus récemment modifié parmi les actifs dans leurs dates.
+- **La date de fin est une condition d'affichage, pas une tâche planifiée.** Dates saisies en
+  JOURS, heure de Madagascar ; `fin` stockée au lendemain 00:00 (dernier jour inclus).
+- **Traduit par le dictionnaire du menu** (`traductions_catalogue`), renvoyé déjà traduit par la
+  RPC ; les textes du bandeau entrent dans `textes_a_traduire_auto()` + trigger `traduction_auto`.
+- **Fermable** : la croix retient `version` (= id + `maj_le`) — AsyncStorage dans l'app,
+  localStorage sur le site, même clé `bandeau_ferme`. Toute modification dans l'admin le refait
+  apparaître. Les montants « 2 000 » sont rendus insécables à l'affichage.
+- App : `components/Bandeau.tsx`, tout en haut de l'accueil (masqué pendant une recherche).
+  Site : `landing/js/bandeau.js`, inséré au-dessus du `<header>` des trois accueils FR/EN/IT, bouton
+  « Commander » vers l'app web (+ la route).
+- Premier bandeau : « 🛵 On casse les prix en octobre ! — Livraison à partir de 2 000 Ar tout le
+  mois. », jusqu'au 31/10 inclus. ⚠️ Le TARIF à 2 000 Ar, lui, n'a pas de date de fin en base.
+
 ## 🛵 Livraison à 2 000 Ar jusqu'à 3 km (2026-10-02)
 
 Décision du porteur du projet : **2 000 Ar jusqu'à 3 km de route, puis 1 000 Ar par km entamé**,

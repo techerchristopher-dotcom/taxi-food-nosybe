@@ -8,7 +8,8 @@ import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
-import { listAddresses, listNouveautes, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { getBandeau, listAddresses, listNouveautes, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { Bandeau } from '../../components/Bandeau';
 import { CarteNouveaute } from '../../components/Nouveaute';
 import { CartePlatDuJour } from '../../components/PlatDuJour';
 import { PartageSheet } from '../../components/PartageSheet';
@@ -64,6 +65,8 @@ export default function HomeScreen() {
   // ✨ Les restaurants arrivés depuis moins de 14 jours (RPC `nouveautes_publiques`).
   // Indépendante elle aussi : si elle échoue, la rangée disparaît, l'accueil reste.
   const { data: nouveautes } = useLoad(() => listNouveautes(), []);
+  // 📢 Le bandeau d'annonce de l'admin. Indépendant lui aussi : en échec, il n'existe pas.
+  const { data: bandeau } = useLoad(() => getBandeau(), []);
   // Le catalogue est public : `listRestaurants()` n'a besoin d'aucun compte. Les adresses,
   // si — inutile d'interroger la base à chaque focus d'onglet pour un visiteur, la RLS
   // renverrait de toute façon une liste vide.
@@ -177,6 +180,9 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* 📢 Le bandeau d'annonce, tout en haut (masqué pendant une recherche). */}
+        {!searching && bandeau ? <Bandeau b={bandeau} /> : null}
+
         {/* La porte d'entrée vers le compte, sur l'écran d'accueil. Elle dit ce que le
             compte apporte ET ce qu'il ne conditionne pas — c'est cette seconde moitié
             qu'Apple cherchait : la navigation est libre, le compte sert à livrer. */}

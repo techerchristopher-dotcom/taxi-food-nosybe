@@ -567,5 +567,8 @@
     "subtitle_other": "Ils viennent de rejoindre l'aventure : découvre leurs cartes.",
     "badge": "Nouveau",
     "voirCarte": "Voir la carte"
+  },
+  "bandeau": {
+    "fermer": "Fermer l’annonce"
   }
 }

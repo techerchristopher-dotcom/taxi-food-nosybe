@@ -8,7 +8,7 @@
  * lecture publique ; addresses et orders/order_item_options sont filtrés sur l'utilisateur.
  */
 import { supabase } from '../lib/supabase';
-import { preparerTraductions, tr } from '../lib/catalogueTraduit';
+import { langueCatalogue, preparerTraductions, tr } from '../lib/catalogueTraduit';
 import {
   Address,
   addressIcon,
@@ -638,6 +638,20 @@ export async function listNouveautes(): Promise<Nouveaute[]> {
     opensAt: r.ouvre_a,
     plats: (r.plats ?? []).map((p) => ({ id: p.id, name: tr(p.nom), price: p.prix, photoUrl: p.photo_url })),
   }));
+}
+
+/**
+ * 📢 Le bandeau d'annonce du moment (RPC `bandeau_actif`), déjà traduit par la base dans la
+ * langue de l'interface. `null` quand il n'y en a pas : passé sa date de fin, il disparaît
+ * de lui-même. `version` change à chaque réécriture dans l'admin.
+ */
+export type Bandeau = { id: string; titre: string; texte: string | null; route: string; version: string };
+
+export async function getBandeau(): Promise<Bandeau | null> {
+  const { data, error } = await supabase.rpc('bandeau_actif', { p_langue: langueCatalogue() });
+  if (error) throw error;
+  const b = ((data as Bandeau[] | null) ?? [])[0];
+  return b ? { id: b.id, titre: b.titre, texte: b.texte, route: b.route || '/', version: b.version } : null;
 }
 
 function mapCategory(c: CategoryRow): Category {

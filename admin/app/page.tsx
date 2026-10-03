@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Annonces } from '../components/Annonces';
 import { Audience } from '../components/Audience';
+import { Bandeaux } from '../components/Bandeaux';
 import { Avis } from '../components/Avis';
 import { CodesOfferts } from '../components/CodesOfferts';
 import { CommandeTelephone } from '../components/CommandeTelephone';
@@ -17,7 +18,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'telephone' | 'annonces' | 'audience' | 'avis' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
+type Tab = 'realtime' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -113,6 +114,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'annonces' ? 'active' : ''}`} onClick={() => setTab('annonces')}>
           📣 Annonce
         </button>
+        <button className={`tab ${tab === 'bandeau' ? 'active' : ''}`} onClick={() => setTab('bandeau')}>
+          📢 Bandeau
+        </button>
         <button className={`tab ${tab === 'audience' ? 'active' : ''}`} onClick={() => setTab('audience')}>
           📈 Audience
         </button>
@@ -148,6 +152,7 @@ export default function AdminPage() {
       {tab === 'realtime' && <Realtime />}
       {tab === 'telephone' && <CommandeTelephone />}
       {tab === 'annonces' && <Annonces />}
+      {tab === 'bandeau' && <Bandeaux />}
       {tab === 'audience' && <Audience />}
       {tab === 'avis' && <Avis />}
       {tab === 'remboursements' && <Remboursements />}

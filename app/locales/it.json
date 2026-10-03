@@ -567,5 +567,8 @@
     "subtitle_other": "Si sono appena uniti a noi: scopri i loro menu.",
     "badge": "Nuovo",
     "voirCarte": "Vedi il menu"
+  },
+  "bandeau": {
+    "fermer": "Chiudi l’annuncio"
   }
 }

@@ -58,3 +58,32 @@ Modèle : `gpt_image_2`, `resolution: 1k`, `quality: high`, `aspect_ratio: 1:1`.
 
 Le fichier se nomme `plat-<slug>.png` et va dans le bucket `produits/<slug-resto>/`.
 Les sources restent dans `visuels-reseaux/plats-du-jour/<slug-resto>/`.
+
+### Le depot : `deposer-visuel`, pas la cle service_role
+
+On n'a pas besoin de la `service_role` pour poser une photo, et il ne faut pas la chercher.
+La fonction Edge **`deposer-visuel`** existe, elle est durcie, et c'est elle qui a depose
+toutes les photos du vivier :
+
+```
+POST https://bmdveawomizjpiebgtkj.functions.supabase.co/deposer-visuel
+en-tete : x-depot-secret: $DEPOT_VISUEL_SECRET      (dans .secrets.local, jamais dans un commit)
+corps   : {"bucket":"produits","chemin":"<slug-resto>/plat-<slug>.png",
+           "contenu_base64":"...","ecraser":false}
+```
+
+⚠️ **Le base64 ne passe pas en argument de ligne de commande** — un PNG de 2 Mo fait 2,7 Mo
+encode et `curl` renvoie `Argument list too long`. Ecrire le JSON dans un fichier et poster
+avec `curl --data-binary @fichier`.
+
+⚠️ **Verifier TROIS URL apres le depot**, pas une : l'objet, l'objet avec les parametres de
+rendu, et l'URL `render/image/...?width=296&height=296&resize=cover&quality=75` — c'est
+celle-la que l'appli demande vraiment. Un `photo_url` renseigne qui pointe sur un 404 affiche
+un trou dans le bandeau : c'est pire que NULL.
+
+### `set_product_featured` ne sert pas depuis l'admin
+
+La doc precedente disait de passer par `set_product_featured()` plutot que par un `update`.
+C'est juste **pour le restaurateur** : la fonction commence par `current_restaurant_id()` et
+leve « Acces restaurant requis » quand il n'y a pas de session restaurant. Depuis l'admin ou
+le MCP, l'`update` direct est la seule voie, et il fait exactement la meme chose.

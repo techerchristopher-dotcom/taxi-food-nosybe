@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Button } from './Button';
 import { colors, fonts, radius, spacing } from '../theme/tokens';
-import { REFUSAL_REASONS } from '../data/types';
+import { REFUSAL_CODES, REFUSAL_PRECISION_MAX, type RefusalCode } from '../data/types';
 
 /**
- * Feuille de refus d'une commande : choix rapide d'un motif prédéfini + précision libre
- * optionnelle. Un motif (ou une précision) est obligatoire. Le motif final envoyé à
- * `set_order_status` combine le libellé choisi et la précision.
+ * Feuille de refus d'une commande : un motif prédéfini en un tap (obligatoire) + une
+ * précision libre facultative (obligatoire pour « Autre raison »). On envoie le CODE et la
+ * précision à `set_order_status` : c'est la base qui compose le texte lu par le client
+ * (`cancellation_reason`) — l'écran n'est jamais l'autorité. Mêmes codes que la page
+ * Telegram `/r-refus/…` (2026-10-05).
  */
 export function RefuseSheet({
   visible,
@@ -21,19 +24,29 @@ export function RefuseSheet({
   orderNumber?: string;
   submitting?: boolean;
   onCancel: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (refus: { code: RefusalCode; precision: string | null }) => void;
 }) {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const [selected, setSelected] = useState<RefusalCode | null>(null);
   const [precision, setPrecision] = useState('');
 
+  // Chaque ouverture repart à zéro : le motif de la commande précédente ne doit pas
+  // rester coché pour la suivante.
+  useEffect(() => {
+    if (visible) {
+      setSelected(null);
+      setPrecision('');
+    }
+  }, [visible]);
+
   const trimmed = precision.trim();
-  const canConfirm = Boolean(selected || trimmed);
+  const precisionManquante = selected === 'autre' && !trimmed;
+  const canConfirm = Boolean(selected) && !precisionManquante;
 
   function confirm() {
-    const reason = selected ? (trimmed ? `${selected} — ${trimmed}` : selected) : trimmed;
-    if (!reason) return;
-    onConfirm(reason);
+    if (!selected || precisionManquante) return;
+    onConfirm({ code: selected, precision: trimmed || null });
   }
 
   function reset() {
@@ -54,37 +67,52 @@ export function RefuseSheet({
       />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Refuser la commande{orderNumber ? ` #${orderNumber}` : ''}</Text>
-        <Text style={styles.sub}>Choisissez un motif — le client le verra sur son suivi.</Text>
+        <Text style={styles.title}>
+          {t('refusal.sheetTitle')}
+          {orderNumber ? ` #${orderNumber}` : ''}
+        </Text>
+        <Text style={styles.sub}>{t('refusal.sheetSub')}</Text>
 
         <View style={styles.chips}>
-          {REFUSAL_REASONS.map((r) => {
-            const active = selected === r;
+          {REFUSAL_CODES.map((code) => {
+            const active = selected === code;
             return (
               <Pressable
-                key={r}
-                onPress={() => setSelected(active ? null : r)}
+                key={code}
+                onPress={() => setSelected(active ? null : code)}
                 style={[styles.chip, active && styles.chipActive]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{r}</Text>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {t(`refusal.chips.${code}`)}
+                </Text>
               </Pressable>
             );
           })}
         </View>
 
+        {/* La phrase exacte que lira le client, pour que le restaurant sache ce qu'il envoie. */}
+        {selected && selected !== 'autre' ? (
+          <Text style={styles.apercu}>« {t(`refusal.codes.${selected}`)} »</Text>
+        ) : null}
+
+        <Text style={styles.label}>{t('refusal.precisionLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Précision (facultatif)"
+          placeholder={t('refusal.precisionPlaceholder')}
           placeholderTextColor={colors.textFaint}
           value={precision}
           onChangeText={setPrecision}
+          maxLength={REFUSAL_PRECISION_MAX}
           multiline
           editable={!submitting}
         />
+        {precisionManquante ? <Text style={styles.hint}>{t('refusal.precisionRequired')}</Text> : null}
 
         <View style={styles.actions}>
           <Button
-            label="Annuler"
+            label={t('refusal.cancel')}
             variant="outline"
             onPress={() => {
               reset();
@@ -93,7 +121,7 @@ export function RefuseSheet({
             style={{ flex: 1 }}
           />
           <Button
-            label="Confirmer le refus"
+            label={t('refusal.confirm')}
             onPress={confirm}
             loading={submitting}
             disabled={!canConfirm}
@@ -129,8 +157,11 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: colors.primary, backgroundColor: colors.dangerBg },
   chipText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
   chipTextActive: { color: colors.dangerText },
+  apercu: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted, marginTop: 10, fontStyle: 'italic' },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark, marginTop: 14 },
+  hint: { fontFamily: fonts.regular, fontSize: 12, color: colors.dangerText, marginTop: 6 },
   input: {
-    marginTop: 14,
+    marginTop: 6,
     minHeight: 48,
     borderRadius: radius.tile,
     borderWidth: 1.5,

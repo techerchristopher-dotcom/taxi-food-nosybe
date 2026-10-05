@@ -13,6 +13,7 @@ import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import { Order, paymentShort, statusStep } from '../../data/types';
 import { getOrderById } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
+import { motifRefusAffiche } from '../../lib/motifRefus';
 
 /**
  * Écran 09 — Suivi de commande (timeline 5 statuts).
@@ -100,9 +101,11 @@ export default function OrderTrackingScreen() {
             ? t('tracking.onTheWay')
             : t('tracking.soonOnTheWay')
           : t(`tracking.steps.${head.key}Title`);
-  // Le motif de refus est saisi par le restaurant : donnée métier, jamais traduite.
+  // Motif de refus : libellé du code traduit + précision libre du restaurant (jamais
+  // traduite) ; texte en base pour un refus ancien ou une annulation admin.
+  const motifRefus = cancelled ? motifRefusAffiche(order) : null;
   const bannerSub = cancelled
-    ? (order.cancellationReason ?? t('tracking.refusedDefault'))
+    ? (motifRefus ?? t('tracking.refusedDefault'))
     : livreurLa
       ? t('tracking.courierHereSub')
       : livreurArrive
@@ -147,8 +150,8 @@ export default function OrderTrackingScreen() {
           <Card style={styles.cancelledCard}>
             <Icon name="cancel" size={22} color={colors.dangerText} />
             <Text style={styles.cancelledTitle}>{t('tracking.refusedCardTitle')}</Text>
-            {order.cancellationReason ? (
-              <Text style={styles.cancelledReason}>{t('tracking.refusedReason', { reason: order.cancellationReason })}</Text>
+            {motifRefus ? (
+              <Text style={styles.cancelledReason}>{t('tracking.refusedReason', { reason: motifRefus })}</Text>
             ) : null}
             {/* « Aucun montant ne te sera debite » devient faux des qu'une
                 carte a ete prelevee : dans ce cas c'est un remboursement. */}

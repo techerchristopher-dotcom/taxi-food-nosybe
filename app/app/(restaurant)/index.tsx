@@ -8,7 +8,7 @@ import { RefuseSheet } from '../../components/RefuseSheet';
 import { VisiteGuidee } from '../../components/VisiteGuidee';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import { listRestaurantOrders, marquerVisiteProVue, setOrderStatus } from '../../data/api';
-import { Order, OrderStatus } from '../../data/types';
+import { Order, OrderStatus, RefusalCode } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSondage } from '../../lib/useSondage';
 import { useSession } from '../../store/session';
@@ -91,11 +91,15 @@ export default function RestaurantOrdersScreen() {
     }
   }
 
-  async function advance(order: Order, status: OrderStatus, reason?: string) {
+  async function advance(
+    order: Order,
+    status: OrderStatus,
+    refus?: { code: RefusalCode; precision: string | null },
+  ) {
     setError(null);
     setWorking(order.id);
     try {
-      await setOrderStatus(order.id, status, reason);
+      await setOrderStatus(order.id, status, refus);
       setRefuseTarget(null);
       await reload();
     } catch {
@@ -166,7 +170,7 @@ export default function RestaurantOrdersScreen() {
         orderNumber={refuseTarget?.orderNumber}
         submitting={!!refuseTarget && working === refuseTarget.id}
         onCancel={() => setRefuseTarget(null)}
-        onConfirm={(reason) => refuseTarget && advance(refuseTarget, 'annulee', reason)}
+        onConfirm={(refus) => refuseTarget && advance(refuseTarget, 'annulee', refus)}
       />
 
       <VisiteGuidee visible={visite} onFermer={fermerVisite} />

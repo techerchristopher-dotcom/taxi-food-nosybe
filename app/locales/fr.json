@@ -570,5 +570,29 @@
   },
   "bandeau": {
     "fermer": "Fermer l’annonce"
+  },
+  "refusal": {
+    "sheetTitle": "Refuser la commande",
+    "sheetSub": "Choisissez une raison — le client la verra sur son suivi.",
+    "precisionLabel": "Précision pour le client (facultatif)",
+    "precisionPlaceholder": "ex. : plus de poulet ce soir",
+    "precisionRequired": "Avec « Autre raison », écrivez deux mots pour le client.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer le refus",
+    "chips": {
+      "rupture": "Plat(s) épuisé(s)",
+      "trop_de_commandes": "Trop de commandes",
+      "fermeture": "Fermeture",
+      "livraison_impossible": "Adresse non desservie",
+      "autre": "Autre raison"
+    },
+    "codes": {
+      "rupture": "Un ou plusieurs plats ne sont plus disponibles",
+      "trop_de_commandes": "Trop de commandes en ce moment",
+      "fermeture": "Le restaurant ferme ou est fermé",
+      "livraison_impossible": "Adresse trop éloignée ou non desservie",
+      "autre": "Le restaurant n'a pas pu accepter la commande"
+    },
+    "withDetail": "{{label}} : {{detail}}"
   }
 }

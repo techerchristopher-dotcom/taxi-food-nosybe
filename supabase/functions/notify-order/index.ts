@@ -49,8 +49,59 @@ type Order = {
   courier_id: string | null;
   status: string;
   cancellation_reason: string | null;
+  /** Motif de refus choisi par le restaurant (2026-10-05) — NULL pour un refus ancien. */
+  cancellation_code: string | null;
+  /** Précision libre du restaurant, déjà nettoyée par la base. */
+  cancellation_detail: string | null;
   restaurants: { name: string } | null;
 };
+
+/**
+ * Motifs de refus, dans la langue du CLIENT. Mêmes codes que la base
+ * (`orders_cancellation_code_check`, `libelle_motif_refus`) et que l'app
+ * (`refusal.codes.*` dans `app/locales`). La précision libre du restaurant, elle,
+ * n'est jamais traduite.
+ */
+const MOTIFS_REFUS: Record<string, Record<Lang, string>> = {
+  rupture: {
+    fr: 'Un ou plusieurs plats ne sont plus disponibles',
+    en: 'One or more dishes are no longer available',
+    it: 'Uno o più piatti non sono più disponibili',
+  },
+  trop_de_commandes: {
+    fr: 'Trop de commandes en ce moment',
+    en: 'Too many orders right now',
+    it: 'Troppi ordini in questo momento',
+  },
+  fermeture: {
+    fr: 'Le restaurant ferme ou est fermé',
+    en: 'The restaurant is closing or closed',
+    it: 'Il ristorante sta chiudendo o è chiuso',
+  },
+  livraison_impossible: {
+    fr: 'Adresse trop éloignée ou non desservie',
+    en: 'Address too far away or outside the delivery area',
+    it: 'Indirizzo troppo lontano o non servito',
+  },
+  autre: {
+    fr: 'Le restaurant n’a pas pu accepter la commande',
+    en: 'The restaurant could not accept the order',
+    it: 'Il ristorante non ha potuto accettare l’ordine',
+  },
+};
+
+const MOT_MOTIF: Record<Lang, string> = { fr: 'Motif :', en: 'Reason:', it: 'Motivo:' };
+
+/** Motif lisible dans la langue du client ; repli sur le texte composé par la base. */
+function motifRefus(order: Order, lang: Lang): string | null {
+  const libelles = order.cancellation_code ? MOTIFS_REFUS[order.cancellation_code] : undefined;
+  if (!libelles) return order.cancellation_reason;
+  const detail = order.cancellation_detail?.trim();
+  if (order.cancellation_code === 'autre') return detail || libelles[lang] || libelles.fr;
+  const libelle = libelles[lang] ?? libelles.fr;
+  // Typographie : espace avant les deux-points en français seulement.
+  return detail ? `${libelle}${lang === 'fr' ? ' : ' : ': '}${detail}` : libelle;
+}
 
 type TokenRow = { token: string; language: Lang; platform: string };
 
@@ -162,9 +213,11 @@ function buildText(order: Order, key: string, lang: Lang) {
   if (!text) return null;
   const resto = order.restaurants?.name ?? 'Le restaurant';
   let body = text.body.replaceAll('{resto}', resto).replaceAll('{numero}', order.order_number ?? '');
-  // Le motif de refus est saisi par le restaurant : on le montre tel quel, jamais traduit.
-  if (key === 'annulee' && order.cancellation_reason) {
-    body = `${body} Motif : ${order.cancellation_reason}`;
+  // Motif de refus : libellé du code traduit dans la langue du client, précision libre
+  // du restaurant telle quelle. Sans code (refus ancien, annulation admin) : texte en base.
+  const motif = key === 'annulee' ? motifRefus(order, lang) : null;
+  if (motif) {
+    body = `${body} ${MOT_MOTIF[lang] ?? MOT_MOTIF.fr} ${motif}`;
   }
   return { title: text.title, body };
 }
@@ -195,7 +248,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, restaurants(name)')
+    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, cancellation_code, cancellation_detail, restaurants(name)')
     .eq('id', payload.order_id)
     .single<Order>();
   if (orderError || !order) {

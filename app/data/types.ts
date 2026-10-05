@@ -30,13 +30,23 @@ export type RoleEntry = { role: AppRole; status: RoleStatus };
 export type AppMode = 'client' | 'restaurant' | 'livreur';
 
 /** Motifs de refus proposés au restaurant (liste rapide + précision libre optionnelle). */
-export const REFUSAL_REASONS = [
-  'Rupture de stock',
-  'Fermé exceptionnellement',
-  'Trop de commandes',
-  'Article indisponible',
-  'Hors zone de livraison',
+/**
+ * Motifs de refus d'une commande par le restaurant (2026-10-05). MÊMES codes que la base
+ * (`orders_cancellation_code_check`, `libelle_motif_refus`), que la page Telegram
+ * `/r-refus/…` (`landing/netlify/functions/repondre-commande.mjs`) et que `notify-order`.
+ * Libellés : `refusal.codes.*` (phrase lue par le client) et `refusal.chips.*` (bouton).
+ */
+export const REFUSAL_CODES = [
+  'rupture',
+  'trop_de_commandes',
+  'fermeture',
+  'livraison_impossible',
+  'autre',
 ] as const;
+export type RefusalCode = (typeof REFUSAL_CODES)[number];
+
+/** Longueur maximale de la précision libre (bornée aussi en base). */
+export const REFUSAL_PRECISION_MAX = 200;
 
 export type OrderStatus =
   | 'recue'
@@ -410,6 +420,10 @@ export type Order = {
   etaLabel?: string;
   /** Motif de refus (rempli quand status = annulee), visible côté client et resto. */
   cancellationReason?: string | null;
+  /** Code du motif de refus choisi par le restaurant (NULL pour un refus ancien / admin). */
+  cancellationCode?: string | null;
+  /** Précision libre du restaurant sur son refus (jamais traduite). */
+  cancellationDetail?: string | null;
   /** Lien d'itinéraire Google Maps vers la position du client (null si pas de GPS). */
   mapsUrl?: string | null;
   /** Téléphone du client sur l'adresse de livraison (pour le restaurant/livreur). */

@@ -570,5 +570,29 @@
   },
   "bandeau": {
     "fermer": "Close the announcement"
+  },
+  "refusal": {
+    "sheetTitle": "Decline the order",
+    "sheetSub": "Choose a reason — the customer will see it on their tracking screen.",
+    "precisionLabel": "Details for the customer (optional)",
+    "precisionPlaceholder": "e.g. no more chicken tonight",
+    "precisionRequired": "With “Other reason”, write a few words for the customer.",
+    "cancel": "Cancel",
+    "confirm": "Confirm decline",
+    "chips": {
+      "rupture": "Dish(es) sold out",
+      "trop_de_commandes": "Too many orders",
+      "fermeture": "Closing",
+      "livraison_impossible": "Address not served",
+      "autre": "Other reason"
+    },
+    "codes": {
+      "rupture": "One or more dishes are no longer available",
+      "trop_de_commandes": "Too many orders right now",
+      "fermeture": "The restaurant is closing or closed",
+      "livraison_impossible": "Address too far away or outside the delivery area",
+      "autre": "The restaurant could not accept the order"
+    },
+    "withDetail": "{{label}}: {{detail}}"
   }
 }

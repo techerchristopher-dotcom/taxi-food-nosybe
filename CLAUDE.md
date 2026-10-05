@@ -1248,6 +1248,45 @@ Migrations `20260922100000_preparation_automatique_apres_acceptation` et
   Telegram) a été refusée par le garde-fou de permissions. Première vraie commande acceptée à
   surveiller : `status_updated_at` de `en_preparation` ≈ acceptation + 30 à 60 s.
 
+## Motif de refus (2026-10-05)
+
+Déclencheur : TF-320 refusée depuis Telegram par Chez Bidule & Truc (plus de poulet) ; la cliente
+a reçu le motif fixe « Refusée par le restaurant depuis Telegram ». Désormais le restaurant
+**choisit une raison en un tap + une précision libre facultative**, et le client la lit.
+Migration `20261005200000_motif_de_refus_restaurant`.
+
+- **Base (l'autorité)** : `orders.cancellation_code` (`rupture` · `trop_de_commandes` ·
+  `fermeture` · `livraison_impossible` · `autre`, CHECK) et `orders.cancellation_detail`
+  (nettoyée par `nettoyer_precision_refus()` : contrôles et `<>` retirés, espaces resserrés,
+  200 car., sans point final). `cancellation_reason` est **composé en base** par
+  `composer_motif_refus()` : « Un ou plusieurs plats ne sont plus disponibles : poulet épuisé ce
+  soir » (« autre » = la précision seule). C'est ce texte que lisent l'e-mail n8n T7uX
+  (`motif_annulation`, **T7uX non modifié**), le Telegram du restaurant et les anciennes apps.
+- **RPC** : `set_order_status(…, p_reason, p_code, p_precision)` et
+  `repondre_commande_par_jeton(…, p_motif, p_code, p_precision)` — **remplacées** (DROP +
+  CREATE, pas de surcharge : PGRST203), nouveaux paramètres à défaut NULL. **Sans code = ancien
+  comportement** (texte libre obligatoire) : les apps déjà installées et la vitrine pas encore
+  redéployée continuent de marcher. Nouvelle `consulter_commande_par_jeton(id, jeton)` : lecture
+  seule (numéro, statut, langue), pour afficher le formulaire.
+- **Lien Telegram `/r-refus/…`** (`repondre-commande.mjs`) : **le GET n'annule plus rien**, il
+  affiche le formulaire (FR ou IT selon `restaurants.langue`, sans JavaScript) ; seul le **POST**
+  refuse. Avant, un robot d'aperçu de lien qui ouvrait l'URL annulait la commande. ⚠️ `/a/…`
+  (accepter) reste en un seul GET, comme avant.
+- **App** : `RefuseSheet` envoie le code + la précision (5 boutons, phrase client affichée en
+  aperçu, précision obligatoire pour « Autre »). Suivi client : `lib/motifRefus.ts` traduit le
+  libellé du code (`refusal.codes.*`, FR/EN/IT) et garde la précision telle quelle ; repli sur
+  `cancellation_reason` (refus anciens, annulations admin). Même règle dans `notify-order`
+  (`MOTIFS_REFUS`, « Motif : / Reason: / Motivo: »).
+- ⚠️ Ajouter un motif = CHECK + `libelle_motif_refus()` + `MOTIFS` de `repondre-commande.mjs` +
+  `MOTIFS_REFUS` de `notify-order` + `REFUSAL_CODES` et `refusal.*` des trois `app/locales`.
+- ⚠️ L'e-mail client reste **en français** (T7uX) ; une précision écrite en italien par Les
+  Siciliens y apparaît telle quelle.
+- Vérifié en transaction annulée (2026-10-05) : code + précision sale, ancien chemin sans code,
+  code inconnu refusé, rejeu → « déjà traitée », « autre » + 300 car. → 200, `set_order_status`
+  sans motif / code bidon refusés. Par PostgREST (clé publiable) : ancien appel à 4 paramètres
+  résolu, `composer_motif_refus` fermé (42501). Formulaire testé hors ligne (GET = aucun appel
+  d'écriture). Ces essais ont consommé les numéros TF-321 à TF-324 (séquence non annulable ; aucune ligne restée en base).
+
 ## Codes promo (2026-09-06)
 
 **Le code donne une remise sur la LIVRAISON seulement.** La commission prélevée sur les

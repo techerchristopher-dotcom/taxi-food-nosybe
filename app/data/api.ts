@@ -29,7 +29,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
-import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis } from './types';
+import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis, RefusalCode } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -821,6 +821,8 @@ type OrderJoinRow = {
   payment_status?: StatutPaiement | null;
   status: OrderStatus;
   cancellation_reason: string | null;
+  cancellation_code?: string | null;
+  cancellation_detail?: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
   arriving_at?: string | null;
@@ -860,7 +862,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -915,6 +917,8 @@ function mapOrder(o: OrderJoinRow): Order {
     createdLabel: createdLabel(o.created_at),
     etaLabel: DEFAULT_ETA,
     cancellationReason: o.cancellation_reason,
+    cancellationCode: o.cancellation_code ?? null,
+    cancellationDetail: o.cancellation_detail ?? null,
     mapsUrl:
       addr?.latitude != null && addr?.longitude != null
         ? getMapsNavigationUrl(addr.latitude, addr.longitude)
@@ -1299,17 +1303,20 @@ export async function listRestaurantOrders(
 /**
  * Fait évoluer le statut d'une commande via la RPC `set_order_status` (vérifie
  * l'appartenance au restaurant et n'autorise que les transitions valides côté serveur).
- * `reason` obligatoire pour un refus (`annulee`).
+ * Un refus (`annulee`) exige un motif : `refus.code` (+ précision libre facultative),
+ * la base compose alors le texte lu par le client (`cancellation_reason`).
  */
 export async function setOrderStatus(
   orderId: string,
   status: OrderStatus,
-  reason?: string,
+  refus?: { code: RefusalCode; precision?: string | null },
 ): Promise<void> {
+  const precision = refus?.precision?.trim() || null;
   const { error } = await supabase.rpc('set_order_status', {
     p_order_id: orderId,
     p_new_status: status,
-    p_reason: reason ?? null,
+    p_code: refus?.code ?? null,
+    p_precision: precision,
   });
   if (error) throw error;
 }

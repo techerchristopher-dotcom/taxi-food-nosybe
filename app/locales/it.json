@@ -570,5 +570,29 @@
   },
   "bandeau": {
     "fermer": "Chiudi l’annuncio"
+  },
+  "refusal": {
+    "sheetTitle": "Rifiuta l'ordine",
+    "sheetSub": "Scegli un motivo: il cliente lo vedrà nel suo monitoraggio.",
+    "precisionLabel": "Dettaglio per il cliente (facoltativo)",
+    "precisionPlaceholder": "es.: pollo finito stasera",
+    "precisionRequired": "Con «Altro motivo», scrivi due parole per il cliente.",
+    "cancel": "Annulla",
+    "confirm": "Conferma il rifiuto",
+    "chips": {
+      "rupture": "Piatto/i esaurito/i",
+      "trop_de_commandes": "Troppi ordini",
+      "fermeture": "Chiusura",
+      "livraison_impossible": "Indirizzo non servito",
+      "autre": "Altro motivo"
+    },
+    "codes": {
+      "rupture": "Uno o più piatti non sono più disponibili",
+      "trop_de_commandes": "Troppi ordini in questo momento",
+      "fermeture": "Il ristorante sta chiudendo o è chiuso",
+      "livraison_impossible": "Indirizzo troppo lontano o non servito",
+      "autre": "Il ristorante non ha potuto accettare l'ordine"
+    },
+    "withDetail": "{{label}}: {{detail}}"
   }
 }

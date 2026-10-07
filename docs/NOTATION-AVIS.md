@@ -6,7 +6,9 @@ après diagnostic du code (voir § 6 pour ce que le diagnostic a révélé).
 ## 1. Ce que ça fait
 
 Après une livraison, le client est invité à noter sa commande : **trois notes de 1 à 5
-étoiles** (la cuisine, le délai de préparation, la livraison) et un **commentaire libre**.
+étoiles** (la cuisine, le délai de préparation, la livraison), un **avis public** (commentaire
+libre affiché avec le prénom) et, depuis le 2026-10-07, un **message privé au restaurant**
+(jamais publié).
 Les avis nourrissent une **note par restaurant** visible dans le catalogue et sur la fiche,
 un écran « les avis » par restaurant, et — avec le consentement du client — un vivier
 d'avis **réutilisables sur les réseaux sociaux**.
@@ -28,6 +30,7 @@ d'avis **réutilisables sur les réseaux sociaux**.
 | **Remerciement : +1 000 Ar dans le porte-monnaie, quelle que soit la note, sans expiration** (2026-10-07) | Rien à retenir ni à retaper : le solde s'affiche au paiement, sur les plats seulement. Payé par Taxi Food, le restaurant reste reversé du prix plein. Détail : CLAUDE.md, « Porte-monnaie (2026-10-07) ». |
 | **Droit de réponse du restaurateur** | Lot 2. C'est ce qui rend l'avis utile côté partenaire. |
 | **Photo du plat par le client** | Lot 3. C'est ce qui vaut de l'or sur Facebook. |
+| **Deux champs : 🌍 avis public / 🔒 message privé au restaurant** (2026-10-07) | Le client qui veut signaler un oubli ou une cuisson sans « afficher » le restaurant n'avait que le champ public. Le privé vit dans une **table à part** (`avis_messages_prives`) : aucune RPC publique ne peut le renvoyer par erreur. Lu par le restaurant (app + Telegram dans sa langue) et l'admin. |
 
 ## 3. Le modèle
 
@@ -51,6 +54,19 @@ Toutes les règles vivent **en base** (RPC `security definer`), comme partout da
 
 RLS activée **sans aucune policy** + `revoke all` : lecture et écriture par RPC.
 
+### `avis_messages_prives` (2026-10-07)
+
+| Colonne | Rôle |
+|---|---|
+| `avis_id` **PK** → `avis` | un message privé au plus par avis |
+| `order_id`, `restaurant_id`, `user_id` | dénormalisés, comme sur `avis` |
+| `message` | 1 à 500 caractères, nettoyé par `nettoyer_message_prive()` (contrôles et `<>` retirés) |
+| `lu_le` | prévu pour « lu par le restaurant », pas encore posé |
+
+Même verrou que `avis` : RLS sans policy + `revoke all`. **Jamais** lu par `avis_restaurant`, le
+texte de publication ni le visuel admin. Trigger `avis_message_prive_telegram` →
+`alerter_message_prive()` : Telegram au restaurant (sa langue) + copie admin.
+
 ### Ce qui manquait sur `orders` et qui est comblé en même temps
 
 `accepted_at`, `ready_at` (posés par un **trigger** à chaque transition de statut, quel que
@@ -63,9 +79,9 @@ et mesurer le temps d'attente du livreur (`picked_up_at − ready_at`).
 
 | Fonction | Qui | Quoi |
 |---|---|---|
-| `deposer_avis(p_order_id, p_cuisine, p_preparation, p_livraison, p_commentaire, p_consentement, p_langue, p_photo_url)` | client | vérifie tout, insère, **crédite 1 000 Ar au porte-monnaie** (depuis le 2026-10-07 ; avant : code promo), renvoie `{code: null, valeur, expire_le: null, credit_porte_monnaie, solde_porte_monnaie}` — les trois premières clés gardées pour l'app déjà installée |
+| `deposer_avis(p_order_id, p_cuisine, p_preparation, p_livraison, p_commentaire, p_consentement, p_langue, p_photo_url, p_message_prive)` | client | vérifie tout, insère (le message privé, facultatif, dans `avis_messages_prives`), **crédite 1 000 Ar au porte-monnaie** (depuis le 2026-10-07 ; avant : code promo), renvoie `{code: null, valeur, expire_le: null, credit_porte_monnaie, solde_porte_monnaie}` — les trois premières clés gardées pour l'app déjà installée |
 | `mon_porte_monnaie()` | client | solde + historique (table `porte_monnaie_mouvements`) |
-| `mon_avis(p_order_id)` | client | l'avis déjà déposé sur cette commande, ou null |
+| `mon_avis(p_order_id)` | client | l'avis déjà déposé sur cette commande (avec SON message privé), ou null |
 | `avis_restaurant(p_restaurant_id, p_limite, p_decalage)` | public | les avis `publie` d'un restaurant : prénom, notes, commentaire, date, réponse |
 | `note_moyenne(r)`, `nb_avis(r)` | colonnes calculées PostgREST sur `restaurants` | moyenne de `note_restaurant`, `null` sous 3 avis |
 | `relancer_avis_a_donner()` | pg_cron, toutes les 10 min | les commandes livrées il y a 40 min à 6 h, sans avis, sans relance : pose `invitation_avis_le` et appelle `notify-order` avec `event = 'noter'` |
@@ -136,6 +152,13 @@ QUATRE surfaces »).
    `20261007160000_porte_monnaie` et `20261007170000_porte_monnaie_reprise_codes_avis`. +1 000 Ar par
    avis, dépensés sur les plats au paiement ; codes AVIS non utilisés convertis (Opaline 4 000 Ar,
    Sulli 2 000 Ar) puis désactivés. Push `noter` : « … 1 000 Ar dans ton porte-monnaie ».
+5. 🟡 **Message privé au restaurant** — 2026-10-07, migration
+   `20261007180000_avis_message_prive_restaurant` (appliquée), recette
+   `supabase/tests/message_prive.test.sql`. Deux champs distincts dans `BlocAvis` (🌍 public /
+   🔒 privé), message privé visible du restaurateur (Historique) et de l'admin (filtre
+   « 🔒 Messages privés »), Telegram au restaurant dans sa langue. `avis_de_mon_restaurant` et
+   `admin_avis_lister` ont une colonne `message_prive` en plus. **App et admin pas encore
+   déployés.**
 
 ## 6. Ce que le diagnostic avait révélé (2026-09-30)
 

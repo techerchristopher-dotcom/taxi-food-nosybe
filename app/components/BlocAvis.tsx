@@ -25,8 +25,10 @@ function dateCourte(iso: string): string {
 /**
  * « Alors, c'était comment ? » — le bloc de notation d'une commande LIVRÉE.
  *
- * Trois notes de 1 à 5 (cuisine, préparation, livraison), un commentaire libre,
- * une photo du plat (facultative, bucket `avis`, dossier du client) et la case de
+ * Trois notes de 1 à 5 (cuisine, préparation, livraison), DEUX champs de texte
+ * bien distincts — 🌍 l'avis public (`commentaire`, affiché sur la fiche avec le
+ * prénom) et 🔒 le message privé au restaurant (table `avis_messages_prives`, lu
+ * par le restaurant et Taxi Food seulement, jamais publié) —, une photo du plat (facultative, bucket `avis`, dossier du client) et la case de
  * consentement à la publication. La base vérifie tout (client de la commande,
  * livrée, sept jours, un seul avis, photo dans SON dossier) et crédite 1 000 Ar
  * au porte-monnaie (avant le 2026-10-07 : un code promo) — l'écran ne fait que
@@ -40,6 +42,7 @@ export function BlocAvis({ order }: { order: Order }) {
   const [preparation, setPreparation] = useState<number | null>(null);
   const [livraison, setLivraison] = useState<number | null>(null);
   const [commentaire, setCommentaire] = useState('');
+  const [messagePrive, setMessagePrive] = useState('');
   const [consentement, setConsentement] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -115,6 +118,7 @@ export function BlocAvis({ order }: { order: Order }) {
         consentement,
         langue: i18n.language.slice(0, 2),
         photoUrl,
+        messagePrive: messagePrive.trim() || null,
       });
       setResultat(r);
       // Le solde vient de bouger : l'aperçu du récapitulatif est périmé.
@@ -142,6 +146,8 @@ export function BlocAvis({ order }: { order: Order }) {
       <Ligne label={t('avis.preparation')} valeur={preparation} onChange={setPreparation} />
       <Ligne label={t('avis.livraison')} valeur={livraison} onChange={setLivraison} />
 
+      {/* 🌍 Ce qui est PUBLIC : le texte, la photo et le consentement vont ensemble. */}
+      <EnTeteChamp icone="public" titre={t('avis.publicTitre')} aide={t('avis.publicAide')} />
       <TextInput
         style={styles.commentaire}
         placeholder={t('avis.commentaire')}
@@ -151,6 +157,8 @@ export function BlocAvis({ order }: { order: Order }) {
         multiline
         maxLength={500}
         textAlignVertical="top"
+        accessibilityLabel={t('avis.publicTitre')}
+        accessibilityHint={t('avis.publicAide')}
       />
 
       {photoUri ? (
@@ -175,11 +183,41 @@ export function BlocAvis({ order }: { order: Order }) {
         <Text style={styles.consentTexte}>{t('avis.consentement')}</Text>
       </Pressable>
 
+      {/* 🔒 Ce qui est PRIVÉ : encadré à part, fond différent, jamais publié. */}
+      <View style={styles.priveBox}>
+        <EnTeteChamp icone="lock" titre={t('avis.priveTitre')} aide={t('avis.priveAide')} prive />
+        <TextInput
+          style={[styles.commentaire, styles.priveChamp]}
+          placeholder={t('avis.privePlaceholder')}
+          placeholderTextColor={colors.textFaint}
+          value={messagePrive}
+          onChangeText={setMessagePrive}
+          multiline
+          maxLength={500}
+          textAlignVertical="top"
+          accessibilityLabel={t('avis.priveTitre')}
+          accessibilityHint={t('avis.priveAide')}
+        />
+      </View>
+
       {erreur ? <Text style={styles.erreur}>{erreur}</Text> : null}
 
       <Button label={t('avis.envoyer')} onPress={envoyer} disabled={!complet} loading={envoi} icon="star"
         style={{ marginTop: 14 }} />
     </Card>
+  );
+}
+
+/** Titre d'un champ de texte + la phrase qui dit QUI le lira. */
+function EnTeteChamp({ icone, titre, aide, prive }: { icone: string; titre: string; aide: string; prive?: boolean }) {
+  return (
+    <View style={[styles.champTete, prive && { marginTop: 0 }]}>
+      <View style={styles.champTitreLigne}>
+        <Icon name={icone} size={18} color={prive ? colors.textDark : colors.primary} />
+        <Text style={styles.champTitre}>{titre}</Text>
+      </View>
+      <Text style={styles.champAide}>{aide}</Text>
+    </View>
   );
 }
 
@@ -206,8 +244,26 @@ function Merci({ avis, code }: { avis: MonAvis | null; code: CodeRemerciement | 
           <Recap label={t('avis.cuisine')} n={avis.noteCuisine} />
           <Recap label={t('avis.preparation')} n={avis.notePreparation} />
           <Recap label={t('avis.livraison')} n={avis.noteLivraison} />
-          {avis.commentaire ? <Text style={styles.recapCommentaire}>« {avis.commentaire} »</Text> : null}
+          {avis.commentaire ? (
+            <>
+              <View style={[styles.champTitreLigne, { marginTop: 6 }]}>
+                <Icon name="public" size={15} color={colors.primary} />
+                <Text style={styles.recapLabelFort}>{t('avis.publicTitre')}</Text>
+              </View>
+              <Text style={styles.recapCommentaire}>« {avis.commentaire} »</Text>
+            </>
+          ) : null}
           {avis.photoUrl ? <Image source={{ uri: avis.photoUrl }} style={styles.photoRecap} contentFit="cover" /> : null}
+          {avis.messagePrive ? (
+            <View style={[styles.priveBox, { marginTop: 8 }]}>
+              <View style={styles.champTitreLigne}>
+                <Icon name="lock" size={15} color={colors.textDark} />
+                <Text style={styles.recapLabelFort}>{t('avis.priveTitre')}</Text>
+              </View>
+              <Text style={styles.champAide}>{t('avis.priveRelu')}</Text>
+              <Text style={styles.recapCommentaire}>« {avis.messagePrive} »</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       {/* Depuis le 2026-10-07 : un crédit de porte-monnaie. Les avis plus anciens
@@ -251,8 +307,23 @@ const styles = StyleSheet.create({
   sousTitre: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 3 },
   ligne: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, gap: 10 },
   ligneLabel: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDark, flexShrink: 1 },
+  champTete: { marginTop: 16, gap: 2 },
+  champTitreLigne: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  champTitre: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  champAide: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: colors.textMuted },
+  priveBox: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: radius.lg,
+    backgroundColor: colors.fieldBg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderStrong,
+  },
+  priveChamp: { backgroundColor: colors.surface },
+  recapLabelFort: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },
   commentaire: {
-    marginTop: 14,
+    marginTop: 8,
     minHeight: 84,
     borderRadius: radius.input,
     borderWidth: 1.5,

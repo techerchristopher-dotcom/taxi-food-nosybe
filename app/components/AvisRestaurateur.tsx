@@ -15,7 +15,8 @@ function dateCourte(iso: string): string {
 
 /**
  * L'avis d'un client, vu par le restaurateur, sous sa commande dans l'Historique —
- * avec le droit de réponse (publique, 500 caractères, modifiable).
+ * avec le droit de réponse (publique, 500 caractères, modifiable) et, s'il y en a
+ * un, le message PRIVÉ que le client a laissé au restaurant (jamais publié).
  *
  * Textes en français seulement : l'espace partenaire l'est aussi (décision produit).
  * La note affichée en grand est celle du RESTAURANT (cuisine + préparation) ; la
@@ -60,6 +61,16 @@ export function AvisRestaurateur({ avis, onChange }: { avis: TAvisRestaurateur; 
       </View>
       {avis.commentaire ? <Text style={styles.commentaire}>« {avis.commentaire} »</Text> : null}
       {avis.photoUrl ? <Image source={{ uri: avis.photoUrl }} style={styles.photo} contentFit="cover" /> : null}
+      {avis.messagePrive ? (
+        <View style={styles.prive}>
+          <View style={styles.priveTete}>
+            <Icon name="lock" size={15} color={colors.textDark} />
+            <Text style={styles.priveTitre}>Message privé — le client ne l’a pas publié</Text>
+          </View>
+          <Text style={styles.priveTexte}>« {avis.messagePrive} »</Text>
+          <Text style={styles.priveAide}>Vous seul le lisez (et Taxi Food). Votre réponse publique ne doit pas le citer.</Text>
+        </View>
+      ) : null}
 
       {edition ? (
         <View style={{ marginTop: 10 }}>
@@ -110,6 +121,20 @@ const styles = StyleSheet.create({
   notes: { marginTop: 6, gap: 4 },
   detail: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   commentaire: { fontFamily: fonts.regular, fontStyle: 'italic', fontSize: 14, lineHeight: 20, color: colors.ink, marginTop: 8 },
+  prive: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: radius.tile,
+    backgroundColor: colors.fieldBg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderStrong,
+    gap: 4,
+  },
+  priveTete: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  priveTitre: { flex: 1, fontFamily: fonts.bold, fontSize: 12, color: colors.textDark },
+  priveTexte: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.ink },
+  priveAide: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   photo: { width: 120, height: 120, borderRadius: radius.tile, marginTop: 8, backgroundColor: colors.fieldBg },
   champ: {
     minHeight: 84,

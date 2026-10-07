@@ -1450,6 +1450,12 @@ export async function deposerAvis(input: {
   langue: string;
   /** URL publique du bucket `avis`, sous le dossier du client — la base refuse tout autre chemin. */
   photoUrl?: string | null;
+  /**
+   * Message privé au restaurant (≤ 500 car.) : stocké à part (`avis_messages_prives`),
+   * lu par le restaurant et Taxi Food seulement, jamais publié. La clé n'est envoyée
+   * que si le client a écrit quelque chose.
+   */
+  messagePrive?: string | null;
 }): Promise<CodeRemerciement> {
   const { data, error } = await supabase.rpc('deposer_avis', {
     p_order_id: input.orderId,
@@ -1460,6 +1466,7 @@ export async function deposerAvis(input: {
     p_consentement: input.consentement,
     p_langue: input.langue,
     p_photo_url: input.photoUrl ?? null,
+    ...(input.messagePrive ? { p_message_prive: input.messagePrive } : {}),
   });
   if (error) throw error;
   // Depuis le 2026-10-07 la base ne crée plus de code : `code` vaut null et le
@@ -1486,7 +1493,7 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
     note_cuisine: number; note_preparation: number; note_livraison: number;
     commentaire: string | null; photo_url?: string | null; consentement_publication: boolean; created_at: string;
     code: string | null; code_valeur: number | null; code_expire_le: string | null;
-    credit_porte_monnaie?: number | null;
+    credit_porte_monnaie?: number | null; message_prive?: string | null;
   };
   return {
     noteCuisine: d.note_cuisine,
@@ -1500,6 +1507,7 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
     codeValeur: d.code_valeur,
     codeExpireLe: d.code_expire_le,
     creditPorteMonnaie: d.credit_porte_monnaie ?? 0,
+    messagePrive: d.message_prive ?? null,
   };
 }
 
@@ -1609,7 +1617,7 @@ export async function avisDeMonRestaurant(restaurantId: string): Promise<AvisRes
     note_cuisine: number; note_preparation: number; note_livraison: number; note_restaurant: number | string;
     commentaire: string | null; created_at: string;
     reponse_restaurant: string | null; reponse_le: string | null; statut: 'publie' | 'masque';
-    photo_url?: string | null;
+    photo_url?: string | null; message_prive?: string | null;
   }[]).map((a) => ({
     id: a.id,
     orderId: a.order_id,
@@ -1625,6 +1633,7 @@ export async function avisDeMonRestaurant(restaurantId: string): Promise<AvisRes
     reponseRestaurant: a.reponse_restaurant,
     reponseLe: a.reponse_le,
     statut: a.statut,
+    messagePrive: a.message_prive ?? null,
   }));
 }
 

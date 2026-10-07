@@ -297,7 +297,13 @@ export type Avis = {
 };
 
 /** Un avis vu par le restaurateur : le même, plus la commande et le statut (masqué par l'admin ?). */
-export type AvisRestaurateur = Avis & { orderId: string; orderNumber: string; statut: 'publie' | 'masque' };
+export type AvisRestaurateur = Avis & {
+  orderId: string;
+  orderNumber: string;
+  statut: 'publie' | 'masque';
+  /** Message privé du client au restaurant (table `avis_messages_prives`) — jamais publié. */
+  messagePrive: string | null;
+};
 
 /** L'avis que J'AI laissé sur une commande, avec le code de remerciement. */
 export type MonAvis = {
@@ -313,6 +319,8 @@ export type MonAvis = {
   codeExpireLe: string | null;
   /** Crédit de porte-monnaie reçu pour cet avis (0 pour les avis d'avant le 2026-10-07). */
   creditPorteMonnaie: number;
+  /** Mon message privé au restaurant (lu par lui et Taxi Food seulement), ou null. */
+  messagePrive: string | null;
 };
 
 /**

@@ -38,17 +38,23 @@ type Ligne = {
   code: string | null;
   /** Photo du plat prise par le client (bucket public `avis`), ou null. */
   photo_url: string | null;
+  /**
+   * Message PRIVÉ du client au restaurant (table `avis_messages_prives`) : jamais
+   * publié, jamais dans le texte de publication ni le visuel. Null s'il n'y en a pas.
+   */
+  message_prive: string | null;
 };
 
 const SITE = 'https://taxifoodnosybe.distripro207.com';
 
-type Filtre = 'tous' | 'consentis_non_utilises' | 'faibles' | 'masques';
+type Filtre = 'tous' | 'consentis_non_utilises' | 'faibles' | 'masques' | 'messages_prives';
 
 const FILTRES: { id: Filtre; label: string }[] = [
   { id: 'tous', label: 'Tous' },
   { id: 'consentis_non_utilises', label: 'À publier (consentis, pas encore utilisés)' },
   { id: 'faibles', label: '≤ 2 étoiles' },
   { id: 'masques', label: 'Masqués' },
+  { id: 'messages_prives', label: '🔒 Messages privés' },
 ];
 
 function etoiles(n: number) {
@@ -291,6 +297,13 @@ export function Avis() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={a.photo_url} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, marginTop: 6, display: 'block' }} />
                     </a>
+                  ) : null}
+                  {a.message_prive ? (
+                    <div style={{ fontSize: 12, marginTop: 6, padding: '6px 8px', border: '1px dashed var(--border)', borderRadius: 6 }}
+                      title="Message privé : lu par le restaurant et Taxi Food seulement. Ne jamais le publier.">
+                      <strong>🔒 Privé — le client ne l’a pas publié</strong>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>« {a.message_prive} »</div>
+                    </div>
                   ) : null}
                   {a.reponse_restaurant ? (
                     <div className="muted" style={{ fontSize: 12, marginTop: 4, borderLeft: '2px solid var(--border)', paddingLeft: 8 }}>

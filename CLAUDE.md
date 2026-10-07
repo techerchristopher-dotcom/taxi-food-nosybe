@@ -37,6 +37,8 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - ✅ **Lot 3 livré** (2026-09-30) : photo du plat par le client, visuel citation 1080×1080 et texte de
   publication dans l'admin. Workflow de publication dans `docs/NOTATION-AVIS.md` § 5.
   ⚠️ **Jamais vu sur un vrai téléphone** (ni la photo, ni le bloc de notation).
+- 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
+  déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
 **Nouveaux chantiers (demandés le 2026-09-17)**
 - ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
@@ -2286,6 +2288,53 @@ total 1 100 ; code plats 1 000 + solde 2 500 → remise 800 ; reversement net = 
 runtimes ; admin (Netlify). La base est en place : les apps actuelles continuent de marcher, et
 les avis déposés depuis l'ancienne app créditent déjà le porte-monnaie (l'ancien écran n'affiche
 simplement plus de code). ⚠️ Écran du récapitulatif jamais vu sur téléphone.
+
+## 🔒 Message privé au restaurant (2026-10-07)
+
+Demande du porteur du projet : à la notation, le client a **deux champs** clairement distincts —
+🌍 **« Ton avis public »** (`avis.commentaire`, inchangé, affiché sur la fiche avec le prénom) et
+🔒 **« Message privé au restaurant »** (lu par le restaurant et l'admin, **jamais publié**, jamais
+renvoyé par `avis_restaurant`, jamais réutilisé sur les réseaux). Migration
+`20261007180000_avis_message_prive_restaurant` (appliquée). Recette :
+`supabase/tests/message_prive.test.sql` (transaction annulée).
+
+- **Table à part `avis_messages_prives`** (avis_id PK → avis, order_id, restaurant_id, user_id,
+  message 1..500, `lu_le` — prévu, pas encore utilisé —, created_at). **Pas une colonne de `avis`** :
+  aucune RPC publique ni le texte de publication / visuel admin ne lisent cette table, donc rien ne
+  peut fuiter par mégarde. RLS activée **sans aucune policy** + `revoke all` (anon, authenticated) :
+  tout passe par RPC `security definer`.
+- **`deposer_avis`** : 9ᵉ paramètre **`p_message_prive text default null`** (DROP de la 8-args +
+  CREATE : pas de surcharge, PGRST203 vérifié absent par PostgREST avec 8 et 9 clés). Nettoyé par
+  `nettoyer_message_prive()` (contrôles retirés, `<>` retirés, espaces resserrés, 3 sauts de ligne
+  et plus → 2) ; > 500 → `avis:message_prive_trop_long`. Le crédit porte-monnaie (1 000 Ar) n'a pas
+  bougé. Retour : clé `message_prive` (booléen) en plus. `anon` n'a plus EXECUTE (inutile : il
+  fallait déjà être connecté).
+- **Lecture** : `mon_avis` (+ `message_prive`, l'auteur seulement), `avis_de_mon_restaurant` et
+  `admin_avis_lister` (+ colonne `message_prive` en DERNIER ; DROP + CREATE car le type de retour
+  change ; nouveau filtre admin `messages_prives`). `avis_restaurant` **non modifiée**.
+- **Telegram** : trigger `avis_message_prive_telegram` (AFTER INSERT) → `alerter_message_prive()`,
+  pg_net + jeton du Vault, comme `alerter_nouvel_avis()`. Au **restaurant** s'il a un
+  `telegram_chat_id`, dans **sa langue** (`it` pour Les Siciliens) : « 🔒 Message privé d'un client —
+  commande TF-xxx (★ 4,5/5) « … » Vous seul le lisez : il n'est jamais publié. » ; **copie admin**
+  toujours (avec « restaurant sans Telegram : il le verra dans l'app » le cas échéant). Sans chat
+  restaurant : rien ne part vers lui, rien ne casse. **n8n T7uX non touché.**
+- **Écrans** : `BlocAvis` — deux blocs titrés avec icône (🌍 `public` / 🔒 `lock`) et la phrase
+  « Visible par tous… » / « Seul le restaurant le lira… Jamais publié. » ; le message privé est dans
+  un encadré pointillé à fond gris, sous la photo et la case de consentement (qui ne concernent que
+  le public). « Mon avis » relu montre le message privé, marqué privé. Clés `avis.publicTitre`,
+  `publicAide`, `priveTitre`, `priveAide`, `privePlaceholder`, `priveRelu` FR/EN/IT. Restaurateur
+  (`AvisRestaurateur`, Historique) : encadré « 🔒 Message privé — le client ne l'a pas publié ».
+  Admin (`components/Avis.tsx`) : idem + filtre « 🔒 Messages privés ».
+- **Recette (2026-10-07, transaction annulée, Taxi Be + compte admin, TF-342 à TF-348 consommés,
+  aucune ligne restée)** : ancienne signature 8 clés nommées → OK, +1 000, aucun message ; avec
+  message → stocké nettoyé, +1 000 ; lisible par l'auteur, le staff démo Taxi Be et l'admin ; un
+  autre client → `mon_avis` null, 0 ligne restaurateur/admin, SELECT direct refusé (42501) ; anon →
+  SELECT et RPC refusés (42501, aussi par PostgREST avec la clé publiable) ; absent de
+  `avis_restaurant` ; Telegram lu dans `net.http_request_queue` : chat bidon + `it` → texte italien
+  au bon chat + copie admin ; `fr` → texte français ; Taxi Be sans chat → copie admin seule.
+- **⚠️ À livrer (rien n'est déployé)** : OTA ×3 runtimes + web (Netlify) pour l'app ; admin
+  (Netlify). La base est rétrocompatible : l'app en magasin dépose ses avis comme avant (sans
+  message privé) ; l'admin en ligne ignore la nouvelle colonne.
 
 ## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
 

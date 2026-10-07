@@ -667,5 +667,10 @@
     "joursRestants_other": "{{count}} days left",
     "vide": "No orders to rate right now. Your next delivered order earns you 1,000 Ar as soon as you rate it.",
     "erreur": "The list could not be loaded. Try again in a moment."
+  },
+  "miseAJour": {
+    "titre": "New version available",
+    "cta": "Update now →",
+    "fermer": "Later"
   }
 }

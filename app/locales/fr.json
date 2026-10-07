@@ -667,5 +667,10 @@
     "joursRestants_other": "encore {{count}} jours",
     "vide": "Aucune commande à noter pour le moment. Ta prochaine commande livrée te rapportera 1 000 Ar dès que tu la notes.",
     "erreur": "La liste n’a pas pu être chargée. Réessaie dans un instant."
+  },
+  "miseAJour": {
+    "titre": "Nouvelle version disponible",
+    "cta": "Mettre à jour maintenant →",
+    "fermer": "Plus tard"
   }
 }

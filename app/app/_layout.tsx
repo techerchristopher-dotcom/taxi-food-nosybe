@@ -23,6 +23,7 @@ import { useCart } from '../store/cart';
 import { hydrateLanguage } from '../lib/i18n';
 import { registerForPush } from '../lib/push';
 import { miseAJourAuDemarrage, miseAJourAuRetour } from '../lib/miseAJour';
+import { BandeauMiseAJour } from '../components/BandeauMiseAJour';
 import { useTranslation } from 'react-i18next';
 
 function Splash() {
@@ -168,7 +169,10 @@ export default function RootLayout() {
       } else if (etat === 'active' && enArrierePlanDepuis !== null) {
         const absence = Date.now() - enArrierePlanDepuis;
         enArrierePlanDepuis = null;
-        if (absence >= 30 * 60 * 1000) void miseAJourAuRetour(() => momentSur.current());
+        // À CHAQUE retour (2026-10-07) : une mise à jour téléchargée est soit appliquée
+        // d'office (absence ≥ 30 min ET accueil client : rien n'est en cours), soit
+        // proposée par le bandeau « Nouvelle version disponible ».
+        void miseAJourAuRetour(() => absence >= 30 * 60 * 1000 && momentSur.current());
       }
     });
     return () => sub.remove();
@@ -223,6 +227,7 @@ export default function RootLayout() {
         <Stack.Screen name="product/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="confirmation" options={{ gestureEnabled: false }} />
       </Stack>
+      <BandeauMiseAJour />
     </SafeAreaProvider>
   );
 }

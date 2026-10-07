@@ -667,5 +667,10 @@
     "joursRestants_other": "ancora {{count}} giorni",
     "vide": "Nessun ordine da valutare per ora. Il tuo prossimo ordine consegnato ti farà guadagnare 1.000 Ar appena lo valuti.",
     "erreur": "Impossibile caricare la lista. Riprova tra un attimo."
+  },
+  "miseAJour": {
+    "titre": "Nuova versione disponibile",
+    "cta": "Aggiorna ora →",
+    "fermer": "Più tardi"
   }
 }

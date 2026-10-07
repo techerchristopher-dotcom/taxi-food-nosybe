@@ -1,6 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import * as Updates from 'expo-updates';
+import { create } from 'zustand';
+
+/**
+ * Bandeau « Nouvelle version disponible » (2026-10-07). Demande du porteur du projet après
+ * avoir tapé sur une annonce qui ouvrait une page que son app ne connaissait pas encore :
+ * la mise à jour était publiée, mais ne s'appliquait qu'au lancement suivant. Désormais,
+ * dès qu'une mise à jour est TÉLÉCHARGÉE et pas encore appliquée, `prete` passe à true et
+ * le bandeau la propose ; un tap recharge l'app à jour. On ne recharge jamais sans ce tap
+ * (règle 2 : le client peut être au milieu d'un panier).
+ */
+export const useMiseAJourPrete = create<{ prete: boolean; masquee: boolean; masquer: () => void; signaler: () => void }>((set) => ({
+  prete: false,
+  masquee: false,
+  masquer: () => set({ masquee: true }),
+  signaler: () => set({ prete: true, masquee: false }),
+}));
 
 /**
  * Un client doit avoir la DERNIÈRE version dès le premier lancement.
@@ -71,8 +87,12 @@ export async function miseAJourAuDemarrage(delaiMs = DELAI_MAJ_DEMARRAGE_MS): Pr
       if (id && deja === id) return;
 
       const recu = await Updates.fetchUpdateAsync();
-      // Règle 2 : trop tard, l'app est déjà ouverte.
-      if (abandonne || !recu.isNew) return;
+      if (!recu.isNew) return;
+      // Règle 2 : trop tard, l'app est déjà ouverte — on ne recharge pas, on PROPOSE.
+      if (abandonne) {
+        useMiseAJourPrete.getState().signaler();
+        return;
+      }
 
       if (id) await AsyncStorage.setItem(CLE_DERNIER_RECHARGEMENT, id).catch(() => {});
       if (abandonne) return;
@@ -111,10 +131,23 @@ export async function miseAJourAuRetour(momentSur: () => boolean): Promise<void>
     const recu = await Updates.fetchUpdateAsync();
     if (!recu.isNew) return;
     // Le moment est jugé APRÈS le téléchargement : le client a pu bouger entre-temps.
-    if (!momentSur()) return;
+    // Pas le bon moment : on ne recharge pas, on PROPOSE (bandeau).
+    if (!momentSur()) {
+      useMiseAJourPrete.getState().signaler();
+      return;
+    }
     if (id) await AsyncStorage.setItem(CLE_DERNIER_RECHARGEMENT, id).catch(() => {});
     await Updates.reloadAsync();
   } catch {
     /* rien : la mise à jour s'appliquera au prochain lancement */
+  }
+}
+
+/** Le tap sur « Mettre à jour » : recharge sur la mise à jour déjà téléchargée. */
+export async function appliquerMiseAJour(): Promise<void> {
+  try {
+    await Updates.reloadAsync();
+  } catch {
+    useMiseAJourPrete.getState().masquer();
   }
 }

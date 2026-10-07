@@ -147,6 +147,30 @@ L'écart avec Madame Oh est de **128° de teinte et 43 points de valeur**. C'est
 qu'on ne confondra jamais les deux maisons dans un fil : l'une est froide, sombre, saturée ;
 l'autre est chaude, claire, désaturée.
 
+### Le Nandipo — brasserie, zébu & pizzeria, Hell-Ville
+
+Arrêté le 2026-10-07 avec le porteur du projet. Pas de photo de façade : la couleur vient du
+**logo** (le zébu au bonnet tressé), mesuré pour sa carte papier (`nandipo/NANDIPO-A-VALIDER.md`) —
+or `#F5A91B` (44 % des pixels colorés), rouge `#A31D0D`.
+
+⚠️ **Le bois noir de ses photos (`#0E0D04`) a été proposé puis refusé** (« pas fan du noir »).
+Il reste le fond de sa **carte papier**, pas celui de ses visuels.
+
+- Fond : **enduit à la chaux ocre doré `#E3A447`** (teinte 36°, saturation 69 %, valeur 89 %) —
+  l'or de son logo rendu mural, mat, légèrement patiné. Cible à corriger après rendu (dérive).
+- Contenant : **assiette carrée en porcelaine blanche**, celle de toutes ses photos.
+- Garniture signature, sur chaque plat : **feuille de laitue, rondelle de tomate, tranche de
+  concombre** dans un coin de l'assiette — c'est sa façon de dresser, elle se voit sur ses 19 photos.
+- Lumière : chaude, directionnelle, de côté ; ombre courte et nette sur le mur.
+- Prise de vue : trois quarts, plongée ~35°, assiette légèrement décentrée.
+- Graphisme (gabarit) : Inter, titres en capitales espacées ; texte foncé sur l'ocre, accents
+  rouge `#A31D0D` ; liseré inspiré du **tressage rouge-vert-or** de son bonnet.
+- Logo : toujours l'élément Higgsfield, jamais dessiné.
+
+**Voisins.** Même famille de teinte qu'Oh Hazar (40°) mais à l'opposé en **saturation** (69 % contre
+20 %) : chaux sable pâle d'un côté, ocre franc de l'autre. Chez Bidule & Truc (ardoise noire, bol
+noir) s'oppose en valeur. Madame Oh (jade 168°, valeur 39 %) s'oppose sur les deux axes.
+
 ## Ce qui reste à faire pour chaque nouvelle maison
 
 1. Une photo nette de la façade et de l'enseigne — la mesure ne vaut que ce que vaut la photo.

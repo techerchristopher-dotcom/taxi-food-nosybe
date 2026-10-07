@@ -2077,6 +2077,22 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
 
+## 💰 Annonce du porte-monnaie et envoi d'annonce par la base (2026-10-07)
+
+- Page **`/porte-monnaie`** (`app/app/porte-monnaie.tsx`) : se lit SANS compte (« Comment ça marche » en
+  4 étapes + « Se connecter → », retour après connexion via `RETOURS`), solde + historique si connecté.
+  C'est la page ouverte par l'annonce (push) et par le bouton de son e-mail (web).
+- Route d'annonce **`/porte-monnaie`** autorisée (contrainte `annonces_route_check` + `admin_creer_annonce`
+  patchée par ancre) et proposée dans l'onglet 📣 Annonce.
+- **Seconde porte de `envoyer-annonce`** : la base, en-tête `x-hook-secret` = Vault `annonce_hook_secret`
+  (généré en base, jamais affiché). `select public.envoyer_annonce_depuis_la_base('<annonce_id>')`
+  (accordée à personne : connexion d'exploitation seulement). L'annonce reste ÉCRITE par
+  `admin_creer_annonce` sous une identité admin (`set_config('request.jwt.claims', …)`), dont
+  `envoyee_par` doit être admin actif. Faux secret → 403 `hook_invalide` (vérifié).
+- Test du 2026-10-07 (cible `moi`) : push reçu Expo `ok`, e-mail accepté par le SMTP.
+- ⚠️ Une annonce qui ouvre une route NOUVELLE ne doit partir qu'une fois l'OTA installée : l'ancienne
+  app n'a pas `/porte-monnaie` (pas de `+not-found.tsx` → écran « Unmatched Route » d'expo-router).
+
 ## 🛵 Notification « un livreur a pris ta commande » (2026-10-07)
 
 Demande du porteur du projet : quand le livreur appuie sur « Je la prends » (`claim_order`, seul

@@ -90,17 +90,23 @@ export default function OrderTrackingScreen() {
   // Jalons posés par le livreur après la récupération : « J'arrive » puis « Je suis là ».
   const livreurLa = enLivraison && !!order.arrivedAt;
   const livreurArrive = enLivraison && !livreurLa && !!order.arrivingAt;
+  // Un livreur a accepté la course (« Je la prends ») mais n'a pas encore récupéré la
+  // commande : il est en route vers le restaurant (2026-10-07, même jalon que la
+  // notification `assigned`).
+  const livreurVersResto = enLivraison && !order.pickedUp && !!order.courierId;
   const bannerTitle = cancelled
     ? t('tracking.refusedTitle')
     : livreurLa
       ? t('tracking.courierHere')
       : livreurArrive
         ? t('tracking.courierArriving')
-        : enLivraison
-          ? order.pickedUp
-            ? t('tracking.onTheWay')
-            : t('tracking.soonOnTheWay')
-          : t(`tracking.steps.${head.key}Title`);
+        : livreurVersResto
+          ? t('tracking.courierToRestaurant')
+          : enLivraison
+            ? order.pickedUp
+              ? t('tracking.onTheWay')
+              : t('tracking.soonOnTheWay')
+            : t(`tracking.steps.${head.key}Title`);
   // Motif de refus : libellé du code traduit + précision libre du restaurant (jamais
   // traduite) ; texte en base pour un refus ancien ou une annulation admin.
   const motifRefus = cancelled ? motifRefusAffiche(order) : null;
@@ -110,6 +116,10 @@ export default function OrderTrackingScreen() {
       ? t('tracking.courierHereSub')
       : livreurArrive
         ? t('tracking.courierArrivingSub')
+    : livreurVersResto
+      ? order.courierName
+        ? t('tracking.courierNamedToRestaurantSub', { name: order.courierName })
+        : t('tracking.courierToRestaurantSub')
     : enLivraison
       ? order.pickedUp
         ? order.courierName

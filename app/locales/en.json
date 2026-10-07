@@ -397,7 +397,10 @@
       "deliveredTitle": "Delivered",
       "deliveredSub": "Payment to the courier",
       "deliveredHead": "Enjoy your meal! Thanks for your order"
-    }
+    },
+    "courierToRestaurant": "Courier heading to the restaurant",
+    "courierToRestaurantSub": "A courier has taken your order and is going to pick it up at the restaurant.",
+    "courierNamedToRestaurantSub": "{{name}} has taken your order and is going to pick it up at the restaurant."
   },
   "profile": {
     "defaultName": "Customer",

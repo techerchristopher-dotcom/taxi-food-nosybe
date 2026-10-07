@@ -397,7 +397,10 @@
       "deliveredTitle": "Livrée",
       "deliveredSub": "Paiement au livreur",
       "deliveredHead": "Bon appétit ! Merci pour ta commande"
-    }
+    },
+    "courierToRestaurant": "Livreur en route vers le restaurant",
+    "courierToRestaurantSub": "Un livreur a pris ta commande et va la récupérer au restaurant.",
+    "courierNamedToRestaurantSub": "{{name}} a pris ta commande et va la récupérer au restaurant."
   },
   "profile": {
     "defaultName": "Client",

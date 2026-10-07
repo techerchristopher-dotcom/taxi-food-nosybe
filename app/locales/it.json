@@ -397,7 +397,10 @@
       "deliveredTitle": "Consegnato",
       "deliveredSub": "Pagamento al rider",
       "deliveredHead": "Buon appetito! Grazie per il tuo ordine"
-    }
+    },
+    "courierToRestaurant": "Rider in viaggio verso il ristorante",
+    "courierToRestaurantSub": "Un rider ha preso il tuo ordine e va a ritirarlo al ristorante.",
+    "courierNamedToRestaurantSub": "{{name}} ha preso il tuo ordine e va a ritirarlo al ristorante."
   },
   "profile": {
     "defaultName": "Cliente",

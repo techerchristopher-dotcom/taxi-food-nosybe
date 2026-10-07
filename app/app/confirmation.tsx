@@ -7,7 +7,7 @@ import { Icon } from '../components/Icon';
 import { ProductThumb } from '../components/ProductThumb';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
 import { paymentLabel, PaymentMethod } from '../data/types';
-import { getOrderById } from '../data/api';
+import { getEstimationCommande, getOrderById } from '../data/api';
 import { useLoad } from '../lib/useLoad';
 
 /** Écran 08 — Confirmation de commande. */
@@ -26,6 +26,16 @@ export default function ConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { data: order } = useLoad(() => getOrderById(orderId!), [orderId]);
+  // L'estimation FIGÉE par la base (2026-10-07) remplace le « 25–40 min » écrit en dur ;
+  // commande sans estimation → ancien libellé.
+  const { data: estimation } = useLoad(() => getEstimationCommande(orderId!), [orderId]);
+  const heureLivree = estimation ? new Date(estimation.heureLivreeEstimee) : null;
+  const etaAffiche = estimation && heureLivree
+    ? t('confirmation.etaEstimee', {
+        min: estimation.totalMin,
+        heure: `${String(heureLivree.getHours()).padStart(2, '0')}h${String(heureLivree.getMinutes()).padStart(2, '0')}`,
+      })
+    : order?.etaLabel;
 
   const displayTotal = order?.total ?? passedTotal ?? 0;
   const displayNumber = order?.orderNumber ?? params.orderNumber ?? 'TF-••••';
@@ -109,7 +119,7 @@ export default function ConfirmationScreen() {
               { method: paymentLabel(displayPayment) },
             )}
           />
-          {order?.etaLabel ? <Detail label={t('confirmation.eta')} value={order.etaLabel} /> : null}
+          {etaAffiche ? <Detail label={t('confirmation.eta')} value={etaAffiche} /> : null}
         </View>
       </ScrollView>
 

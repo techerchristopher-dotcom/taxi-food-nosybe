@@ -336,6 +336,7 @@
     "paymentValue": "{{method}} — à la livraison",
     "paymentValueCarte": "{{method}} — payé en ligne",
     "eta": "Livraison estimée",
+    "etaEstimee": "~{{min}} min (vers {{heure}})",
     "track": "Suivre ma commande",
     "backHome": "Retour à l'accueil"
   },
@@ -687,5 +688,20 @@
     "premierTitre": "Sois le premier à noter ce restaurant",
     "premierTexte": "Commande ici, puis laisse ton avis : 1 000 Ar arrivent dans ton porte-monnaie, à utiliser sur tes prochains plats.",
     "voirCarte": "Voir la carte"
+  },
+  "estimation": {
+    "titre": "Estimation",
+    "reste": "Arrivée estimée dans",
+    "encoreQuelquesMinutes": "Encore quelques minutes",
+    "livreeEn": "Livrée en {{min}} min",
+    "livree": "Livrée",
+    "preparation": "Préparation ~{{min}} min",
+    "preteVers": "prête vers {{heure}}",
+    "preteA": "prête à {{heure}}",
+    "charge_one": "dont +{{min}} min : {{count}} commande déjà en cuisine",
+    "charge_other": "dont +{{min}} min : {{count}} commandes déjà en cuisine",
+    "livraison": "Livraison ~{{min}} min",
+    "livreeVers": "Livrée vers",
+    "mention": "Estimation indicative, basée sur les commandes précédentes. Elle peut varier selon l'affluence du restaurant, la circulation et la météo, et n'engage ni le restaurant ni Taxi Food."
   }
 }

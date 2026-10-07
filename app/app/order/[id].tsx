@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlocAvis } from '../../components/BlocAvis';
+import { BlocEstimation } from '../../components/BlocEstimation';
 import { Icon } from '../../components/Icon';
 import { LignesEmballage } from '../../components/LignesEmballage';
 import { packagingLinesFromItems } from '../../store/cart';
@@ -11,7 +12,7 @@ import { Button } from '../../components/Button';
 import { Card, Divider, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import { Order, paymentShort, statusStep } from '../../data/types';
-import { getOrderById } from '../../data/api';
+import { getEstimationCommande, getOrderById } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { motifRefusAffiche } from '../../lib/motifRefus';
 
@@ -37,12 +38,22 @@ export default function OrderTrackingScreen() {
   const { t } = useTranslation();
 
   const { data: order, loading, reload } = useLoad(() => getOrderById(id!), [id]);
+  // Estimation FIGÉE à la création (2026-10-07) : chargée une fois, jamais recalculée.
+  // Null pour une commande antérieure → pas de bloc.
+  const { data: estimation, reload: reloadEstimation } = useLoad(() => getEstimationCommande(id!), [id]);
 
   // Rafraîchissement périodique du statut tant que l'écran est monté.
   useEffect(() => {
     const t = setInterval(reload, POLL_MS);
     return () => clearInterval(t);
   }, [reload]);
+  // Commande ouverte juste après sa création : si l'estimation n'était pas encore lisible,
+  // on la redemande une fois la commande trouvée (puis elle ne bouge plus).
+  const commandeTrouvee = !!order;
+  useEffect(() => {
+    if (commandeTrouvee && !estimation) reloadEstimation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commandeTrouvee]);
 
   // On arrive souvent ici juste après la création : la commande peut n'être pas encore
   // lisible à la première requête. On réessaie brièvement avant de conclure « introuvable ».
@@ -214,6 +225,8 @@ export default function OrderTrackingScreen() {
           })}
         </Card>
         )}
+
+        <BlocEstimation order={order} estimation={estimation} />
 
         <EtatPaiement order={order} onReprendre={() => router.push({
           pathname: '/paiement',

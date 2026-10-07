@@ -490,6 +490,12 @@ function RestaurantHeader({ r, onVoirCarte }: { r: Restaurant; onVoirCarte: () =
         {/* « À partir de » : la fiche ne connaît pas encore l'adresse du client,
             et la livraison se paie au kilomètre depuis le 2026-09-24. La règle
             complète est rappelée juste en dessous. */}
+        {/* Durée indicative commande → livraison : médiane réelle du restaurant
+            (`duree_mediane_min`), « 25–40 min » tant qu'il a moins de 3 commandes. */}
+        <View style={styles.rMetaItem}>
+          <Icon name="timer" size={16} color={colors.secondary} />
+          <Text style={styles.rMetaText}>{r.etaLabel}</Text>
+        </View>
         <View style={styles.rMetaItem}>
           <Icon name="two_wheeler" size={16} color={colors.secondary} />
           <Text style={styles.rMetaText}>

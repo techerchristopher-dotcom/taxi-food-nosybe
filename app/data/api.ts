@@ -15,6 +15,7 @@ import {
   Category,
   createdLabel,
   DEFAULT_ETA,
+  libelleDureeMediane,
   formatTime,
   getMapsNavigationUrl,
   formatAddressLine,
@@ -29,7 +30,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
-import type { AvisEnAttente, Avis, AvisRestaurateur, CodeRemerciement, MonAvis, MotifPorteMonnaie, PorteMonnaie, RefusalCode } from './types';
+import type { EstimationCommande, AvisEnAttente, Avis, AvisRestaurateur, CodeRemerciement, MonAvis, MotifPorteMonnaie, PorteMonnaie, RefusalCode } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -64,6 +65,8 @@ type RestaurantRow = {
   nb_avis?: number | null;
   /** Arrivé sur Taxi Food depuis moins de 14 jours (colonne calculée `est_nouveau`). */
   est_nouveau?: boolean | null;
+  /** Durée médiane réelle commande → livraison (colonne calculée, null sous 3 commandes). */
+  duree_mediane_min?: number | null;
   // horaires_du_jour(restaurants) renvoie un type composite : PostgREST l'expose
   // comme un OBJET, pas un tableau (verifie au curl sur l'API du projet). Quand
   // aucun horaire n'existe pour aujourd'hui, l'objet est present mais tous ses
@@ -187,7 +190,9 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     todayServices: (r.services_du_jour ?? [])
       .map((h) => mapDayHours(h))
       .filter((h): h is DayHours => h !== null),
-    etaLabel: DEFAULT_ETA,
+    // La vraie médiane du restaurant (2026-10-07), plus le « 25–40 min » écrit en dur.
+    etaLabel: libelleDureeMediane(r.duree_mediane_min),
+    dureeMedianeMin: r.duree_mediane_min ?? null,
     deliveryFee: r.delivery_fee,
     minOrder: r.min_order,
     foodTypes: r.food_types ?? [],
@@ -303,7 +308,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
   await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
@@ -347,7 +352,7 @@ export async function getRestaurant(id: string): Promise<Restaurant | null> {
   await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -826,6 +831,7 @@ type OrderJoinRow = {
   cancellation_detail?: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
+  ready_at?: string | null;
   arriving_at?: string | null;
   arrived_at?: string | null;
   delivered_at?: string | null;
@@ -863,7 +869,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -933,6 +939,9 @@ function mapOrder(o: OrderJoinRow): Order {
     arrivingAt: o.arriving_at ?? null,
     arrivedAt: o.arrived_at ?? null,
     deliveredAt: o.delivered_at ?? null,
+    createdAt: o.created_at,
+    readyAt: o.ready_at ?? null,
+    pickedUpAt: o.picked_up_at ?? null,
   };
 }
 
@@ -967,6 +976,46 @@ export async function listOrders(): Promise<Order[]> {
   if (error) throw error;
   await preparerTraductions();
   return (data as unknown as OrderJoinRow[]).map(mapOrder).map(traduireCommande);
+}
+
+/**
+ * Estimation indicative de la commande, FIGÉE par la base à la création (2026-10-07).
+ * Null pour une commande antérieure, ou si la lecture échoue : l'écran de suivi masque
+ * alors simplement le bloc — une estimation ne doit jamais empêcher de suivre sa commande.
+ */
+export async function getEstimationCommande(orderId: string): Promise<EstimationCommande | null> {
+  const { data, error } = await supabase
+    .from('estimations_commande')
+    .select('preparation_min, preparation_source, charge_commandes, charge_min, attente_livreur_min, trajet_min, livraison_min, total_min, distance_km, heure_prete_estimee, heure_livree_estimee')
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const e = data as {
+    preparation_min: number;
+    preparation_source: EstimationCommande['preparationSource'];
+    charge_commandes: number;
+    charge_min: number;
+    attente_livreur_min: number;
+    trajet_min: number;
+    livraison_min: number;
+    total_min: number;
+    distance_km: number | string | null;
+    heure_prete_estimee: string;
+    heure_livree_estimee: string;
+  };
+  return {
+    preparationMin: e.preparation_min,
+    preparationSource: e.preparation_source,
+    chargeCommandes: e.charge_commandes,
+    chargeMin: e.charge_min,
+    attenteLivreurMin: e.attente_livreur_min,
+    trajetMin: e.trajet_min,
+    livraisonMin: e.livraison_min,
+    totalMin: e.total_min,
+    distanceKm: e.distance_km == null ? null : Number(e.distance_km),
+    heurePreteEstimee: e.heure_prete_estimee,
+    heureLivreeEstimee: e.heure_livree_estimee,
+  };
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
@@ -1900,7 +1949,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

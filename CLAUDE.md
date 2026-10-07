@@ -2077,6 +2077,92 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
 
+## ⏱️ Estimation des délais (2026-10-07)
+
+Décision du porteur du projet : à chaque commande, le client reçoit une **estimation indicative
+décomposée** (préparation, livraison, total, « prête vers », « livrée vers ») avec un **compte à
+rebours** ; tout est **enregistré figé** pour comparer plus tard estimé et réel ; le « 25–40 min »
+écrit en dur sur les cartes (`DEFAULT_ETA`) laisse place à la **vraie médiane** de chaque restaurant.
+Migrations `20261008000000_estimation_des_delais` et `20261008001000_delais_ligne_globale`
+(appliquées). Recette : `supabase/tests/estimation_delais.test.sql` (bloc annulé).
+
+**Le modèle (version 1, tout en base — l'écran ne calcule aucune durée)**
+- **Faits réels** : `delais_reels_commandes(p_depuis = now() − 90 j)` (interne, DEFINER, refusé à
+  anon/authenticated). Commandes `livree` seulement, **hors compte admin** (tests ET commandes
+  téléphone), hors restaurants `hidden` (Taxi Be), hors commandes de plus de 180 min (le 349 min) ;
+  chaque composante aberrante est mise à NULL (trajet > 120, attente > 60…). Composantes :
+  `prete_min` (created → ready, acceptation comprise), `attente_livreur_min` (ready → picked_up),
+  `trajet_min` (picked_up → delivered), `livraison_min` (ready → delivered), `total_min`, `distance_km`
+  (haversine restaurant → adresse), `heure_locale`.
+- **Calcul** : `estimer_delais(restaurant, km, produits[], commande_exclue, à)` (interne).
+  - **Préparation** = niveau 1 « plat » : médiane du même plat dans ce restaurant s'il a ≥ 3 commandes
+    avec `ready_at` (plusieurs plats → le plus long) ; niveau 2 « restaurant » : médiane created → ready,
+    à défaut created → picked_up − attente médiane (≥ 3 commandes) ; niveau 3 « défaut » : 25 min.
+    **+ 5 min par commande déjà en cuisine** (`recue`/`confirmee`/`en_preparation` du restaurant, des
+    3 dernières heures, hors celle-ci), plafonné à +30 min. Le délai d'acceptation est inclus (created → ready).
+  - **Livraison** = attente livreur médiane (restaurant si ≥ 3, sinon globale, sinon 5 min) + trajet
+    = base + pente × km, régression sur l'historique global (≥ 8 points, base bornée 5–25, pente 0,5–4 ;
+    sinon 14 + 2 min/km). Au 2026-10-07 : **13,8 + 1,69 min/km** (46 points). km inconnu (restaurant ou
+    adresse sans GPS) → km médian de l'historique.
+- **Table figée `estimations_commande`** (order_id PK, valeurs + sources + charge + km +
+  `heure_prete_estimee` / `heure_livree_estimee` + `version_modele`). Remplie par le **CONSTRAINT
+  TRIGGER DIFFÉRÉ `orders_estimation_delais`** (AFTER INSERT, au COMMIT — même raison que
+  `orders_notify_new` : `create_order` insère la commande AVANT ses articles). La fonction trigger
+  **avale toute erreur (WARNING)** : une estimation ratée n'empêche jamais une commande.
+  **`create_order` n'a pas été touchée** (aucun risque PGRST203). UPDATE refusé par trigger
+  (`estimation:figee`, même pour postgres) : **ne jamais recalculer après coup**, c'est elle qu'on
+  compare au réel. Commandes antérieures : pas d'estimation (pas de rétro-calcul, il tricherait avec
+  des données futures).
+- **RLS** : SELECT `to authenticated` avec le prédicat `exists (select 1 from orders where id = order_id)`,
+  évalué sous la RLS de `orders` de l'appelant → client (les siennes), restaurant, livreur, admin.
+  Aucune policy d'écriture ; anon : 42501.
+- **Public** : colonne calculée **`duree_mediane_min(restaurants)`** (médiane created → delivered, null
+  sous 3 commandes) — ajoutée sans toucher aux privilèges de `restaurants` (piège « colonne calculée
+  contre privilèges de colonne ») ; vérifié par PostgREST avec la clé publique et le select exact de
+  l'app (200) ; l'ancien select de l'app installée répond toujours 200. **`delais_restaurants()`**
+  (anon) : par restaurant non masqué `nb_commandes`, `duree_mediane_min`, `preparation_mediane_min`,
+  `livraison_mediane_min`, **`note_moyenne`, `nb_avis`**.
+- **Admin** : `admin_delais_estime_vs_reel(p_jours)` (is_admin) : par restaurant × tranche horaire
+  (matin < 11 h, midi 11–15, après-midi 15–18, soir 18–22, nuit), une ligne « toutes tranches » par
+  restaurant et une ligne globale (restaurant null) : médianes réelles (prépa, attente, trajet,
+  livraison, total), nb estimées, médianes estimées, **écart médian réel − estimé**, % livrées au plus
+  tard 5 min après l'heure annoncée.
+
+**Préparer le tri « le plus rapide » / « le mieux noté »** : `delais_restaurants()` rend déjà les deux
+critères côte à côte, et l'app porte `Restaurant.dureeMedianeMin` + `noteMoyenne`/`nbAvis`. Le jour où
+il y a assez de restaurants : un tri côté app sur ces champs (null en dernier), ou un paramètre de
+tri dans la fonction qui décide de l'ordre (`rang_ouverture`) — **pas** une colonne générée (elle ne
+peut pas dépendre des commandes). Rien n'est trié aujourd'hui.
+
+**App** : `components/BlocEstimation.tsx` sur `app/order/[id].tsx` (lu par `getEstimationCommande`,
+null → pas de bloc ; masqué si annulée). Compte à rebours à la seconde, **recalé sur le réel** :
+`picked_up_at` connu → récupérée + trajet estimé ; `ready_at` connu → prête + livraison estimée ;
+sinon heure estimée. Jamais négatif (« Encore quelques minutes »), « Livrée en N min » (réel) à la
+livraison. Mention indicative toujours visible (FR/EN/IT, clés `estimation.*`). Cartes et fiche
+restaurant : `libelleDureeMediane()` → « ~50 min » (arrondi à 5), repli `DEFAULT_ETA`. Écran de
+confirmation : « ~45 min (vers 21h47) » depuis l'estimation figée. Admin : onglet **⏱️ Délais**
+(`admin/components/Delais.tsx`).
+
+**Ce que donne le modèle au 2026-10-07 (2 km, cuisine vide)** : La Cabane prépa 28 (restaurant) +
+attente 3 + trajet 17 = **48 min** (médiane réelle 52) ; Chez Bidule & Truc 19 + 4 + 17 = **40 min**
+(réelle 37) ; Les Siciliens, Chez M&K, Le Nandipo : prépa par défaut 25 → 45 min. Cartes : La Cabane
+« ~50 min », Chez Bidule & Truc « ~35 min », La Plage « ~55 min », les autres « 25–40 min ».
+
+⚠️ **Points ouverts**
+- **Le chemin du COMMIT réel n'a pas encore été vu** : la recette force le trigger par
+  `set constraints … immediate` dans un bloc annulé. À la première vraie commande :
+  `select * from estimations_commande order by calculee_le desc limit 1` (et aucun WARNING
+  « estimation … non calculee » dans les journaux Postgres).
+- **La tranche horaire pèse lourd** : La Cabane prépa médiane 52 min l'après-midi contre 33 le soir.
+  Le modèle v1 ne l'utilise pas (trop peu de données) — candidat évident de la v2 (`version_modele`).
+- Les commandes **téléphone** (compte admin) sont exclues des statistiques comme les tests : ce sont
+  pourtant de vraies livraisons. À revoir si elles deviennent nombreuses (les repérer par le libellé
+  d'adresse « ☎ »).
+- Médiane des sommes ≠ somme des médianes : l'estimation de La Cabane (48) reste sous sa médiane
+  réelle (52) ; l'onglet Délais dira vite si le biais se confirme.
+- **⚠️ À livrer (rien n'est déployé)** : OTA ×3 runtimes + web (Netlify) pour l'app ; admin (Netlify).
+  La base est rétrocompatible : l'app en magasin ignore la table et la colonne nouvelles.
+
 ## ⭐ Avis mis en avant, pseudo (2026-10-07)
 
 - Fiche restaurant : rubrique « Ce qu'en disent les clients » (`components/AvisApercu.tsx`, DANS

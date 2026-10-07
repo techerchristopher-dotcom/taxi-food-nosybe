@@ -255,7 +255,14 @@ export type Restaurant = {
   todayServices: DayHours[];
   /** true : l'ouverture se déduit des horaires du jour ; false : bascule manuelle. */
   autoOpen: boolean;
-  etaLabel: string; // cosmétique (non stocké) — placeholder
+  /**
+   * Durée indicative commande → livraison affichée sur les cartes : « ~50 min » d'après la
+   * médiane RÉELLE du restaurant (`duree_mediane_min`, calculée par la base), ou l'ancien
+   * libellé `DEFAULT_ETA` tant qu'il a moins de 3 commandes livrées exploitables.
+   */
+  etaLabel: string;
+  /** Durée médiane réelle commande → livraison, en minutes. Null sous 3 commandes. Sert au futur tri « le plus rapide ». */
+  dureeMedianeMin?: number | null;
   deliveryFee: number;
   /** Frais d'emballage total de la commande (boîtes à pizza…). 0 si aucun. */
   minOrder: number; // ariary
@@ -482,6 +489,10 @@ export type Order = {
   arrivedAt?: string | null;
   /** Quand la commande a été livrée. Sert à savoir si elle peut encore être notée (7 jours). */
   deliveredAt?: string | null;
+  /** Horodatages bruts, pour recaler le compte à rebours sur les étapes réelles. */
+  createdAt?: string;
+  readyAt?: string | null;
+  pickedUpAt?: string | null;
   /** Nom/téléphone du livreur assigné (visible côté restaurant et client). */
   courierName?: string | null;
   courierPhone?: string | null;
@@ -503,8 +514,36 @@ export const nosyBeZones = [
   'Andilana',
 ];
 
-/** ETA de livraison — non stocké en base au MVP, placeholder cosmétique. */
+/** Libellé de repli des cartes quand un restaurant n'a pas encore assez d'historique (< 3 commandes livrées). */
 export const DEFAULT_ETA = '25–40 min';
+
+/** « ~50 min » (arrondi à 5 min) à partir de la médiane réelle ; repli sur `DEFAULT_ETA`. */
+export function libelleDureeMediane(min: number | null | undefined): string {
+  if (min == null || !Number.isFinite(min) || min <= 0) return DEFAULT_ETA;
+  const arrondi = Math.max(5, Math.round(min / 5) * 5);
+  if (arrondi < 60) return `~${arrondi} min`;
+  const h = Math.floor(arrondi / 60);
+  const m = arrondi % 60;
+  return m ? `~${h} h ${String(m).padStart(2, '0')}` : `~${h} h`;
+}
+
+/**
+ * Estimation indicative d'une commande (table `estimations_commande`), FIGÉE à la création
+ * par la base. Jamais recalculée : c'est elle qu'on compare au réel.
+ */
+export type EstimationCommande = {
+  preparationMin: number;
+  preparationSource: 'plat' | 'restaurant' | 'defaut';
+  chargeCommandes: number;
+  chargeMin: number;
+  attenteLivreurMin: number;
+  trajetMin: number;
+  livraisonMin: number;
+  totalMin: number;
+  distanceKm: number | null;
+  heurePreteEstimee: string;
+  heureLivreeEstimee: string;
+};
 
 // ---------------------------------------------------------------------------
 // Helpers d'affichage

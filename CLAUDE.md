@@ -783,8 +783,15 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   deux tailles (groupe « Taille », prix = petit modèle), 15 plats avec « Accompagnement (1 au
   choix, inclus) » — **liste copiée de La Plage, à confirmer avec lui**. 6 photos + logo dans
   `produits/le-nandipo/`, déposés par `deposer-visuel`. Prospect `d526a567-…` en `interesse`,
-  priorité haute, téléphones intacts. ⚠️ À lui demander : téléphone (3 numéros circulent),
-  prix Toscana, garniture Américaine (= Nordique), accompagnements, horaires, nom des 13 photos.
+  priorité haute, téléphones intacts.
+  ✅ **Retours du patron appliqués le 2026-10-07** (migration `20261007120000_nandipo_retours_du_patron`) :
+  téléphone **+261 37 46 690 10** seul ; horaires **7 j/7 08:00–22:00** (`auto_open`) ; accompagnements
+  sans haricots verts, « Légumes sautés », + « Riz aux oignons » (sauces et accompagnements inclus) ;
+  **desserts retirés** (glaces et mousses en verrine ne tiennent pas le transport) ; « Demi pizza et
+  salade » : groupe obligatoire « Pizza au choix » (les 12 pizzas) ; photo de la Carbonara retirée
+  (c'était un osso bucco). Les 13 autres photos reçues sont des **plats du jour**, pas la carte.
+  Reste avant ouverture : compte restaurateur, Telegram, position GPS, commission (15 % en base),
+  prix d'une assiette d'accompagnement en plus.
 - **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
   `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
   `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant

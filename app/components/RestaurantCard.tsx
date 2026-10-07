@@ -22,18 +22,25 @@ import { BadgeNouveau } from './Nouveaute';
 function Meta({ eta, fee, note, nb }: { eta: string; fee: number; note: number | null; nb: number }) {
   const { t } = useTranslation();
   return (
-    <View style={styles.metaRow}>
-      {/* La note d'abord, en pastille jaune (2026-10-07) — dès le premier avis, la base décide. */}
-      <NotePastille note={note} nb={nb} />
-      <View style={styles.metaItem}>
-        <Icon name="schedule" size={15} color={colors.secondary} />
-        <Text style={styles.metaText}>{eta}</Text>
+    <>
+      {/* La note sur SA ligne (2026-10-07) : la pastille jaune, ajoutée dans la même rangée
+          que l'horaire et le prix, poussait « À partir de 2 000 Ar » hors de la carte. */}
+      {note != null ? (
+        <View style={styles.noteLigne}>
+          <NotePastille note={note} nb={nb} />
+        </View>
+      ) : null}
+      <View style={styles.metaRow}>
+        <View style={styles.metaItem}>
+          <Icon name="schedule" size={15} color={colors.secondary} />
+          <Text style={styles.metaText}>{eta}</Text>
+        </View>
+        <View style={styles.metaItem}>
+          <Icon name="two_wheeler" size={15} color={colors.secondary} />
+          <Text style={styles.metaText}>{t('delivery.from', { amount: formatAr(fee) })}</Text>
+        </View>
       </View>
-      <View style={styles.metaItem}>
-        <Icon name="two_wheeler" size={15} color={colors.secondary} />
-        <Text style={styles.metaText}>{t('delivery.from', { amount: formatAr(fee) })}</Text>
-      </View>
-    </View>
+    </>
   );
 }
 
@@ -214,7 +221,8 @@ const styles = StyleSheet.create({
   typeBadgeOn: { backgroundColor: colors.primary },
   typeBadgeOff: { backgroundColor: colors.fieldBg },
   typeBadgeText: { fontFamily: fonts.semibold, fontSize: 10, color: colors.textDark },
-  metaRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4, marginTop: 8 },
+  noteLigne: { marginTop: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDark },
   closedText: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted, marginTop: 7 },

@@ -794,7 +794,8 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   position de l'épingle Google « Nandipo » (-13.4046363, 48.2735719), **fin des commandes 21:45**
   (ferme à 22:00), « Accompagnement supplémentaire » à **5 000 Ar** sur les 15 plats (modèle La Plage).
   ✅ Telegram 2026-10-07 : groupe `-1004466922972` (« Taxy food - Nandipo »), message de test remis.
-  Reste avant ouverture : compte restaurateur (e-mail à obtenir) et commande test reçue dans le groupe.
+  ✅ Compte 2026-10-07 : `direction.mkl@gmail.com` (Google, créé le 2026-09-29) invité → rôle `restaurant`
+  actif + `restaurant_staff` Nandipo, vérifié. Reste avant ouverture : commande test reçue dans le groupe.
 - **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
   `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
   `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant

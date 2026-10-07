@@ -98,6 +98,11 @@ bol renversé ont le porc en OPTION, sans badge possible.
   photos = reconstitutions, contenant des plats de La Plage.
 
 **Produit et contenu**
+- 🐂 **Le Nandipo — ouvert le 2026-10-07 à 14 h 25, annonce visuelle prête mais NON publiée**
+  (`visuels-reseaux/nandipo/PUB-nandipo-annonce.png` + `LEGENDE.md`, détail dans « Les vrais restaurants ») :
+  ni réseaux, ni push, ni e-mail n'ont rien reçu. Le badge « ✨ Nouveau » court jusqu'au 2026-10-21 : publier
+  avant. ⚠️ **Badges « porc » à confirmer avec le patron** : « Rougail saucisse » est décrit « Saucisse de
+  porc » sans badge, et quatre pizzas citent des lardons ou du jambon.
 - 📧 **Annonce par e-mail livrée le 2026-09-25** (voir sa section) : base + fonction Edge +
   workflow n8n dédié + écran admin + page de désinscription trilingue. **Restent à constater** :
   l'arrivée du test dans la boîte de réception (indésirables compris), le rendu de l'e-mail sur un
@@ -713,7 +718,7 @@ catalogue (`rang_catalogue`, voir « Ordre du catalogue ») :
 | 60 | La Plage (bistrot & bar, Hell-Ville) | coming_soon | `eb10f338-fb78-4c16-82d5-810ae37b49fe` |
 | 70 | Angelo | hidden | `cb482596-b39e-4355-96a5-3dfdad75dcee` |
 | 90 | Taxi Be — **retiré du catalogue le 2026-09-17** | hidden | `ac2766bb-c4d1-4f5e-9a40-3ea0febcb886` |
-| 100 | Le Nandipo (brasserie, zébu & pizzeria, Hell-Ville) — **en négociation, chargé le 2026-09-30** | coming_soon | `cb7fda65-3ed0-41aa-940c-b8974f7363c8` |
+| 100 | Le Nandipo (brasserie, zébu & pizzeria, Hell-Ville) — **ouvert à la commande le 2026-10-07** (14 h 25, heure de Nosy Be) | visible | `cb7fda65-3ed0-41aa-940c-b8974f7363c8` |
 
 `coming_soon` s'affiche **« En négociation »** partout (app et vitrine) et n'est **jamais
 commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` — la garde est en base.
@@ -795,7 +800,40 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   (ferme à 22:00), « Accompagnement supplémentaire » à **5 000 Ar** sur les 15 plats (modèle La Plage).
   ✅ Telegram 2026-10-07 : groupe `-1004466922972` (« Taxy food - Nandipo »), message de test remis.
   ✅ Compte 2026-10-07 : `direction.mkl@gmail.com` (Google, créé le 2026-09-29) invité → rôle `restaurant`
-  actif + `restaurant_staff` Nandipo, vérifié. Reste avant ouverture : commande test reçue dans le groupe.
+  actif + `restaurant_staff` Nandipo, vérifié.
+  ✅ **Ouvert à la commande le 2026-10-07 à 14 h 25** (heure de Nosy Be, `visible_depuis` 11:25:59 UTC) :
+  `listing_status = visible`, en tête de liste avec le badge « ✨ Nouveau » jusqu'au **2026-10-21** (14 jours,
+  voir « Nouveau sur Taxi Food »). Un seul service par jour, 7 j/7 de 8 h à 21 h 45 ; plats disponibles hors
+  boissons de 6 000 à 45 000 Ar ; minimum de commande 0 ; livraison 2 000 Ar jusqu'à 3 km. La commande test
+  « reçue dans le groupe » n'a pas été constatée par la session qui a fait le visuel.
+  ✅ **Annonce visuelle livrée le 2026-10-07** (demande du porteur du projet) :
+  `visuels-reseaux/nandipo/PUB-nandipo-annonce.png` (1080 × 1350, même variante « restaurant déjà
+  disponible » que La Plage et Les Siciliens) + `LEGENDE.md` (3 publications et une version courte).
+  ⚠️ **RIEN n'est publié ni annoncé** : ni réseaux, ni push, ni e-mail (aucune ligne `annonces` ne le cite,
+  aucun « Me prévenir »). Fichiers déposés dans le dossier, **non commités**.
+  - **Fichiers** : `pub_nandipo.py` (mise en page, reprise de `siciliens/pub_siciliens.py`),
+    `nandipo_scene_mosaique.py` (scène 1080 × 748), `rendre_nandipo_annonce.py` (rendu + contrôles),
+    `scene.png`. Rendu : `ARCHIVO_VARIABLE=…/Archivo[wdth,wght].ttf python3 rendre_nandipo_annonce.py` depuis
+    `visuels-reseaux/nandipo/` — il faut Playwright, absent du Mac : rendu fait dans le conteneur de la session.
+    ⚠️ Archivo est installée sur le Mac **sans** la graisse 600 (elle y retombe sur 700) : la variable déclare
+    la police variable en deux plages (100–500 et 700–900), ce qui reproduit cette résolution ; vérifié, toutes
+    les lignes de l'annonce de La Plage retrouvent exactement leurs extrémités horizontales.
+  - **Scène** = mosaïque de ses 5 photos commandables (côte de zébu forestière en héros, hamburger, fruit de
+    mer, rougail saucisse, poisson sauce poireau). **Aucune couverture** (`cover_url` vide) ni photo de pizza
+    n'existe : on ne montre que ce qui est commandable ET photographié, rien n'est reconstitué (les « côtes de
+    porc miel sésame » générées restent hors visuel). La cellule bas-droite, qui porte la pastille −50 %, est
+    du **bois construit** (table du hamburger agrandie, adoucie, étalonnée) : la 1re version (table de p15)
+    était un trou noir, et le porteur du projet n'aime pas le noir sur ce restaurant.
+  - **Logo à cornes posé à nu**, pas rogné en rond (les cornes font reconnaître le taureau) ; son disque tombe
+    à 0,26 px du centre standard des autres restaurants.
+  - **Textes** : titre PASSIF « Le Nandipo, livré chez toi. » ; « Sa carte · de 6 000 à 45 000 Ar » — pas « sa
+    carte entière » (desserts archivés), aucun nombre de plats ; « 8 h – 21 h 45, 7 j/7 ».
+  - **Contrôles chiffrés, tous passés** : écart promo / logo Taxi Food 0 px, secondaire sur 2 lignes, air
+    pastille → 1re assiette 54 px (mini 20), pastille dans sa cellule, aucun débord, QR absent, fourchette de
+    prix == base, titre passif, air logo → signature 59,7 px, aucune assiette sous le logo.
+  ⚠️ **Badges « contient du porc » à confirmer avec le patron** (relevé le 2026-10-07, RIEN écrit en base) :
+  « Rougail saucisse » est décrit « Saucisse de porc » mais `diet_tags` est vide ; quatre pizzas citent des
+  lardons (Flambée, Nordique) ou du jambon (Italienne, Romana — un jambon peut être de volaille).
 - **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
   `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
   `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant
@@ -2036,6 +2074,16 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
 - ⚠️ Corrigé au passage : le « prix total » d'une option (Grand modèle 32 000 Ar) ne vaut que pour
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
+
+## 🛵 Notification « un livreur a pris ta commande » (2026-10-07)
+
+Demande du porteur du projet : quand le livreur appuie sur « Je la prends » (`claim_order`, seul
+`courier_id` change), le client reçoit **« Un livreur s'occupe de ta commande 🛵 — Il est en route vers
+{resto} pour la récupérer. »** (FR/EN/IT, clé `assigned` dans `notify-order`). Migration
+`20261007150000_notif_livreur_prend_la_commande` : jalon `assigned` dans `notify_order_status()`
+(patché par ancre, push seul, pas d'e-mail n8n) **et `courier_id` ajouté à la liste de colonnes du
+trigger `orders_notify_status`** — sans cela le patch ne se déclenchait jamais (constaté au test).
+Vérifié le 2026-10-07 sur TF-333 (Taxi Be, supprimée) : push remis, reçu Expo `ok`.
 
 ## 📢 Bandeau d'annonce — app ET site (2026-10-03)
 

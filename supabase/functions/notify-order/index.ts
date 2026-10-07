@@ -37,8 +37,12 @@ type Payload = {
    * ~40 min après la livraison.
    */
   event?: 'nouvelle' | 'statut' | 'noter';
-  /** Jalon posé par le livreur après la récupération : « J'arrive » / « Je suis là ». */
-  phase?: 'arriving' | 'arrived' | null;
+  /**
+   * Jalon livreur. `assigned` : il vient d'appuyer sur « Je prends la commande » et part
+   * vers le restaurant (2026-10-07). `arriving` / `arrived` : après la récupération,
+   * « J'arrive » / « Je suis là ».
+   */
+  phase?: 'assigned' | 'arriving' | 'arrived' | null;
 };
 
 type Order = {
@@ -154,6 +158,14 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     fr: { title: 'Commande annulée', body: '{resto} n’a pas pu honorer ta commande.' },
     en: { title: 'Order cancelled', body: '{resto} could not fulfil your order.' },
     it: { title: 'Ordine annullato', body: '{resto} non ha potuto evadere il tuo ordine.' },
+  },
+  // Le livreur ACCEPTE la course (« Je prends la commande ») : il part chercher la
+  // commande au restaurant. Seul `courier_id` change — demande du porteur du projet,
+  // 2026-10-07 : jusque-là le client n'apprenait rien entre « prête » et « récupérée ».
+  assigned: {
+    fr: { title: 'Un livreur s’occupe de ta commande 🛵', body: 'Il est en route vers {resto} pour la récupérer.' },
+    en: { title: 'A courier is on your order 🛵', body: 'They are on their way to {resto} to pick it up.' },
+    it: { title: 'Un rider si occupa del tuo ordine 🛵', body: 'Sta andando da {resto} a ritirarlo.' },
   },
   // Prise en charge par le livreur : le statut reste `en_livraison`, seul
   // `picked_up_at` change. C'est pourtant le moment que le client attend le plus.

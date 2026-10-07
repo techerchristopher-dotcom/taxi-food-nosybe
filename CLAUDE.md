@@ -2077,6 +2077,23 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
 
+## 🔄 Bandeau « Nouvelle version disponible » (2026-10-07)
+
+`lib/miseAJour.ts` + `components/BandeauMiseAJour.tsx`, monté dans `app/_layout.tsx`. À CHAQUE retour
+au premier plan : vérification + téléchargement ; appliquée d'office seulement après ≥ 30 min
+d'absence sur l'accueil client, sinon **proposée par le bandeau** (tap = `Updates.reloadAsync()`,
+croix = masquée jusqu'au prochain retour). Idem quand le téléchargement du démarrage dépasse 5 s.
+Ne vaut qu'une fois l'OTA du 2026-10-07 chargée par le téléphone. `app/+not-found.tsx` renvoie
+toute route inconnue vers l'accueil.
+
+## ⏰ Annonce programmée du 2026-10-08 (10:00 Nosy Be)
+
+Migration `20261007210000_annonce_programmee_porte_monnaie` : trois tâches pg_cron à usage unique
+(`annonce_porte_monnaie_rappel` 06:45 UTC, `_envoi` 07:00 UTC, `_bilan` 07:05 UTC), chacune se
+désinscrit. Annonce « ⭐ Laisse un avis, gagne 1 000 Ar » → tous les clients, push + e-mail, route
+`/porte-monnaie`. Rappel et bilan dans le canal Telegram admin (`annonce_programmee_telegram`).
+Annuler : `select cron.unschedule('annonce_porte_monnaie_envoi');`.
+
 ## 💰 Annonce du porte-monnaie et envoi d'annonce par la base (2026-10-07)
 
 - Page **`/porte-monnaie`** (`app/app/porte-monnaie.tsx`) : se lit SANS compte (« Comment ça marche » en

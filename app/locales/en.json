@@ -555,7 +555,13 @@
     "photoErreur": "The photo could not be uploaded. You can send your review without it.",
     "photoRefus": "Access to photos was denied.",
     "erreurChargement": "Reviews could not be loaded. Please try again in a moment.",
-    "merciCredit": "+{{montant}} in your wallet, to use on your next dishes. No expiry date."
+    "merciCredit": "+{{montant}} in your wallet, to use on your next dishes. No expiry date.",
+    "signerAvec": "Sign my public review with:",
+    "monPrenom": "My first name ({{prenom}})",
+    "monPrenomSans": "My first name",
+    "unPseudo": "A nickname",
+    "pseudoPlaceholder": "Your nickname (2 to 20 characters)",
+    "pseudoInvalide": "Your nickname must be 2 to 20 characters long."
   },
   "authCallback": {
     "working": "Verifying…",

@@ -555,7 +555,13 @@
     "photoErreur": "La photo n'a pas pu être envoyée. Tu peux envoyer ton avis sans elle.",
     "photoRefus": "Autorisation d'accès aux photos refusée.",
     "erreurChargement": "Les avis n'ont pas pu être chargés. Réessaie dans un instant.",
-    "merciCredit": "+{{montant}} dans ton porte-monnaie, à utiliser sur tes prochains plats. Sans date limite."
+    "merciCredit": "+{{montant}} dans ton porte-monnaie, à utiliser sur tes prochains plats. Sans date limite.",
+    "signerAvec": "Signer mon avis public avec :",
+    "monPrenom": "Mon prénom ({{prenom}})",
+    "monPrenomSans": "Mon prénom",
+    "unPseudo": "Un pseudo",
+    "pseudoPlaceholder": "Ton pseudo (2 à 20 caractères)",
+    "pseudoInvalide": "Ton pseudo doit faire entre 2 et 20 caractères."
   },
   "authCallback": {
     "working": "Validation en cours…",

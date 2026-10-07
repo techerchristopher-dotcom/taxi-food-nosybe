@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,6 +10,7 @@ import { Icon } from './Icon';
 import { Card } from './primitives';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
 import { deposerAvis, envoyerPhotoAvis, monAvis } from '../data/api';
+import { useSession } from '../store/session';
 import { CodeRemerciement, MonAvis, Order } from '../data/types';
 import { useLoad } from '../lib/useLoad';
 import { oublierApercuPorteMonnaie } from '../store/porteMonnaie';
@@ -34,6 +36,8 @@ function dateCourte(iso: string): string {
  * au porte-monnaie (avant le 2026-10-07 : un code promo) — l'écran ne fait que
  * montrer. Voir docs/NOTATION-AVIS.md.
  */
+const CLE_PSEUDO = 'tf_pseudo_avis';
+
 export function BlocAvis({ order }: { order: Order }) {
   const { t, i18n } = useTranslation();
   const { data: existant, loading, reload } = useLoad(() => monAvis(order.id), [order.id]);
@@ -49,6 +53,23 @@ export function BlocAvis({ order }: { order: Order }) {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [resultat, setResultat] = useState<CodeRemerciement | null>(null);
+  // Signature publique (2026-10-07) : le prénom, ou un pseudo — un client qui commande
+  // souvent ne veut pas forcément voir son prénom sur tous les avis. Le dernier pseudo
+  // utilisé est retenu sur le téléphone.
+  const nomComplet = useSession((s) => s.session?.fullName ?? '');
+  const prenom = (nomComplet.trim().split(/\s+/)[0] ?? '').slice(0, 30);
+  const [signature, setSignature] = useState<'prenom' | 'pseudo'>('prenom');
+  const [pseudo, setPseudo] = useState('');
+  useEffect(() => {
+    AsyncStorage.getItem(CLE_PSEUDO)
+      .then((v) => {
+        if (v) {
+          setPseudo(v);
+          setSignature('pseudo');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (order.status !== 'livree') return null;
   if (loading && !existant) return null;
@@ -71,7 +92,9 @@ export function BlocAvis({ order }: { order: Order }) {
   const livreeLe = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
   if (livreeLe != null && Date.now() - livreeLe > FENETRE_JOURS * 86_400_000) return null;
 
-  const complet = cuisine != null && preparation != null && livraison != null;
+  const pseudoPropre = pseudo.replace(/\s+/g, ' ').trim();
+  const pseudoOk = signature === 'prenom' || (pseudoPropre.length >= 2 && pseudoPropre.length <= 20);
+  const complet = cuisine != null && preparation != null && livraison != null && pseudoOk;
 
   async function choisirPhoto() {
     setErreur(null);
@@ -119,7 +142,10 @@ export function BlocAvis({ order }: { order: Order }) {
         langue: i18n.language.slice(0, 2),
         photoUrl,
         messagePrive: messagePrive.trim() || null,
+        pseudo: signature === 'pseudo' ? pseudoPropre : null,
       });
+      if (signature === 'pseudo') void AsyncStorage.setItem(CLE_PSEUDO, pseudoPropre).catch(() => {});
+      else void AsyncStorage.removeItem(CLE_PSEUDO).catch(() => {});
       setResultat(r);
       // Le solde vient de bouger : l'aperçu du récapitulatif est périmé.
       oublierApercuPorteMonnaie();
@@ -175,6 +201,42 @@ export function BlocAvis({ order }: { order: Order }) {
           <Text style={styles.photoBtnTexte}>{t('avis.photoAjouter')}</Text>
         </Pressable>
       )}
+
+      {/* Signature de l'avis public : prénom ou pseudo. */}
+      <Text style={styles.signatureLabel}>{t('avis.signerAvec')}</Text>
+      <View style={styles.signatureRow}>
+        <Pressable
+          onPress={() => setSignature('prenom')}
+          style={[styles.chip, signature === 'prenom' && styles.chipActif]}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: signature === 'prenom' }}
+        >
+          <Text style={[styles.chipTexte, signature === 'prenom' && styles.chipTexteActif]} numberOfLines={1}>
+            {prenom ? t('avis.monPrenom', { prenom }) : t('avis.monPrenomSans')}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setSignature('pseudo')}
+          style={[styles.chip, signature === 'pseudo' && styles.chipActif]}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: signature === 'pseudo' }}
+        >
+          <Text style={[styles.chipTexte, signature === 'pseudo' && styles.chipTexteActif]}>{t('avis.unPseudo')}</Text>
+        </Pressable>
+      </View>
+      {signature === 'pseudo' ? (
+        <TextInput
+          style={styles.pseudoChamp}
+          placeholder={t('avis.pseudoPlaceholder')}
+          placeholderTextColor={colors.textFaint}
+          value={pseudo}
+          onChangeText={setPseudo}
+          maxLength={20}
+          autoCapitalize="words"
+          autoCorrect={false}
+          accessibilityLabel={t('avis.unPseudo')}
+        />
+      ) : null}
 
       <Pressable style={styles.consentRow} onPress={() => setConsentement((v) => !v)} accessibilityRole="checkbox"
         accessibilityState={{ checked: consentement }}>
@@ -368,4 +430,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warnBg,
   },
   codeTexte: { flex: 1, fontFamily: fonts.semibold, fontSize: 12, lineHeight: 17, color: colors.warnText },
+  signatureLabel: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark, marginTop: 14 },
+  signatureRow: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
+  chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, maxWidth: '100%' },
+  chipActif: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipTexte: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDark },
+  chipTexteActif: { color: colors.white },
+  pseudoChamp: { marginTop: 8, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, fontFamily: fonts.regular, fontSize: 14, color: colors.ink, backgroundColor: colors.surface },
 });

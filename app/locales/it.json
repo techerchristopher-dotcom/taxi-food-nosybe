@@ -555,7 +555,13 @@
     "photoErreur": "La foto non è stata caricata. Puoi inviare la recensione senza.",
     "photoRefus": "Accesso alle foto negato.",
     "erreurChargement": "Le recensioni non sono state caricate. Riprova tra un istante.",
-    "merciCredit": "+{{montant}} nel tuo portafoglio, da usare sui prossimi piatti. Nessuna scadenza."
+    "merciCredit": "+{{montant}} nel tuo portafoglio, da usare sui prossimi piatti. Nessuna scadenza.",
+    "signerAvec": "Firma la mia recensione pubblica con:",
+    "monPrenom": "Il mio nome ({{prenom}})",
+    "monPrenomSans": "Il mio nome",
+    "unPseudo": "Uno pseudonimo",
+    "pseudoPlaceholder": "Il tuo pseudonimo (da 2 a 20 caratteri)",
+    "pseudoInvalide": "Lo pseudonimo deve avere da 2 a 20 caratteri."
   },
   "authCallback": {
     "working": "Verifica in corso…",

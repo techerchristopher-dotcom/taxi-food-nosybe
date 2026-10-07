@@ -2077,6 +2077,19 @@ DONNÉES, saisies en français). Migrations `20261002210000_traductions_catalogu
   un choix OBLIGATOIRE à une seule réponse ; un supplément affiche « + 4 000 Ar » (une tomate en
   plus s'affichait « 32 000 Ar »).
 
+## ⭐ Avis mis en avant, pseudo (2026-10-07)
+
+- Fiche restaurant : rubrique « Ce qu'en disent les clients » (`components/AvisApercu.tsx`, DANS
+  `RestaurantHeader` pour ne pas décaler `stickyHeaderIndices`) : 3 derniers avis + « Voir les N avis » ;
+  commande à noter chez ce restaurant → « Note ta commande TF-xxx +1 000 Ar » ; sans avis → encart
+  « Sois le premier » + « Voir la carte » (défilement vers la barre des catégories : position lue sur
+  l'élément QUI LA PRÉCÈDE, l'onLayout d'un en-tête épinglé rend y = 0).
+- Cartes de l'accueil : pastille jaune « ★ 4,7 · 3 avis » sur sa propre ligne (dans la rangée, elle
+  faisait déborder « À partir de 2 000 Ar »). `note_moyenne` dès 1 avis (avant : 3).
+- Pseudo : `deposer_avis(..., p_pseudo)` (10ᵉ paramètre facultatif, ancienne signature supprimée),
+  `nettoyer_pseudo()` 2–20 car. → `avis.prenom_affiche`. Formulaire : « Mon prénom (X) » / « Un pseudo »,
+  dernier pseudo retenu en AsyncStorage (`tf_pseudo_avis`).
+
 ## 🔄 Bandeau « Nouvelle version disponible » (2026-10-07)
 
 `lib/miseAJour.ts` + `components/BandeauMiseAJour.tsx`, monté dans `app/_layout.tsx`. À CHAQUE retour

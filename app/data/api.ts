@@ -1456,6 +1456,8 @@ export async function deposerAvis(input: {
    * que si le client a écrit quelque chose.
    */
   messagePrive?: string | null;
+  /** Pseudo public (2-20 car.) à la place du prénom ; absent = le prénom. */
+  pseudo?: string | null;
 }): Promise<CodeRemerciement> {
   const { data, error } = await supabase.rpc('deposer_avis', {
     p_order_id: input.orderId,
@@ -1467,6 +1469,7 @@ export async function deposerAvis(input: {
     p_langue: input.langue,
     p_photo_url: input.photoUrl ?? null,
     ...(input.messagePrive ? { p_message_prive: input.messagePrive } : {}),
+    ...(input.pseudo ? { p_pseudo: input.pseudo } : {}),
   });
   if (error) throw error;
   // Depuis le 2026-10-07 la base ne crée plus de code : `code` vaut null et le

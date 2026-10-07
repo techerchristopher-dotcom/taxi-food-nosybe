@@ -8,6 +8,7 @@ import { Audience } from '../components/Audience';
 import { Bandeaux } from '../components/Bandeaux';
 import { Avis } from '../components/Avis';
 import { CodesOfferts } from '../components/CodesOfferts';
+import { PorteMonnaie } from '../components/PorteMonnaie';
 import { CommandeTelephone } from '../components/CommandeTelephone';
 import { Realtime } from '../components/Realtime';
 import { Remboursements } from '../components/Remboursements';
@@ -18,7 +19,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'codes' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
+type Tab = 'realtime' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'codes' | 'porte_monnaie' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -129,6 +130,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>
           Codes offerts
         </button>
+        <button className={`tab ${tab === 'porte_monnaie' ? 'active' : ''}`} onClick={() => setTab('porte_monnaie')}>
+          💰 Porte-monnaie
+        </button>
         <button className={`tab ${tab === 'selections' ? 'active' : ''}`} onClick={() => setTab('selections')}>
           Sélections
         </button>
@@ -157,6 +161,7 @@ export default function AdminPage() {
       {tab === 'avis' && <Avis />}
       {tab === 'remboursements' && <Remboursements />}
       {tab === 'codes' && <CodesOfferts />}
+      {tab === 'porte_monnaie' && <PorteMonnaie />}
       {tab === 'report' && <Report />}
       {tab === 'requests' && <Requests />}
       {tab === 'restaurants' && <Restaurants />}

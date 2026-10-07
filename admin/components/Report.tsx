@@ -28,6 +28,8 @@ type DeliveredRow = CommandeLivree & {
    * de notre marge.
    */
   remise_charge_restaurant: number | null;
+  /** Porte-monnaie client (2026-10-07), payé par Taxi Food, déjà déduit de `total`. */
+  remise_porte_monnaie?: number | null;
   payment_method: string;
   courier_id: string | null;
   commission_rate: number | null;
@@ -52,7 +54,7 @@ type Line = Cumul & {
   dejaReverse: Cumul;
 };
 
-const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, total, payment_method, courier_id, commission_amount, commission_rate';
+const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, courier_id, commission_amount, commission_rate';
 
 const AUCUNE_REGLE: ReglesDesCodes = new Map();
 
@@ -274,9 +276,9 @@ export function Report() {
   }, [rows]);
 
   function exportCsv() {
-    const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Offert par le restaurant', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats payee par Taxi Food'];
-    const body = lines.map((l) => [l.name, l.count, l.encaisse, l.caPlats, l.emballages, l.commission, l.offertRestaurant, l.net, l.deliveryBrut, l.remiseLivraison, l.deliveryFees, l.remisePlats].join(';'));
-    const totalRow = ['TOTAL', totals.count, totals.encaisse, totals.caPlats, totals.emballages, totals.commission, totals.offertRestaurant, totals.net, totals.deliveryBrut, totals.remiseLivraison, totals.deliveryFees, totals.remisePlats].join(';');
+    const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Offert par le restaurant', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats payee par Taxi Food', 'Porte-monnaie client (Taxi Food)'];
+    const body = lines.map((l) => [l.name, l.count, l.encaisse, l.caPlats, l.emballages, l.commission, l.offertRestaurant, l.net, l.deliveryBrut, l.remiseLivraison, l.deliveryFees, l.remisePlats, l.remisePorteMonnaie].join(';'));
+    const totalRow = ['TOTAL', totals.count, totals.encaisse, totals.caPlats, totals.emballages, totals.commission, totals.offertRestaurant, totals.net, totals.deliveryBrut, totals.remiseLivraison, totals.deliveryFees, totals.remisePlats, totals.remisePorteMonnaie].join(';');
     const csv = [`Periode;${start};${end}`, '', header.join(';'), ...body, '', totalRow].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -344,6 +346,7 @@ export function Report() {
               <tr><td>+ Livraison facturée</td><td className="num">{formatAr(totals.deliveryBrut)}</td></tr>
               <tr><td>− Remises sur la livraison <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remiseLivraison)}</td></tr>
               <tr><td>− Remises sur les plats <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remisePlats)}</td></tr>
+              <tr><td>− Porte-monnaie des clients <span className="muted">(payé par toi, restaurant au prix plein)</span></td><td className="num">−{formatAr(totals.remisePorteMonnaie)}</td></tr>
               <tr><td style={{ fontWeight: 700 }}>= Ma marge</td><td className="num" style={{ fontWeight: 700, color: 'var(--green)' }}>{formatAr(margin)}</td></tr>
             </tbody>
           </table>

@@ -255,6 +255,14 @@ export default function OrderTrackingScreen() {
               </Text>
             </View>
           ) : null}
+          {(order.remisePorteMonnaie ?? 0) > 0 ? (
+            <View style={styles.itemRow}>
+              <Text style={[styles.itemName, styles.remiseTexte]}>{t('porteMonnaie.ligne')}</Text>
+              <Text style={[styles.itemPrice, styles.remiseTexte]}>
+                −{formatAr(order.remisePorteMonnaie ?? 0)}
+              </Text>
+            </View>
+          ) : null}
           <Divider style={{ marginVertical: 12 }} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t('tracking.totalWith', { method: paymentShort(order.paymentMethod) })}</Text>

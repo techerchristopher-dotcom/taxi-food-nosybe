@@ -521,7 +521,7 @@
   },
   "avis": {
     "titre": "So, how was it?",
-    "sousTitre": "10 seconds — and 2,000 Ar off your next delivery.",
+    "sousTitre": "10 seconds — and +1,000 Ar in your wallet.",
     "cuisine": "The food",
     "preparation": "Preparation time",
     "livraison": "The delivery",
@@ -548,7 +548,8 @@
     "photoRetirer": "Remove the photo",
     "photoErreur": "The photo could not be uploaded. You can send your review without it.",
     "photoRefus": "Access to photos was denied.",
-    "erreurChargement": "Reviews could not be loaded. Please try again in a moment."
+    "erreurChargement": "Reviews could not be loaded. Please try again in a moment.",
+    "merciCredit": "+{{montant}} in your wallet, to use on your next dishes. No expiry date."
   },
   "authCallback": {
     "working": "Verifying…",
@@ -597,5 +598,27 @@
       "autre": "The restaurant could not accept the order"
     },
     "withDetail": "{{label}}: {{detail}}"
+  },
+  "porteMonnaie": {
+    "titre": "My wallet",
+    "profilSous": "Balance: {{solde}}",
+    "solde": "Available balance",
+    "explication": "Each review you leave after a delivery earns you 1,000 Ar. The balance is spent on dishes (never on delivery or packaging), at checkout. It never expires.",
+    "historique": "History",
+    "vide": "Nothing yet. Rate your next delivered order to earn 1,000 Ar.",
+    "erreur": "Your wallet could not be loaded. Please try again in a moment.",
+    "recapLigne": "💰 My wallet: {{solde}}",
+    "recapUtilisable": "{{montant}} off your dishes",
+    "recapRien": "Nothing to deduct on this order",
+    "utiliser": "Use",
+    "ligne": "💰 Wallet",
+    "motifs": {
+      "avis": "Thanks for your review",
+      "utilisation": "Used on an order",
+      "remboursement_annulation": "Returned: order cancelled",
+      "annulation_levee": "Taken back: order reactivated",
+      "reprise_code_avis": "Old review code converted",
+      "geste_admin": "Gift from Taxi Food"
+    }
   }
 }

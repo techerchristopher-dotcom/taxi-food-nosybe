@@ -521,7 +521,7 @@
   },
   "avis": {
     "titre": "Allora, com'era?",
-    "sousTitre": "10 secondi — e 2.000 Ar di sconto sulla prossima consegna.",
+    "sousTitre": "10 secondi — e +1.000 Ar nel tuo portafoglio.",
     "cuisine": "La cucina",
     "preparation": "Tempo di preparazione",
     "livraison": "La consegna",
@@ -548,7 +548,8 @@
     "photoRetirer": "Rimuovi la foto",
     "photoErreur": "La foto non è stata caricata. Puoi inviare la recensione senza.",
     "photoRefus": "Accesso alle foto negato.",
-    "erreurChargement": "Le recensioni non sono state caricate. Riprova tra un istante."
+    "erreurChargement": "Le recensioni non sono state caricate. Riprova tra un istante.",
+    "merciCredit": "+{{montant}} nel tuo portafoglio, da usare sui prossimi piatti. Nessuna scadenza."
   },
   "authCallback": {
     "working": "Verifica in corso…",
@@ -597,5 +598,27 @@
       "autre": "Il ristorante non ha potuto accettare l'ordine"
     },
     "withDetail": "{{label}}: {{detail}}"
+  },
+  "porteMonnaie": {
+    "titre": "Il mio portafoglio",
+    "profilSous": "Saldo: {{solde}}",
+    "solde": "Saldo disponibile",
+    "explication": "Ogni recensione lasciata dopo una consegna ti fa guadagnare 1.000 Ar. Il saldo si usa sui piatti (mai sulla consegna né sull'imballaggio), al momento del pagamento. Non scade.",
+    "historique": "Movimenti",
+    "vide": "Ancora nessun movimento. Valuta il tuo prossimo ordine consegnato per guadagnare 1.000 Ar.",
+    "erreur": "Il portafoglio non è stato caricato. Riprova tra un istante.",
+    "recapLigne": "💰 Il mio portafoglio: {{solde}}",
+    "recapUtilisable": "{{montant}} scalati dai tuoi piatti",
+    "recapRien": "Niente da scalare su questo ordine",
+    "utiliser": "Usa",
+    "ligne": "💰 Portafoglio",
+    "motifs": {
+      "avis": "Grazie per la recensione",
+      "utilisation": "Usato su un ordine",
+      "remboursement_annulation": "Restituito: ordine annullato",
+      "annulation_levee": "Ripreso: ordine riattivato",
+      "reprise_code_avis": "Vecchio codice recensione convertito",
+      "geste_admin": "Regalo di Taxi Food"
+    }
   }
 }

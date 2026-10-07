@@ -24,7 +24,8 @@ d'avis **réutilisables sur les réseaux sociaux**.
 | **Réutilisation réseaux sociaux UNIQUEMENT si le client a coché la case** | Consentement explicite, prénom seulement. `profiles` n'a ni pseudo ni consentement : c'est l'avis qui les porte. |
 | **Prénom figé à la création** (`prenom_affiche`) | Renommer son profil ne réécrit pas les avis passés ; et aucune policy de lecture publique sur `profiles` n'est nécessaire. |
 | **Relance push unique ~40 min après la livraison** | Le temps de manger. Une seule, jamais deux : `orders.invitation_avis_le`. |
-| **Code promo de remerciement : 2 000 Ar sur la livraison, 30 jours, une utilisation** | Fait bondir le taux de réponse. Payé par Taxi Food, valable partout (pas de `restaurant_id`). Nom `AVIS<PRENOM>`, sur le modèle des `MERCI<PRENOM>`. |
+| ~~Code promo de remerciement : 2 000 Ar sur la livraison, 30 jours, une utilisation~~ | Remplacé le 2026-10-07 : 3 codes `AVIS<PRENOM>` sur 5 n'avaient jamais été utilisés (il fallait les retaper). |
+| **Remerciement : +1 000 Ar dans le porte-monnaie, quelle que soit la note, sans expiration** (2026-10-07) | Rien à retenir ni à retaper : le solde s'affiche au paiement, sur les plats seulement. Payé par Taxi Food, le restaurant reste reversé du prix plein. Détail : CLAUDE.md, « Porte-monnaie (2026-10-07) ». |
 | **Droit de réponse du restaurateur** | Lot 2. C'est ce qui rend l'avis utile côté partenaire. |
 | **Photo du plat par le client** | Lot 3. C'est ce qui vaut de l'or sur Facebook. |
 
@@ -62,7 +63,8 @@ et mesurer le temps d'attente du livreur (`picked_up_at − ready_at`).
 
 | Fonction | Qui | Quoi |
 |---|---|---|
-| `deposer_avis(p_order_id, p_cuisine, p_preparation, p_livraison, p_commentaire, p_consentement)` | client | vérifie tout, insère, crée le code promo, renvoie `{code, expire_le}` |
+| `deposer_avis(p_order_id, p_cuisine, p_preparation, p_livraison, p_commentaire, p_consentement, p_langue, p_photo_url)` | client | vérifie tout, insère, **crédite 1 000 Ar au porte-monnaie** (depuis le 2026-10-07 ; avant : code promo), renvoie `{code: null, valeur, expire_le: null, credit_porte_monnaie, solde_porte_monnaie}` — les trois premières clés gardées pour l'app déjà installée |
+| `mon_porte_monnaie()` | client | solde + historique (table `porte_monnaie_mouvements`) |
 | `mon_avis(p_order_id)` | client | l'avis déjà déposé sur cette commande, ou null |
 | `avis_restaurant(p_restaurant_id, p_limite, p_decalage)` | public | les avis `publie` d'un restaurant : prénom, notes, commentaire, date, réponse |
 | `note_moyenne(r)`, `nb_avis(r)` | colonnes calculées PostgREST sur `restaurants` | moyenne de `note_restaurant`, `null` sous 3 avis |
@@ -82,7 +84,8 @@ dépôt n'en a pas la définition à jour. La relance appelle l'Edge Function el
 
 **Client** — composant `Etoiles` (lecture et saisie) ; bloc « Notez votre commande » dans le
 suivi de commande dès que `livree` (trois lignes d'étoiles, commentaire, case de consentement,
-puis le code promo affiché en remerciement) ; bouton « Noter » sur les commandes passées ;
+puis « +1 000 Ar dans ton porte-monnaie » en remerciement — les avis d'avant le 2026-10-07 gardent
+l'affichage de leur code) ; bouton « Noter » sur les commandes passées ;
 « ★ 4,6 (32) » sur la carte du catalogue et la fiche restaurant ; écran `/restaurant/[id]/avis`.
 
 **Restaurateur** (lot 2) — ses avis dans l'onglet Historique, réponse, alerte Telegram sur
@@ -128,6 +131,11 @@ copier, filtre « consentis non utilisés ».
 
 Chaque lot se livre sur les **quatre surfaces** (CLAUDE.md, « Une correction se livre sur
 QUATRE surfaces »).
+
+4. ✅ **Porte-monnaie à la place du code AVIS** — 2026-10-07, migrations
+   `20261007160000_porte_monnaie` et `20261007170000_porte_monnaie_reprise_codes_avis`. +1 000 Ar par
+   avis, dépensés sur les plats au paiement ; codes AVIS non utilisés convertis (Opaline 4 000 Ar,
+   Sulli 2 000 Ar) puis désactivés. Push `noter` : « … 1 000 Ar dans ton porte-monnaie ».
 
 ## 6. Ce que le diagnostic avait révélé (2026-09-30)
 

@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Card, SectionLabel } from '../../components/primitives';
-import { colors, fonts, radius, shadow, spacing } from '../../theme/tokens';
-import { listAddresses } from '../../data/api';
+import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
+import { listAddresses, monPorteMonnaie } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { ligneVersion } from '../../lib/version';
@@ -40,6 +40,8 @@ function AccountProfile() {
   const [notif, setNotif] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const { data: addresses } = useLoad(() => listAddresses(), []);
+  // Porte-monnaie (2026-10-07) : le solde en un coup d'œil, l'historique un tap plus loin.
+  const { data: porteMonnaie } = useLoad(() => monPorteMonnaie(), []);
 
   const name = session?.fullName ?? t('profile.defaultName');
   const email = session?.email ?? '';
@@ -148,6 +150,17 @@ function AccountProfile() {
             </View>
           ) : null}
         </Card>
+
+        <Pressable style={[styles.partner, { marginTop: 20 }]} onPress={() => router.push('/porte-monnaie')}>
+          <Icon name="account_balance_wallet" size={22} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.partnerLabel}>{t('porteMonnaie.titre')}</Text>
+            <Text style={styles.partnerSub}>
+              {t('porteMonnaie.profilSous', { solde: formatAr(porteMonnaie?.solde ?? 0) })}
+            </Text>
+          </View>
+          <Icon name="chevron_right" size={20} color={colors.textFaint} />
+        </Pressable>
 
         {/* Pas d'action « Ajouter » ni de menu « … » ici : les deux existaient sous forme de
             simple texte, sans `Pressable` ni gestionnaire — des commandes mortes. Une adresse

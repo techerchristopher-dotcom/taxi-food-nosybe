@@ -521,7 +521,7 @@
   },
   "avis": {
     "titre": "Alors, c'était comment ?",
-    "sousTitre": "10 secondes — et 2 000 Ar offerts sur ta prochaine livraison.",
+    "sousTitre": "10 secondes — et +1 000 Ar dans ton porte-monnaie.",
     "cuisine": "La cuisine",
     "preparation": "Le délai de préparation",
     "livraison": "La livraison",
@@ -548,7 +548,8 @@
     "photoRetirer": "Retirer la photo",
     "photoErreur": "La photo n'a pas pu être envoyée. Tu peux envoyer ton avis sans elle.",
     "photoRefus": "Autorisation d'accès aux photos refusée.",
-    "erreurChargement": "Les avis n'ont pas pu être chargés. Réessaie dans un instant."
+    "erreurChargement": "Les avis n'ont pas pu être chargés. Réessaie dans un instant.",
+    "merciCredit": "+{{montant}} dans ton porte-monnaie, à utiliser sur tes prochains plats. Sans date limite."
   },
   "authCallback": {
     "working": "Validation en cours…",
@@ -597,5 +598,27 @@
       "autre": "Le restaurant n'a pas pu accepter la commande"
     },
     "withDetail": "{{label}} : {{detail}}"
+  },
+  "porteMonnaie": {
+    "titre": "Mon porte-monnaie",
+    "profilSous": "Solde : {{solde}}",
+    "solde": "Solde disponible",
+    "explication": "Chaque avis déposé après une livraison te rapporte 1 000 Ar. Le solde se dépense sur les plats (jamais sur la livraison ni l'emballage), au moment de payer. Il n'expire pas.",
+    "historique": "Historique",
+    "vide": "Aucun mouvement pour le moment. Note ta prochaine commande livrée pour gagner 1 000 Ar.",
+    "erreur": "Le porte-monnaie n'a pas pu être chargé. Réessaie dans un instant.",
+    "recapLigne": "💰 Mon porte-monnaie : {{solde}}",
+    "recapUtilisable": "{{montant}} déduits de tes plats",
+    "recapRien": "Rien à déduire sur cette commande",
+    "utiliser": "Utiliser",
+    "ligne": "💰 Porte-monnaie",
+    "motifs": {
+      "avis": "Merci pour ton avis",
+      "utilisation": "Utilisé sur une commande",
+      "remboursement_annulation": "Rendu : commande annulée",
+      "annulation_levee": "Repris : commande réactivée",
+      "reprise_code_avis": "Ancien code avis converti",
+      "geste_admin": "Geste de Taxi Food"
+    }
   }
 }

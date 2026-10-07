@@ -45,6 +45,8 @@ type OrderRow = {
   /** Code promo applique et remise deja deduite du total (0 si aucun). */
   promo_code: string | null;
   promo_discount: number | null;
+  /** Porte-monnaie client (2026-10-07), deja deduit du total, paye par Taxi Food. */
+  remise_porte_monnaie?: number | null;
   created_at: string;
   courier_id: string | null;
   user_id: string | null;
@@ -129,7 +131,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -399,6 +401,11 @@ export function Realtime() {
                       {(o.promo_discount ?? 0) > 0 ? (
                         <div className="muted" style={{ fontSize: 11 }}>
                           {o.promo_code ?? 'promo'} −{formatAr(o.promo_discount ?? 0)}
+                        </div>
+                      ) : null}
+                      {(o.remise_porte_monnaie ?? 0) > 0 ? (
+                        <div className="muted" style={{ fontSize: 11 }}>
+                          porte-monnaie −{formatAr(o.remise_porte_monnaie ?? 0)}
                         </div>
                       ) : null}
                     </td>

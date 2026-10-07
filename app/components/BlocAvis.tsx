@@ -11,6 +11,7 @@ import { colors, fonts, formatAr, radius } from '../theme/tokens';
 import { deposerAvis, envoyerPhotoAvis, monAvis } from '../data/api';
 import { CodeRemerciement, MonAvis, Order } from '../data/types';
 import { useLoad } from '../lib/useLoad';
+import { oublierApercuPorteMonnaie } from '../store/porteMonnaie';
 
 /** Une commande se note pendant sept jours (règle posée en base par `deposer_avis`). */
 const FENETRE_JOURS = 7;
@@ -27,8 +28,9 @@ function dateCourte(iso: string): string {
  * Trois notes de 1 à 5 (cuisine, préparation, livraison), un commentaire libre,
  * une photo du plat (facultative, bucket `avis`, dossier du client) et la case de
  * consentement à la publication. La base vérifie tout (client de la commande,
- * livrée, sept jours, un seul avis, photo dans SON dossier) et renvoie le code
- * promo de remerciement — l'écran ne fait que montrer. Voir docs/NOTATION-AVIS.md.
+ * livrée, sept jours, un seul avis, photo dans SON dossier) et crédite 1 000 Ar
+ * au porte-monnaie (avant le 2026-10-07 : un code promo) — l'écran ne fait que
+ * montrer. Voir docs/NOTATION-AVIS.md.
  */
 export function BlocAvis({ order }: { order: Order }) {
   const { t, i18n } = useTranslation();
@@ -50,7 +52,16 @@ export function BlocAvis({ order }: { order: Order }) {
 
   // Déjà noté (relu en base) ou tout juste envoyé : on remercie, on montre le code.
   if (existant || resultat) {
-    return <Merci avis={existant} code={resultat ?? (existant?.code ? { code: existant.code, valeur: existant.codeValeur ?? 0, expireLe: existant.codeExpireLe ?? '' } : null)} />;
+    const remerciement: CodeRemerciement | null = resultat
+      ?? (existant
+        ? {
+            code: existant.code,
+            valeur: existant.codeValeur ?? 0,
+            expireLe: existant.codeExpireLe,
+            creditPorteMonnaie: existant.creditPorteMonnaie,
+          }
+        : null);
+    return <Merci avis={existant} code={remerciement} />;
   }
 
   // Passé la fenêtre, on n'insiste pas : pas de formulaire mort à l'écran.
@@ -106,6 +117,8 @@ export function BlocAvis({ order }: { order: Order }) {
         photoUrl,
       });
       setResultat(r);
+      // Le solde vient de bouger : l'aperçu du récapitulatif est périmé.
+      oublierApercuPorteMonnaie();
       reload();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
@@ -195,6 +208,16 @@ function Merci({ avis, code }: { avis: MonAvis | null; code: CodeRemerciement | 
           <Recap label={t('avis.livraison')} n={avis.noteLivraison} />
           {avis.commentaire ? <Text style={styles.recapCommentaire}>« {avis.commentaire} »</Text> : null}
           {avis.photoUrl ? <Image source={{ uri: avis.photoUrl }} style={styles.photoRecap} contentFit="cover" /> : null}
+        </View>
+      ) : null}
+      {/* Depuis le 2026-10-07 : un crédit de porte-monnaie. Les avis plus anciens
+          gardent l'affichage de leur code AVIS<PRENOM>. */}
+      {!code?.code && (code?.creditPorteMonnaie ?? 0) > 0 ? (
+        <View style={styles.codeBox}>
+          <Icon name="account_balance_wallet" size={20} color={colors.primary} />
+          <Text style={styles.codeTexte}>
+            {t('avis.merciCredit', { montant: formatAr(code?.creditPorteMonnaie ?? 0) })}
+          </Text>
         </View>
       ) : null}
       {code?.code ? (

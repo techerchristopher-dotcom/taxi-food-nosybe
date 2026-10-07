@@ -369,6 +369,15 @@ export function FicheContenu({ fiche, reversee }: { fiche: FicheLue; reversee: C
             <span>−{formatAr(remise)}</span>
           </div>
         ) : null}
+        {(o.remise_porte_monnaie ?? 0) > 0 ? (
+          <div className="fiche-ligne">
+            <span>
+              Porte-monnaie du client
+              <span className="muted"> · payé par Taxi Food, restaurant reversé au prix plein</span>
+            </span>
+            <span>−{formatAr(o.remise_porte_monnaie ?? 0)}</span>
+          </div>
+        ) : null}
         <div className="fiche-ligne fiche-total"><span>Total payé</span><span>{formatAr(o.total)}</span></div>
         <div className="muted" style={{ fontSize: 13 }}>
           {PAYMENT_LABEL[o.payment_method] ?? o.payment_method}

@@ -2118,8 +2118,8 @@ d'oiseau × 1,3, `ceil` du dépassement). Vérifié par `frais_livraison_detail`
 - L'app et la vitrine lisent le barème en base : rien à publier pour que les prix changent.
 - Admin : défaut du formulaire de création à 2 000 (déploiement admin à faire). `n8n/code-offert.js`
   (`LIVR`, exemple chiffré) mis à 2 000 dans le dépôt — workflow inactif en production.
-- ⚠️ Le code AVIS<PRENOM> (2 000 Ar sur la livraison, gardé tel quel) rend la livraison **gratuite
-  sous 3 km**. TAXIFOOD50 = 1 000 Ar de remise sur une course courte.
+- ~~Le code AVIS<PRENOM> (2 000 Ar sur la livraison) rend la livraison gratuite sous 3 km~~ —
+  remplacé le 2026-10-07 par le **porte-monnaie** (voir « Porte-monnaie (2026-10-07) »). TAXIFOOD50 = 1 000 Ar de remise sur une course courte.
 - ⚠️ Restent à « 10 000 » : les visuels et textes marketing de `visuels-reseaux/` (La Plage, Bidule,
   M&K, charte), `docs/PARTAGE-FACEBOOK-GROUPES.md` § 5 — à ne plus réutiliser tels quels.
 - ⚠️ Écart d'affichage préexistant : l'aperçu d'un code « livraison » calcule sur le socle, la base
@@ -2172,8 +2172,8 @@ composants `Etoiles` / `BlocAvis`, écran `/restaurant/avis/[id]`, note sur `Res
   (`orders_jalons_statut`), y compris quand l'admin passe une commande en « livrée ». Ne pas les
   écrire dans les RPC.
 - Les commandes **téléphone** (`commandes_telephone`) ne se notent pas : le compte est celui de l'admin.
-- Le code de remerciement `AVIS<PRENOM>` (2 000 Ar sur la livraison, 30 j, 1 usage, `taxi_food`,
-  `restaurant_id` null) est créé **dans `deposer_avis`** — montant en constante `c_montant`.
+- ~~Le code de remerciement `AVIS<PRENOM>` est créé dans `deposer_avis`~~ — **depuis le 2026-10-07,
+  `deposer_avis` crédite 1 000 Ar au porte-monnaie** (constante `c_credit`), voir la section suivante.
 - La relance pose `invitation_avis_le` **avant** l'appel HTTP : jamais deux relances, même si l'appel rate.
 - `notify_order_status()` (le trigger) **n'a pas été touché** — la relance appelle l'Edge Function elle-même.
 - Deux jeux de textes : `app/locales/*.json` (`avis.*`) **et** `notify-order/index.ts` (`noter`).
@@ -2204,6 +2204,88 @@ visuel » (canvas 1080×1080 → PNG, photo client assombrie en fond). Le branch
 ⚠️ **Ni le bloc de notation ni l'Historique restaurateur n'ont été vus sur un vrai téléphone** :
 vérifiés par TypeScript, par SQL en transaction annulée, et l'écran des avis (état vide) sur le
 web — à contrôler sur mobile à la première commande livrée.
+
+## 💰 Porte-monnaie (2026-10-07)
+
+Décision du porteur du projet : le code `AVIS<PRENOM>` (2 000 Ar sur la livraison, à retaper — 3 codes
+sur 5 jamais utilisés) est remplacé par un **solde en ariary**. Migrations
+`20261007160000_porte_monnaie` et `20261007170000_porte_monnaie_reprise_codes_avis` (appliquées).
+Recette : `supabase/tests/porte_monnaie.test.sql` (transaction annulée).
+
+**Les règles (toutes en base)**
+- **Chaque avis déposé crédite 1 000 Ar**, quelle que soit la note, **sans expiration**. Mêmes gardes
+  qu'avant dans `deposer_avis` (livrée, < 7 jours, pas téléphone, un avis par commande).
+- **Au paiement**, bascule « Utiliser » (active par défaut, masquée si solde = 0). Remise =
+  `min(solde, plats − remise d'un code qui porte sur les plats)` — **uniquement les PLATS**
+  (`subtotal`, options comprises), jamais livraison ni emballage. **Cumul avec un code** : un code
+  livraison ne change rien aux plats ; un code « plats » passe d'abord. Total jamais négatif.
+- **Annulation / refus** → le montant revient (`remboursement_annulation`), **sauf** si la commande
+  avait été livrée (même règle que `liberer_code_promo_annulation`). Sortie d'annulation → repris
+  (`annulation_levee`) ; si le client a dépensé son solde entre-temps, la réactivation est
+  **refusée** (`porte_monnaie:solde_insuffisant`), comme pour un code offert.
+- **Financé par Taxi Food** : `orders.remise_porte_monnaie` est déduite de `total` mais n'entre **ni
+  dans `remise_charge_restaurant` ni dans la commission** → restaurant reversé du prix plein,
+  commission inchangée (`record_settlement`, `admin_commandes_a_reverser`,
+  `versement_enregistrer_core`, `mark_order_delivered` n'ont pas bougé : aucun ne lit `total`).
+  Elle sort de la marge Taxi Food : `rapport_journalier.total_taxi_food` (et colonne
+  `remise_porte_monnaie` ajoutée en fin de vue), `admin/lib/reversement.ts` (`remisePorteMonnaie`
+  dans la ventilation, la marge et `ecartCaisse`).
+- **Espèces** : le livreur encaisse `total` (déjà net). Carte : `creer-paiement` relit `orders.total`,
+  rien à changer ; `verrouiller_montants_commande_payee` n'est pas concerné (le total est figé dans
+  `create_order`, avant tout paiement).
+
+**Le modèle**
+- Table **`porte_monnaie_mouvements`** (user_id, montant signé, motif ∈ {avis, utilisation,
+  remboursement_annulation, annulation_levee, reprise_code_avis, geste_admin}, order_id, avis_id,
+  code_promo_id, note, cree_par). Solde = somme. CHECK du signe par motif et du rattachement.
+  **Idempotence par index uniques partiels** : un crédit par avis, un débit `utilisation` par
+  commande, une reprise par code. RLS : le client lit SES lignes (`user_id = auth.uid()`), l'admin
+  tout ; **aucun droit d'écriture** (insert direct refusé, vérifié).
+- `create_order` : **6ᵉ paramètre `p_utiliser_porte_monnaie boolean default false`** (DROP de la 5-args
+  + CREATE, pas de surcharge). Les apps en magasin (5 clés nommées) et l'enveloppe 4 arguments
+  résolvent dessus sans changement (vérifié par PostgREST avec la clé publique : aucun PGRST203).
+  Verrou consultatif par client (deux commandes simultanées ne dépensent pas deux fois). Ignoré
+  pour une commande téléphone (`admin_commande_telephone`, compte admin). L'app n'envoie la clé
+  que si elle vaut true.
+- RPC : `mon_porte_monnaie()` (solde + 100 derniers mouvements), `apercu_porte_monnaie(resto, items,
+  code)` (même calcul que `create_order`, rien de débité), `admin_porte_monnaie_soldes()`,
+  `admin_porte_monnaie_mouvements(user)`, `admin_porte_monnaie_geste(user, ±montant, motif)`
+  (motif obligatoire, journalisé `admin_actions`, jamais de solde négatif). `solde_porte_monnaie(u)`
+  interne (aucun rôle client). `anon` refusé partout (vérifié, 42501).
+- `deposer_avis` renvoie toujours `code`, `valeur`, `expire_le` pour l'**app déjà installée** :
+  `code = null` → l'ancien écran masque l'encart du code et garde « Merci ». Nouvelles clés
+  `credit_porte_monnaie`, `solde_porte_monnaie`. `mon_avis` ajoute `credit_porte_monnaie`.
+- `notify_order_status()` patchée **par ancres** : `remise_porte_monnaie` dans la charge utile n8n
+  (T7uX **non modifié**) et ligne « dont porte-monnaie client : -X Ar (Taxi Food) » dans la copie
+  Telegram admin. Le message n8n au restaurant affiche le **sous-total hors livraison** = prix plein
+  (inchangé). ⚠️ L'e-mail client n8n n'a **aucune ligne de remise** (déjà vrai pour les codes) :
+  plats + livraison ≠ total affiché quand une remise s'applique — à ajouter dans T7uX un jour.
+
+**Reprise (2026-10-07)** : codes AVIS actifs, non expirés, jamais utilisés → crédit à leur valeur
+(2 000 Ar), `actif = false`, description suffixée « — converti en porte-monnaie le 2026-10-07 »,
+motif dans `note`. **AVISOPALINE + AVISOPALINE2 → Opaline 4 000 Ar ; AVISSULLI2 → Sulli 2 000 Ar.**
+AVISSULLI et AVISALESSANDRO (déjà utilisés) restent tels quels.
+
+**Écrans** — app : récapitulatif (`checkout.tsx`, `store/porteMonnaie.ts`) carte « 💰 Mon
+porte-monnaie : X Ar » + bascule, ligne « 💰 Porte-monnaie −X » et total recalculé ; Profil → « Mon
+porte-monnaie » (solde) → écran `/porte-monnaie` (historique) ; `BlocAvis` « +1 000 Ar dans ton
+porte-monnaie » ; suivi de commande et carte restaurant/livreur : ligne porte-monnaie. Textes
+`porteMonnaie.*` + `avis.sousTitre`/`avis.merciCredit` FR/EN/IT. Push `noter` (notify-order) :
+« … 1 000 Ar dans ton porte-monnaie ». Admin : onglet **💰 Porte-monnaie** (soldes, détail, geste
+manuel), lignes dans Rapport de clôture (+ CSV), fiche commande des versements, Temps réel.
+
+**Recette** (transaction annulée, 2026-10-07, Taxi Be + compte admin, TF-334 à TF-341 consommés,
+aucune ligne restée) : sans solde → rien ; 4 args / 5 args nommés OK ; avis → +1 000, code null ;
+double avis et double crédit refusés ; solde 2 500 sur plats 1 800 → remise 1 800, reste 700 ;
+double débit refusé ; annulation → recrédit, sortie → reprise ; code livraison 2 000 + 700 →
+total 1 100 ; code plats 1 000 + solde 2 500 → remise 800 ; reversement net = plats − commission
+(1 710 sur 1 800), commission 90 inchangée ; charge utile n8n et copie admin lues dans
+`net.http_request_queue` avant annulation.
+
+**⚠️ À livrer (rien n'est déployé)** : fonction Edge `notify-order` ; web (Netlify) ; OTA ×3
+runtimes ; admin (Netlify). La base est en place : les apps actuelles continuent de marcher, et
+les avis déposés depuis l'ancienne app créditent déjà le porte-monnaie (l'ancien écran n'affiche
+simplement plus de code). ⚠️ Écran du récapitulatif jamais vu sur téléphone.
 
 ## ⏰ « Ouvre à 12h » à 18 h 20, et les ouverts en tête de liste (2026-09-28)
 

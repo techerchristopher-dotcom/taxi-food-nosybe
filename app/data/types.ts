@@ -311,10 +311,42 @@ export type MonAvis = {
   code: string | null;
   codeValeur: number | null;
   codeExpireLe: string | null;
+  /** Crédit de porte-monnaie reçu pour cet avis (0 pour les avis d'avant le 2026-10-07). */
+  creditPorteMonnaie: number;
 };
 
-/** Ce que `deposer_avis` renvoie : le code promo de remerciement. */
-export type CodeRemerciement = { code: string; valeur: number; expireLe: string };
+/**
+ * Ce que `deposer_avis` renvoie. Avant le 2026-10-07 : un code promo. Depuis :
+ * `code` nul et un crédit de porte-monnaie (`creditPorteMonnaie`).
+ */
+export type CodeRemerciement = {
+  code: string | null;
+  valeur: number;
+  expireLe: string | null;
+  creditPorteMonnaie?: number;
+  soldePorteMonnaie?: number | null;
+};
+
+/** Pourquoi le porte-monnaie a bougé (CHECK de `porte_monnaie_mouvements.motif`). */
+export type MotifPorteMonnaie =
+  | 'avis'
+  | 'utilisation'
+  | 'remboursement_annulation'
+  | 'annulation_levee'
+  | 'reprise_code_avis'
+  | 'geste_admin';
+
+export type MouvementPorteMonnaie = {
+  id: string;
+  /** Signé : positif = crédit, négatif = débit. En ariary. */
+  montant: number;
+  motif: MotifPorteMonnaie;
+  commande: string | null;
+  restaurant: string | null;
+  createdAt: string;
+};
+
+export type PorteMonnaie = { solde: number; mouvements: MouvementPorteMonnaie[] };
 
 /** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */
 export const FOOD_TYPE_ORDER = [
@@ -409,6 +441,8 @@ export type Order = {
    */
   promoCode?: string | null;
   promoDiscount: number;
+  /** Part payée par le porte-monnaie du client, déjà déduite de `total` (financée par Taxi Food). */
+  remisePorteMonnaie?: number;
   total: number;
   paymentMethod: PaymentMethod;
   /** Verdict du webhook Stripe. `non_requis` pour un reglement a la livraison. */

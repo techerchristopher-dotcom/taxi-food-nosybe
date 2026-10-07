@@ -59,6 +59,14 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
           <Text style={styles.subValue}>−{formatAr(order.promoDiscount)}</Text>
         </View>
       ) : null}
+      {/* Porte-monnaie du client (2026-10-07) : payé par Taxi Food, le restaurant
+          est reversé du prix plein ; le livreur n'encaisse que le total. */}
+      {(order.remisePorteMonnaie ?? 0) > 0 ? (
+        <View style={[styles.itemRow, { marginTop: 2 }]}>
+          <Text style={styles.subLabel}>Porte-monnaie client (payé par Taxi Food)</Text>
+          <Text style={styles.subValue}>−{formatAr(order.remisePorteMonnaie ?? 0)}</Text>
+        </View>
+      ) : null}
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total · {paymentLabel(order.paymentMethod)}</Text>
         <Text style={styles.totalValue}>{formatAr(order.total)}</Text>

@@ -29,7 +29,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
-import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis, RefusalCode } from './types';
+import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis, MotifPorteMonnaie, PorteMonnaie, RefusalCode } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -816,6 +816,7 @@ type OrderJoinRow = {
   packaging_fee?: number | null;
   promo_code?: string | null;
   promo_discount?: number | null;
+  remise_porte_monnaie?: number | null;
   total: number;
   payment_method: PaymentMethod;
   payment_status?: StatutPaiement | null;
@@ -862,7 +863,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, arriving_at, arrived_at, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -906,6 +907,7 @@ function mapOrder(o: OrderJoinRow): Order {
     packagingFee: o.packaging_fee ?? 0,
     promoCode: o.promo_code ?? null,
     promoDiscount: o.promo_discount ?? 0,
+    remisePorteMonnaie: o.remise_porte_monnaie ?? 0,
     total: o.total,
     paymentMethod: o.payment_method,
     // Verdict du webhook Stripe, deduit de `payment_intents` par un trigger.
@@ -1041,6 +1043,11 @@ export type CreateOrderInput = {
   items: CreateOrderItem[];
   /** Code promo saisi tel quel. La base normalise, valide et calcule la remise. */
   codePromo?: string | null;
+  /**
+   * Payer une partie des PLATS avec le porte-monnaie (2026-10-07). La base relit le
+   * solde et calcule la remise elle-même ; le client n'envoie qu'un oui / non.
+   */
+  utiliserPorteMonnaie?: boolean;
 };
 
 /**
@@ -1200,6 +1207,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   packagingFee: number;
   promoCode: string | null;
   promoDiscount: number;
+  remisePorteMonnaie: number;
   total: number;
 }> {
   // ⚠️ `p_code_promo` est TOUJOURS transmis, même à null. La RPC existe en deux
@@ -1219,6 +1227,9 @@ export async function createOrder(input: CreateOrderInput): Promise<{
       comment: i.comment?.trim() || null,
     })),
     p_code_promo: input.codePromo ?? null,
+    // Clé envoyée SEULEMENT quand le client veut s'en servir : sans elle, l'appel
+    // reste exactement celui des versions précédentes (défaut false en base).
+    ...(input.utiliserPorteMonnaie ? { p_utiliser_porte_monnaie: true } : {}),
   });
   if (error) throw error;
   // La RPC `RETURNS orders` : selon PostgREST/supabase-js, `data` peut arriver soit
@@ -1234,6 +1245,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
         packaging_fee?: number | null;
         promo_code?: string | null;
         promo_discount?: number | null;
+        remise_porte_monnaie?: number | null;
         total: number;
       }
     | null
@@ -1249,6 +1261,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     packagingFee: row.packaging_fee ?? 0,
     promoCode: row.promo_code ?? null,
     promoDiscount: row.promo_discount ?? 0,
+    remisePorteMonnaie: row.remise_porte_monnaie ?? 0,
     total: row.total,
   };
 }
@@ -1449,8 +1462,19 @@ export async function deposerAvis(input: {
     p_photo_url: input.photoUrl ?? null,
   });
   if (error) throw error;
-  const d = data as { code: string; valeur: number; expire_le: string };
-  return { code: d.code, valeur: d.valeur, expireLe: d.expire_le };
+  // Depuis le 2026-10-07 la base ne crée plus de code : `code` vaut null et le
+  // remerciement est un crédit de porte-monnaie (`credit_porte_monnaie`).
+  const d = data as {
+    code: string | null; valeur: number; expire_le: string | null;
+    credit_porte_monnaie?: number | null; solde_porte_monnaie?: number | null;
+  };
+  return {
+    code: d.code ?? null,
+    valeur: d.valeur,
+    expireLe: d.expire_le ?? null,
+    creditPorteMonnaie: d.credit_porte_monnaie ?? 0,
+    soldePorteMonnaie: d.solde_porte_monnaie ?? null,
+  };
 }
 
 /** L'avis que j'ai laissé sur cette commande, ou null. */
@@ -1462,6 +1486,7 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
     note_cuisine: number; note_preparation: number; note_livraison: number;
     commentaire: string | null; photo_url?: string | null; consentement_publication: boolean; created_at: string;
     code: string | null; code_valeur: number | null; code_expire_le: string | null;
+    credit_porte_monnaie?: number | null;
   };
   return {
     noteCuisine: d.note_cuisine,
@@ -1474,7 +1499,57 @@ export async function monAvis(orderId: string): Promise<MonAvis | null> {
     code: d.code,
     codeValeur: d.code_valeur,
     codeExpireLe: d.code_expire_le,
+    creditPorteMonnaie: d.credit_porte_monnaie ?? 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Porte-monnaie (2026-10-07)
+// ---------------------------------------------------------------------------
+
+/** Mon solde et mes 100 derniers mouvements, lus en base. */
+export async function monPorteMonnaie(): Promise<PorteMonnaie> {
+  const { data, error } = await supabase.rpc('mon_porte_monnaie');
+  if (error) throw error;
+  const d = (data ?? {}) as {
+    solde?: number;
+    mouvements?: { id: string; montant: number; motif: string; commande: string | null; restaurant: string | null; created_at: string }[];
+  };
+  return {
+    solde: d.solde ?? 0,
+    mouvements: (d.mouvements ?? []).map((m) => ({
+      id: m.id,
+      montant: m.montant,
+      motif: m.motif as MotifPorteMonnaie,
+      commande: m.commande,
+      restaurant: m.restaurant,
+      createdAt: m.created_at,
+    })),
+  };
+}
+
+/**
+ * Ce que le porte-monnaie couvrirait sur ce panier, calculé par la base comme le
+ * fera `create_order` (plats seulement, après un code qui porte sur les plats).
+ * Un aperçu : rien n'est débité.
+ */
+export async function apercuPorteMonnaie(
+  restaurantId: string,
+  items: CreateOrderItem[],
+  codePromo: string | null,
+): Promise<{ solde: number; remise: number }> {
+  const { data, error } = await supabase.rpc('apercu_porte_monnaie', {
+    p_restaurant_id: restaurantId,
+    p_items: items.map((i) => ({
+      product_id: i.productId,
+      quantity: i.quantity,
+      options: i.options.map((o) => ({ option_id: o.optionId, quantity: o.quantity })),
+    })),
+    p_code_promo: codePromo,
+  });
+  if (error) throw error;
+  const d = (data ?? {}) as { solde?: number; remise?: number };
+  return { solde: d.solde ?? 0, remise: d.remise ?? 0 };
 }
 
 /** Les avis publiés d'un restaurant, du plus récent au plus ancien. Lecture publique. */

@@ -188,10 +188,11 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
   },
   // Relance ~40 min après la livraison (pg_cron, `relancer_avis_a_donner`) : le
   // client a eu le temps de manger. Une seule, jamais deux — voir docs/NOTATION-AVIS.md.
+  // Depuis le 2026-10-07 : +1 000 Ar au porte-monnaie (plus de code AVIS<PRENOM>).
   noter: {
-    fr: { title: 'Alors, c’était comment ? ⭐', body: 'Note ta commande chez {resto} en 10 secondes — 2 000 Ar offerts sur ta prochaine livraison.' },
-    en: { title: 'So, how was it? ⭐', body: 'Rate your order from {resto} in 10 seconds — 2,000 Ar off your next delivery.' },
-    it: { title: 'Allora, com’era? ⭐', body: 'Valuta il tuo ordine da {resto} in 10 secondi — 2.000 Ar di sconto sulla prossima consegna.' },
+    fr: { title: 'Alors, c’était comment ? ⭐', body: 'Note ta commande chez {resto} en 10 secondes — 1 000 Ar dans ton porte-monnaie.' },
+    en: { title: 'So, how was it? ⭐', body: 'Rate your order from {resto} in 10 seconds — 1,000 Ar in your wallet.' },
+    it: { title: 'Allora, com’era? ⭐', body: 'Valuta il tuo ordine da {resto} in 10 secondi — 1.000 Ar nel tuo portafoglio.' },
   },
 
   // --- Restaurant ---

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { CodePromo } from '../components/CodePromo';
@@ -28,6 +28,7 @@ import { useFraisLivraisonAJour } from '../lib/fraisLivraison';
 import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { LignesEmballage } from '../components/LignesEmballage';
 import { usePromo, usePromoStore } from '../store/promo';
+import { oublierApercuPorteMonnaie, usePorteMonnaie } from '../store/porteMonnaie';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
 import { useAuthIntent } from '../store/authIntent';
@@ -110,7 +111,10 @@ function CheckoutForm() {
   // rien à retaper. `remise` reste un aperçu confirmé par la base, jamais un
   // calcul local.
   const promo = usePromo();
-  const totalAPayer = Math.max(0, total - promo.remise);
+  // Porte-monnaie (2026-10-07) : sur les PLATS seulement, après le code. Aperçu
+  // calculé par la base ; `create_order` retranche elle-même le montant réel.
+  const porteMonnaie = usePorteMonnaie(promo.aEnvoyer);
+  const totalAPayer = Math.max(0, total - promo.remise - porteMonnaie.remise);
 
   // ------------------------------------------------------------ PAIEMENT CARTE
   // Réglages lus en base (`payment_config`), jamais devinés : le taux, la devise
@@ -178,7 +182,10 @@ function CheckoutForm() {
         // code qu'elle a déjà refusé reste à quai : il ferait échouer la
         // commande en boucle. Voir `store/promo.ts`.
         codePromo: promo.aEnvoyer,
+        // Un oui / non : le solde et le montant sont relus en base.
+        utiliserPorteMonnaie: porteMonnaie.utiliser && porteMonnaie.solde > 0,
       });
+      oublierApercuPorteMonnaie();
       // La commande EXISTE : l'étape que tout le reste de la mesure prépare.
       // Mode de paiement et restaurant seulement — rien qui désigne le client.
       mesurer('commande-validee', { paiement: String(paymentMethod), restaurant: restaurantName ?? '' });
@@ -297,6 +304,31 @@ function CheckoutForm() {
           <CodePromo />
         </Card>
 
+        {/* Porte-monnaie : masqué tant que le solde est nul (rien à proposer). */}
+        {porteMonnaie.solde > 0 ? (
+          <Card style={styles.pmCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pmTitre}>
+                {t('porteMonnaie.recapLigne', { solde: formatAr(porteMonnaie.solde) })}
+              </Text>
+              <Text style={styles.pmTexte}>
+                {porteMonnaie.remisePossible > 0
+                  ? t('porteMonnaie.recapUtilisable', { montant: formatAr(porteMonnaie.remisePossible) })
+                  : t('porteMonnaie.recapRien')}
+              </Text>
+            </View>
+            <View style={styles.pmBascule}>
+              <Text style={styles.pmUtiliser}>{t('porteMonnaie.utiliser')}</Text>
+              <Switch
+                value={porteMonnaie.utiliser}
+                onValueChange={porteMonnaie.setUtiliser}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                accessibilityLabel={t('porteMonnaie.utiliser')}
+              />
+            </View>
+          </Card>
+        ) : null}
+
         <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('checkout.paymentSection')}</SectionLabel>
         <ChoixModePaiement
           valeur={paymentMethod}
@@ -391,6 +423,12 @@ function CheckoutForm() {
             <Text style={[styles.detailValue, styles.remiseTexte]}>−{formatAr(promo.remise)}</Text>
           </View>
         ) : null}
+        {porteMonnaie.remise > 0 ? (
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, styles.remiseTexte]}>{t('porteMonnaie.ligne')}</Text>
+            <Text style={[styles.detailValue, styles.remiseTexte]}>−{formatAr(porteMonnaie.remise)}</Text>
+          </View>
+        ) : null}
         <View style={styles.separateur} />
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t('checkout.totalToPay', { method: paymentShort(paymentMethod) })}</Text>
@@ -424,6 +462,11 @@ const styles = StyleSheet.create({
   },
   error: { fontFamily: fonts.medium, fontSize: 12, color: colors.dangerText, marginTop: 14, textAlign: 'center' },
   remiseTexte: { color: colors.primary },
+  pmCard: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pmTitre: { fontFamily: fonts.semibold, fontSize: 14, color: colors.ink },
+  pmTexte: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 3 },
+  pmBascule: { alignItems: 'center', gap: 4 },
+  pmUtiliser: { fontFamily: fonts.bold, fontSize: 11, color: colors.textDark },
   rappelPrecision: {
     flexDirection: 'row',
     alignItems: 'center',

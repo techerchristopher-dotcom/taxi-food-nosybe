@@ -121,6 +121,16 @@ function json(code: number, corps: unknown) {
   });
 }
 
+/** Comparaison à temps constant du secret de la base (une comparaison naïve fuit le préfixe). */
+function egalConstant(a: string, b: string): boolean {
+  const x = new TextEncoder().encode(a);
+  const y = new TextEncoder().encode(b);
+  if (x.length !== y.length) return false;
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  return d === 0;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { erreur: 'methode_non_autorisee' });
@@ -131,21 +141,39 @@ Deno.serve(async (req: Request) => {
   );
 
   // ------------------------------------------------------------ 1. L'APPELANT
-  const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
-  if (!jwt) return json(403, { erreur: 'autorisation_refusee', code: 'jeton_absent' });
-  const { data: auth, error: authError } = await admin.auth.getUser(jwt);
-  const user = auth?.user;
-  if (authError || !user) return json(403, { erreur: 'autorisation_refusee', code: 'jeton_invalide' });
+  // DEUX PORTES, jamais une troisième (2026-10-07, même patron que `rembourser-paiement`) :
+  //   a. un administrateur connecté (l'onglet 📣 Annonce de l'admin) ;
+  //   b. la BASE, par `envoyer_annonce_depuis_la_base()` → pg_net, avec l'en-tête
+  //      `x-hook-secret` comparé au Vault `annonce_hook_secret`. Elle sert à envoyer une
+  //      annonce sans session humaine (exploitation par MCP). L'annonce, elle, a été
+  //      écrite AVANT par `admin_creer_annonce` sous une identité admin : `envoyee_par`
+  //      fait foi pour l'historique, la cible « moi » et l'e-mail de test.
+  let appelantId: string | null = null;
+  const hook = req.headers.get('x-hook-secret') ?? '';
+  if (hook) {
+    const { data: attendu, error: secretError } = await admin.rpc('annonce_hook_secret');
+    if (secretError || typeof attendu !== 'string' || attendu.length < 32) {
+      return json(500, { erreur: 'erreur_serveur', code: 'secret_hook_illisible' });
+    }
+    if (!egalConstant(hook, attendu)) return json(403, { erreur: 'autorisation_refusee', code: 'hook_invalide' });
+  } else {
+    const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+    if (!jwt) return json(403, { erreur: 'autorisation_refusee', code: 'jeton_absent' });
+    const { data: auth, error: authError } = await admin.auth.getUser(jwt);
+    const user = auth?.user;
+    if (authError || !user) return json(403, { erreur: 'autorisation_refusee', code: 'jeton_invalide' });
 
-  const { data: role, error: roleError } = await admin
-    .from('user_roles')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .eq('role', 'admin')
-    .eq('status', 'active')
-    .maybeSingle();
-  if (roleError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_role' });
-  if (!role) return json(403, { erreur: 'autorisation_refusee', code: 'reserve_aux_admins' });
+    const { data: role, error: roleError } = await admin
+      .from('user_roles')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .maybeSingle();
+    if (roleError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_role' });
+    if (!role) return json(403, { erreur: 'autorisation_refusee', code: 'reserve_aux_admins' });
+    appelantId = user.id;
+  }
 
   // -------------------------------------------------------------- 2. L'ENTRÉE
   let corps: { annonce_id?: string };
@@ -170,9 +198,20 @@ Deno.serve(async (req: Request) => {
   }
   // L'auteur enregistré et l'appelant doivent être la même personne : l'annonce
   // porte un nom dans l'historique, il doit être le bon.
-  if (annonce.envoyee_par !== user.id) {
+  // (Par la porte de la base, il n'y a pas d'appelant humain : l'auteur enregistré fait foi,
+  // et il doit être un administrateur actif.)
+  if (appelantId === null) {
+    const { data: auteurAdmin } = await admin
+      .from('user_roles').select('user_id')
+      .eq('user_id', annonce.envoyee_par ?? '').eq('role', 'admin').eq('status', 'active')
+      .maybeSingle();
+    if (!auteurAdmin) return json(403, { erreur: 'autorisation_refusee', code: 'auteur_non_admin' });
+    appelantId = annonce.envoyee_par;
+  }
+  if (annonce.envoyee_par !== appelantId) {
     return json(403, { erreur: 'autorisation_refusee', code: 'auteur_different' });
   }
+  const user = { id: appelantId as string };
 
   const veutPush = annonce.canal === 'push' || annonce.canal === 'push_email';
   const veutEmail = annonce.canal === 'email' || annonce.canal === 'push_email';

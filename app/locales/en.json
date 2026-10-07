@@ -625,6 +625,31 @@
       "annulation_levee": "Taken back: order reactivated",
       "reprise_code_avis": "Old review code converted",
       "geste_admin": "Gift from Taxi Food"
+    },
+    "invite": "Sign in to see your balance.",
+    "seConnecter": "Sign in →",
+    "commentTitre": "How it works",
+    "etapes": {
+      "avis": {
+        "emoji": "⭐",
+        "titre": "Leave a review",
+        "texte": "After each delivered order, rate it in 10 seconds: 1,000 Ar go into your wallet."
+      },
+      "payer": {
+        "emoji": "🛒",
+        "titre": "You choose at checkout",
+        "texte": "When you order, use your balance… or keep it for next time."
+      },
+      "plats": {
+        "emoji": "🍽️",
+        "titre": "On your dishes",
+        "texte": "Your balance comes off the price of your dishes. It stacks with a promo code."
+      },
+      "jamais": {
+        "emoji": "♾️",
+        "titre": "It never expires",
+        "texte": "Your balance waits for you, as long as it takes."
+      }
     }
   }
 }

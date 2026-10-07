@@ -625,6 +625,31 @@
       "annulation_levee": "Repris : commande réactivée",
       "reprise_code_avis": "Ancien code avis converti",
       "geste_admin": "Geste de Taxi Food"
+    },
+    "invite": "Connecte-toi pour voir ton solde.",
+    "seConnecter": "Se connecter →",
+    "commentTitre": "Comment ça marche",
+    "etapes": {
+      "avis": {
+        "emoji": "⭐",
+        "titre": "Laisse un avis",
+        "texte": "Après chaque commande livrée, note-la en 10 secondes : 1 000 Ar arrivent dans ton porte-monnaie."
+      },
+      "payer": {
+        "emoji": "🛒",
+        "titre": "Tu choisis au paiement",
+        "texte": "Au moment de commander, utilise ton solde… ou garde-le pour une prochaine fois."
+      },
+      "plats": {
+        "emoji": "🍽️",
+        "titre": "Sur tes plats",
+        "texte": "Le solde se déduit du prix de tes plats. Il se cumule avec un code promo."
+      },
+      "jamais": {
+        "emoji": "♾️",
+        "titre": "Il n’expire jamais",
+        "texte": "Ton solde t’attend, aussi longtemps qu’il le faut."
+      }
     }
   }
 }

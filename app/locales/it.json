@@ -625,6 +625,31 @@
       "annulation_levee": "Ripreso: ordine riattivato",
       "reprise_code_avis": "Vecchio codice recensione convertito",
       "geste_admin": "Regalo di Taxi Food"
+    },
+    "invite": "Accedi per vedere il tuo saldo.",
+    "seConnecter": "Accedi →",
+    "commentTitre": "Come funziona",
+    "etapes": {
+      "avis": {
+        "emoji": "⭐",
+        "titre": "Lascia una recensione",
+        "texte": "Dopo ogni ordine consegnato, valutalo in 10 secondi: 1.000 Ar arrivano nel tuo portafoglio."
+      },
+      "payer": {
+        "emoji": "🛒",
+        "titre": "Scegli tu al pagamento",
+        "texte": "Quando ordini, usa il tuo saldo… oppure tienilo per la prossima volta."
+      },
+      "plats": {
+        "emoji": "🍽️",
+        "titre": "Sui tuoi piatti",
+        "texte": "Il saldo si scala dal prezzo dei piatti. È cumulabile con un codice promo."
+      },
+      "jamais": {
+        "emoji": "♾️",
+        "titre": "Non scade mai",
+        "texte": "Il tuo saldo ti aspetta, per tutto il tempo che serve."
+      }
     }
   }
 }

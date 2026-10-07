@@ -32,6 +32,7 @@ export const RETOURS = [
   '/(tabs)/profile',
   '/role-select',
   '/address',
+  '/porte-monnaie',
 ] as const;
 
 /**

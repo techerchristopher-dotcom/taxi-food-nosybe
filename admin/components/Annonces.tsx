@@ -246,6 +246,7 @@ export function Annonces() {
           <span className="sel-label">Au tap, ouvrir</span>
           <select className="sel-champ" value={ouverture} onChange={(e) => setOuverture(e.target.value)}>
             <option value="/">L’accueil de l’app</option>
+            <option value="/porte-monnaie">La page Porte-monnaie (explication + solde)</option>
             {restos.map((r) => (
               <option key={r.id} value={`/restaurant/${r.id}`}>
                 La fiche de {r.name}{r.listing_status === 'coming_soon' ? ' (en négociation)' : ''}

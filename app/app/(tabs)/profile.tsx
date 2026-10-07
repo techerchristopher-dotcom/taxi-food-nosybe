@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { Card, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { listAddresses, monPorteMonnaie } from '../../data/api';
+import { listAddresses, mesAvisEnAttente, monPorteMonnaie } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { ligneVersion } from '../../lib/version';
@@ -42,6 +42,8 @@ function AccountProfile() {
   const { data: addresses } = useLoad(() => listAddresses(), []);
   // Porte-monnaie (2026-10-07) : le solde en un coup d'œil, l'historique un tap plus loin.
   const { data: porteMonnaie } = useLoad(() => monPorteMonnaie(), []);
+  // Avis encore notables (< 7 jours) : chacun vaut 1 000 Ar, le compteur pousse à rattraper.
+  const { data: avisEnAttente } = useLoad(() => mesAvisEnAttente(), []);
 
   const name = session?.fullName ?? t('profile.defaultName');
   const email = session?.email ?? '';
@@ -157,6 +159,9 @@ function AccountProfile() {
             <Text style={styles.partnerLabel}>{t('porteMonnaie.titre')}</Text>
             <Text style={styles.partnerSub}>
               {t('porteMonnaie.profilSous', { solde: formatAr(porteMonnaie?.solde ?? 0) })}
+              {avisEnAttente && avisEnAttente.length > 0
+                ? ` · ${t('porteMonnaie.profilAvis', { count: avisEnAttente.length })}`
+                : ''}
             </Text>
           </View>
           <Icon name="chevron_right" size={20} color={colors.textFaint} />

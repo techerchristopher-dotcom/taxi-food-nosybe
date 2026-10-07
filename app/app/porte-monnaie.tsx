@@ -5,7 +5,7 @@ import { Header } from '../components/Header';
 import { Icon } from '../components/Icon';
 import { Card, SectionLabel } from '../components/primitives';
 import { colors, fonts, formatAr, spacing } from '../theme/tokens';
-import { monPorteMonnaie } from '../data/api';
+import { mesAvisEnAttente, monPorteMonnaie } from '../data/api';
 import { MouvementPorteMonnaie } from '../data/types';
 import { useLoad } from '../lib/useLoad';
 import { useSession } from '../store/session';
@@ -55,6 +55,8 @@ function Contenu({ connecte }: { connecte: boolean }) {
           </Card>
         )}
 
+        <Actions connecte={connecte} />
+
         <SectionLabel style={{ marginTop: 22, marginBottom: 10 }}>{t('porteMonnaie.commentTitre')}</SectionLabel>
         <Card style={{ gap: 14 }}>
           {(['avis', 'payer', 'plats', 'jamais'] as const).map((k) => (
@@ -70,6 +72,43 @@ function Contenu({ connecte }: { connecte: boolean }) {
 
         {connecte ? <Historique /> : null}
       </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * Les deux gestes qui font gagner ou dépenser le porte-monnaie (2026-10-07) : commander, et
+ * rattraper ses avis. Le compteur vient de la base (`mes_avis_en_attente`).
+ */
+function Actions({ connecte }: { connecte: boolean }) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const { data: enAttente } = useLoad(
+    () => (connecte ? mesAvisEnAttente() : Promise.resolve([])),
+    [connecte],
+  );
+  const n = enAttente?.length ?? 0;
+  return (
+    <View style={styles.actions}>
+      <Pressable style={[styles.bouton, styles.boutonPlein]} onPress={() => router.push('/(tabs)')}>
+        <Icon name="restaurant" size={18} color={colors.white} />
+        <Text style={styles.boutonPleinTexte}>{t('porteMonnaie.commander')}</Text>
+      </Pressable>
+      {connecte ? (
+        <Pressable style={[styles.bouton, styles.boutonCreux]} onPress={() => router.push('/avis-en-attente')}>
+          <Text style={styles.boutonCreuxTexte}>⭐ {t('porteMonnaie.laisserAvis')}</Text>
+          {n > 0 ? (
+            <View style={styles.pastille}>
+              <Text style={styles.pastilleTexte}>{n}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      ) : null}
+      {connecte ? (
+        <Text style={styles.enAttente}>
+          {n > 0 ? t('porteMonnaie.avisEnAttente', { count: n, montant: formatAr(n * 1000) }) : t('porteMonnaie.aucunAvisEnAttente')}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -134,6 +173,15 @@ const styles = StyleSheet.create({
   soldeCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   soldeLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted },
   soldeValeur: { fontFamily: fonts.extrabold, fontSize: 26, color: colors.primary, marginTop: 2 },
+  actions: { marginTop: 14, gap: 10 },
+  bouton: { height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  boutonPlein: { backgroundColor: colors.primary },
+  boutonPleinTexte: { fontFamily: fonts.bold, fontSize: 15, color: colors.white },
+  boutonCreux: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary },
+  boutonCreuxTexte: { fontFamily: fonts.bold, fontSize: 15, color: colors.primary },
+  pastille: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  pastilleTexte: { fontFamily: fonts.bold, fontSize: 12, color: colors.white },
+  enAttente: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted, textAlign: 'center' },
   connexion: { fontFamily: fonts.bold, fontSize: 14, color: colors.primary, marginTop: 4 },
   etape: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   etapeEmoji: { fontSize: 22, lineHeight: 26 },

@@ -356,6 +356,9 @@ export type MouvementPorteMonnaie = {
 
 export type PorteMonnaie = { solde: number; mouvements: MouvementPorteMonnaie[] };
 
+/** Une commande livrée que le client peut encore noter (RPC `mes_avis_en_attente`, < 7 jours). */
+export type AvisEnAttente = { orderId: string; numero: string; restaurant: string; livreeLe: string; limiteLe: string };
+
 /** Ordre d'affichage préféré des filtres de type de plat sur l'accueil. */
 export const FOOD_TYPE_ORDER = [
   'Pizza',

@@ -29,7 +29,7 @@ import {
   Restaurant,
   DayHours,
 } from './types';
-import type { Avis, AvisRestaurateur, CodeRemerciement, MonAvis, MotifPorteMonnaie, PorteMonnaie, RefusalCode } from './types';
+import type { AvisEnAttente, Avis, AvisRestaurateur, CodeRemerciement, MonAvis, MotifPorteMonnaie, PorteMonnaie, RefusalCode } from './types';
 
 // --- Formes brutes (colonnes de la base) -----------------------------------
 type DayHoursRow = {
@@ -1534,6 +1534,22 @@ export async function monPorteMonnaie(): Promise<PorteMonnaie> {
       createdAt: m.created_at,
     })),
   };
+}
+
+/**
+ * Les commandes que le client peut encore noter (livrées depuis moins de 7 jours, sans avis,
+ * pas prises par téléphone) — mêmes règles que `deposer_avis`, calculées par la base.
+ */
+export async function mesAvisEnAttente(): Promise<AvisEnAttente[]> {
+  const { data, error } = await supabase.rpc('mes_avis_en_attente');
+  if (error) throw error;
+  return ((data ?? []) as { order_id: string; numero: string; restaurant: string; livree_le: string; limite_le: string }[]).map((r) => ({
+    orderId: r.order_id,
+    numero: r.numero,
+    restaurant: r.restaurant,
+    livreeLe: r.livree_le,
+    limiteLe: r.limite_le,
+  }));
 }
 
 /**

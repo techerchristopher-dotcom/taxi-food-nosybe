@@ -650,6 +650,22 @@
         "titre": "It never expires",
         "texte": "Your balance waits for you, as long as it takes."
       }
-    }
+    },
+    "commander": "Place an order",
+    "laisserAvis": "Leave a review",
+    "avisEnAttente_one": "{{count}} pending review: {{montant}} to earn",
+    "avisEnAttente_other": "{{count}} pending reviews: {{montant}} to earn",
+    "aucunAvisEnAttente": "No pending reviews right now.",
+    "profilAvis_one": "{{count}} review to leave",
+    "profilAvis_other": "{{count}} reviews to leave"
+  },
+  "avisEnAttente": {
+    "titre": "My pending reviews",
+    "intro": "Rate your orders delivered in the last 7 days: each review adds 1,000 Ar to your wallet.",
+    "commande": "Order {{numero}}",
+    "joursRestants_one": "{{count}} day left",
+    "joursRestants_other": "{{count}} days left",
+    "vide": "No orders to rate right now. Your next delivered order earns you 1,000 Ar as soon as you rate it.",
+    "erreur": "The list could not be loaded. Try again in a moment."
   }
 }

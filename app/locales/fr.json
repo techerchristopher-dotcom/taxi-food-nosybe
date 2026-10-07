@@ -650,6 +650,22 @@
         "titre": "Il n’expire jamais",
         "texte": "Ton solde t’attend, aussi longtemps qu’il le faut."
       }
-    }
+    },
+    "commander": "Passer une commande",
+    "laisserAvis": "Laisser un avis",
+    "avisEnAttente_one": "{{count}} avis en attente : {{montant}} à gagner",
+    "avisEnAttente_other": "{{count}} avis en attente : {{montant}} à gagner",
+    "aucunAvisEnAttente": "Aucun avis en attente pour le moment.",
+    "profilAvis_one": "{{count}} avis à laisser",
+    "profilAvis_other": "{{count}} avis à laisser"
+  },
+  "avisEnAttente": {
+    "titre": "Mes avis en attente",
+    "intro": "Note tes commandes livrées depuis moins de 7 jours : chaque avis ajoute 1 000 Ar à ton porte-monnaie.",
+    "commande": "Commande {{numero}}",
+    "joursRestants_one": "encore {{count}} jour",
+    "joursRestants_other": "encore {{count}} jours",
+    "vide": "Aucune commande à noter pour le moment. Ta prochaine commande livrée te rapportera 1 000 Ar dès que tu la notes.",
+    "erreur": "La liste n’a pas pu être chargée. Réessaie dans un instant."
   }
 }

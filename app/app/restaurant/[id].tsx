@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { NoteCompacte } from '../../components/Etoiles';
+import { AvisApercu } from '../../components/AvisApercu';
 import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ProductThumb } from '../../components/ProductThumb';
@@ -110,6 +111,8 @@ export default function RestaurantMenuScreen() {
   // Les plats du jour, partagés ENSEMBLE en une seule publication.
   const [partageJour, setPartageJour] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  // Position de la barre des catégories, pour « Voir la carte » depuis la rubrique avis.
+  const yCarte = useRef(0);
 
   if (loading && !restaurant) {
     return (
@@ -217,13 +220,19 @@ export default function RestaurantMenuScreen() {
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[2]}
       >
-        <RestaurantHeader r={restaurant} />
+        <RestaurantHeader
+          r={restaurant}
+          onVoirCarte={() => scrollRef.current?.scrollTo({ y: Math.max(0, yCarte.current - 8), animated: true })}
+        />
 
         {/* Mise en avant du restaurant : plats du jour, pizza de la semaine…
             Un plat de la carte permanente mis en avant apparaît ici ET dans sa
             catégorie — c'est un coup de projecteur, pas un déplacement. */}
         {featured.length ? (
-          <View style={styles.featuredWrap}>
+          <View
+            style={styles.featuredWrap}
+            onLayout={(e) => { yCarte.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
+          >
             {/* ⚠️ Sans ce titre, deux plats du jour se lisaient comme deux plats
                 ordinaires posés en haut de la carte : rien ne disait pourquoi
                 ils étaient là ni qu'ils ne dureraient pas. Le bandeau nomme la
@@ -297,7 +306,9 @@ export default function RestaurantMenuScreen() {
             </ScrollView>
           </View>
         ) : (
-          <View />
+          // ⚠️ La barre des catégories est épinglée (stickyHeaderIndices) : son propre
+          // onLayout rend y = 0. On retient donc le BAS de l'élément qui la précède.
+          <View onLayout={(e) => { yCarte.current = e.nativeEvent.layout.y; }} />
         )}
 
         <View style={styles.catBar}>
@@ -447,7 +458,7 @@ export default function RestaurantMenuScreen() {
   );
 }
 
-function RestaurantHeader({ r }: { r: Restaurant }) {
+function RestaurantHeader({ r, onVoirCarte }: { r: Restaurant; onVoirCarte: () => void }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   // Le bareme, lu EN BASE et jamais ecrit en dur ici : les trois valeurs
@@ -509,6 +520,9 @@ function RestaurantHeader({ r }: { r: Restaurant }) {
           })}
         </Text>
       ) : null}
+
+      {/* ⭐ Les avis, mis en avant juste sous les infos (2026-10-07). */}
+      <AvisApercu restaurantId={r.id} nbAvis={r.nbAvis} noteMoyenne={r.noteMoyenne} onVoirCarte={onVoirCarte} />
 
       {/* ⚠️ Le partage du RESTAURANT, annoncé au même titre que celui d'un plat.
           C'est le lien qu'un patron met sur la page Facebook de son établissement

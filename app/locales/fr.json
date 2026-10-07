@@ -672,5 +672,14 @@
     "titre": "Nouvelle version disponible",
     "cta": "Mettre à jour maintenant →",
     "fermer": "Plus tard"
+  },
+  "avisApercu": {
+    "titre": "Ce qu’en disent les clients",
+    "voirTous_one": "Voir l’avis",
+    "voirTous_other": "Voir les {{count}} avis",
+    "noterCommande": "Note ta commande {{numero}}",
+    "premierTitre": "Sois le premier à noter ce restaurant",
+    "premierTexte": "Commande ici, puis laisse ton avis : 1 000 Ar arrivent dans ton porte-monnaie, à utiliser sur tes prochains plats.",
+    "voirCarte": "Voir la carte"
   }
 }

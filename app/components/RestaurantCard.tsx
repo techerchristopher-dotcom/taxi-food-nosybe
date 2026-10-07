@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
-import { NoteCompacte } from './Etoiles';
+import { NotePastille } from './Etoiles';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
 import { CategoryTag, Restaurant, todayServicesLabel } from '../data/types';
@@ -23,8 +23,8 @@ function Meta({ eta, fee, note, nb }: { eta: string; fee: number; note: number |
   const { t } = useTranslation();
   return (
     <View style={styles.metaRow}>
-      {/* La note d'abord, si elle existe (null sous trois avis — la base décide). */}
-      <NoteCompacte note={note} nb={nb} />
+      {/* La note d'abord, en pastille jaune (2026-10-07) — dès le premier avis, la base décide. */}
+      <NotePastille note={note} nb={nb} />
       <View style={styles.metaItem}>
         <Icon name="schedule" size={15} color={colors.secondary} />
         <Text style={styles.metaText}>{eta}</Text>

@@ -672,5 +672,14 @@
     "titre": "New version available",
     "cta": "Update now →",
     "fermer": "Later"
+  },
+  "avisApercu": {
+    "titre": "What customers say",
+    "voirTous_one": "See the review",
+    "voirTous_other": "See all {{count}} reviews",
+    "noterCommande": "Rate your order {{numero}}",
+    "premierTitre": "Be the first to rate this restaurant",
+    "premierTexte": "Order here, then leave a review: 1,000 Ar go into your wallet, to use on your next dishes.",
+    "voirCarte": "See the menu"
   }
 }

@@ -1543,10 +1543,11 @@ export async function monPorteMonnaie(): Promise<PorteMonnaie> {
 export async function mesAvisEnAttente(): Promise<AvisEnAttente[]> {
   const { data, error } = await supabase.rpc('mes_avis_en_attente');
   if (error) throw error;
-  return ((data ?? []) as { order_id: string; numero: string; restaurant: string; livree_le: string; limite_le: string }[]).map((r) => ({
+  return ((data ?? []) as { order_id: string; numero: string; restaurant: string; restaurant_id: string; livree_le: string; limite_le: string }[]).map((r) => ({
     orderId: r.order_id,
     numero: r.numero,
     restaurant: r.restaurant,
+    restaurantId: r.restaurant_id,
     livreeLe: r.livree_le,
     limiteLe: r.limite_le,
   }));

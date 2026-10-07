@@ -672,5 +672,14 @@
     "titre": "Nuova versione disponibile",
     "cta": "Aggiorna ora →",
     "fermer": "Più tardi"
+  },
+  "avisApercu": {
+    "titre": "Cosa dicono i clienti",
+    "voirTous_one": "Vedi la recensione",
+    "voirTous_other": "Vedi le {{count}} recensioni",
+    "noterCommande": "Valuta il tuo ordine {{numero}}",
+    "premierTitre": "Sii il primo a valutare questo ristorante",
+    "premierTexte": "Ordina qui, poi lascia una recensione: 1.000 Ar arrivano nel tuo portafoglio, da usare sui prossimi piatti.",
+    "voirCarte": "Vedi il menù"
   }
 }

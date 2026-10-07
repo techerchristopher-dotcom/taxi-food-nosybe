@@ -68,8 +68,30 @@ export function NoteCompacte({ note, nb, taille = 12 }: { note: number | null; n
   );
 }
 
+/**
+ * Pastille de note pour les cartes de l'accueil (2026-10-07) : « ★ 4,7 · 3 avis » sur fond
+ * jaune, bien plus visible que la note compacte en texte gris. Rien sans note.
+ */
+export function NotePastille({ note, nb }: { note: number | null; nb: number }) {
+  const { t, i18n } = useTranslation();
+  if (note == null) return null;
+  return (
+    <View style={styles.pastille}>
+      <Icon name="star" size={15} color={colors.ink} />
+      <Text style={styles.pastilleNote}>{formatNote(note, i18n.language)}</Text>
+      {nb > 0 ? <Text style={styles.pastilleNb}>· {t('avis.nombre', { count: nb })}</Text> : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   compacte: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   compacteTexte: { fontFamily: fonts.semibold, color: colors.textDark },
+  pastille: {
+    flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start',
+    backgroundColor: colors.accent, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
+  },
+  pastilleNote: { fontFamily: fonts.extrabold, fontSize: 13, color: colors.ink },
+  pastilleNb: { fontFamily: fonts.semibold, fontSize: 12, color: colors.ink },
 });

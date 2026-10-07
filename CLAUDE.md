@@ -790,8 +790,10 @@ commandable** : `commandable_maintenant()` exige `listing_status = 'visible'` �
   **desserts retirés** (glaces et mousses en verrine ne tiennent pas le transport) ; « Demi pizza et
   salade » : groupe obligatoire « Pizza au choix » (les 12 pizzas) ; photo de la Carbonara retirée
   (c'était un osso bucco). Les 13 autres photos reçues sont des **plats du jour**, pas la carte.
-  Reste avant ouverture : compte restaurateur, Telegram, position GPS, commission (15 % en base),
-  prix d'une assiette d'accompagnement en plus.
+  ✅ 2026-10-07 (migration `20261007130000_nandipo_commission_gps_supplement`) : **commission 10 %**,
+  position de l'épingle Google « Nandipo » (-13.4046363, 48.2735719), **fin des commandes 21:45**
+  (ferme à 22:00), « Accompagnement supplémentaire » à **5 000 Ar** sur les 15 plats (modèle La Plage).
+  Reste avant ouverture : compte restaurateur et Telegram.
 - **Madame Oh, Oh Hazar, La Plage** — ajoutés le 2026-09-16 en `coming_soon` (migration
   `20260916131000_madame_oh_oh_hazar_et_la_plage_s_annoncent`) : 14, 8 et 38 plats, 60 photos
   `produits/madame-oh|oh-hazar|la-plage/*.png`, **ramenées de 1792×2240 (7 Mo) à 1024×1280** avant

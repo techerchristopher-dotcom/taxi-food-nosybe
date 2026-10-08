@@ -130,6 +130,8 @@ export type ProductOption = {
   photoUrl?: string | null; // vignette de l'option (ex. sauces), null si absente
   /** Cochée d'office à l'ouverture de la fiche, décochable (ex. grains inclus). */
   parDefaut?: boolean;
+  /** Emballage AJOUTÉ par l'option, par exemplaire (barquette de grains, de riz en plus…). */
+  packagingFee?: number;
 };
 
 /** Un groupe d'options d'un produit (ex. « Choix de la viande », obligatoire, 1 choix). */
@@ -160,6 +162,8 @@ export type SelectedOption = {
   name: string;
   priceDelta: number;
   quantity: number;
+  /** Emballage ajouté par l'option (0 si absent : anciennes lignes de panier, recommande). */
+  packagingFee?: number;
 };
 
 /** Total des suppléments d'une sélection d'options. */

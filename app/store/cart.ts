@@ -78,7 +78,11 @@ export type PackagingLine = {
 export function packagingLines(lines: CartLine[]): PackagingLine[] {
   return regrouperEmballages(
     lines.map((l) => ({
-      fee: l.product.packagingFee ?? 0,
+      // Emballage d'un exemplaire = celui du plat + celui des options choisies (barquette de
+      // grains, de riz en plus…) — même calcul que `create_order`, qui fait foi.
+      fee:
+        (l.product.packagingFee ?? 0) +
+        (l.options ?? []).reduce((n, o) => n + (o.packagingFee ?? 0) * o.quantity, 0),
       label: l.product.packagingLabel,
       quantity: l.quantity,
     })),

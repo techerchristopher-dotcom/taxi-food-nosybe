@@ -7,7 +7,13 @@
  * estimation affichée pendant l'appel.
  */
 
-export type Option = { id: string; name: string; price_delta: number; is_available: boolean; sort_order: number | null };
+export type Option = {
+  id: string; name: string; price_delta: number; is_available: boolean; sort_order: number | null;
+  /** Cochée d'office (ex. grains inclus) — même règle que la fiche plat de l'app. */
+  par_defaut?: boolean | null;
+  /** Emballage ajouté par l'option, par exemplaire. */
+  packaging_fee?: number | null;
+};
 export type Groupe = {
   id: string; name: string; min_select: number; max_select: number; required: boolean;
   sort_order: number | null; product_options: Option[];
@@ -33,7 +39,11 @@ export function prixUnitaire(l: Pick<Ligne, 'plat' | 'options'>): number {
 
 export function totalEstime(lignes: Ligne[], livraison: number) {
   const plats = lignes.reduce((s, l) => s + prixUnitaire(l) * l.quantite, 0);
-  const emballage = lignes.reduce((s, l) => s + (l.plat.packaging_fee ?? 0) * l.quantite, 0);
+  // Même calcul que `create_order` : emballage du plat + emballage des options choisies.
+  const emballage = lignes.reduce(
+    (s, l) => s + ((l.plat.packaging_fee ?? 0) + l.options.reduce((n, o) => n + (o.packaging_fee ?? 0), 0)) * l.quantite,
+    0,
+  );
   return { plats, emballage, livraison, total: plats + emballage + livraison };
 }
 

@@ -162,7 +162,7 @@ export default function ProductDetailScreen() {
   const selectedOptions: SelectedOption[] = groups.flatMap((g) =>
     (sel[g.id] ?? []).flatMap((optionId) => {
       const o = g.options.find((x) => x.id === optionId);
-      return o ? [{ optionId: o.id, groupId: g.id, name: o.name, priceDelta: o.priceDelta, quantity: 1 }] : [];
+      return o ? [{ optionId: o.id, groupId: g.id, name: o.name, priceDelta: o.priceDelta, quantity: 1, packagingFee: o.packagingFee ?? 0 }] : [];
     }),
   );
 

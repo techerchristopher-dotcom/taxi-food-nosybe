@@ -115,7 +115,7 @@ export function CommandeTelephone() {
       const ids = tous.map((x) => x.id);
       const g = ids.length
         ? await supabase.from('product_option_groups')
-          .select('id, product_id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order )')
+          .select('id, product_id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, par_defaut, packaging_fee )')
           .in('product_id', ids)
         : { data: [], error: null };
       if (seq !== seqCarte.current) return;
@@ -221,7 +221,9 @@ export function CommandeTelephone() {
     const auto: Record<string, string[]> = {};
     for (const g of gs) {
       const dispo = g.product_options.filter((o) => o.is_available);
-      if (g.required && dispo.length === 1 && g.product_options.length === 1) auto[g.id] = [dispo[0].id];
+      if (g.required && dispo.length === 1 && g.product_options.length === 1) { auto[g.id] = [dispo[0].id]; continue; }
+      const parDefaut = dispo.filter((o) => o.par_defaut).map((o) => o.id);
+      if (parDefaut.length) auto[g.id] = parDefaut.slice(0, Math.max(1, g.max_select));
     }
     if (gs.length === 0) { ajouter(p, [], 1); return; }
     setChoix(auto);

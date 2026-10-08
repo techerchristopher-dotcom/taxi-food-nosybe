@@ -1,0 +1,3 @@
+# Intermediaires regeneres a chaque rendu (images embarquees, ~2,5 Mo chacun)
+sa-*.html
+*.dc.html

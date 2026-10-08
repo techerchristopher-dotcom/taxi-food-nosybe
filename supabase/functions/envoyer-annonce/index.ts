@@ -233,11 +233,12 @@ Deno.serve(async (req: Request) => {
       if (attentesError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_attentes' });
       userIds = [...new Set((attentes ?? []).map((r) => r.user_id))];
     } else {
+      // « Tous les clients » = quiconque a l'app, pros compris (décision produit, 08/10).
+      // Le rôle `client` de `user_roles` n'est plus consulté : un client ordinaire ne
+      // l'obtient jamais, et 23 comptes sur 30 restaient invisibles aux annonces.
       const { data: clients, error: clientsError } = await admin
-        .from('user_roles')
+        .from('push_tokens')
         .select('user_id')
-        .eq('role', 'client')
-        .eq('status', 'active')
         .returns<{ user_id: string }[]>();
       if (clientsError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_clients' });
       userIds = [...new Set((clients ?? []).map((r) => r.user_id))];

@@ -194,7 +194,9 @@
     "produitIndisponible": "Back soon",
     "servedFrom": "Served from {{de}}",
     "horsService": "Not served right now",
-    "contientPorc": "Contains pork"
+    "contientPorc": "Contains pork",
+    "ingredientsPrincipaux": "Main ingredients",
+    "ingredientsAuChoix": "Dashed = your choice: you decide when ordering."
   },
   "cart": {
     "precisionPlaceholder": "Anything to add? (no tomato…)",

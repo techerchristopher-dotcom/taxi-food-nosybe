@@ -122,6 +122,8 @@ export type ProductOption = {
   isAvailable: boolean;
   sortOrder: number;
   photoUrl?: string | null; // vignette de l'option (ex. sauces), null si absente
+  /** Cochée d'office à l'ouverture de la fiche, décochable (ex. grains inclus). */
+  parDefaut?: boolean;
 };
 
 /** Un groupe d'options d'un produit (ex. « Choix de la viande », obligatoire, 1 choix). */
@@ -133,6 +135,16 @@ export type OptionGroup = {
   required: boolean;
   sortOrder: number;
   options: ProductOption[];
+};
+
+/**
+ * Un ingrédient principal affiché en pastille sur la fiche d'un plat (table `product_ingredients`).
+ * `auChoix` = pastille en pointillés : le client décide en commandant (viande, piment).
+ */
+export type ProductIngredient = {
+  emoji: string;
+  name: string;
+  auChoix: boolean;
 };
 
 /** Une option choisie par le client, mémorisée dans la ligne de panier. */

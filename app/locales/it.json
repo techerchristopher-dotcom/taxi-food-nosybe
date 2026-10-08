@@ -194,7 +194,9 @@
     "produitIndisponible": "Presto di nuovo",
     "servedFrom": "Servito dalle {{de}}",
     "horsService": "Non servito al momento",
-    "contientPorc": "Contiene maiale"
+    "contientPorc": "Contiene maiale",
+    "ingredientsPrincipaux": "Ingredienti principali",
+    "ingredientsAuChoix": "Tratteggiato = a scelta: decidi tu quando ordini."
   },
   "cart": {
     "precisionPlaceholder": "Una precisazione? (senza pomodoro…)",

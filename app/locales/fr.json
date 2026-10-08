@@ -194,7 +194,9 @@
     "produitIndisponible": "Bientôt de retour",
     "servedFrom": "Servi à partir de {{de}}",
     "horsService": "Pas servi pour le moment",
-    "contientPorc": "Contient du porc"
+    "contientPorc": "Contient du porc",
+    "ingredientsPrincipaux": "Ingrédients principaux",
+    "ingredientsAuChoix": "Pointillés = au choix : tu décides en commandant."
   },
   "cart": {
     "precisionPlaceholder": "Une précision ? (sans tomate…)",

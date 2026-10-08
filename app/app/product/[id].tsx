@@ -46,6 +46,7 @@ export default function ProductDetailScreen() {
   const monRestaurantId = useSession((s) => s.session?.restaurantId);
   const retire = restaurant?.listingStatus === 'hidden' && monRestaurantId !== restaurant?.id;
   const groups = useMemo(() => data?.groups ?? [], [data]);
+  const ingredients = data?.ingredients ?? [];
 
   const add = useCart((s) => s.add);
   const replaceWith = useCart((s) => s.replaceWith);
@@ -68,10 +69,12 @@ export default function ProductDetailScreen() {
   // qu'il ne peut pas expliquer — le pire des deux mondes.
   //
   // Le cas est réel depuis le 2026-09-06 : chez Chez Bidule & Truc, l'accompagnement
-  // des hamburgers a été ramené aux seules frites. « Coché par défaut » n'existe
-  // NULLE PART en base — `product_options` n'a pas de colonne pour ça — donc la
-  // règle vit ici, et elle vaut pour tous les restaurants, pas pour un cas
-  // particulier codé en dur.
+  // des hamburgers a été ramené aux seules frites. Cette règle vaut pour tous les
+  // restaurants, pas pour un cas particulier codé en dur.
+  //
+  // Depuis le 2026-10-08, une option peut aussi être COCHÉE D'OFFICE et décochable
+  // (`product_options.par_defaut`) : ce qui fait partie du plat mais qu'on peut
+  // refuser — les grains de L'escale Créole. Bornée à `maxSelect` du groupe.
   //
   // `...auto` d'abord, `...prev` ensuite : une sélection déjà faite l'emporte
   // toujours. La règle pré-remplit, elle n'écrase jamais.
@@ -80,7 +83,10 @@ export default function ProductDetailScreen() {
     for (const g of groups) {
       if (g.required && g.options.length === 1 && g.options[0].isAvailable) {
         auto[g.id] = [g.options[0].id];
+        continue;
       }
+      const parDefaut = g.options.filter((o) => o.parDefaut && o.isAvailable).map((o) => o.id);
+      if (parDefaut.length) auto[g.id] = parDefaut.slice(0, Math.max(1, g.maxSelect));
     }
     if (Object.keys(auto).length) setSel((prev) => ({ ...auto, ...prev }));
   }, [groups]);
@@ -243,6 +249,26 @@ export default function ProductDetailScreen() {
             </View>
           ) : null}
           {product.description ? <Text style={styles.desc}>{product.description}</Text> : null}
+
+          {/* Ingrédients principaux en pastilles : compris sans lire le français. Les
+              pointillés disent « au choix » — la viande, et le piment, qui n'est JAMAIS montré
+              comme imposé pour ne pas faire fuir qui n'en mange pas. */}
+          {ingredients.length > 0 ? (
+            <View style={styles.ingredients}>
+              <Text style={styles.ingredientsTitle}>{t('product.ingredientsPrincipaux')}</Text>
+              <View style={styles.ingChips}>
+                {ingredients.map((ing) => (
+                  <View key={ing.name} style={[styles.ingChip, ing.auChoix && styles.ingChipChoix]}>
+                    <Text style={styles.ingChipEmoji}>{ing.emoji}</Text>
+                    <Text style={styles.ingChipName}>{ing.name}</Text>
+                  </View>
+                ))}
+              </View>
+              {ingredients.some((ing) => ing.auChoix) ? (
+                <Text style={styles.ingChipNote}>{t('product.ingredientsAuChoix')}</Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {/* ⚠️ Annoncé et atteignable d'un tap, pas caché derrière l'icône de
               l'en-tête : le restaurateur qui pousse son plat sur la page Facebook
@@ -458,6 +484,25 @@ const styles = StyleSheet.create({
   },
   dietText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.warnText },
   desc: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 20, color: colors.textDark, marginTop: 8 },
+  ingredients: { marginTop: 14 },
+  ingredientsTitle: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.textMuted, marginBottom: 8 },
+  ingChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  ingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingLeft: 7,
+    paddingRight: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  ingChipChoix: { borderStyle: 'dashed', borderColor: colors.borderStrong },
+  ingChipEmoji: { fontSize: 16, lineHeight: 20 },
+  ingChipName: { fontFamily: fonts.medium, fontSize: 12, color: colors.ink },
+  ingChipNote: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 6 },
   partage: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.divider },
   group: { marginTop: 22 },
   groupHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

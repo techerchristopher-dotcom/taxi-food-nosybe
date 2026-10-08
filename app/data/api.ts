@@ -26,6 +26,7 @@ import {
   PaymentMethod,
   StatutPaiement,
   Product,
+  ProductIngredient,
   ProductOption,
   Restaurant,
   DayHours,
@@ -152,6 +153,7 @@ type OptionRow = {
   is_available: boolean;
   sort_order: number;
   photo_url: string | null;
+  par_defaut?: boolean | null;
 };
 
 type OptionGroupRow = {
@@ -245,6 +247,7 @@ function mapOption(o: OptionRow): ProductOption {
     isAvailable: o.is_available,
     sortOrder: o.sort_order,
     photoUrl: o.photo_url,
+    parDefaut: o.par_defaut ?? false,
   };
 }
 
@@ -688,6 +691,8 @@ export async function getProductDetail(id: string): Promise<{
    */
   category: Category | null;
   groups: OptionGroup[];
+  /** Ingrédients principaux en pastilles ; vide quand le plat n'en a pas (cas le plus courant). */
+  ingredients: ProductIngredient[];
 } | null> {
   await preparerTraductions();
   const { data, error } = await supabase
@@ -701,10 +706,10 @@ export async function getProductDetail(id: string): Promise<{
   if (!data) return null;
 
   const categoryId = (data as ProductRow).category_id;
-  const [groupsRes, restaurant, categoryRes] = await Promise.all([
+  const [groupsRes, restaurant, categoryRes, ingredientsRes] = await Promise.all([
     supabase
       .from('product_option_groups')
-      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, photo_url )')
+      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, photo_url, par_defaut )')
       .eq('product_id', id)
       .order('sort_order', { ascending: true }),
     getRestaurant((data as ProductRow).restaurant_id),
@@ -717,6 +722,11 @@ export async function getProductDetail(id: string): Promise<{
           .eq('id', categoryId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from('product_ingredients')
+      .select('au_choix, sort_order, ingredients ( emoji, nom )')
+      .eq('product_id', id)
+      .order('sort_order', { ascending: true }),
   ]);
   if (groupsRes.error) throw groupsRes.error;
   // Une catégorie illisible ne doit pas rendre la fiche illisible : on la traite
@@ -730,11 +740,18 @@ export async function getProductDetail(id: string): Promise<{
       return a.sortOrder - b.sortOrder;
     });
   const product = mapProduct(data as ProductRow, groups.length > 0);
+  // Les pastilles sont un plus : une erreur de lecture les fait disparaître, jamais la fiche.
+  const ingredients: ProductIngredient[] = ingredientsRes.error
+    ? []
+    : ((ingredientsRes.data ?? []) as unknown as { au_choix: boolean; ingredients: { emoji: string; nom: string } | null }[])
+        .filter((r) => r.ingredients)
+        .map((r) => ({ emoji: r.ingredients!.emoji, name: tr(r.ingredients!.nom), auChoix: r.au_choix }));
   return {
     product: traduireProduit(product),
     restaurant,
     category: category ? traduireCategorie(category) : null,
     groups: groups.map(traduireGroupe),
+    ingredients,
   };
 }
 

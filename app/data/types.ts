@@ -78,6 +78,12 @@ export type Product = {
    */
   listingStatus?: 'visible' | 'coming_soon';
   photoUrl?: string | null; // URL photo produit (Supabase Storage), null si absente
+  /**
+   * Vraie photo du plat prise par le restaurant (`products.vraie_photo_url`). La LISTE
+   * montre `photoUrl` (le visuel qui donne envie) ; la FICHE montre cette photo-ci avec
+   * le badge « Vraie photo », sinon `photoUrl` avec « Image d'illustration ».
+   */
+  vraiePhotoUrl?: string | null;
   hasOptions?: boolean; // true si le produit a des groupes d'options (→ passer par le détail)
   tags?: string[]; // cosmétique — non stocké en base
   /** Quantité restante annoncée par le restaurant. null = pas de compteur. */
@@ -313,6 +319,8 @@ export type Avis = {
   createdAt: string;
   reponseRestaurant: string | null;
   reponseLe: string | null;
+  /** Plats de la commande notée (« a commandé : Rougail saucisse »). Absent côté restaurateur. */
+  plats?: string[];
 };
 
 /** Un avis vu par le restaurateur : le même, plus la commande et le statut (masqué par l'admin ?). */

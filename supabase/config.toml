@@ -129,3 +129,9 @@ verify_jwt = false
 # utilisateur. La fonction verifie elle-meme l'en-tete `x-hook-secret` contre le
 # Vault (`traduction_hook_secret`). `true` la rendrait inappelable, en silence.
 verify_jwt = false
+
+[functions.publier-avis-facebook]
+# L'appelant est la BASE (tache pg_cron `publier-avis-facebook` -> pg_net), sans jeton
+# utilisateur. La fonction verifie elle-meme l'en-tete `x-hook-secret` contre le Vault
+# (`facebook_hook_secret`). `true` la rendrait inappelable, en silence.
+verify_jwt = false

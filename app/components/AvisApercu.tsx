@@ -89,6 +89,12 @@ export function AvisApercu({
             <Text style={styles.prenom}>{a.prenom}</Text>
             <Etoiles valeur={a.noteRestaurant} taille={13} />
           </View>
+          {/* Ce qui a été commandé : un avis « 5 étoiles » ne dit rien tant qu'on ne sait pas sur quel plat. */}
+          {a.plats?.length ? (
+            <Text style={styles.plats} numberOfLines={2}>
+              {t('avis.aCommande', { plats: a.plats.join(', ') })}
+            </Text>
+          ) : null}
           {a.commentaire ? (
             <Text style={styles.commentaire} numberOfLines={4}>
               « {a.commentaire} »
@@ -120,6 +126,7 @@ const styles = StyleSheet.create({
   avis: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: 12, gap: 6 },
   avisTete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   prenom: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  plats: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textMuted },
   commentaire: { fontFamily: fonts.regular, fontSize: 13.5, lineHeight: 19, color: colors.textDark },
   photo: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.tile, backgroundColor: colors.fieldBg },
   reponse: { paddingLeft: 10, borderLeftWidth: 2, borderLeftColor: colors.accent },

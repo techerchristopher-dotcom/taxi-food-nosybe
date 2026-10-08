@@ -108,6 +108,7 @@ type ProductRow = {
   is_available: boolean;
   listing_status?: string | null;
   photo_url: string | null;
+  vraie_photo_url?: string | null;
   stock_quantity?: number | null;
   is_featured?: boolean | null;
   featured_label?: string | null;
@@ -121,7 +122,7 @@ type ProductRow = {
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, listing_status, photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
+  'id, restaurant_id, category_id, name, description, price, is_available, listing_status, photo_url, vraie_photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
 
 type CategoryRow = {
   id: string;
@@ -227,6 +228,7 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     // retomberait sur 'visible' sans lever la moindre erreur : erreur silencieuse type.
     listingStatus: (p.listing_status as Product['listingStatus']) ?? 'visible',
     photoUrl: p.photo_url,
+    vraiePhotoUrl: p.vraie_photo_url ?? null,
     hasOptions,
     stockQuantity: p.stock_quantity ?? null,
     isFeatured: p.is_featured ?? false,
@@ -1646,19 +1648,15 @@ export async function apercuPorteMonnaie(
   return { solde: d.solde ?? 0, remise: d.remise ?? 0 };
 }
 
-/** Les avis publiés d'un restaurant, du plus récent au plus ancien. Lecture publique. */
-export async function listAvisRestaurant(restaurantId: string, limite = 20, decalage = 0): Promise<Avis[]> {
-  const { data, error } = await supabase.rpc('avis_restaurant', {
-    p_restaurant_id: restaurantId,
-    p_limite: limite,
-    p_decalage: decalage,
-  });
-  if (error) throw error;
-  return ((data ?? []) as {
-    id: string; prenom: string; note_cuisine: number; note_preparation: number; note_livraison: number;
-    note_restaurant: number | string; commentaire: string | null; created_at: string;
-    reponse_restaurant: string | null; reponse_le: string | null; photo_url?: string | null;
-  }[]).map((a) => ({
+type AvisPublicRow = {
+  id: string; prenom: string; note_cuisine: number; note_preparation: number; note_livraison: number;
+  note_restaurant: number | string; commentaire: string | null; created_at: string;
+  reponse_restaurant: string | null; reponse_le: string | null; photo_url?: string | null;
+  plats?: string[] | null;
+};
+
+function mapAvisPublic(a: AvisPublicRow): Avis {
+  return {
     id: a.id,
     prenom: a.prenom,
     noteCuisine: a.note_cuisine,
@@ -1670,7 +1668,36 @@ export async function listAvisRestaurant(restaurantId: string, limite = 20, deca
     createdAt: a.created_at,
     reponseRestaurant: a.reponse_restaurant,
     reponseLe: a.reponse_le,
-  }));
+    // Noms figés à la commande (`product_name_snapshot`), traduits comme la carte.
+    plats: (a.plats ?? []).map((n) => tr(n)),
+  };
+}
+
+/** Les avis publiés d'un restaurant, du plus récent au plus ancien. Lecture publique. */
+export async function listAvisRestaurant(restaurantId: string, limite = 20, decalage = 0): Promise<Avis[]> {
+  await preparerTraductions();
+  const { data, error } = await supabase.rpc('avis_restaurant', {
+    p_restaurant_id: restaurantId,
+    p_limite: limite,
+    p_decalage: decalage,
+  });
+  if (error) throw error;
+  return ((data ?? []) as AvisPublicRow[]).map(mapAvisPublic);
+}
+
+/**
+ * Les avis publiés des commandes qui CONTIENNENT ce plat — ceux avec une photo de
+ * client d'abord. Lecture publique (`avis_du_plat`).
+ */
+export async function listAvisDuPlat(productId: string, limite = 20): Promise<Avis[]> {
+  await preparerTraductions();
+  const { data, error } = await supabase.rpc('avis_du_plat', {
+    p_product_id: productId,
+    p_limite: limite,
+    p_decalage: 0,
+  });
+  if (error) throw error;
+  return ((data ?? []) as AvisPublicRow[]).map(mapAvisPublic);
 }
 
 /**

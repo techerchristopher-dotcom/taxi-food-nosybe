@@ -196,7 +196,14 @@
     "horsService": "Pas servi pour le moment",
     "contientPorc": "Contient du porc",
     "ingredientsPrincipaux": "Ingrédients principaux",
-    "ingredientsAuChoix": "Pointillés = au choix : tu décides en commandant."
+    "ingredientsAuChoix": "Pointillés = au choix : tu décides en commandant.",
+    "vraiePhoto": "Vraie photo du plat",
+    "imageIllustration": "Image d'illustration",
+    "avisTitre": "Ils ont commandé ce plat",
+    "photosClients": "Photos des clients, plats livrés",
+    "photoDe": "Photo de {{prenom}}",
+    "fermerPhoto": "Fermer la photo",
+    "voirAvisResto": "Tous les avis du restaurant"
   },
   "cart": {
     "precisionPlaceholder": "Une précision ? (sans tomate…)",
@@ -564,7 +571,8 @@
     "monPrenomSans": "Mon prénom",
     "unPseudo": "Un pseudo",
     "pseudoPlaceholder": "Ton pseudo (2 à 20 caractères)",
-    "pseudoInvalide": "Ton pseudo doit faire entre 2 et 20 caractères."
+    "pseudoInvalide": "Ton pseudo doit faire entre 2 et 20 caractères.",
+    "aCommande": "A commandé : {{plats}}"
   },
   "authCallback": {
     "working": "Validation en cours…",

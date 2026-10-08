@@ -196,7 +196,14 @@
     "horsService": "Not served right now",
     "contientPorc": "Contains pork",
     "ingredientsPrincipaux": "Main ingredients",
-    "ingredientsAuChoix": "Dashed = your choice: you decide when ordering."
+    "ingredientsAuChoix": "Dashed = your choice: you decide when ordering.",
+    "vraiePhoto": "Real photo of the dish",
+    "imageIllustration": "Illustrative image",
+    "avisTitre": "People who ordered this dish",
+    "photosClients": "Customer photos of delivered dishes",
+    "photoDe": "Photo by {{prenom}}",
+    "fermerPhoto": "Close photo",
+    "voirAvisResto": "All reviews of the restaurant"
   },
   "cart": {
     "precisionPlaceholder": "Anything to add? (no tomato…)",
@@ -564,7 +571,8 @@
     "monPrenomSans": "My first name",
     "unPseudo": "A nickname",
     "pseudoPlaceholder": "Your nickname (2 to 20 characters)",
-    "pseudoInvalide": "Your nickname must be 2 to 20 characters long."
+    "pseudoInvalide": "Your nickname must be 2 to 20 characters long.",
+    "aCommande": "Ordered: {{plats}}"
   },
   "authCallback": {
     "working": "Verifying…",

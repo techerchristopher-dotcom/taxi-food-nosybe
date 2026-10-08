@@ -19,10 +19,19 @@ import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { imageUrl, OptionGroup, SelectedOption, thumbnailUrl } from '../../data/types';
 
-/** Doivent rester alignés sur `styles.photo.height` et `styles.chipThumbWrap`. */
-const PHOTO_HEIGHT = 150;
+/**
+ * Hauteur du bandeau photo : ~62 % de la largeur (232 pt sur un écran de 375), bornée.
+ * Elle était de 150 pt — trop peu pour l'écran où l'on décide d'acheter. Bornée en haut
+ * pour laisser assez de feuille (options, quantité) sur un iPhone SE de 667 pt.
+ */
+function hauteurPhoto(largeur: number): number {
+  return Math.round(Math.min(Math.max(largeur * 0.62, 190), 300));
+}
+/** Doit rester aligné sur `styles.chipThumbWrap`. */
 const CHIP_THUMB = 34;
 import { getProductDetail } from '../../data/api';
+import { AvisDuPlat } from '../../components/AvisDuPlat';
+import { PhotoPleinEcran } from '../../components/PhotoPleinEcran';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { RestaurantContext, useCart } from '../../store/cart';
@@ -62,6 +71,7 @@ export default function ProductDetailScreen() {
   // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
   const [partageOuvert, setPartageOuvert] = useState(false);
+  const [photoOuverte, setPhotoOuverte] = useState(false);
 
   // ⚠️ Un groupe OBLIGATOIRE qui ne propose qu'UNE seule option ne pose aucune
   // question : c'est une composition, pas un choix. Le laisser à cocher coûte un
@@ -198,20 +208,42 @@ export default function ProductDetailScreen() {
     }
   }
 
+  const vraiePhoto = product.vraiePhotoUrl ?? null;
+  const photoFiche = vraiePhoto ?? product.photoUrl ?? null;
+  const hPhoto = hauteurPhoto(width);
+
   return (
     <View style={styles.container}>
-      <View style={[styles.photo, { paddingTop: insets.top + 12 }]}>
-        {product.photoUrl ? (
-          <Image
-            // Bandeau plein écran de 150 pt de haut : on demande cette taille-là, pas le
-            // PNG d'origine (1 à 2 Mo pour ~40 ko une fois redimensionné en WebP).
-            source={{ uri: imageUrl(product.photoUrl, width, PHOTO_HEIGHT) }}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={220}
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.photoWarmB }]}
-            onError={({ error }) => console.warn('[product] échec photo', product.photoUrl, error)}
-          />
+      <View style={[styles.photo, { height: hPhoto, paddingTop: insets.top + 12 }]}>
+        {photoFiche ? (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setPhotoOuverte(true)}
+            accessibilityRole="imagebutton"
+            accessibilityLabel={vraiePhoto ? t('product.vraiePhoto') : t('product.imageIllustration')}
+          >
+            <Image
+              // On demande la taille affichée, pas le PNG d'origine (1 à 2 Mo pour ~40 ko
+              // une fois redimensionné en WebP).
+              source={{ uri: imageUrl(photoFiche, width, hPhoto) }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={220}
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.photoWarmB }]}
+              onError={({ error }) => console.warn('[product] échec photo', photoFiche, error)}
+            />
+          </Pressable>
+        ) : null}
+        {/* La liste montre le visuel qui donne envie ; ici on dit honnêtement ce qu'on
+            regarde. « Vraie photo » seulement quand le restaurant l'a fournie
+            (`vraie_photo_url`) — en cas de doute, « Image d'illustration ». */}
+        {photoFiche ? (
+          <View style={[styles.photoBadge, vraiePhoto ? styles.photoBadgeVraie : styles.photoBadgeIllu]} pointerEvents="none">
+            {vraiePhoto ? <Icon name="photo_camera" size={13} color={colors.white} /> : null}
+            <Text style={styles.photoBadgeTexte}>
+              {vraiePhoto ? t('product.vraiePhoto') : t('product.imageIllustration')}
+            </Text>
+          </View>
         ) : null}
         <View style={styles.photoActions}>
           <Pressable onPress={retour} style={styles.closeBtn} hitSlop={8}>
@@ -269,6 +301,9 @@ export default function ProductDetailScreen() {
               ) : null}
             </View>
           ) : null}
+
+          {/* Ce qui a vraiment été livré : photos et avis des clients qui ont commandé ce plat. */}
+          <AvisDuPlat productId={product.id} restaurantId={product.restaurantId} />
 
           {/* ⚠️ Annoncé et atteignable d'un tap, pas caché derrière l'icône de
               l'en-tête : le restaurateur qui pousse son plat sur la page Facebook
@@ -429,6 +464,12 @@ export default function ProductDetailScreen() {
         onClose={() => setPartageOuvert(false)}
       />
 
+      <PhotoPleinEcran
+        uri={photoOuverte ? photoFiche : null}
+        badge={photoOuverte ? (vraiePhoto ? t('product.vraiePhoto') : t('product.imageIllustration')) : null}
+        legende={product.name}
+        onClose={() => setPhotoOuverte(false)}
+      />
       <ConflictSheet
         visible={conflict}
         currentName={cartRestaurantName}
@@ -448,7 +489,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.photoWarmB },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   notFound: { fontFamily: fonts.semibold, color: colors.textMuted },
-  photo: { height: 150, paddingHorizontal: spacing.screen },
+  photo: { paddingHorizontal: spacing.screen },
+  photoBadge: {
+    position: 'absolute',
+    left: spacing.screen,
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 26,
+    paddingHorizontal: 10,
+    borderRadius: radius.pill,
+  },
+  photoBadgeVraie: { backgroundColor: colors.success },
+  photoBadgeIllu: { backgroundColor: 'rgba(26,26,26,0.62)' },
+  photoBadgeTexte: { fontFamily: fonts.bold, fontSize: 11.5, color: colors.white },
   photoActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeBtn: {
     width: 40,

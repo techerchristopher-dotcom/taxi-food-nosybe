@@ -82,6 +82,9 @@ export default function AvisRestaurantScreen() {
                 <Text style={styles.date}>{dateCourte(a.createdAt)}</Text>
               </View>
               <Etoiles valeur={a.noteRestaurant} taille={18} style={{ marginTop: 4 }} />
+              {a.plats?.length ? (
+                <Text style={styles.plats}>{t('avis.aCommande', { plats: a.plats.join(', ') })}</Text>
+              ) : null}
               <Text style={styles.detail}>
                 {t('avis.cuisine')} {a.noteCuisine}/5 · {t('avis.preparation')} {a.notePreparation}/5 · {t('avis.livraison')} {a.noteLivraison}/5
               </Text>
@@ -129,6 +132,7 @@ const styles = StyleSheet.create({
   vide: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 19, color: colors.textMuted, textAlign: 'center', marginTop: 24 },
   avisHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   prenom: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  plats: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.textMuted, marginTop: 6 },
   date: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   detail: { fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 6 },
   commentaire: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.ink, marginTop: 8 },

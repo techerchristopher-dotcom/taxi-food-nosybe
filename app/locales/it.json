@@ -196,7 +196,14 @@
     "horsService": "Non servito al momento",
     "contientPorc": "Contiene maiale",
     "ingredientsPrincipaux": "Ingredienti principali",
-    "ingredientsAuChoix": "Tratteggiato = a scelta: decidi tu quando ordini."
+    "ingredientsAuChoix": "Tratteggiato = a scelta: decidi tu quando ordini.",
+    "vraiePhoto": "Foto reale del piatto",
+    "imageIllustration": "Immagine illustrativa",
+    "avisTitre": "Chi ha ordinato questo piatto",
+    "photosClients": "Foto dei clienti, piatti consegnati",
+    "photoDe": "Foto di {{prenom}}",
+    "fermerPhoto": "Chiudi la foto",
+    "voirAvisResto": "Tutte le recensioni del ristorante"
   },
   "cart": {
     "precisionPlaceholder": "Una precisazione? (senza pomodoro…)",
@@ -564,7 +571,8 @@
     "monPrenomSans": "Il mio nome",
     "unPseudo": "Uno pseudonimo",
     "pseudoPlaceholder": "Il tuo pseudonimo (da 2 a 20 caratteri)",
-    "pseudoInvalide": "Lo pseudonimo deve avere da 2 a 20 caratteri."
+    "pseudoInvalide": "Lo pseudonimo deve avere da 2 a 20 caratteri.",
+    "aCommande": "Ha ordinato: {{plats}}"
   },
   "authCallback": {
     "working": "Verifica in corso…",

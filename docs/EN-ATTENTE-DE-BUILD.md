@@ -13,6 +13,30 @@ réellement en attente à cette date — ne pas supposer que le reste du fichier
 sans vérifier au cas par cas.
 
 
+## 🐖 Case « Contient du porc » dans l'espace restaurateur (2026-10-09) — OTA suffit
+
+JS seulement, aucun module natif : une OTA l'apporte. **Pas encore publié.**
+
+Origine : le patron du Nandipo a fait « Modifier » sur son plat du jour « Rougail saucisse »
+(plat de sa carte, tagué porc) et l'a réécrit en « Zebu bourguignon » : même ligne en base, le
+badge porc a suivi et le rougail a disparu de sa carte.
+
+- **Fiche plat à l'affiche** (création et modification) : case « Contient du porc », pré-cochée
+  selon le plat. Envoyée à `save_featured_product(p_contient_porc)`.
+- **Votre carte** : une puce « Contient du porc » sous le prix de chaque plat, un tap la bascule
+  (`set_product_diet_tags`, en repartant des repères existants).
+- **Nom figé** pour un plat de la carte permanente (`in_menu`) ouvert par « Modifier » : champ
+  grisé + message « annulez puis Ajouter un plat à l'affiche ».
+- **Déjà en base** (migration `20261009183147`) : la RPC refuse le renommage d'un plat de la
+  carte, pour TOUTES les versions installées ; `p_contient_porc` absent = badge inchangé, donc
+  les anciennes versions n'effacent jamais un badge. Testé en transaction annulée (6 cas).
+
+À vérifier sur appareil après l'OTA :
+1. Réglages → Ajouter un plat à l'affiche → cocher « Contient du porc » → le badge apparaît sur
+   le plat du jour côté client ; décocher via « Modifier » → il disparaît.
+2. Votre carte → toucher la puce d'un plat → badge visible côté client, retoucher → retiré.
+3. « Modifier » sur un plat étoilé de la carte → le nom est grisé, non modifiable.
+
 ## 📸 « Enregistrer l'image » dans la galerie (2026-09-18) — EXIGE UN BUILD
 
 Écrit et commité, **pas compilé**. Le build 33 (iOS) / 13 (Android) déjà déposé ne le contient PAS.

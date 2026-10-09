@@ -126,5 +126,15 @@ La RPC exige d'être personnel actif du restaurant concerné (`current_restauran
 elle est aussi utilisable par le partenaire depuis son espace — c'est d'ailleurs lui qui
 devrait la piloter à terme, puisque lui seul connaît sa recette.
 
+**Depuis le 2026-10-09, le restaurateur pose le badge lui-même** : case « Contient du porc »
+dans la fiche d'un plat à l'affiche (`save_featured_product(p_contient_porc)`), et puce
+« Contient du porc » sur chaque plat de « Votre carte » (`set_product_diet_tags`). C'est la
+réponse à la règle « lui seul connaît sa recette ».
+
+⚠️ **Piège rencontré le 2026-10-09 (Nandipo)** : réécrire un plat existant (nom, description,
+photo) le transforme en un autre plat qui **garde ses repères**. « Rougail saucisse » devenu
+« Zebu bourguignon » portait toujours « Contient du porc ». La RPC refuse désormais de renommer
+un plat de la carte permanente.
+
 La colonne est un **tableau de libellés** : elle accueillera « piquant », « végétarien »,
 « sans gluten » sans nouvelle migration.

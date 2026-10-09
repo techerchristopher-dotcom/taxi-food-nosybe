@@ -31,6 +31,7 @@ import {
   getMenu,
   saveFeaturedProduct,
   setProductAvailable,
+  setProductDietTags,
   setProductFeatured,
   setProductGarnitures,
   setProductSortOrder,
@@ -111,6 +112,15 @@ type FicheAffiche = {
   stock: string;
   description: string;
   photoUrl: string | null;
+  /** Case « Contient du porc » : pose ou retire le badge vu par les clients. */
+  porc: boolean;
+  /**
+   * true = plat de la carte permanente mis à l'affiche. Son NOM est figé : le
+   * réécrire en ferait un autre plat, qui hériterait de son badge porc et ferait
+   * disparaître l'original de la carte (Nandipo, 2026-10-09 : « Rougail saucisse »
+   * devenu « Zebu bourguignon », badge porc compris). La base le refuse aussi.
+   */
+  deLaCarte: boolean;
 };
 
 const FICHE_VIDE: FicheAffiche = {
@@ -121,6 +131,8 @@ const FICHE_VIDE: FicheAffiche = {
   stock: '',
   description: '',
   photoUrl: null,
+  porc: false,
+  deLaCarte: false,
 };
 
 function ficheDepuis(p: Product): FicheAffiche {
@@ -132,6 +144,8 @@ function ficheDepuis(p: Product): FicheAffiche {
     stock: p.stockQuantity == null ? '' : String(p.stockQuantity),
     description: p.description ?? '',
     photoUrl: p.photoUrl ?? null,
+    porc: p.dietTags?.includes('porc') ?? false,
+    deLaCarte: p.inMenu ?? false,
   };
 }
 
@@ -285,6 +299,7 @@ export default function RestaurantSettingsScreen() {
   // annule sa propre action.
   const [optDispo, setOptDispo] = useState<Record<string, boolean>>({});
   const [optVedette, setOptVedette] = useState<Record<string, boolean>>({});
+  const [optPorc, setOptPorc] = useState<Record<string, boolean>>({});
   const [optResto, setOptResto] = useState<{ autoOpen?: boolean; isOpen?: boolean }>({});
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   // null = le champ suit la base ; une chaîne = saisie en cours, pas encore enregistrée.
@@ -316,6 +331,7 @@ export default function RestaurantSettingsScreen() {
     if (!data) return;
     setOptDispo((o) => purger(o, enVolRef.current, 'dispo-'));
     setOptVedette((o) => purger(o, enVolRef.current, 'star-'));
+    setOptPorc((o) => purger(o, enVolRef.current, 'porc-'));
     setOptResto((o) => {
       const suite: typeof o = {};
       if (enVolRef.current.auto && o.autoOpen !== undefined) suite.autoOpen = o.autoOpen;
@@ -617,6 +633,7 @@ export default function RestaurantSettingsScreen() {
           stockQuantity: stock,
           photoUrl: fiche.photoUrl,
           featuredLabel: fiche.label.trim() || null,
+          contientPorc: fiche.porc,
         });
         setFiche(null);
 
@@ -1041,6 +1058,13 @@ export default function RestaurantSettingsScreen() {
                         {formatAr(p.price)}
                         {p.stockQuantity != null ? `  ·  ${p.stockQuantity} restant${p.stockQuantity > 1 ? 's' : ''}` : ''}
                       </Text>
+                      {p.dietTags?.includes('porc') ? (
+                        <View style={[styles.porcPuce, styles.porcPuceActive, { marginTop: 4 }]}>
+                          <Text style={[styles.porcPuceTexte, styles.porcPuceTexteActive]}>
+                            Contient du porc
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                     <View style={{ gap: 6 }}>
                       <Pressable
@@ -1096,7 +1120,8 @@ export default function RestaurantSettingsScreen() {
                     onChangeText={(v) => setFiche({ ...fiche, name: v })}
                     placeholder="Nom du plat"
                     placeholderTextColor={colors.textFaint}
-                    style={styles.champ}
+                    editable={!fiche.deLaCarte}
+                    style={[styles.champ, fiche.deLaCarte && styles.champFige]}
                   />
                   <TextInput
                     value={fiche.label}
@@ -1135,6 +1160,35 @@ export default function RestaurantSettingsScreen() {
                 style={[styles.champ, { marginTop: 8, height: 60, paddingTop: 12 }]}
                 multiline
               />
+
+              {fiche.deLaCarte ? (
+                <Text style={styles.aide}>
+                  Ce plat fait partie de votre carte : son nom ne se change pas ici. Pour mettre
+                  un autre plat à l'affiche, annulez puis touchez « Ajouter un plat à l'affiche ».
+                </Text>
+              ) : null}
+
+              {/* ⚠️ Toujours visible, même décochée : un plat sans la case cochée
+                  n'affiche AUCUN badge chez le client. C'est au restaurateur de le
+                  dire, lui seul connaît sa recette — on ne déduit jamais du nom. */}
+              <Pressable
+                onPress={() => setFiche({ ...fiche, porc: !fiche.porc })}
+                style={styles.caseLigne}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: fiche.porc }}
+              >
+                <Icon
+                  name={fiche.porc ? 'check_box' : 'check_box_outline_blank'}
+                  size={24}
+                  color={fiche.porc ? colors.warnText : colors.textMuted}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.caseTitre}>Contient du porc</Text>
+                  <Text style={styles.caseSous}>
+                    Vos clients verront le badge « Contient du porc » sur ce plat.
+                  </Text>
+                </View>
+              </Pressable>
 
               <Text style={styles.aide}>
                 Laissez la quantité vide si vous ne comptez pas les portions. À zéro, le plat
@@ -1224,6 +1278,7 @@ export default function RestaurantSettingsScreen() {
                 {produits.map((p: Product, i: number) => {
                   const dispo = optDispo[p.id] ?? p.isAvailable;
                   const vedette = optVedette[p.id] ?? p.isFeatured;
+                  const porc = optPorc[p.id] ?? (p.dietTags?.includes('porc') ?? false);
                   return (
                     <View key={p.id}>
                       {i ? <View style={styles.separateur} /> : null}
@@ -1241,6 +1296,42 @@ export default function RestaurantSettingsScreen() {
                                 ? '  ·  Bientôt disponible'
                                 : '  ·  Bientôt de retour'}
                           </Text>
+                          {/* Le badge vu par le client, posé d'un tap. On repart des
+                              repères actuels du plat pour n'effacer que « porc ». */}
+                          <Pressable
+                            onPress={() =>
+                              bascule(
+                                `porc-${p.id}`,
+                                poseur(setOptPorc, p.id),
+                                !porc,
+                                () =>
+                                  setProductDietTags(
+                                    p.id,
+                                    porc
+                                      ? (p.dietTags ?? []).filter((t) => t !== 'porc')
+                                      : [...(p.dietTags ?? []).filter((t) => t !== 'porc'), 'porc'],
+                                  ),
+                                'Modification impossible.',
+                                // Le plat peut aussi être à l'affiche, plus haut dans l'écran.
+                                true,
+                              )
+                            }
+                            disabled={!!enVol[`porc-${p.id}`]}
+                            hitSlop={6}
+                            style={[styles.porcPuce, porc && styles.porcPuceActive]}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: porc }}
+                            accessibilityLabel={`${p.name} contient du porc`}
+                          >
+                            <Icon
+                              name={porc ? 'check_box' : 'check_box_outline_blank'}
+                              size={14}
+                              color={porc ? colors.warnText : colors.textFaint}
+                            />
+                            <Text style={[styles.porcPuceTexte, porc && styles.porcPuceTexteActive]}>
+                              Contient du porc
+                            </Text>
+                          </Pressable>
                         </View>
                         {/* Rangement de la carte. Un cran par tap, plutôt qu'un
                             glisser-déposer : le restaurateur range en plein service,
@@ -1590,6 +1681,25 @@ const styles = StyleSheet.create({
   produitNom: { fontFamily: fonts.semibold, fontSize: 14.5, color: colors.textDark },
   produitCoupe: { color: colors.textMuted },
   produitPrix: { fontFamily: fonts.regular, fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
+  champFige: { backgroundColor: colors.fieldBg, color: colors.textMuted },
+  caseLigne: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+  caseTitre: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDark },
+  caseSous: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  porcPuce: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  porcPuceActive: { backgroundColor: colors.warnBg, borderColor: colors.warnBg },
+  porcPuceTexte: { fontFamily: fonts.semibold, fontSize: 11, color: colors.textFaint },
+  porcPuceTexteActive: { color: colors.warnText },
   error: {
     fontFamily: fonts.semibold,
     fontSize: 13,

@@ -1872,6 +1872,8 @@ export async function saveFeaturedProduct(input: {
   stockQuantity?: number | null;
   photoUrl?: string | null;
   featuredLabel?: string | null;
+  /** Case « Contient du porc ». Absente = la base garde ce qu'elle a (jamais d'effacement implicite). */
+  contientPorc?: boolean;
 }): Promise<string> {
   const { data, error } = await supabase.rpc('save_featured_product', {
     p_product_id: input.productId ?? null,
@@ -1881,6 +1883,7 @@ export async function saveFeaturedProduct(input: {
     p_stock_quantity: input.stockQuantity ?? null,
     p_photo_url: input.photoUrl ?? null,
     p_featured_label: input.featuredLabel ?? null,
+    p_contient_porc: input.contientPorc ?? null,
   });
   if (error) throw error;
   // La RPC renvoie la ligne `products` : on en garde l'identifiant, sans quoi un
@@ -1977,6 +1980,19 @@ export async function setProductSortOrder(productId: string, sortOrder: number):
   const { error } = await supabase.rpc('set_product_sort_order', {
     p_product_id: productId,
     p_sort_order: sortOrder,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Remplace les reperes alimentaires d'un plat (`diet_tags`), ex. `['porc']`.
+ * ⚠️ Le tableau envoye REMPLACE le precedent : partir des reperes actuels du plat,
+ * sans quoi un futur repere (« piquant »…) serait efface au passage.
+ */
+export async function setProductDietTags(productId: string, tags: string[]): Promise<void> {
+  const { error } = await supabase.rpc('set_product_diet_tags', {
+    p_product_id: productId,
+    p_tags: tags,
   });
   if (error) throw error;
 }

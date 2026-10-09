@@ -15,7 +15,11 @@ sans vérifier au cas par cas.
 
 ## 🐖 Case « Contient du porc » dans l'espace restaurateur (2026-10-09) — OTA suffit
 
-JS seulement, aucun module natif : une OTA l'apporte. **Pas encore publié.**
+JS seulement, aucun module natif : une OTA l'apporte. **Livré le 2026-10-09** : OTA sur les trois
+runtimes (1.2.1 `33ee0dec…`, 1.2.2 `68c30d79…`, 1.2.3 `7e249e5f…`), site web redéployé (bundle en
+ligne vérifié). **Message Telegram remis le 2026-10-10** aux six restaurants équipés (Bidule, M&K,
+La Cabane, La Plage, Nandipo avec un mot sur le bourguignon, Les Siciliens en italien) — texte
+validé par le porteur du projet, `ok: true` + `message_id` pour les six.
 
 Origine : le patron du Nandipo a fait « Modifier » sur son plat du jour « Rougail saucisse »
 (plat de sa carte, tagué porc) et l'a réécrit en « Zebu bourguignon » : même ligne en base, le

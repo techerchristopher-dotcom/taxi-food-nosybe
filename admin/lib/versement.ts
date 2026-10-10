@@ -37,7 +37,34 @@ export type CommandeReversee = {
   /** Date du versement qui l'a payée (`paid_at`). */
   reverse_le: string | null;
   reference_versement: string | null;
+  /**
+   * Type du versement qui la rattache : `orange_money` (un vrai virement) ou
+   * `regle_a_la_commande` (payée sur place en passant la commande, Les Siciliens :
+   * rien à reverser). Absent avec une ancienne base : traité comme un virement.
+   */
+  type_versement?: TypeVersement | null;
 };
+
+export type TypeVersement = 'orange_money' | 'regle_a_la_commande';
+
+/** Moyen de reversement d'un restaurant, lu par `admin_moyens_reversement`. */
+export type MoyenReversement = 'code_marchand' | 'orange_money' | 'regle_a_la_commande';
+export type MoyenRestaurant = {
+  restaurant_id: string;
+  moyen: MoyenReversement | null;
+  code_marchand: string | null;
+  numero_orange_money: string | null;
+};
+
+/** « 037 12 345 67 » — la forme que la base écrit dans le message Telegram. */
+export function afficherNumeroOM(n: string): string {
+  return /^03\d{8}$/.test(n) ? `${n.slice(0, 3)} ${n.slice(3, 5)} ${n.slice(5, 8)} ${n.slice(8)}` : n;
+}
+
+/** Une commande « réglée à la commande » : rattachée, mais jamais virée. */
+export function estRegleeALaCommande(c: { type_versement?: string | null }): boolean {
+  return c.type_versement === 'regle_a_la_commande';
+}
 
 /** Ce qu'un rattachement apprend au rapport sur une commande de la période. */
 export type Rattachement = {
@@ -48,10 +75,12 @@ export type Rattachement = {
   reverse_le: string;
   reference_versement: string | null;
   net: number;
+  type_versement?: TypeVersement | null;
 };
 
 /** « Reversé le 20/09 · réf. PP2309 », ou sans la référence quand elle manque. */
-export function libelleReverse(c: { reverse_le: string | null; reference_versement: string | null }): string {
+export function libelleReverse(c: { reverse_le: string | null; reference_versement: string | null; type_versement?: string | null }): string {
+  if (estRegleeALaCommande(c)) return 'Réglé à la commande';
   const quand = c.reverse_le
     ? new Date(c.reverse_le).toLocaleDateString('fr-FR', { timeZone: 'Indian/Antananarivo', day: '2-digit', month: '2-digit' })
     : '—';
@@ -80,13 +109,14 @@ export function bornesDesCommandes(commandes: { livree_le: string }[]): { debut:
 
 /** Les deux totaux d'une liste de commandes : ce qui est payé, ce qui reste dû. */
 export function totauxListe(commandes: CommandeReversee[]): {
-  dejaReverse: number; nbDeja: number; aReverser: number; nbAReverser: number;
+  dejaReverse: number; nbDeja: number; aReverser: number; nbAReverser: number; reglees: number; nbReglees: number;
 } {
-  let dejaReverse = 0; let nbDeja = 0; let aReverser = 0; let nbAReverser = 0;
+  let dejaReverse = 0; let nbDeja = 0; let aReverser = 0; let nbAReverser = 0; let reglees = 0; let nbReglees = 0;
   for (const c of commandes) {
-    if (c.deja_reverse) { dejaReverse += c.net; nbDeja += 1; } else { aReverser += c.net; nbAReverser += 1; }
+    if (c.deja_reverse && estRegleeALaCommande(c)) { reglees += c.net; nbReglees += 1; }
+    else if (c.deja_reverse) { dejaReverse += c.net; nbDeja += 1; } else { aReverser += c.net; nbAReverser += 1; }
   }
-  return { dejaReverse, nbDeja, aReverser, nbAReverser };
+  return { dejaReverse, nbDeja, aReverser, nbAReverser, reglees, nbReglees };
 }
 
 export type StatutTelegram = 'non_prevu' | 'en_attente' | 'en_cours' | 'envoye' | 'echec' | 'sans_canal';
@@ -107,11 +137,16 @@ export type Versement = {
   telegram_envoye_at: string | null;
   telegram_tente_at: string | null;
   telegram_tentatives: number;
+  type_versement?: TypeVersement | null;
+  /** Moyen et destination FIGÉS à l'enregistrement (ce que le message Telegram annonce). */
+  moyen_reversement?: string | null;
+  destination_reversement?: string | null;
 };
 
 export const COLONNES_VERSEMENT =
   'id, restaurant_id, period_start, period_end, amount_due, paid_amount, paid_at, reference_versement, '
-  + 'nb_commandes, numeros_commandes, telegram_statut, telegram_erreur, telegram_envoye_at, telegram_tente_at, telegram_tentatives';
+  + 'nb_commandes, numeros_commandes, telegram_statut, telegram_erreur, telegram_envoye_at, telegram_tente_at, telegram_tentatives, '
+  + 'type_versement, moyen_reversement, destination_reversement';
 
 export const LIBELLE_TELEGRAM: Record<StatutTelegram, string> = {
   non_prevu: 'Aucun message (ancien reversement)',
@@ -211,7 +246,8 @@ export const COLONNES_FICHE =
   + 'promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, payment_status, '
   + 'commission_rate, courier_id, '
   + 'profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, instructions ), '
-  + 'order_items ( id, product_name_snapshot, quantity, unit_price, comment, '
+  + 'order_items ( id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, '
+  + 'retire_le, retire_motif, quantite_origine, prix_unitaire_origine, corrige_le, corrige_motif, '
   + 'order_item_options ( option_name_snapshot, price_delta_snapshot, quantity ) )';
 
 type UnOuListe<T> = T | T[] | null;
@@ -247,6 +283,15 @@ export type CommandeFiche = {
     quantity: number;
     unit_price: number;
     comment: string | null;
+    packaging_fee_snapshot?: number | null;
+    /** Correction admin (2026-10-10) : ligne retirée (non livrée), jamais effacée. */
+    retire_le?: string | null;
+    retire_motif?: string | null;
+    /** Valeurs d'origine, posées à la première correction. */
+    quantite_origine?: number | null;
+    prix_unitaire_origine?: number | null;
+    corrige_le?: string | null;
+    corrige_motif?: string | null;
     order_item_options: { option_name_snapshot: string; price_delta_snapshot: number; quantity: number }[] | null;
   }[] | null;
 };

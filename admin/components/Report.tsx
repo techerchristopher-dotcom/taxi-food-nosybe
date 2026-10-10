@@ -8,9 +8,9 @@ import {
 } from '../lib/reversement';
 import type { CommandeLivree, Cumul, RegleDuCode, ReglesDesCodes } from '../lib/reversement';
 import { COLONNES_VERSEMENT, chevauche, libellePeriode, LIBELLE_TELEGRAM, PASTILLE_TELEGRAM } from '../lib/versement';
-import type { Rattachement, Versement } from '../lib/versement';
+import type { MoyenRestaurant, Rattachement, Versement } from '../lib/versement';
 import { DetailCommandes, FenetreVersement, HistoriqueVersements } from './Versements';
-import { CodeMarchandCarte } from './CodeMarchand';
+import { MoyenReversementCarte } from './CodeMarchand';
 
 type DeliveredRow = CommandeLivree & {
   /** Emballages (boite a pizza...). Reverses au restaurant, commission comprise. */
@@ -34,7 +34,7 @@ type DeliveredRow = CommandeLivree & {
   courier_id: string | null;
   commission_rate: number | null;
 };
-type Resto = { id: string; name: string; commission_rate: number };
+type Resto = { id: string; name: string; commission_rate: number; listing_status?: string };
 type Line = Cumul & {
   restaurantId: string;
   name: string;
@@ -52,6 +52,11 @@ type Line = Cumul & {
   resteAReverser: Cumul;
   /** Ce qui a déjà été payé sur cette période, commande par commande. */
   dejaReverse: Cumul;
+  /**
+   * Commandes « réglées à la commande » (payées sur place, Les Siciliens) : rien
+   * à reverser, mais elles restent dans le chiffre d'affaires et la marge.
+   */
+  reglees: Cumul;
 };
 
 const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, courier_id, commission_amount, commission_rate';
@@ -74,7 +79,7 @@ export function Report() {
    * Restaurant → code marchand Orange Money (null = non renseigné). `null` pour
    * toute la carte = lecture impossible : chaque carte dit alors « illisible ».
    */
-  const [codes, setCodes] = useState<Record<string, string | null> | null>(null);
+  const [moyens, setMoyens] = useState<Record<string, MoyenRestaurant> | null>(null);
   /** Restaurant → a-t-il un groupe Telegram ? Absent de la carte = inconnu. */
   const [canaux, setCanaux] = useState<Record<string, boolean>>({});
   const [ouvert, setOuvert] = useState<string | null>(null);
@@ -121,6 +126,8 @@ export function Report() {
       supabase
         .from('restaurant_settlements')
         .select(COLONNES_VERSEMENT)
+        // Les « réglés à la commande » ne sont pas des virements : hors historique.
+        .neq('type_versement', 'regle_a_la_commande')
         .order('paid_at', { ascending: false }),
       // Quelles commandes de la période sont DÉJÀ payées. Même règle de date
       // que le calcul (`coalesce(delivered_at, created_at)`, jour local), donc
@@ -132,13 +139,15 @@ export function Report() {
     // voir « Fuite connue »), l'écran dit « inconnu » et la base tranche.
     // Le code marchand : lecture À PART du canal Telegram, pour qu'une fermeture
     // future de `telegram_chat_id` ne fasse pas disparaître le code avec lui.
-    const cm = await supabase.from('restaurants').select('id, code_marchand');
+    // Moyen de reversement (code marchand, numéro Orange Money, réglé à la
+    // commande) : lu par une RPC admin, le numéro vit dans une table privée.
+    const cm = await supabase.rpc('admin_moyens_reversement');
     if (cm.error) {
-      setCodes(null);
+      setMoyens(null);
     } else {
-      const m: Record<string, string | null> = {};
-      for (const x of (cm.data ?? []) as { id: string; code_marchand: string | null }[]) m[x.id] = x.code_marchand;
-      setCodes(m);
+      const m: Record<string, MoyenRestaurant> = {};
+      for (const x of (cm.data ?? []) as MoyenRestaurant[]) m[x.restaurant_id] = x;
+      setMoyens(m);
     }
     const c = await supabase.from('restaurants').select('id, telegram_chat_id');
     if (!c.error) {
@@ -222,6 +231,7 @@ export function Report() {
           && chevauche(st.period_start, st.period_end, start, end)) ?? null,
         resteAReverser: CUMUL_VIDE,
         dejaReverse: CUMUL_VIDE,
+        reglees: CUMUL_VIDE,
       };
       const taux = rateOf(row.restaurant_id);
       // La MÊME commande alimente deux comptes : le cumul de la période (ce que
@@ -229,12 +239,15 @@ export function Report() {
       // ce qui l'est déjà). Une commande rattachée à un reversement ne peut
       // plus entrer dans un nouveau versement — la base le refuse, l'écran doit
       // donc cesser de le proposer.
-      const payee = !!(row.id && rattachements.has(row.id));
+      const rat = row.id ? rattachements.get(row.id) : undefined;
+      const payee = !!rat;
+      const reglee = rat?.type_versement === 'regle_a_la_commande';
       map.set(row.restaurant_id, {
         ...cur,
         ...cumulerCommande(cur, row, taux, regles),
         resteAReverser: payee ? cur.resteAReverser : cumulerCommande(cur.resteAReverser, row, taux, regles),
-        dejaReverse: payee ? cumulerCommande(cur.dejaReverse, row, taux, regles) : cur.dejaReverse,
+        dejaReverse: payee && !reglee ? cumulerCommande(cur.dejaReverse, row, taux, regles) : cur.dejaReverse,
+        reglees: reglee ? cumulerCommande(cur.reglees, row, taux, regles) : cur.reglees,
       });
     }
     return Array.from(map.values()).sort((a, b) => b.resteAReverser.net - a.resteAReverser.net);
@@ -248,6 +261,8 @@ export function Report() {
     () => lines.reduce((s, l) => s + l.dejaReverse.net, 0), [lines]);
   const totalResteAReverser = useMemo(
     () => lines.reduce((s, l) => s + l.resteAReverser.net, 0), [lines]);
+  const totalReglees = useMemo(
+    () => lines.reduce((s, l) => s + l.reglees.net, 0), [lines]);
 
   // Livreurs salariés → ils te remettent 100 % du cash encaissé (salaires hors app).
   //
@@ -316,9 +331,11 @@ export function Report() {
         <div className="stat">
           <div className="label">À reverser aux restaurants</div>
           <div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div>
-          {totalDejaReverse > 0 ? (
+          {totalDejaReverse > 0 || totalReglees > 0 ? (
             <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-              dont {formatAr(totalDejaReverse)} déjà reversés · reste {formatAr(totalResteAReverser)}
+              dont {totalDejaReverse > 0 ? `${formatAr(totalDejaReverse)} déjà reversés · ` : ''}
+              {totalReglees > 0 ? `${formatAr(totalReglees)} réglés à la commande · ` : ''}
+              reste {formatAr(totalResteAReverser)}
             </div>
           ) : null}
         </div>
@@ -388,6 +405,7 @@ export function Report() {
               const reg = l.reglement;
               const reste = l.resteAReverser;
               const deja = l.dejaReverse;
+              const reg2 = l.reglees;
               return (
                 <div key={l.restaurantId} className="vers-ligne">
                   <div className="vers-ligne-tete">
@@ -402,18 +420,18 @@ export function Report() {
                     {' '}· commission −{formatAr(l.commission)}
                     {l.offertRestaurant > 0 ? ` · offert −${formatAr(l.offertRestaurant)}` : ''}
                   </div>
-                  {deja.count > 0 ? (
+                  {deja.count > 0 || reg2.count > 0 ? (
                     <div className="vers-partage">
-                      <span className="pill reverse">{deja.count} déjà reversée{deja.count > 1 ? 's' : ''} · {formatAr(deja.net)}</span>
+                      {deja.count > 0 ? <span className="pill reverse">{deja.count} déjà reversée{deja.count > 1 ? 's' : ''} · {formatAr(deja.net)}</span> : null}
+                      {reg2.count > 0 ? <span className="pill reglee">{reg2.count} réglée{reg2.count > 1 ? 's' : ''} à la commande · {formatAr(reg2.net)}</span> : null}
                       {reste.count > 0
                         ? <span className="pill a-reverser">{reste.count} à reverser · {formatAr(reste.net)}</span>
-                        : <span className="muted" style={{ fontSize: 12 }}>Tout est reversé sur cette période.</span>}
+                        : <span className="muted" style={{ fontSize: 12 }}>Rien à reverser sur cette période.</span>}
                     </div>
                   ) : null}
-                  <CodeMarchandCarte
-                    restaurantId={l.restaurantId}
-                    code={codes ? (codes[l.restaurantId] ?? null) : undefined}
-                    onChange={(nouveau) => setCodes((m) => ({ ...(m ?? {}), [l.restaurantId]: nouveau }))}
+                  <MoyenReversementCarte
+                    moyen={moyens ? (moyens[l.restaurantId] ?? { restaurant_id: l.restaurantId, moyen: null, code_marchand: null, numero_orange_money: null }) : undefined}
+                    onChange={(m) => setMoyens((x) => ({ ...(x ?? {}), [l.restaurantId]: m }))}
                   />
                   {reg ? (
                     <div className="vers-regle">
@@ -448,6 +466,7 @@ export function Report() {
                       netRapport={reste.net}
                       cle={rafraichi}
                       onReverser={(choisies) => setAVerser({ ligne: l, selection: choisies.map((c) => c.order_id) })}
+                      onCorrige={() => { setRafraichi((n) => n + 1); void load(); }}
                     />
                   ) : null}
                 </div>
@@ -480,6 +499,28 @@ export function Report() {
         </p>
       </div>
 
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Moyens de reversement</h2>
+        <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+          Sur quoi chaque restaurant est payé : code marchand Orange Money, numéro Orange Money (032 ou 037),
+          ou « réglé à la commande » (payé sur place : ses commandes livrées sont classées toutes seules, rien à reverser).
+        </p>
+        {moyens === null ? (
+          <div className="empty">Moyens de reversement illisibles.</div>
+        ) : (
+          <div className="vers-lignes">
+            {restos.filter((r) => r.listing_status !== 'hidden').map((r) => (
+              <MoyenReversementCarte
+                key={r.id}
+                nom={r.name}
+                moyen={moyens[r.id] ?? { restaurant_id: r.id, moyen: null, code_marchand: null, numero_orange_money: null }}
+                onChange={(m) => setMoyens((x) => ({ ...(x ?? {}), [r.id]: m }))}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       <HistoriqueVersements versements={settlements} restos={restos} onRecharger={() => void load()} />
 
       {aVerser ? (
@@ -499,7 +540,7 @@ export function Report() {
           fin={end}
           selection={aVerser.selection}
           canal={aVerser.ligne.restaurantId in canaux ? canaux[aVerser.ligne.restaurantId] : null}
-          codeMarchand={codes ? (codes[aVerser.ligne.restaurantId] ?? null) : undefined}
+          moyen={moyens ? (moyens[aVerser.ligne.restaurantId] ?? null) : undefined}
           // `load()` relit commandes, reversements et rattachements : la carte
           // recalcule son reste, l'historique montre la nouvelle ligne.
           // `rafraichi` relit en plus le détail resté ouvert.

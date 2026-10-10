@@ -633,3 +633,21 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
   .vers-cmd-bouton { padding-block: 4px !important; }
   .fiche-tel { min-height: 44px; display: inline-flex; align-items: center; }
 }
+
+/* Réglé à la commande (2026-10-10) : rien à reverser, affiché grisé. */
+.pill.reglee { background: var(--panel-2); color: var(--muted); border: 1px dashed var(--border); }
+.vers-cmd.reglee { opacity: 0.6; }
+.vers-total.reglee { border-top-width: 1px; color: var(--muted); }
+.vers-total.reglee strong { font-weight: 600; }
+
+/* Correction d'une commande (2026-10-10) : une ligne retirée reste visible, barrée. */
+.fiche-plat.retire .fiche-ligne { text-decoration: line-through; color: var(--muted); }
+.fiche-correction { color: var(--accent); font-size: 13px; padding-left: 14px; overflow-wrap: anywhere; }
+.corr-ligne { border-top: 1px solid var(--border); padding: 10px 0; }
+.corr-ligne.retire .corr-nom { text-decoration: line-through; color: var(--muted); }
+.corr-nom { overflow-wrap: anywhere; margin-bottom: 6px; }
+.corr-champs { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.corr-retirer { display: flex; align-items: center; gap: 8px; min-height: 44px; width: auto; }
+.corr-champ { display: flex; flex-direction: column; flex: 1 1 110px; min-width: 0; }
+.corr-champ .sel-champ { width: 100%; }
+.corr-resume { width: 100%; margin-top: 14px; }

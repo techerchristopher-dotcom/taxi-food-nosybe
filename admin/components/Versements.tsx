@@ -19,8 +19,9 @@ import {
   referenceValide, totauxListe,
 } from '../lib/versement';
 import { COLONNES_FICHE } from '../lib/versement';
-import type { ChangementAdmin, CommandeFiche, CommandeReversee, FicheLue, StatutTelegram, Versement } from '../lib/versement';
-import { CodeMarchandFenetre } from './CodeMarchand';
+import { afficherNumeroOM, estRegleeALaCommande } from '../lib/versement';
+import type { ChangementAdmin, CommandeFiche, CommandeReversee, FicheLue, MoyenRestaurant, StatutTelegram, Versement } from '../lib/versement';
+import { MoyenReversementFenetre } from './CodeMarchand';
 
 export { COLONNES_VERSEMENT };
 
@@ -82,8 +83,10 @@ export function useCommandesAReverser(restaurantId: string, debut: string, fin: 
   return e;
 }
 
-export function DetailCommandes({ restaurantId, debut, fin, netRapport, cle = 0, onReverser }: {
+export function DetailCommandes({ restaurantId, debut, fin, netRapport, cle = 0, onReverser, onCorrige }: {
   restaurantId: string; debut: string; fin: string; netRapport: number;
+  /** Une commande vient d'être corrigée : le rapport doit se relire. */
+  onCorrige?: () => void;
   /** Change après un versement : la liste se relit, les pastilles passent au vert. */
   cle?: number;
   /**
@@ -95,7 +98,7 @@ export function DetailCommandes({ restaurantId, debut, fin, netRapport, cle = 0,
   const e = useCommandesAReverser(restaurantId, debut, fin, cle);
   if (e.etat === 'chargement') return <div className="empty">Chargement des commandes…</div>;
   if (e.etat === 'erreur') return <p style={{ color: 'var(--red)' }}>Détail illisible : {e.message}</p>;
-  return <ListeCommandes commandes={e.commandes} netRapport={netRapport} onReverser={onReverser} />;
+  return <ListeCommandes commandes={e.commandes} netRapport={netRapport} onReverser={onReverser} onCorrige={onCorrige} />;
 }
 
 /**
@@ -107,10 +110,15 @@ export function DetailCommandes({ restaurantId, debut, fin, netRapport, cle = 0,
  * `netRapport` est ce que le rapport annonce comme RESTANT à reverser : on le
  * confronte donc à la somme des seules commandes non reversées.
  */
-function ListeCommandes({ commandes, netRapport, onReverser }: {
+function ListeCommandes({ commandes, netRapport, onReverser, onCorrige }: {
   commandes: CommandeReversee[]; netRapport: number;
   onReverser?: (commandes: CommandeReversee[]) => void;
+  onCorrige?: () => void;
 }) {
+  // La commande en cours de correction (fenêtre « Corriger »).
+  const [aCorriger, setACorriger] = useState<CommandeReversee | null>(null);
+  // Relit la fiche dépliée après une correction.
+  const [versionFiche, setVersionFiche] = useState(0);
   const t = totauxListe(commandes);
   // Une commande dépliée à la fois : sur un téléphone, deux détails ouverts
   // font perdre la ligne qu'on était venu vérifier.
@@ -157,7 +165,7 @@ function ListeCommandes({ commandes, netRapport, onReverser }: {
         const cochable = !!onReverser && !c.deja_reverse;
         const coche = coches.has(c.order_id);
         return (
-          <div key={c.order_id} className={`vers-cmd${ouvert ? ' ouvert' : ''}${c.deja_reverse ? ' payee' : ''}${coche ? ' choisie' : ''}`}>
+          <div key={c.order_id} className={`vers-cmd${ouvert ? ' ouvert' : ''}${c.deja_reverse ? ' payee' : ''}${estRegleeALaCommande(c) ? ' reglee' : ''}${coche ? ' choisie' : ''}`}>
             <div className="vers-cmd-rangee">
               {cochable ? (
                 // La case ET son étiquette font la cible : 44 px de haut, on la
@@ -182,7 +190,9 @@ function ListeCommandes({ commandes, netRapport, onReverser }: {
                   <span className="muted">{dateHeureNosyBe(c.livree_le)} <span className="vers-chevron" aria-hidden>{ouvert ? '▴' : '▾'}</span></span>
                 </span>
                 <span className="vers-cmd-etat">
-                  {c.deja_reverse
+                  {c.deja_reverse && estRegleeALaCommande(c)
+                    ? <span className="pill reglee">Réglé à la commande</span>
+                    : c.deja_reverse
                     ? <span className="pill reverse">{libelleReverse(c)}</span>
                     : <span className="pill a-reverser">À reverser</span>}
                 </span>
@@ -196,14 +206,22 @@ function ListeCommandes({ commandes, netRapport, onReverser }: {
             </div>
             {ouvert ? (
               <>
-                <FicheCommande reversee={c} />
+                <FicheCommande key={versionFiche} reversee={c} />
                 {/* Solder UNE commande sans toucher aux autres : le geste
-                    unitaire demandé le 2026-09-23. */}
-                {cochable ? (
-                  <div className="vers-fiche-geste">
-                    <button type="button" className="btn petit" onClick={() => onReverser!([c])}>
-                      Marquer cette commande comme reversée ({formatAr(c.net)})
-                    </button>
+                    unitaire demandé le 2026-09-23. Corriger : une commande pas
+                    encore virée (ou réglée à la commande) — la base tranche. */}
+                {cochable || (onCorrige && (!c.deja_reverse || estRegleeALaCommande(c))) ? (
+                  <div className="vers-fiche-geste" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {cochable ? (
+                      <button type="button" className="btn petit" onClick={() => onReverser!([c])}>
+                        Marquer cette commande comme reversée ({formatAr(c.net)})
+                      </button>
+                    ) : null}
+                    {onCorrige && (!c.deja_reverse || estRegleeALaCommande(c)) ? (
+                      <button type="button" className="btn ghost petit" onClick={() => setACorriger(c)}>
+                        Corriger
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </>
@@ -211,6 +229,12 @@ function ListeCommandes({ commandes, netRapport, onReverser }: {
           </div>
         );
       })}
+      {t.nbReglees > 0 ? (
+        <div className="vers-total reglee">
+          <span>{t.nbReglees} réglée{t.nbReglees > 1 ? 's' : ''} à la commande (rien à reverser)</span>
+          <strong>{formatAr(t.reglees)}</strong>
+        </div>
+      ) : null}
       {t.nbDeja > 0 ? (
         <div className="vers-total paye">
           <span>{t.nbDeja} déjà reversée{t.nbDeja > 1 ? 's' : ''}</span>
@@ -245,8 +269,17 @@ function ListeCommandes({ commandes, netRapport, onReverser }: {
       <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>
         Montant = plats + emballage. Net = montant − commission − part offerte par le restaurant.
         Une commande déjà reversée ne peut plus entrer dans un autre versement (la base l’interdit).
-        Touche une commande pour son détail complet.
+        Touche une commande pour son détail complet{onCorrige ? ', ou pour la corriger (plat non livré, quantité, prix)' : ''}.
       </p>
+      {aCorriger ? (
+        <FenetreCorrection
+          commande={aCorriger}
+          onFermer={(corrige) => {
+            setACorriger(null);
+            if (corrige) { setVersionFiche((n) => n + 1); onCorrige?.(); }
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -332,11 +365,22 @@ export function FicheContenu({ fiche, reversee }: { fiche: FicheLue; reversee: C
         <h4>Plats</h4>
         {items.length === 0 ? <div className="muted">Aucune ligne de plat.</div> : null}
         {items.map((it) => (
-          <div key={it.id} className="fiche-plat">
+          <div key={it.id} className={`fiche-plat${it.retire_le ? ' retire' : ''}`}>
             <div className="fiche-ligne">
               <span><b>{it.quantity} ×</b> {it.product_name_snapshot}</span>
               <span className="fiche-prix">{formatAr(it.quantity * it.unit_price)}</span>
             </div>
+            {it.retire_le ? (
+              <div className="fiche-correction">
+                Retiré le {dateNosyBe(it.retire_le).slice(0, 5)} — {it.retire_motif}
+              </div>
+            ) : null}
+            {!it.retire_le && it.corrige_le && it.quantite_origine != null && it.prix_unitaire_origine != null ? (
+              <div className="fiche-correction">
+                Corrigé le {dateNosyBe(it.corrige_le).slice(0, 5)} — {it.corrige_motif}
+                {' '}(à l’origine {it.quantite_origine} × {formatAr(it.prix_unitaire_origine)})
+              </div>
+            ) : null}
             {(it.order_item_options ?? []).map((op, i) => (
               <div key={i} className="fiche-option">
                 + {op.option_name_snapshot}{op.quantity > 1 ? ` ×${op.quantity}` : ''}
@@ -450,7 +494,7 @@ export type LigneAVerser = {
   aVerifier: string[];
 };
 
-export function FenetreVersement({ ligne, debut, fin, selection, canal, codeMarchand, onFermer }: {
+export function FenetreVersement({ ligne, debut, fin, selection, canal, moyen, onFermer }: {
   ligne: LigneAVerser;
   debut: string;
   fin: string;
@@ -461,8 +505,8 @@ export function FenetreVersement({ ligne, debut, fin, selection, canal, codeMarc
    * fournir les montants.
    */
   selection: string[] | null;
-  /** Code marchand Orange Money : null = non renseigné, undefined = illisible. */
-  codeMarchand: string | null | undefined;
+  /** Moyen de reversement : null = non renseigné, undefined = illisible. */
+  moyen: MoyenRestaurant | null | undefined;
   /** true / false : le restaurant a (ou non) un groupe Telegram ; null : inconnu. */
   canal: boolean | null;
   /** `recharger` : un versement a été enregistré, le rapport doit se relire. */
@@ -518,13 +562,14 @@ export function FenetreVersement({ ligne, debut, fin, selection, canal, codeMarc
   useEffect(() => {
     if (detail.etat !== 'pret' || commandes.length === 0 || !montantOk) { setApercu(null); return; }
     const t = setTimeout(() => {
-      supabase.rpc('texte_message_versement', {
+      supabase.rpc('admin_apercu_message_versement', {
+        p_restaurant_id: ligne.restaurantId,
         p_montant: paye, p_nb: commandes.length, p_debut: bornes.debut, p_fin: bornes.fin,
         p_numeros: numeros, p_reference: refOk ? reference.trim().replace(/\s+/g, ' ') : '…',
       }).then(({ data }) => setApercu(typeof data === 'string' ? data : null));
     }, 250);
     return () => clearTimeout(t);
-  }, [detail.etat, commandes.length, paye, montantOk, bornes.debut, bornes.fin, numeros, reference, refOk]);
+  }, [detail.etat, commandes.length, paye, montantOk, bornes.debut, bornes.fin, numeros, reference, refOk, ligne.restaurantId]);
 
   const peutConfirmer = detail.etat === 'pret' && commandes.length > 0 && refOk && montantOk
     && (!doitVerifier || verifie) && !envoi && !fait;
@@ -620,7 +665,7 @@ export function FenetreVersement({ ligne, debut, fin, selection, canal, codeMarc
             {!fait ? (
               <>
                 {/* Juste au-dessus de la référence : c'est en payant qu'on en a besoin. */}
-                <CodeMarchandFenetre code={codeMarchand} />
+                <MoyenReversementFenetre moyen={moyen} />
                 <label className="sel-champ-bloc" style={{ marginTop: 14 }}>
                   <span className="sel-label">Référence du versement (ID de transaction Orange Money) — obligatoire</span>
                   <input
@@ -678,6 +723,213 @@ export function FenetreVersement({ ligne, debut, fin, selection, canal, codeMarc
               <button className="btn sel-btn" disabled={!peutConfirmer} onClick={() => void confirmer()}>
                 {envoi ? 'Enregistrement…' : montantOk ? `Confirmer le versement de ${formatAr(paye)}` : 'Confirmer le versement'}
               </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────── Corriger une commande
+
+/**
+ * Corriger une commande pas encore virée (2026-10-10) : retirer une ligne non
+ * livrée, changer une quantité, changer un prix unitaire. Motif obligatoire.
+ *
+ * ⚠️ L'écran ne calcule RIEN : l'aperçu et l'enregistrement sont la même RPC
+ * (`admin_corriger_commande`, `p_apercu` vrai puis faux). Plats, emballage,
+ * remises, commission, total client et net viennent de la base.
+ */
+type ResumeCorrection = {
+  plats: number; emballage: number; montant: number; commission: number; offert: number;
+  remise: number; porte_monnaie: number; livraison: number; total: number; net: number;
+  porte_monnaie_rendu?: number;
+};
+type ReponseCorrection = { avant: ResumeCorrection; apres: ResumeCorrection; taux: number };
+type LigneEdition = { retirer: boolean; quantite: string; prix: string };
+
+function messageCorrection(m: string): string {
+  if (m.includes('correction:deja_reversee')) return 'Cette commande est déjà reversée : elle ne se corrige plus.';
+  if (m.includes('correction:paiement_carte')) return 'Un paiement carte est engagé sur cette commande : passe par un remboursement.';
+  if (m.includes('correction:motif_obligatoire')) return 'Motif obligatoire (au moins 3 caractères).';
+  if (m.includes('correction:aucun_changement')) return 'Aucun changement à enregistrer.';
+  if (m.includes('correction:tout_retire')) return 'Retirer toutes les lignes revient à annuler la commande : ce n’est pas une correction.';
+  if (m.includes('correction:quantite_invalide')) return 'Quantité invalide : au moins 1 (sinon coche « Retirer »).';
+  if (m.includes('correction:non_livree')) return 'Seule une commande livrée se corrige ici.';
+  return m;
+}
+
+function FenetreCorrection({ commande, onFermer }: {
+  commande: CommandeReversee;
+  onFermer: (corrige: boolean) => void;
+}) {
+  const fiche = useFicheCommande(commande.order_id);
+  const items = fiche.etat === 'pret' ? (fiche.fiche.commande.order_items ?? []).filter((i) => !i.retire_le) : [];
+  const [edition, setEdition] = useState<Record<string, LigneEdition>>({});
+  const [motif, setMotif] = useState('');
+  const [apercu, setApercu] = useState<ReponseCorrection | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [fait, setFait] = useState<ReponseCorrection | null>(null);
+  const geste = useRef(false);
+
+  function ligne(id: string): LigneEdition {
+    const it = items.find((i) => i.id === id)!;
+    return edition[id] ?? { retirer: false, quantite: String(it.quantity), prix: String(it.unit_price) };
+  }
+  function changer(id: string, patch: Partial<LigneEdition>) {
+    setEdition((e) => ({ ...e, [id]: { ...ligne(id), ...patch } }));
+    setApercu(null);
+  }
+
+  // Les seules lignes qui changent partent à la base.
+  type DemandeLigne = { id: string; retirer?: boolean; quantite?: number; prix_unitaire?: number };
+  const demande = items.flatMap((it): DemandeLigne[] => {
+    const l = edition[it.id];
+    if (!l) return [];
+    if (l.retirer) return [{ id: it.id, retirer: true }];
+    const q = parseInt(l.quantite, 10);
+    const p = parseInt(l.prix, 10);
+    if (q === it.quantity && p === it.unit_price) return [];
+    return [{ id: it.id, quantite: Number.isFinite(q) ? q : it.quantity, prix_unitaire: Number.isFinite(p) ? p : it.unit_price }];
+  });
+
+  async function appeler(apercuSeul: boolean): Promise<ReponseCorrection | null> {
+    const { data, error } = await supabase.rpc('admin_corriger_commande', {
+      p_order_id: commande.order_id,
+      p_lignes: demande,
+      p_motif: apercuSeul ? null : motif,
+      p_apercu: apercuSeul,
+    });
+    if (error) { setErr(messageCorrection(error.message)); return null; }
+    setErr(null);
+    return data as ReponseCorrection;
+  }
+
+  async function voirApercu() {
+    if (envoi || demande.length === 0) return;
+    setEnvoi(true);
+    setApercu(await appeler(true));
+    setEnvoi(false);
+  }
+
+  async function enregistrer() {
+    if (geste.current || !apercu || motif.trim().length < 3) return;
+    geste.current = true;
+    setEnvoi(true);
+    const r = await appeler(false);
+    setEnvoi(false);
+    if (r) setFait(r); else geste.current = false;
+  }
+
+  const res = fait ?? apercu;
+  const lignesResume: { libelle: string; cle: keyof ResumeCorrection; signe?: string; fort?: boolean }[] = [
+    { libelle: 'Plats', cle: 'plats' },
+    { libelle: 'Emballage', cle: 'emballage' },
+    { libelle: 'Montant (plats + emballage)', cle: 'montant' },
+    { libelle: 'Commission', cle: 'commission', signe: '−' },
+    { libelle: 'Offert par le restaurant', cle: 'offert', signe: '−' },
+    { libelle: 'Net au restaurant', cle: 'net', fort: true },
+    { libelle: 'Livraison', cle: 'livraison' },
+    { libelle: 'Remise code promo', cle: 'remise', signe: '−' },
+    { libelle: 'Porte-monnaie client', cle: 'porte_monnaie', signe: '−' },
+    { libelle: 'Total client (caisse du livreur)', cle: 'total', fort: true },
+  ];
+
+  return (
+    <div className="voile" role="dialog" aria-modal="true">
+      <div className="boite">
+        <h3>Corriger {commande.order_number ?? 'la commande'}</h3>
+        {fiche.etat === 'chargement' ? <div className="empty">Lecture de la commande…</div> : null}
+        {fiche.etat === 'erreur' ? <p style={{ color: 'var(--red)' }}>Commande illisible : {fiche.message}</p> : null}
+
+        {fiche.etat === 'pret' && !fait ? (
+          <>
+            <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+              Rien n’est effacé : une ligne retirée reste affichée barrée, avec ton motif. Le total client baisse
+              d’autant — la caisse du livreur doit tomber juste.
+            </p>
+            {items.map((it) => {
+              const l = ligne(it.id);
+              return (
+                <div key={it.id} className={`corr-ligne${l.retirer ? ' retire' : ''}`}>
+                  <div className="corr-nom">
+                    <b>{it.quantity} ×</b> {it.product_name_snapshot}
+                    <span className="muted"> · {formatAr(it.unit_price)} l’unité</span>
+                  </div>
+                  <div className="corr-champs">
+                    <label className="vers-case corr-retirer">
+                      <input type="checkbox" checked={l.retirer} onChange={(e) => changer(it.id, { retirer: e.target.checked })} />
+                      <span>Retirer (non livré)</span>
+                    </label>
+                    {!l.retirer ? (
+                      <>
+                        <label className="corr-champ">
+                          <span className="sel-label">Quantité</span>
+                          <input className="sel-champ" inputMode="numeric" value={l.quantite}
+                            onChange={(e) => changer(it.id, { quantite: e.target.value.replace(/[^\d]/g, '') })} />
+                        </label>
+                        <label className="corr-champ">
+                          <span className="sel-label">Prix unitaire (Ar)</span>
+                          <input className="sel-champ" inputMode="numeric" value={l.prix}
+                            onChange={(e) => changer(it.id, { prix: e.target.value.replace(/[^\d]/g, '') })} />
+                        </label>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+            <label className="sel-champ-bloc" style={{ marginTop: 12 }}>
+              <span className="sel-label">Motif — obligatoire</span>
+              <input className="sel-champ" value={motif} onChange={(e) => setMotif(e.target.value)}
+                placeholder="ex. World Cola non livrés" maxLength={200} />
+            </label>
+          </>
+        ) : null}
+
+        {res ? (
+          <table className="corr-resume">
+            <thead><tr><th></th><th className="num">Avant</th><th className="num">Après</th></tr></thead>
+            <tbody>
+              {lignesResume.filter((x) => x.fort || res.avant[x.cle] !== 0 || res.apres[x.cle] !== 0).map((x) => {
+                const a = res.avant[x.cle] ?? 0; const b = res.apres[x.cle] ?? 0;
+                return (
+                  <tr key={x.cle} style={x.fort ? { fontWeight: 700 } : undefined}>
+                    <td>{x.libelle}</td>
+                    <td className="num">{x.signe && a ? x.signe : ''}{formatAr(a)}</td>
+                    <td className="num" style={a !== b ? { color: 'var(--accent)' } : undefined}>{x.signe && b ? x.signe : ''}{formatAr(b)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : null}
+        {res && (res.apres.porte_monnaie_rendu ?? 0) > 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>
+            {formatAr(res.apres.porte_monnaie_rendu ?? 0)} seront rendus au porte-monnaie du client.
+          </p>
+        ) : null}
+
+        {err ? <p className="sel-erreur-texte" style={{ fontSize: 14, marginTop: 10 }}>{err}</p> : null}
+        {fait ? <p style={{ color: 'var(--green)', fontWeight: 700, margin: '14px 0 0' }}>✅ Commande corrigée. Aucun message n’est parti.</p> : null}
+
+        <div className="pied" style={{ marginTop: 16 }}>
+          {fait ? (
+            <button className="btn sel-btn" onClick={() => onFermer(true)}>Fermer</button>
+          ) : (
+            <>
+              <button className="btn ghost sel-btn" disabled={envoi} onClick={() => onFermer(false)}>Annuler</button>
+              {!apercu ? (
+                <button className="btn sel-btn" disabled={envoi || demande.length === 0} onClick={() => void voirApercu()}>
+                  {envoi ? 'Calcul…' : 'Voir l’avant / après'}
+                </button>
+              ) : (
+                <button className="btn sel-btn" disabled={envoi || motif.trim().length < 3} onClick={() => void enregistrer()}>
+                  {envoi ? 'Enregistrement…' : `Enregistrer (net ${formatAr(apercu.apres.net)})`}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -765,7 +1017,14 @@ export function HistoriqueVersements({ versements, restos, onRecharger }: {
                     {v.paid_amount !== null && v.paid_amount !== v.amount_due
                       ? <div className="muted" style={{ fontSize: 12 }}>dû {formatAr(v.amount_due)}</div> : null}
                   </td>
-                  <td data-label="Référence" style={{ overflowWrap: 'anywhere' }}>{v.reference_versement ?? <span className="muted">—</span>}</td>
+                  <td data-label="Référence" style={{ overflowWrap: 'anywhere' }}>
+                    {v.reference_versement ?? <span className="muted">—</span>}
+                    {v.destination_reversement ? (
+                      <div className="muted" style={{ fontSize: 12 }}>
+                        sur {v.moyen_reversement === 'orange_money' ? `le n° ${afficherNumeroOM(v.destination_reversement)}` : `le code marchand ${v.destination_reversement}`}
+                      </div>
+                    ) : null}
+                  </td>
                   <td data-label="Message Telegram">
                     <span className={`pill ${PASTILLE_TELEGRAM[v.telegram_statut]}`}>{LIBELLE_TELEGRAM[v.telegram_statut]}</span>
                     {v.telegram_statut === 'envoye' && v.telegram_envoye_at

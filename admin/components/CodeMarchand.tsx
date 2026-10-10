@@ -15,6 +15,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { afficherNumeroOM } from '../lib/versement';
+import type { MoyenReversement, MoyenRestaurant } from '../lib/versement';
 
 const FORME = /^[0-9A-Za-z]{3,20}$/;
 
@@ -64,7 +66,7 @@ function useCopie() {
   return { etat, copier };
 }
 
-function BoutonCopier({ code }: { code: string }) {
+export function BoutonCopier({ code }: { code: string }) {
   const { etat, copier } = useCopie();
   return (
     <button
@@ -187,6 +189,161 @@ export function CodeMarchandFenetre({ code }: { code: string | null | undefined 
         <strong className="cm-code grand">{code}</strong>
       </div>
       <BoutonCopier code={code} />
+    </div>
+  );
+}
+
+
+// ───────────────────────────────────────────── Moyen de reversement (2026-10-10)
+//
+// Code marchand, numéro Orange Money, ou « réglé à la commande » (payé sur place en
+// passant la commande : rien à reverser). L'écriture passe UNIQUEMENT par
+// `admin_set_moyen_reversement` ; la base normalise le numéro (032 / 037, 10 chiffres,
+// avec ou sans +261) et refuse toute autre forme.
+
+const LIBELLE_MOYEN: Record<MoyenReversement, string> = {
+  code_marchand: 'Code marchand Orange Money',
+  orange_money: 'Numéro Orange Money',
+  regle_a_la_commande: 'Réglé à la commande (rien à reverser)',
+};
+
+function messageMoyen(m: string): string {
+  if (m.includes('numero_orange_money:forme')) return 'Numéro refusé : un 032 ou 037 à 10 chiffres (avec ou sans +261).';
+  if (m.includes('numero_orange_money:manquant')) return 'Entre le numéro Orange Money.';
+  if (m.includes('code_marchand:manquant')) return 'Entre le code marchand.';
+  return messageErreur(m);
+}
+
+/** Le moyen d'un restaurant : lecture, copie, modification. */
+export function MoyenReversementCarte({ moyen, nom, onChange }: {
+  /** `undefined` : illisible. */
+  moyen: MoyenRestaurant | undefined;
+  nom?: string;
+  onChange: (m: MoyenRestaurant) => void;
+}) {
+  const [edition, setEdition] = useState(false);
+  const [choix, setChoix] = useState<MoyenReversement | ''>('');
+  const [saisie, setSaisie] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (moyen === undefined) return <div className="cm-ligne muted">Moyen de reversement : lecture impossible.</div>;
+
+  function ouvrir() {
+    const m = moyen!;
+    setChoix(m.moyen ?? '');
+    setSaisie(m.moyen === 'orange_money' ? (m.numero_orange_money ?? '') : (m.code_marchand ?? ''));
+    setErr(null);
+    setEdition(true);
+  }
+
+  async function enregistrer() {
+    if (envoi) return;
+    setEnvoi(true);
+    setErr(null);
+    const { data, error } = await supabase.rpc('admin_set_moyen_reversement', {
+      p_restaurant_id: moyen!.restaurant_id,
+      p_moyen: choix || null,
+      p_valeur: choix === 'code_marchand' || choix === 'orange_money' ? saisie : null,
+    });
+    setEnvoi(false);
+    if (error) { setErr(messageMoyen(error.message)); return; }
+    onChange(data as MoyenRestaurant);
+    setEdition(false);
+  }
+
+  if (edition) {
+    return (
+      <div className="cm-edition">
+        {nom ? <div style={{ fontWeight: 700, marginBottom: 6 }}>{nom}</div> : null}
+        <label className="sel-champ-bloc" style={{ marginBottom: 8 }}>
+          <span className="sel-label">Moyen de reversement</span>
+          <select className="sel-champ" value={choix} onChange={(e) => { setChoix(e.target.value as MoyenReversement | ''); setSaisie(''); }}>
+            <option value="">— Aucun —</option>
+            <option value="code_marchand">{LIBELLE_MOYEN.code_marchand}</option>
+            <option value="orange_money">{LIBELLE_MOYEN.orange_money}</option>
+            <option value="regle_a_la_commande">{LIBELLE_MOYEN.regle_a_la_commande}</option>
+          </select>
+        </label>
+        {choix === 'code_marchand' || choix === 'orange_money' ? (
+          <label className="sel-champ-bloc" style={{ marginBottom: 8 }}>
+            <span className="sel-label">{choix === 'code_marchand' ? 'Code marchand (3 à 20 chiffres ou lettres)' : 'Numéro Orange Money (032 ou 037)'}</span>
+            <input
+              className="sel-champ"
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
+              inputMode={choix === 'orange_money' ? 'tel' : 'text'}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={40}
+              placeholder={choix === 'orange_money' ? 'ex. 037 12 345 67' : 'ex. 378970'}
+            />
+          </label>
+        ) : null}
+        {choix === 'regle_a_la_commande' ? (
+          <p className="muted" style={{ fontSize: 13, margin: '0 0 8px' }}>
+            Chaque commande livrée sera classée « réglée à la commande » toute seule : rien à reverser, aucun message.
+          </p>
+        ) : null}
+        {err ? <p className="sel-erreur-texte" style={{ margin: '0 0 8px' }}>{err}</p> : null}
+        <div className="cm-gestes">
+          <button type="button" className="btn petit" disabled={envoi} onClick={() => void enregistrer()}>
+            {envoi ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+          <button type="button" className="btn ghost petit" disabled={envoi} onClick={() => setEdition(false)}>Annuler</button>
+        </div>
+      </div>
+    );
+  }
+
+  const m = moyen;
+  const valeur = m.moyen === 'code_marchand' ? m.code_marchand
+    : m.moyen === 'orange_money' && m.numero_orange_money ? afficherNumeroOM(m.numero_orange_money) : null;
+  return (
+    <div className="cm-ligne">
+      <span className="cm-texte">
+        {nom ? <strong>{nom} · </strong> : null}
+        {!m.moyen ? <span className="cm-absent">Moyen de reversement non renseigné</span>
+          : m.moyen === 'regle_a_la_commande' ? <>Réglé à la commande <span className="muted">(rien à reverser)</span></>
+          : <>{LIBELLE_MOYEN[m.moyen]} : <strong className="cm-code">{valeur ?? '—'}</strong></>}
+      </span>
+      <span className="cm-gestes">
+        {valeur ? <BoutonCopier code={m.moyen === 'orange_money' ? (m.numero_orange_money ?? valeur) : valeur} /> : null}
+        <button type="button" className="btn ghost petit" onClick={ouvrir}>{m.moyen ? 'Modifier' : 'Ajouter'}</button>
+      </span>
+    </div>
+  );
+}
+
+/** Le moyen dans la fenêtre « Marquer reversé » : sur quoi payer, avec copie. */
+export function MoyenReversementFenetre({ moyen }: { moyen: MoyenRestaurant | null | undefined }) {
+  if (moyen === undefined) {
+    return <div className="cm-fenetre cm-manque">Moyen de reversement illisible pour l’instant : vérifie-le avant de payer.</div>;
+  }
+  if (!moyen || !moyen.moyen) {
+    return (
+      <div className="cm-fenetre cm-manque">
+        Aucun moyen de reversement enregistré pour ce restaurant (ni code marchand, ni numéro Orange Money).
+        Ajoute-le dans « Moyens de reversement » avant de payer — le versement reste possible.
+      </div>
+    );
+  }
+  if (moyen.moyen === 'regle_a_la_commande') {
+    return (
+      <div className="cm-fenetre cm-manque">
+        Ce restaurant est réglé à la commande : ses commandes livrées sont classées toutes seules, il n’y a rien à lui virer.
+      </div>
+    );
+  }
+  const brut = moyen.moyen === 'code_marchand' ? moyen.code_marchand : moyen.numero_orange_money;
+  if (!brut) return <div className="cm-fenetre cm-manque">{LIBELLE_MOYEN[moyen.moyen]} non renseigné.</div>;
+  return (
+    <div className="cm-fenetre">
+      <div>
+        <div className="sel-label" style={{ marginBottom: 2 }}>{LIBELLE_MOYEN[moyen.moyen]}</div>
+        <strong className="cm-code grand">{moyen.moyen === 'orange_money' ? afficherNumeroOM(brut) : brut}</strong>
+      </div>
+      <BoutonCopier code={brut} />
     </div>
   );
 }

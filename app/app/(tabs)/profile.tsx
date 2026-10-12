@@ -8,6 +8,7 @@ import { Icon } from '../../components/Icon';
 import { Card, SectionLabel } from '../../components/primitives';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
 import { listAddresses, mesAvisEnAttente, monPorteMonnaie } from '../../data/api';
+import { supportNonLus as lireSupportNonLus } from '../../data/messagerie';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
 import { ligneVersion } from '../../lib/version';
@@ -44,6 +45,9 @@ function AccountProfile() {
   const { data: porteMonnaie } = useLoad(() => monPorteMonnaie(), []);
   // Avis encore notables (< 7 jours) : chacun vaut 1 000 Ar, le compteur pousse à rattraper.
   const { data: avisEnAttente } = useLoad(() => mesAvisEnAttente(), []);
+  // Réponses de Taxi Food non lues (fil « Écrire à Taxi Food », 2026-10-13).
+  const { data: nonLusSupport } = useLoad(() => lireSupportNonLus(), []);
+  const supportNonLus = nonLusSupport ?? 0;
 
   const name = session?.fullName ?? t('profile.defaultName');
   const email = session?.email ?? '';
@@ -153,7 +157,19 @@ function AccountProfile() {
           ) : null}
         </Card>
 
-        <Pressable style={[styles.partner, { marginTop: 20 }]} onPress={() => router.push('/porte-monnaie')}>
+        {/* Conversation avec Taxi Food, hors commande (2026-10-13). */}
+        <Pressable style={[styles.partner, { marginTop: 20 }]} onPress={() => router.push('/aide')}>
+          <Icon name="support_agent" size={22} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.partnerLabel}>{t('messagerie.aide.profilLabel')}</Text>
+            <Text style={[styles.partnerSub, supportNonLus > 0 && { color: colors.primary }]}>
+              {supportNonLus > 0 ? t('messagerie.aide.profilNonLus', { count: supportNonLus }) : t('messagerie.aide.profilSous')}
+            </Text>
+          </View>
+          <Icon name="chevron_right" size={20} color={colors.textFaint} />
+        </Pressable>
+
+        <Pressable style={[styles.partner, { marginTop: 12 }]} onPress={() => router.push('/porte-monnaie')}>
           <Icon name="account_balance_wallet" size={22} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.partnerLabel}>{t('porteMonnaie.titre')}</Text>
@@ -357,6 +373,15 @@ function GuestProfile() {
         {/* `/role-select` fait `if (!session) return <Redirect href="/" />` : y envoyer un
             visiteur le renverrait aussitôt. On passe donc par la connexion, avec la
             sélection de rôle comme destination de retour. */}
+        <Pressable style={styles.partner} onPress={() => signInFor(router, '/aide')}>
+          <Icon name="support_agent" size={22} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.partnerLabel}>{t('messagerie.aide.profilLabel')}</Text>
+            <Text style={styles.partnerSub}>{t('messagerie.aide.profilSous')}</Text>
+          </View>
+          <Icon name="chevron_right" size={20} color={colors.textFaint} />
+        </Pressable>
+
         <Pressable style={styles.partner} onPress={() => signInFor(router, '/role-select')}>
           <Icon name="storefront" size={22} color={colors.secondary} />
           <View style={{ flex: 1 }}>

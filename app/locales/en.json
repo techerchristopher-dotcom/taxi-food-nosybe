@@ -769,6 +769,28 @@
     "rapideResto2": "Il nous manque un ingrédient, on vous propose une autre option · One ingredient is missing, we suggest an alternative",
     "rapideResto3": "La commande est prête · Your order is ready",
     "boutonClient": "Message the restaurant or rider",
-    "boutonPro": "Messages"
+    "boutonPro": "Messages",
+    "traduitDe": "Translated {{langue}} · see original",
+    "voirTraduction": "See translation",
+    "langues": {
+      "fr": "from French",
+      "en": "from English",
+      "it": "from Italian",
+      "mg": "from Malagasy",
+      "de": "from German",
+      "es": "from Spanish"
+    },
+    "aide": {
+      "titre": "Message Taxi Food",
+      "sousTitre": "Our team replies here",
+      "quiLit": "Only the Taxi Food team reads this conversation.",
+      "vide": "A question, a problem with an order, an idea? Write to us here, with a photo if needed: we reply in the app.",
+      "connexion": "Sign in to write to our team and get the reply in the app.",
+      "seConnecter": "Sign in",
+      "profilLabel": "Message Taxi Food",
+      "profilSous": "A question, a problem? We reply here.",
+      "profilNonLus": "{{count}} new reply",
+      "profilNonLus_other": "{{count}} new replies"
+    }
   }
 }

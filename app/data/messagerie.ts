@@ -23,6 +23,11 @@ export type MessageCommande = {
   texte: string | null;
   photoPath: string | null;
   createdAt: string;
+  /** Langue détectée du message (fr, en, it, mg…) et ses traductions, posées par la base. */
+  langueSource: string | null;
+  traductions: Partial<Record<'fr' | 'en' | 'it', string>> | null;
+  /** Création, ou dernière mise à jour (traduction arrivée) : curseur de relecture. */
+  curseur: string;
 };
 
 export type Conversation = {
@@ -41,6 +46,9 @@ type MessageBrut = {
   texte: string | null;
   photo_path: string | null;
   created_at: string;
+  langue_source?: string | null;
+  traductions?: MessageCommande['traductions'];
+  curseur?: string;
 };
 
 function mapMessage(m: MessageBrut): MessageCommande {
@@ -52,6 +60,9 @@ function mapMessage(m: MessageBrut): MessageCommande {
     texte: m.texte,
     photoPath: m.photo_path,
     createdAt: m.created_at,
+    langueSource: m.langue_source ?? null,
+    traductions: m.traductions ?? null,
+    curseur: m.curseur ?? m.created_at,
   };
 }
 
@@ -155,6 +166,19 @@ export async function deposerPhotoMessage(orderId: string, uri: string, mime?: s
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) throw new Error('Connexion requise');
+  return deposerPhoto(`${orderId}/${session.user.id}`, uri, mime);
+}
+
+/** Dépose la photo du fil Taxi Food : `messages/support/<moi>/<moi>/…`. */
+export async function deposerPhotoSupport(uri: string, mime?: string | null): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Connexion requise');
+  return deposerPhoto(`support/${session.user.id}/${session.user.id}`, uri, mime);
+}
+
+async function deposerPhoto(dossier: string, uri: string, mime?: string | null): Promise<string> {
 
   let corps: ArrayBuffer | Blob;
   let contentType: string;
@@ -168,7 +192,7 @@ export async function deposerPhotoMessage(orderId: string, uri: string, mime?: s
     contentType = bas.startsWith('image/') ? bas : uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
   }
   const ext = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : contentType.includes('hei') ? 'heic' : 'jpg';
-  const path = `${orderId}/${session.user.id}/${Date.now()}.${ext}`;
+  const path = `${dossier}/${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('messages').upload(path, corps, { contentType, upsert: false });
   if (error) throw error;
   return path;
@@ -190,4 +214,28 @@ export async function lienPhotoMessage(path: string, pleineTaille = false): Prom
   if (error || !data?.signedUrl) return null;
   cacheLiens.set(cle, { url: data.signedUrl, expire: Date.now() + 50 * 60 * 1000 });
   return data.signedUrl;
+}
+
+// ───────────── Conversation avec Taxi Food (hors commande) ─────────────
+
+export type FilSupport = { peutEcrire: boolean; messages: MessageCommande[] };
+
+export async function lireSupport(depuis?: string | null): Promise<FilSupport> {
+  const { data, error } = await supabase.rpc('support_lire', { p_depuis: depuis ?? null });
+  if (error) throw error;
+  const d = data as { peut_ecrire: boolean; messages: MessageBrut[] };
+  return { peutEcrire: !!d.peut_ecrire, messages: (d.messages ?? []).map(mapMessage) };
+}
+
+export async function envoyerSupport(texte: string | null, photoPath: string | null = null): Promise<MessageCommande> {
+  const { data, error } = await supabase.rpc('support_envoyer', { p_texte: texte, p_photo_path: photoPath });
+  if (error) throw error;
+  return mapMessage(data as MessageBrut);
+}
+
+/** Réponses de Taxi Food pas encore lues (badge du Profil). Ne lève jamais. */
+export async function supportNonLus(): Promise<number> {
+  const { data, error } = await supabase.rpc('support_non_lus');
+  if (error) return 0;
+  return typeof data === 'number' ? data : 0;
 }

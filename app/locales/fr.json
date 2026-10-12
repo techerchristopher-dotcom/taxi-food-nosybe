@@ -769,6 +769,28 @@
     "rapideResto2": "Il nous manque un ingrédient, on vous propose une autre option · One ingredient is missing, we suggest an alternative",
     "rapideResto3": "La commande est prête · Your order is ready",
     "boutonClient": "Écrire au restaurant ou au livreur",
-    "boutonPro": "Messages"
+    "boutonPro": "Messages",
+    "traduitDe": "Traduit {{langue}} · voir l'original",
+    "voirTraduction": "Voir la traduction",
+    "langues": {
+      "fr": "du français",
+      "en": "de l'anglais",
+      "it": "de l'italien",
+      "mg": "du malgache",
+      "de": "de l'allemand",
+      "es": "de l'espagnol"
+    },
+    "aide": {
+      "titre": "Écrire à Taxi Food",
+      "sousTitre": "Notre équipe te répond ici",
+      "quiLit": "Seule l'équipe Taxi Food lit cette conversation.",
+      "vide": "Une question, un souci avec une commande, une idée ? Écris-nous ici, avec une photo si besoin : on te répond dans l'app.",
+      "connexion": "Connecte-toi pour écrire à notre équipe et recevoir sa réponse dans l'app.",
+      "seConnecter": "Se connecter",
+      "profilLabel": "Écrire à Taxi Food",
+      "profilSous": "Une question, un souci ? On te répond ici.",
+      "profilNonLus": "{{count}} nouvelle réponse",
+      "profilNonLus_other": "{{count}} nouvelles réponses"
+    }
   }
 }

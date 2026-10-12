@@ -33,6 +33,7 @@ export const RETOURS = [
   '/role-select',
   '/address',
   '/porte-monnaie',
+  '/aide',
 ] as const;
 
 /**

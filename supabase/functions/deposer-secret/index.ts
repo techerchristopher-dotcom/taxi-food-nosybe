@@ -33,6 +33,7 @@ const NOMS = new Set([
   'umami_api_key_app',
   'anthropic_api_key',
   'facebook_page_token',
+  'rounded_api_key',
 ]);
 
 const TAILLE_MAX = 16 * 1024;

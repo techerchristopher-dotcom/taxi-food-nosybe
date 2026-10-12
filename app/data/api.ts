@@ -1006,6 +1006,21 @@ export async function listOrders(): Promise<Order[]> {
  * Null pour une commande antérieure, ou si la lecture échoue : l'écran de suivi masque
  * alors simplement le bloc — une estimation ne doit jamais empêcher de suivre sa commande.
  */
+/**
+ * État du paiement Orange Money d'une commande DU CLIENT connecté : 'a_verifier',
+ * 'recu', ou null (pas d'Orange Money déclaré, ou pas sa commande). Ne lève jamais :
+ * la carte Orange Money s'affiche alors normalement.
+ */
+export async function getEtatOrangeMoney(orderId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.rpc('mon_paiement_orange_money', { p_order_id: orderId });
+    if (error) return null;
+    return (data as string | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getEstimationCommande(orderId: string): Promise<EstimationCommande | null> {
   const { data, error } = await supabase
     .from('estimations_commande')

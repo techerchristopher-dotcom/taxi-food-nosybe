@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlocAvis } from '../../components/BlocAvis';
 import { BlocEstimation } from '../../components/BlocEstimation';
+import { CarteOrangeMoney } from '../../components/CarteOrangeMoney';
 import { Icon } from '../../components/Icon';
 import { LignesEmballage } from '../../components/LignesEmballage';
 import { packagingLinesFromItems } from '../../store/cart';
@@ -300,7 +301,12 @@ export default function OrderTrackingScreen() {
           </View>
           {/* Paiement à la livraison : on rappelle discrètement qu'Orange Money marche aussi. */}
           {!carte && order.status !== 'annulee' ? (
-            <Text style={styles.omAussi}>{t('orangeMoney.aussi')}</Text>
+            <CarteOrangeMoney
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              montant={order.total}
+              recharge={`${order.status}|${order.paymentMethod}`}
+            />
           ) : null}
           <View style={styles.addrRow}>
             <Icon name="location_on" size={20} color={colors.primary} />
@@ -413,7 +419,6 @@ const styles = StyleSheet.create({
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   totalLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
-  omAussi: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 6 },
   totalValue: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.primary },
   addrRow: {
     flexDirection: 'row',

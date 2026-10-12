@@ -717,6 +717,13 @@
     "mention": "Indicative estimate, based on previous orders. It may vary with how busy the restaurant is, traffic and weather, and is not a commitment from the restaurant or Taxi Food."
   },
   "orangeMoney": {
-    "aussi": "You can also pay by Orange Money to +261 37 34 379 12 (TECHER Jean Christopher)."
+    "aussi": "You can also pay by Orange Money to +261 37 34 379 12 (TECHER Jean Christopher).",
+    "titre": "Pay with Orange Money",
+    "montant": "Amount to send",
+    "motif": "Reference",
+    "copier": "Copy number",
+    "copie": "Number copied",
+    "ouEspeces": "Or pay the courier in cash, as you prefer.",
+    "recu": "Orange Money payment received, thank you!"
   }
 }

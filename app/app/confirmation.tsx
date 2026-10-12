@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { ProductThumb } from '../components/ProductThumb';
+import { CarteOrangeMoney } from '../components/CarteOrangeMoney';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
 import { paymentLabel, PaymentMethod } from '../data/types';
 import { getEstimationCommande, getOrderById } from '../data/api';
@@ -119,7 +120,9 @@ export default function ConfirmationScreen() {
               { method: paymentLabel(displayPayment) },
             )}
           />
-          {displayPayment !== 'cb' ? <Text style={styles.omAussi}>{t('orangeMoney.aussi')}</Text> : null}
+          {displayPayment !== 'cb' ? (
+            <CarteOrangeMoney orderId={orderId} orderNumber={displayNumber} montant={displayTotal} />
+          ) : null}
           {etaAffiche ? <Detail label={t('confirmation.eta')} value={etaAffiche} /> : null}
         </View>
       </ScrollView>
@@ -242,7 +245,6 @@ const styles = StyleSheet.create({
   cardDivider: { height: 1, backgroundColor: colors.divider, marginVertical: 14 },
   detailLabel: { fontFamily: fonts.regular, fontSize: 13, color: colors.textDark },
   detailValue: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
-  omAussi: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: -2, marginBottom: 8 },
   actions: { paddingHorizontal: 24, gap: 10 },
   actionBtn: { height: 56, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   actionDark: { backgroundColor: colors.ink },

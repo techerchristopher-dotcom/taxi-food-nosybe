@@ -281,6 +281,10 @@ export default function OrderTrackingScreen() {
             <Text style={styles.totalLabel}>{t('tracking.totalWith', { method: paymentShort(order.paymentMethod) })}</Text>
             <Text style={styles.totalValue}>{formatAr(order.total)}</Text>
           </View>
+          {/* Paiement à la livraison : on rappelle discrètement qu'Orange Money marche aussi. */}
+          {!carte && order.status !== 'annulee' ? (
+            <Text style={styles.omAussi}>{t('orangeMoney.aussi')}</Text>
+          ) : null}
           <View style={styles.addrRow}>
             <Icon name="location_on" size={20} color={colors.primary} />
             <Text style={styles.addrText}>
@@ -392,6 +396,7 @@ const styles = StyleSheet.create({
   itemPrice: { fontFamily: fonts.semibold, fontSize: 13, color: colors.ink },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   totalLabel: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  omAussi: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 6 },
   totalValue: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.primary },
   addrRow: {
     flexDirection: 'row',

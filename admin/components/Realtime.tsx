@@ -196,13 +196,30 @@ export function Realtime() {
       }
       motif = window.prompt(`Annuler la commande ${o.order_number} — motif ?`);
       if (!motif?.trim()) return;
-    } else if (!window.confirm(`Passer ${o.order_number} en « ${STATUS_LABEL[statut] ?? statut} » ?`)) {
+    }
+    // Livrée et payée à la livraison : COMMENT le client a-t-il payé ? Orange Money
+    // part « à vérifier » dans l'onglet 📱 Orange Money (rien n'est compté encaissé avant).
+    let mode: 'especes' | 'orange_money' | null = null;
+    if (statut === 'livree' && o.payment_status !== 'paye' && o.payment_method !== 'cb') {
+      const choix = window.prompt(
+        `Passer ${o.order_number} en « Livrée » (${formatAr(o.total)}).\n\n`
+        + 'Comment le client a-t-il payé ?\n  1 = Espèces\n  2 = Orange Money (à vérifier)',
+        o.payment_method === 'orange_money' ? '2' : '1');
+      if (choix === null) return;
+      if (choix.trim() === '1') mode = 'especes';
+      else if (choix.trim() === '2') mode = 'orange_money';
+      else { setErr('Réponds 1 (espèces) ou 2 (Orange Money).'); return; }
+    } else if (statut !== 'annulee' && !window.confirm(`Passer ${o.order_number} en « ${STATUS_LABEL[statut] ?? statut} » ?`)) {
       return;
     }
     setBusy(o.id);
     const { error } = await supabase.rpc('admin_set_order_status', {
       p_order_id: o.id, p_new_status: statut, p_reason: motif,
     });
+    if (!error && mode) {
+      const { error: e2 } = await supabase.rpc('admin_definir_encaissement', { p_order_id: o.id, p_mode: mode });
+      if (e2) setErr(`Livrée, mais le mode de paiement n'a pas été enregistré : ${e2.message}`);
+    }
     setBusy(null);
     if (error) { setErr(error.message); return; }
     await load();

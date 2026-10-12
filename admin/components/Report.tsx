@@ -31,6 +31,7 @@ type DeliveredRow = CommandeLivree & {
   /** Porte-monnaie client (2026-10-07), payé par Taxi Food, déjà déduit de `total`. */
   remise_porte_monnaie?: number | null;
   payment_method: string;
+  payment_status?: string | null;
   courier_id: string | null;
   commission_rate: number | null;
 };
@@ -59,7 +60,7 @@ type Line = Cumul & {
   reglees: Cumul;
 };
 
-const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, courier_id, commission_amount, commission_rate';
+const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, payment_status, courier_id, commission_amount, commission_rate';
 
 const AUCUNE_REGLE: ReglesDesCodes = new Map();
 
@@ -94,6 +95,12 @@ export function Report() {
    */
   const [rafraichi, setRafraichi] = useState(0);
   const [regles, setRegles] = useState<ReglesDesCodes>(AUCUNE_REGLE);
+  /**
+   * Commande Orange Money → son état (« a_verifier » | « recu »), lu par
+   * `admin_paiements_orange_money`. `null` = lecture impossible : le bloc
+   * « Encaissement » le dit au lieu de compter un Orange Money comme encaissé.
+   */
+  const [etatsOM, setEtatsOM] = useState<Map<string, string> | null>(new Map());
   const [courierNames, setCourierNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -190,6 +197,9 @@ export function Report() {
         map.set(x.code_normalise, { pris_en_charge_par: x.pris_en_charge_par, porte_sur: x.porte_sur });
       }
       setRegles(map);
+      const om = await supabase.rpc('admin_paiements_orange_money');
+      if (om.error) setEtatsOM(null);
+      else setEtatsOM(new Map(((om.data ?? []) as { order_id: string; etat: string }[]).map((x) => [x.order_id, x.etat])));
       setRows(orderRows);
       setRestos((r.data ?? []) as Resto[]);
       setSettlements((s.data ?? []) as unknown as Versement[]);
@@ -290,6 +300,24 @@ export function Report() {
     return Array.from(map.entries()).map(([id, v]) => ({ id, ...v })).sort((a, b) => b.cash - a.cash);
   }, [rows]);
 
+  /**
+   * D'où vient l'argent, mode par mode. « Facturé » (le total des commandes) n'est
+   * pas « encaissé » : un Orange Money « à vérifier » n'est pas encore arrivé sur le
+   * téléphone. L'écart de caisse plus haut reste calculé sur le facturé (sa formule
+   * n'a pas changé) ; ce bloc dit ce qui est réellement rentré.
+   */
+  const encaissement = useMemo(() => {
+    const e = { especes: 0, nbEspeces: 0, omRecu: 0, nbOmRecu: 0, omAVerifier: 0, nbOmAVerifier: 0, carte: 0, nbCarte: 0 };
+    for (const row of rows) {
+      if (row.payment_status === 'paye' || row.payment_method === 'cb') { e.carte += row.total; e.nbCarte += 1; }
+      else if (row.payment_method === 'orange_money') {
+        if (etatsOM?.get(row.id ?? '') === 'recu') { e.omRecu += row.total; e.nbOmRecu += 1; }
+        else { e.omAVerifier += row.total; e.nbOmAVerifier += 1; }
+      } else { e.especes += row.total; e.nbEspeces += 1; }
+    }
+    return { ...e, reel: e.especes + e.omRecu + e.carte };
+  }, [rows, etatsOM]);
+
   function exportCsv() {
     const header = ['Restaurant', 'Nb livrees', 'Encaisse client', 'CA plats', 'Emballages', 'Commission', 'Offert par le restaurant', 'Net a reverser', 'Livraison brute', 'Remise livraison', 'Livraison nette', 'Remise plats payee par Taxi Food', 'Porte-monnaie client (Taxi Food)'];
     const body = lines.map((l) => [l.name, l.count, l.encaisse, l.caPlats, l.emballages, l.commission, l.offertRestaurant, l.net, l.deliveryBrut, l.remiseLivraison, l.deliveryFees, l.remisePlats, l.remisePorteMonnaie].join(';'));
@@ -327,7 +355,15 @@ export function Report() {
           lire. Le detail du calcul est juste en dessous, pas ici. */}
       <div className="stat-row">
         <div className="stat"><div className="label">Livraisons</div><div className="value">{totals.count}</div></div>
-        <div className="stat"><div className="label">Encaissé auprès des clients</div><div className="value">{formatAr(totals.encaisse)}</div></div>
+        <div className="stat">
+          <div className="label">Facturé aux clients</div>
+          <div className="value">{formatAr(totals.encaisse)}</div>
+          {encaissement.omAVerifier > 0 ? (
+            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+              dont {formatAr(encaissement.omAVerifier)} Orange Money à vérifier (pas encore encaissé)
+            </div>
+          ) : null}
+        </div>
         <div className="stat">
           <div className="label">À reverser aux restaurants</div>
           <div className="value" style={{ color: 'var(--accent)' }}>{formatAr(totals.net)}</div>
@@ -340,6 +376,30 @@ export function Report() {
           ) : null}
         </div>
         <div className="stat"><div className="label">MA MARGE</div><div className="value" style={{ color: 'var(--green)' }}>{formatAr(margin)}</div></div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Encaissement, mode par mode</h2>
+        <table>
+          <tbody>
+            <tr><td>💵 Espèces <span className="muted">(remises par les livreurs)</span></td><td className="num">{encaissement.nbEspeces}</td><td className="num">{formatAr(encaissement.especes)}</td></tr>
+            <tr><td>📱 Orange Money reçu</td><td className="num">{encaissement.nbOmRecu}</td><td className="num">{formatAr(encaissement.omRecu)}</td></tr>
+            <tr>
+              <td>📱 Orange Money à vérifier <span className="muted">(non compté comme encaissé)</span></td>
+              <td className="num">{encaissement.nbOmAVerifier}</td>
+              <td className="num" style={{ color: encaissement.omAVerifier > 0 ? 'var(--accent)' : undefined }}>{formatAr(encaissement.omAVerifier)}</td>
+            </tr>
+            {encaissement.nbCarte > 0 ? (
+              <tr><td>💳 Carte</td><td className="num">{encaissement.nbCarte}</td><td className="num">{formatAr(encaissement.carte)}</td></tr>
+            ) : null}
+            <tr><td style={{ fontWeight: 700 }}>= Réellement encaissé</td><td className="num"></td><td className="num" style={{ fontWeight: 700 }}>{formatAr(encaissement.reel)}</td></tr>
+          </tbody>
+        </table>
+        {etatsOM === null ? (
+          <div style={{ marginTop: 8, color: 'var(--red)', fontWeight: 600 }}>
+            États Orange Money illisibles : tous les Orange Money sont comptés « à vérifier ».
+          </div>
+        ) : null}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

@@ -1791,11 +1791,21 @@ export async function markArrived(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Confirme la livraison (+ encaissement espèces si applicable). */
-export async function markDelivered(orderId: string, cashConfirmed: boolean): Promise<void> {
+/**
+ * Confirme la livraison et dit comment le client a payé : espèces (le livreur
+ * confirme avoir encaissé) ou Orange Money (déclaré « à vérifier » : le livreur ne
+ * voit pas le téléphone qui reçoit l'argent, l'admin confirme ensuite). Sans mode,
+ * la base retombe sur le comportement d'avant (espèces).
+ */
+export async function markDelivered(
+  orderId: string,
+  cashConfirmed: boolean,
+  mode?: 'especes' | 'orange_money',
+): Promise<void> {
   const { error } = await supabase.rpc('mark_order_delivered', {
     p_order_id: orderId,
     p_cash_confirmed: cashConfirmed,
+    ...(mode ? { p_mode_encaissement: mode } : {}),
   });
   if (error) throw error;
 }

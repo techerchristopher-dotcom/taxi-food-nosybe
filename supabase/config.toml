@@ -135,3 +135,9 @@ verify_jwt = false
 # utilisateur. La fonction verifie elle-meme l'en-tete `x-hook-secret` contre le Vault
 # (`facebook_hook_secret`). `true` la rendrait inappelable, en silence.
 verify_jwt = false
+
+[functions.relancer-orange-money]
+# L'appelant est un ADMINISTRATEUR (onglet Orange Money). `false` pour la meme
+# raison qu'`envoyer-annonce` : la fonction lit le jeton de l'appelant et exige
+# `user_roles.role = 'admin'` ACTIF.
+verify_jwt = false

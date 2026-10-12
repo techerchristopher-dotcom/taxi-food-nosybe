@@ -7,9 +7,13 @@ import { colors, fonts, formatAr, radius, spacing } from '../theme/tokens';
 import { Order, paymentLabel } from '../data/types';
 
 /**
- * Confirmation de livraison. Si le paiement est en espèces, le livreur doit cocher qu'il a
- * bien encaissé le montant exact (trace en cas de litige) avant de valider. Sinon, simple
- * confirmation.
+ * Confirmation de livraison. Si le client paie à la livraison, le livreur choisit
+ * COMMENT il a payé :
+ *   - Espèces : il coche qu'il a bien encaissé le montant exact (trace en cas de litige) ;
+ *   - Orange Money : le client a envoyé l'argent au +261 37 34 379 12. Le livreur ne voit
+ *     pas ce téléphone, il ne peut donc rien confirmer : la commande part « à vérifier »
+ *     et l'administrateur la passe « reçue » dans le tableau de bord.
+ * Sinon, simple confirmation.
  *
  * ⚠️ `paymentStatus` L'EMPORTE SUR `paymentMethod`. Une commande peut porter
  * « espèces » ET avoir été réellement encaissée par carte : le repli espèces
@@ -29,19 +33,22 @@ export function DeliverSheet({
   order: Order | null;
   submitting?: boolean;
   onCancel: () => void;
-  onConfirm: (cashConfirmed: boolean) => void;
+  onConfirm: (cashConfirmed: boolean, mode?: 'especes' | 'orange_money') => void;
 }) {
   const insets = useSafeAreaInsets();
   const [checked, setChecked] = useState(false);
+  const [mode, setMode] = useState<'especes' | 'orange_money'>('especes');
 
   // Déjà encaissé en ligne : plus rien à prendre au client, quel que soit le
   // mode affiché sur la commande.
   const dejaPayeEnLigne = order?.paymentStatus === 'paye';
-  const isCash = order?.paymentMethod === 'especes' && !dejaPayeEnLigne;
-  const canConfirm = !isCash || checked;
+  // Paiement à la livraison : espèces, ou Orange Money (déjà posé par l'admin).
+  const aEncaisser = (order?.paymentMethod === 'especes' || order?.paymentMethod === 'orange_money') && !dejaPayeEnLigne;
+  const canConfirm = !aEncaisser || mode === 'orange_money' || checked;
 
   function close() {
     setChecked(false);
+    setMode('especes');
     onCancel();
   }
 
@@ -57,13 +64,38 @@ export function DeliverSheet({
           <Text style={styles.amount}>{order ? formatAr(order.total) : ''}</Text>
         </View>
 
-        {isCash ? (
-          <Pressable style={styles.check} onPress={() => setChecked((v) => !v)}>
-            <View style={[styles.box, checked && styles.boxOn]}>
-              {checked ? <Icon name="check" size={16} color={colors.white} /> : null}
+        {aEncaisser ? (
+          <>
+            <Text style={styles.question}>Comment le client a-t-il payé ?</Text>
+            <View style={styles.modes}>
+              {(['especes', 'orange_money'] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  style={[styles.mode, mode === m && styles.modeOn]}
+                  onPress={() => setMode(m)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: mode === m }}
+                >
+                  <Text style={[styles.modeText, mode === m && styles.modeTextOn]}>
+                    {m === 'especes' ? '💵 Espèces' : '📱 Orange Money'}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <Text style={styles.checkText}>J'ai bien encaissé {order ? formatAr(order.total) : ''} en espèces.</Text>
-          </Pressable>
+            {mode === 'especes' ? (
+              <Pressable style={styles.check} onPress={() => setChecked((v) => !v)}>
+                <View style={[styles.box, checked && styles.boxOn]}>
+                  {checked ? <Icon name="check" size={16} color={colors.white} /> : null}
+                </View>
+                <Text style={styles.checkText}>J'ai bien encaissé {order ? formatAr(order.total) : ''} en espèces.</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.noCash}>
+                Le client envoie {order ? formatAr(order.total) : ''} par Orange Money au +261 37 34 379 12
+                (TECHER Jean Christopher). Ne prends rien en espèces : la réception sera vérifiée par Taxi Food.
+              </Text>
+            )}
+          </>
         ) : (
           <Text style={styles.noCash}>
             {dejaPayeEnLigne
@@ -77,7 +109,9 @@ export function DeliverSheet({
           <Button
             label="Confirmer la livraison"
             icon="check_circle"
-            onPress={() => onConfirm(isCash)}
+            onPress={() =>
+              aEncaisser ? onConfirm(mode === 'especes', mode) : onConfirm(false)
+            }
             loading={submitting}
             disabled={!canConfirm}
             style={{ flex: 1.4 }}
@@ -115,6 +149,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boxOn: { backgroundColor: colors.success, borderColor: colors.success },
+  question: { marginTop: 16, fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
+  modes: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  mode: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: radius.tile,
+    borderWidth: 1.5,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  modeOn: { borderColor: colors.primary, backgroundColor: colors.bg },
+  modeText: { fontFamily: fonts.medium, fontSize: 14, color: colors.textDark },
+  modeTextOn: { fontFamily: fonts.bold, color: colors.primary },
   checkText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.ink },
   noCash: { marginTop: 16, fontFamily: fonts.regular, fontSize: 13, color: colors.textMuted },
   actions: { flexDirection: 'row', gap: 12, marginTop: 20 },

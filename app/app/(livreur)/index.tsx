@@ -237,8 +237,8 @@ export default function CourierDeliveriesScreen() {
         order={deliverTarget}
         submitting={!!deliverTarget && busy === deliverTarget.id}
         onCancel={() => setDeliverTarget(null)}
-        onConfirm={(cash) =>
-          deliverTarget && run(deliverTarget.id, () => markDelivered(deliverTarget.id, cash), 'Livraison impossible.')
+        onConfirm={(cash, mode) =>
+          deliverTarget && run(deliverTarget.id, () => markDelivered(deliverTarget.id, cash, mode), 'Livraison impossible.')
         }
       />
     </View>

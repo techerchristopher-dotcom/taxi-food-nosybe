@@ -10,6 +10,7 @@ import { Avis } from '../components/Avis';
 import { CodesOfferts } from '../components/CodesOfferts';
 import { PorteMonnaie } from '../components/PorteMonnaie';
 import { OrangeMoney } from '../components/OrangeMoney';
+import { Messages } from '../components/Messages';
 import { Delais } from '../components/Delais';
 import { CommandeTelephone } from '../components/CommandeTelephone';
 import { Realtime } from '../components/Realtime';
@@ -21,7 +22,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
+type Tab = 'realtime' | 'messages' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -123,6 +124,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'audience' ? 'active' : ''}`} onClick={() => setTab('audience')}>
           📈 Audience
         </button>
+        <button className={`tab ${tab === 'messages' ? 'active' : ''}`} onClick={() => setTab('messages')}>
+          💬 Messages
+        </button>
         <button className={`tab ${tab === 'avis' ? 'active' : ''}`} onClick={() => setTab('avis')}>
           ⭐ Avis
         </button>
@@ -169,6 +173,7 @@ export default function AdminPage() {
       {tab === 'avis' && <Avis />}
       {tab === 'remboursements' && <Remboursements />}
       {tab === 'orange_money' && <OrangeMoney />}
+      {tab === 'messages' && <Messages />}
       {tab === 'codes' && <CodesOfferts />}
       {tab === 'porte_monnaie' && <PorteMonnaie />}
       {tab === 'delais' && <Delais />}

@@ -171,3 +171,31 @@ QUATRE surfaces »).
 - `profiles` sans pseudo ni consentement.
 - Textes de push dupliqués hors i18n (`notify-order/index.ts`).
 - Le calendrier éditorial est dans le projet Rentanoo, pas ici.
+
+## 7. Publication automatique sur Facebook — état au 2026-10-12
+
+Chaîne (depuis le 2026-10-08) : avis avec consentement et note restaurant ≥ 4, **restaurant
+`visible`** (garde ajoutée le 2026-10-12) → trigger `avis_publication_facebook` →
+`planifier_publication_avis` (créneau ≥ 10 min, ≥ 2 h après le précédent) →
+`envoyer_avis_au_calendrier` → calendrier éditorial Rentanoo (`editorial_calendar`,
+`created_by = 'avis-taxi-food:<avis_id>'`) → publieur `editorial-publisher` (toutes les 15 min)
+→ Page Facebook, lien en 1er commentaire. La fonction Edge `publier-avis-facebook` est inerte.
+
+**Retour du « publié » (2026-10-12)** : trigger Rentanoo `trg_avis_taxi_food_publie` → RPC Taxi
+Food `calendrier_avis_publie(cle, avis_id, fb_url, publie_le)` (secret `calendrier_avis_cle`)
+→ `publications_avis.statut = 'publiee'` + `facebook_post_id`, et `avis.utilise_reseaux_le`.
+Avant, rien ne revenait : l'admin montrait « à publier » des avis déjà en ligne. Migrations
+`20261012200000_avis_publies_retour_du_calendrier` (ici) et
+`supabase/autres-bases/rentanoo/20261012201000_…` (base Rentanoo).
+
+- Publiés : TF-371 (Nandipo, **masqué du mur le 12/10** par `timeline_visibility=hidden` —
+  `is_hidden` est refusé par Facebook sur un post de la Page ; réafficher avec
+  `timeline_visibility=normal`), TF-332, TF-311, TF-315, TF-327, TF-379.
+- Mis en file le 12/10 (antérieurs à la chaîne) : TF-312 Alessandro 13/10 12:00, TF-309 Opaline
+  13/10 18:00 (heure de Nosy Be).
+- ⚠️ Ne jamais appeler `envoyer_avis_au_calendrier` deux fois de suite dans une transaction :
+  les deux pg_net arrivent dans un ordre quelconque (le dernier arrivé fixe la date).
+- ⚠️ Le tri se fait sur la NOTE, pas sur le texte : TF-332 (4,5/5) a publié une remarque
+  négative (« pas d'assaisonnement »).
+- La vitrine (`landing/`) n'affiche aucun avis ; l'app (fiche restaurant, écran des avis, fiche
+  plat) les affiche — vérifié sur l'app web le 12/10.

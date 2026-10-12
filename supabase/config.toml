@@ -141,3 +141,8 @@ verify_jwt = false
 # raison qu'`envoyer-annonce` : la fonction lit le jeton de l'appelant et exige
 # `user_roles.role = 'admin'` ACTIF.
 verify_jwt = false
+
+# Messagerie de commande (2026-10-13) : appelée par la base (trigger + pg_cron), vérifie
+# elle-même `x-hook-secret` (Vault `push_hook_secret`) — même patron que notify-order.
+[functions.notifier-message]
+verify_jwt = false

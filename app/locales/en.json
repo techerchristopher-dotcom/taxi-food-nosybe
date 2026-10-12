@@ -725,5 +725,50 @@
     "copie": "Number copied",
     "ouEspeces": "Or pay the courier in cash, as you prefer.",
     "recu": "Orange Money payment received, thank you!"
+  },
+  "messagerie": {
+    "retour": "Back",
+    "titre": "Messages · {{numero}}",
+    "titreCourt": "Messages",
+    "quiLit": "The customer, the rider and the restaurant can read this conversation.",
+    "vide": {
+      "client": "A question for the restaurant or the rider? Write here, or send a photo of your gate to help the rider find you.",
+      "livreur": "Write to the customer or the restaurant. Quick messages below go out in one tap.",
+      "restaurant": "Write to the customer or the rider (missing dish, a detail…).",
+      "admin": "No messages on this order."
+    },
+    "role": {
+      "client": "customer",
+      "livreur": "rider",
+      "restaurant": "restaurant",
+      "admin": "Taxi Food"
+    },
+    "placeholder": "Write a message…",
+    "envoyer": "Send",
+    "prendrePhoto": "Take a photo",
+    "choisirPhoto": "Choose a photo",
+    "envoiPhoto": "Sending the photo…",
+    "fermee": "Conversation closed: you can write until 2 hours after delivery.",
+    "inaccessible": "This conversation is not available.",
+    "erreurReseau": "Connection lost — retrying.",
+    "erreurEnvoi": "Message not sent. Check your connection and try again.",
+    "erreurPhoto": "The photo could not be sent. Try again.",
+    "erreurFermee": "The conversation is closed.",
+    "erreurTropRapide": "Too many messages at once. Wait a moment.",
+    "erreurTropLong": "Message too long (500 characters max).",
+    "refusCamera": "Allow camera access in your phone settings to send a photo.",
+    "refusGalerie": "Allow photo access in your phone settings.",
+    "rapideClient1": "Coming down 👍",
+    "rapideClient2": "The gate is open",
+    "rapideClient3": "Call me when you arrive",
+    "rapideLivreur1": "Je suis devant 🛵 · I'm outside",
+    "rapideLivreur2": "J'arrive dans 5 min · 5 min away",
+    "rapideLivreur3": "Je ne te trouve pas, peux-tu m'envoyer une photo de ton portail ? · Can't find you, can you send a photo of your gate?",
+    "rapideLivreur4": "Peux-tu m'appeler ? · Can you call me?",
+    "rapideResto1": "Votre commande est en préparation · Your order is being prepared",
+    "rapideResto2": "Il nous manque un ingrédient, on vous propose une autre option · One ingredient is missing, we suggest an alternative",
+    "rapideResto3": "La commande est prête · Your order is ready",
+    "boutonClient": "Message the restaurant or rider",
+    "boutonPro": "Messages"
   }
 }

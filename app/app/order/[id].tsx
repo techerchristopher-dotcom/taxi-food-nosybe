@@ -17,6 +17,8 @@ import { Order, paymentShort, statusStep } from '../../data/types';
 import { getEstimationCommande, getOrderById } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
 import { motifRefusAffiche } from '../../lib/motifRefus';
+import { BoutonMessagerie } from '../../components/BoutonMessagerie';
+import { useNonLus } from '../../lib/useNonLus';
 
 /**
  * Écran 09 — Suivi de commande (timeline 5 statuts).
@@ -40,6 +42,8 @@ export default function OrderTrackingScreen() {
   const { t } = useTranslation();
 
   const { data: order, loading, reload } = useLoad(() => getOrderById(id!), [id]);
+  // Messages non lus de la conversation de la commande (2026-10-13).
+  const nonLus = useNonLus('client');
   // Estimation FIGÉE à la création (2026-10-07) : chargée une fois, jamais recalculée.
   // Null pour une commande antérieure → pas de bloc.
   const { data: estimation, reload: reloadEstimation } = useLoad(() => getEstimationCommande(id!), [id]);
@@ -245,6 +249,17 @@ export default function OrderTrackingScreen() {
         )}
 
         <BlocEstimation order={order} estimation={estimation} />
+
+        {/* Conversation avec le restaurant et le livreur (2026-10-13). La base décide si
+            elle est encore ouverte : l'écran de conversation le dit. */}
+        <View style={{ marginTop: 14 }}>
+          <BoutonMessagerie
+            orderId={order.id}
+            role="client"
+            nonLus={nonLus[order.id] ?? 0}
+            label={t('messagerie.boutonClient')}
+          />
+        </View>
 
         <EtatPaiement order={order} onReprendre={() => router.push({
           pathname: '/paiement',

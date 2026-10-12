@@ -7,13 +7,24 @@ import { StatusBadge } from './StatusBadge';
 import { Card, Divider } from './primitives';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
 import { Order, paymentLabel } from '../data/types';
+import { BoutonMessagerie } from './BoutonMessagerie';
+import { RoleMessagerie } from '../data/messagerie';
 
 /**
  * Carte commande côté restaurant : détail complet (articles, options, total, paiement,
  * position GPS du client). Réutilisée par « Commandes en cours » (avec des actions dans
  * `footer`) et par l'« Historique » (lecture seule, `footer` absent).
  */
-export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: ReactNode }) {
+export function RestaurantOrderCard({
+  order,
+  footer,
+  messagerie,
+}: {
+  order: Order;
+  footer?: ReactNode;
+  /** Bouton 💬 de la conversation de la commande (2026-10-13), avec ses non-lus. */
+  messagerie?: { role: RoleMessagerie; nonLus?: number };
+}) {
   return (
     <Card style={styles.card}>
       <View style={styles.head}>
@@ -130,6 +141,16 @@ export function RestaurantOrderCard({ order, footer }: { order: Order; footer?: 
         </View>
       ) : null}
 
+      {messagerie && !order.parTelephone ? (
+        <View style={styles.footer}>
+          <BoutonMessagerie
+            orderId={order.id}
+            role={messagerie.role}
+            nonLus={messagerie.nonLus}
+            label={messagerie.nonLus ? `Messages · ${messagerie.nonLus} non lu${messagerie.nonLus > 1 ? 's' : ''}` : 'Messages (client, livreur, restaurant)'}
+          />
+        </View>
+      ) : null}
       {footer ? <View style={styles.footer}>{footer}</View> : null}
     </Card>
   );

@@ -456,6 +456,8 @@ export type OrderItemSnapshot = {
 
 export type Order = {
   id: string;
+  /** Saisie par téléphone dans l'admin : pas de messagerie (le client n'a pas l'app). */
+  parTelephone?: boolean;
   orderNumber: string;
   restaurantId: string;
   restaurantName: string;

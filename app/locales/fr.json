@@ -725,5 +725,50 @@
     "copie": "Numéro copié",
     "ouEspeces": "Ou en espèces au livreur, comme tu préfères.",
     "recu": "Paiement Orange Money reçu, merci !"
+  },
+  "messagerie": {
+    "retour": "Retour",
+    "titre": "Messages · {{numero}}",
+    "titreCourt": "Messages",
+    "quiLit": "Le client, le livreur et le restaurant lisent cette conversation.",
+    "vide": {
+      "client": "Une question pour le restaurant ou le livreur ? Écris-leur ici, ou envoie une photo de ton portail pour aider le livreur.",
+      "livreur": "Écris au client ou au restaurant. Les messages rapides ci-dessous partent en un tap.",
+      "restaurant": "Écrivez au client ou au livreur (un plat manquant, une précision…).",
+      "admin": "Aucun message sur cette commande."
+    },
+    "role": {
+      "client": "client",
+      "livreur": "livreur",
+      "restaurant": "restaurant",
+      "admin": "Taxi Food"
+    },
+    "placeholder": "Écrire un message…",
+    "envoyer": "Envoyer",
+    "prendrePhoto": "Prendre une photo",
+    "choisirPhoto": "Choisir une photo",
+    "envoiPhoto": "Envoi de la photo…",
+    "fermee": "Conversation terminée : on peut écrire jusqu'à 2 h après la livraison.",
+    "inaccessible": "Cette conversation n'est pas accessible.",
+    "erreurReseau": "Connexion perdue — nouvelle tentative en cours.",
+    "erreurEnvoi": "Message non envoyé. Vérifie ta connexion et réessaie.",
+    "erreurPhoto": "La photo n'a pas pu partir. Réessaie.",
+    "erreurFermee": "La conversation est terminée.",
+    "erreurTropRapide": "Trop de messages d'un coup. Attends un instant.",
+    "erreurTropLong": "Message trop long (500 caractères au plus).",
+    "refusCamera": "Autorise l'appareil photo dans les réglages du téléphone pour envoyer une photo.",
+    "refusGalerie": "Autorise l'accès aux photos dans les réglages du téléphone.",
+    "rapideClient1": "Je descends 👍",
+    "rapideClient2": "Le portail est ouvert",
+    "rapideClient3": "Appelle-moi en arrivant",
+    "rapideLivreur1": "Je suis devant 🛵 · I'm outside",
+    "rapideLivreur2": "J'arrive dans 5 min · 5 min away",
+    "rapideLivreur3": "Je ne te trouve pas, peux-tu m'envoyer une photo de ton portail ? · Can't find you, can you send a photo of your gate?",
+    "rapideLivreur4": "Peux-tu m'appeler ? · Can you call me?",
+    "rapideResto1": "Votre commande est en préparation · Your order is being prepared",
+    "rapideResto2": "Il nous manque un ingrédient, on vous propose une autre option · One ingredient is missing, we suggest an alternative",
+    "rapideResto3": "La commande est prête · Your order is ready",
+    "boutonClient": "Écrire au restaurant ou au livreur",
+    "boutonPro": "Messages"
   }
 }

@@ -22,6 +22,7 @@ import {
 import { Order } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
+import { useNonLus } from '../../lib/useNonLus';
 
 const POLL_MS = 12000;
 
@@ -45,6 +46,9 @@ export default function CourierDeliveriesScreen() {
     const t = setInterval(reload, POLL_MS);
     return () => clearInterval(t);
   }, [reload]);
+
+  // Messages non lus par commande de la tournée (bouton 💬 de chaque carte).
+  const nonLus = useNonLus('livreur');
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +121,7 @@ export default function CourierDeliveriesScreen() {
                   <RestaurantOrderCard
                     key={order.id}
                     order={order}
+                    messagerie={{ role: 'livreur', nonLus: nonLus[order.id] ?? 0 }}
                     footer={
                       order.pickedUp ? (
                         // Apres la recuperation, deux jalons pour prevenir le client

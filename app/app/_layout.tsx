@@ -197,7 +197,7 @@ export default function RootLayout() {
     // Notification orpheline : une notification restée dans le centre de notifications
     // après une déconnexion ouvrirait un suivi de commande que la RLS ne laisse plus lire
     // — quatre secondes de spinner pour finir sur « Commande introuvable ». On l'ignore.
-    if (pendingRoute.startsWith('/order/') && !userId) return;
+    if ((pendingRoute.startsWith('/order/') || pendingRoute.startsWith('/messages/')) && !userId) return;
 
     if (pendingRoute === '/(restaurant)') {
       const ok = !!roles?.some((r) => r.role === 'restaurant' && r.status === 'active') && !!restaurantId;

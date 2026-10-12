@@ -9,6 +9,7 @@ import { OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSondage } from '../../lib/useSondage';
 import { useSession } from '../../store/session';
+import { useNonLus } from '../../lib/useNonLus';
 
 // Commandes remises au livreur, en transit. Lecture seule (le restaurant n'a plus d'action).
 const DELIVERING: OrderStatus[] = ['en_livraison'];
@@ -26,6 +27,7 @@ export default function RestaurantDeliveringScreen() {
   );
 
   useSondage(reload, POLL_MS);
+  const nonLus = useNonLus('restaurant');
 
   const list = orders ?? [];
 
@@ -68,7 +70,11 @@ export default function RestaurantDeliveringScreen() {
           showsVerticalScrollIndicator={false}
         >
           {list.map((order) => (
-            <RestaurantOrderCard key={order.id} order={order} />
+            <RestaurantOrderCard
+              key={order.id}
+              order={order}
+              messagerie={{ role: 'restaurant', nonLus: nonLus[order.id] ?? 0 }}
+            />
           ))}
         </ScrollView>
       )}

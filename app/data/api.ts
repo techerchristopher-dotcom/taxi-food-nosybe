@@ -906,6 +906,7 @@ function mapOrder(o: OrderJoinRow): Order {
   const addressLabel = addr ? formatAddressLine(addr.zone, clientTelephone ? null : addr.label) : '';
   return {
     id: o.id,
+    parTelephone: !!clientTelephone,
     orderNumber: o.order_number,
     restaurantId: o.restaurant_id,
     restaurantName,

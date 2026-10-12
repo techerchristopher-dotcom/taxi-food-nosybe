@@ -725,5 +725,50 @@
     "copie": "Numero copiato",
     "ouEspeces": "Oppure in contanti al corriere, come preferisci.",
     "recu": "Pagamento Orange Money ricevuto, grazie!"
+  },
+  "messagerie": {
+    "retour": "Indietro",
+    "titre": "Messaggi · {{numero}}",
+    "titreCourt": "Messaggi",
+    "quiLit": "Il cliente, il fattorino e il ristorante leggono questa conversazione.",
+    "vide": {
+      "client": "Una domanda per il ristorante o il fattorino? Scrivi qui, o invia una foto del tuo cancello per aiutare il fattorino.",
+      "livreur": "Scrivi al cliente o al ristorante. I messaggi rapidi qui sotto partono con un tocco.",
+      "restaurant": "Scrivete al cliente o al fattorino (un piatto mancante, una precisazione…).",
+      "admin": "Nessun messaggio su questo ordine."
+    },
+    "role": {
+      "client": "cliente",
+      "livreur": "fattorino",
+      "restaurant": "ristorante",
+      "admin": "Taxi Food"
+    },
+    "placeholder": "Scrivi un messaggio…",
+    "envoyer": "Invia",
+    "prendrePhoto": "Scatta una foto",
+    "choisirPhoto": "Scegli una foto",
+    "envoiPhoto": "Invio della foto…",
+    "fermee": "Conversazione chiusa: si può scrivere fino a 2 ore dopo la consegna.",
+    "inaccessible": "Questa conversazione non è accessibile.",
+    "erreurReseau": "Connessione persa — nuovo tentativo in corso.",
+    "erreurEnvoi": "Messaggio non inviato. Controlla la connessione e riprova.",
+    "erreurPhoto": "Non è stato possibile inviare la foto. Riprova.",
+    "erreurFermee": "La conversazione è chiusa.",
+    "erreurTropRapide": "Troppi messaggi insieme. Aspetta un attimo.",
+    "erreurTropLong": "Messaggio troppo lungo (massimo 500 caratteri).",
+    "refusCamera": "Consenti l'accesso alla fotocamera nelle impostazioni del telefono per inviare una foto.",
+    "refusGalerie": "Consenti l'accesso alle foto nelle impostazioni del telefono.",
+    "rapideClient1": "Scendo 👍",
+    "rapideClient2": "Il cancello è aperto",
+    "rapideClient3": "Chiamami quando arrivi",
+    "rapideLivreur1": "Je suis devant 🛵 · I'm outside",
+    "rapideLivreur2": "J'arrive dans 5 min · 5 min away",
+    "rapideLivreur3": "Je ne te trouve pas, peux-tu m'envoyer une photo de ton portail ? · Can't find you, can you send a photo of your gate?",
+    "rapideLivreur4": "Peux-tu m'appeler ? · Can you call me?",
+    "rapideResto1": "Il vostro ordine è in preparazione · Your order is being prepared",
+    "rapideResto2": "Ci manca un ingrediente, vi proponiamo un'alternativa · One ingredient is missing, we suggest an alternative",
+    "rapideResto3": "L'ordine è pronto · Your order is ready",
+    "boutonClient": "Scrivi al ristorante o al fattorino",
+    "boutonPro": "Messaggi"
   }
 }

@@ -12,6 +12,7 @@ import { Order, OrderStatus, RefusalCode } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSondage } from '../../lib/useSondage';
 import { useSession } from '../../store/session';
+import { useNonLus } from '../../lib/useNonLus';
 import { useRestaurantQueue } from '../../store/restaurantQueue';
 import { useVisiteGuidee } from '../../store/visiteGuidee';
 
@@ -39,6 +40,8 @@ export default function RestaurantOrdersScreen() {
   // Rafraîchissement automatique tant que l'écran est monté (pas de push en V1), et
   // immédiat au retour dans l'app — typiquement après « Accepter » dans Telegram.
   useSondage(reload, POLL_MS);
+  // Messages non lus par commande (bouton 💬 de chaque carte, 2026-10-13).
+  const nonLus = useNonLus('restaurant');
 
   // Alimente le badge de l'onglet (nombre de commandes en attente d'action).
   useEffect(() => {
@@ -159,6 +162,7 @@ export default function RestaurantOrdersScreen() {
             <RestaurantOrderCard
               key={order.id}
               order={order}
+              messagerie={{ role: 'restaurant', nonLus: nonLus[order.id] ?? 0 }}
               footer={<OrderActions order={order} busy={working === order.id} onAdvance={advance} onRefuse={setRefuseTarget} />}
             />
           ))}

@@ -40,6 +40,9 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - 📱 **Orange Money encaissé à la livraison** (2026-10-12) : en ligne (base, admin, web, OTA ×3) — voir
   sa section. **Jamais vu sur un vrai téléphone** (choix du livreur, carte client) ni dans l'admin
   connecté ; **aucune relance réelle** encore envoyée.
+- 💬 **Messagerie de commande** (2026-10-13) : **en ligne** (base, notifications, OTA ×3, web,
+  admin) — voir sa section. **Jamais vue sur un vrai téléphone** ni dans l'admin connecté, **aucun
+  vrai message encore échangé** : premier test à faire sur une vraie commande (photo comprise).
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
@@ -1440,6 +1443,54 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
+## 💬 Messagerie de commande — client, livreur, restaurant, Taxi Food (2026-10-13)
+
+Une conversation PAR COMMANDE, partagée entre le client, le livreur assigné, le restaurant et
+Taxi Food (admin), avec photos (appareil photo et galerie). Migrations
+`20261012215654_messagerie_commande`, `…215905_messagerie_horodatage_reel`,
+`…232200_messagerie_notifications` ; fonction Edge **`notifier-message`** ; recette
+`supabase/tests/messagerie.test.sql` (27 contrôles, transaction annulée).
+
+- **Tables `messages_commande` et `messages_lectures`** : RLS sans aucune politique, aucun droit —
+  tout passe par `messagerie_envoyer`, `messagerie_lire` (marque lu), `messagerie_non_lus`
+  (badges), `admin_messagerie_conversations` (admin). `anon` refusé partout (vérifié par PostgREST).
+- ⚠️ **L'appelant dit EN TANT QUE QUI il parle** (`p_en_tant_que` : client / livreur / restaurant /
+  admin) et `messagerie_acces()` vérifie qu'il tient CE rôle sur CETTE commande. Un même compte peut
+  être les quatre (le porteur du projet l'est) : deviner le rôle se tromperait.
+- **Règles** : écriture de la création jusqu'à **2 h après livraison ou annulation**, puis lecture
+  seule ; le livreur n'a accès qu'à SA course (il perd tout s'il la relâche) ; **commande par
+  téléphone = pas de messagerie** ; 500 caractères ; 12 messages / minute / auteur.
+- ⚠️ `created_at` par défaut **`clock_timestamp()`**, pas `now()` : deux messages d'une même
+  transaction avaient la même heure et passaient pour lus (trouvé par la recette).
+- **Photos** : bucket **PRIVÉ** `messages`, chemin `<commande>/<auteur>/<fichier>`, dépôt et
+  lecture gardés par les politiques Storage (`messagerie_peut_deposer` / `messagerie_participe`),
+  affichage par liens signés 1 h via le transformateur (900 px, JPEG — lit aussi le HEIC).
+  **Purge à 90 jours** : tâche pg_cron `messagerie-purge-photos` (03:41 UTC) →
+  `notifier-message {action:'purge'}` → API Storage (une suppression SQL laisserait le fichier).
+- **Notifications** (trigger `messages_commande_notifier`) : push à tous les AUTRES participants
+  par `notifier-message` (séparée de `notify-order`, exprès), tap → `/messages/<id>?role=…` ;
+  **Telegram au restaurant** quand le client ou le livreur écrit, dans sa langue (`it` pour Les
+  Siciliens) ; copie Telegram admin des messages du client et du restaurant. Telegram : un seul
+  envoi par minute et par auteur sur une commande (le push, lui, part à chaque message).
+- **App** : écran `app/app/messages/[id].tsx` (sondage 4 s + relecture à la notification),
+  `components/BoutonMessagerie.tsx` (pastille de non-lus), `lib/useNonLus.ts`. Boutons : suivi
+  client, cartes de la tournée du livreur, « Commandes en cours » et « En livraison » du
+  restaurant (pas sur une commande par téléphone). Messages rapides **bilingues FR · EN** pour le
+  livreur et le restaurant (les touristes lisent l'anglais). Textes `messagerie.*` FR/EN/IT.
+  Aucun module natif ajouté : `expo-image-picker` (caméra comprise) est dans les binaires depuis
+  la 1.2.1. ⚠️ Pas de réduction d'image native : qualité 0,5 au sélecteur ; sur le web, canvas
+  1600 px.
+- **Admin** : onglet **💬 Messages** (`admin/components/Messages.tsx`) — conversations récentes,
+  non-lus, fil, réponse en tant que « Taxi Food ».
+- ⚠️ **Prochaine soumission Apple** : poser `cameraPermission` en français dans le plugin
+  `expo-image-picker` d'`app.json` (le texte d'autorisation caméra des binaires est le défaut
+  anglais d'Expo).
+- **Publié le 2026-10-13** : OTA 1.2.3 `e57ac7e4…`, 1.2.2 `8f9176f9…`, 1.2.1 `c6932d7a…` ; web et
+  admin redéployés. Vérifié : écran à 375 px (données simulées), recette SQL, charges utiles
+  Telegram/push lues dans `net.http_request_queue` (transaction annulée), purge réelle (200).
+- **Reste (lot 4)** : traduction automatique des messages, temps réel, conversation client ↔
+  Taxi Food hors commande.
 
 ## 📱 Orange Money encaissé à la livraison (2026-10-12)
 

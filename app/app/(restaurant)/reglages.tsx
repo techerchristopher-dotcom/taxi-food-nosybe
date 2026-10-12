@@ -14,6 +14,7 @@ import {
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { textesReversement } from '../../lib/textesReversement';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icon';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
@@ -28,6 +29,7 @@ import {
   Garnitures,
   getFeaturedLibrary,
   getMyRestaurant,
+  langueRestaurant,
   getMenu,
   saveFeaturedProduct,
   setProductAvailable,
@@ -266,6 +268,10 @@ export default function RestaurantSettingsScreen() {
   const restaurantId = useSession((s) => s.session?.restaurantId ?? '');
   const { t } = useTranslation();
   const router = useRouter();
+  const [langueResto, setLangueResto] = useState('fr');
+  useEffect(() => {
+    if (restaurantId) void langueRestaurant(restaurantId).then(setLangueResto).catch(() => {});
+  }, [restaurantId]);
   const demanderVisite = useVisiteGuidee((s) => s.demanderVisite);
 
   /**
@@ -709,6 +715,22 @@ export default function RestaurantSettingsScreen() {
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.visiteTitre}>{t('visitePro.revoirTitre')}</Text>
               <Text style={styles.visiteTexte}>{t('visitePro.revoirTexte')}</Text>
+            </View>
+            <Icon name="chevron_right" size={22} color={colors.textFaint} />
+          </Pressable>
+
+          {/* --------------------------------------------- Mes versements */}
+          <Pressable
+            onPress={() => router.push('/(restaurant)/versements')}
+            style={[styles.carte, styles.visiteCarte, { marginTop: 10 }]}
+            accessibilityRole="button"
+          >
+            <View style={styles.visiteIcone}>
+              <Icon name="payments" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.visiteTitre}>{textesReversement(langueResto).mesVersements}</Text>
+              <Text style={styles.visiteTexte}>{textesReversement(langueResto).mesVersementsTexte}</Text>
             </View>
             <Icon name="chevron_right" size={22} color={colors.textFaint} />
           </Pressable>

@@ -1011,6 +1011,74 @@ export async function listOrders(): Promise<Order[]> {
  * 'recu', ou null (pas d'Orange Money déclaré, ou pas sa commande). Ne lève jamais :
  * la carte Orange Money s'affiche alors normalement.
  */
+/** Reversement d'une commande livrée, vu par SON restaurant (`mes_reversements_commandes`). */
+export type ReversementCommande = {
+  orderId: string;
+  plats: number;
+  emballage: number;
+  commission: number;
+  taux: number;
+  offert: number;
+  net: number;
+  etat: 'reverse' | 'regle_a_la_commande' | 'a_reverser';
+  reverseLe: string | null;
+  reference: string | null;
+  versementMontant: number | null;
+  versementNb: number | null;
+  langue: string;
+};
+
+export async function mesReversementsCommandes(restaurantId: string): Promise<ReversementCommande[]> {
+  const { data, error } = await supabase.rpc('mes_reversements_commandes', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    orderId: r.order_id as string,
+    plats: Number(r.plats ?? 0),
+    emballage: Number(r.emballage ?? 0),
+    commission: Number(r.commission ?? 0),
+    taux: Number(r.taux ?? 0),
+    offert: Number(r.offert ?? 0),
+    net: Number(r.net ?? 0),
+    etat: r.etat as ReversementCommande['etat'],
+    reverseLe: (r.reverse_le as string | null) ?? null,
+    reference: (r.reference as string | null) ?? null,
+    versementMontant: r.versement_montant == null ? null : Number(r.versement_montant),
+    versementNb: r.versement_nb == null ? null : Number(r.versement_nb),
+    langue: (r.langue as string) ?? 'fr',
+  }));
+}
+
+/** Langue du restaurant (`fr` par défaut, `it` pour Les Siciliens) — textes des reversements. */
+export async function langueRestaurant(restaurantId: string): Promise<string> {
+  const { data } = await supabase.from('restaurants').select('langue').eq('id', restaurantId).maybeSingle();
+  return ((data as { langue?: string } | null)?.langue) ?? 'fr';
+}
+
+/** Un versement Taxi Food → restaurant (`mes_versements`), hors « réglé à la commande ». */
+export type VersementRestaurant = {
+  id: string;
+  payeLe: string | null;
+  reference: string | null;
+  montant: number;
+  nbCommandes: number;
+  numeros: string[];
+  langue: string;
+};
+
+export async function mesVersements(restaurantId: string): Promise<VersementRestaurant[]> {
+  const { data, error } = await supabase.rpc('mes_versements', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: r.id as string,
+    payeLe: (r.paye_le as string | null) ?? null,
+    reference: (r.reference as string | null) ?? null,
+    montant: Number(r.montant ?? 0),
+    nbCommandes: Number(r.nb_commandes ?? 0),
+    numeros: (r.numeros as string[] | null) ?? [],
+    langue: (r.langue as string) ?? 'fr',
+  }));
+}
+
 export async function getEtatOrangeMoney(orderId: string): Promise<string | null> {
   try {
     const { data, error } = await supabase.rpc('mon_paiement_orange_money', { p_order_id: orderId });

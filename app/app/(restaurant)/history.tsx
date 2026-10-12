@@ -2,12 +2,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { Icon } from '../../components/Icon';
 import { Button } from '../../components/Button';
 import { AvisRestaurateur } from '../../components/AvisRestaurateur';
+import { ReversementCommande } from '../../components/ReversementCommande';
 import { Etoiles, formatNote } from '../../components/Etoiles';
 import { Card } from '../../components/primitives';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { avisDeMonRestaurant, listRestaurantOrders } from '../../data/api';
+import { avisDeMonRestaurant, listRestaurantOrders, mesReversementsCommandes } from '../../data/api';
 import { OrderStatus } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSession } from '../../store/session';
@@ -35,6 +36,12 @@ export default function RestaurantHistoryScreen() {
     () => (restaurantId ? avisDeMonRestaurant(restaurantId) : Promise.resolve([])),
     [restaurantId],
   );
+  // Reversements (2026-10-12) : une lecture ratée ne cache rien d'autre, le bloc manque seulement.
+  const { data: reversements } = useLoad(
+    () => (restaurantId ? mesReversementsCommandes(restaurantId).catch(() => []) : Promise.resolve([])),
+    [restaurantId],
+  );
+  const reversementParCommande = new Map((reversements ?? []).map((r) => [r.orderId, r]));
   const list = orders ?? [];
   const avisParCommande = new Map((avis ?? []).map((a) => [a.orderId, a]));
   const publies = (avis ?? []).filter((a) => a.statut === 'publie');
@@ -86,11 +93,19 @@ export default function RestaurantHistoryScreen() {
           ) : null}
           {list.map((order) => {
             const a = avisParCommande.get(order.id);
+            const rv = order.status === 'livree' ? reversementParCommande.get(order.id) : undefined;
             return (
               <RestaurantOrderCard
                 key={order.id}
                 order={order}
-                footer={a ? <AvisRestaurateur avis={a} onChange={rechargerAvis} /> : undefined}
+                footer={
+                  a || rv ? (
+                    <>
+                      {rv ? <ReversementCommande ligne={rv} /> : null}
+                      {a ? <AvisRestaurateur avis={a} onChange={rechargerAvis} /> : null}
+                    </>
+                  ) : undefined
+                }
               />
             );
           })}

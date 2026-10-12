@@ -108,6 +108,8 @@ export default function RestaurantLayout() {
           ),
         }}
       />
+      {/* « Mes versements » s'ouvre depuis les Réglages : ce n'est pas un onglet. */}
+      <Tabs.Screen name="versements" options={{ href: null }} />
     </Tabs>
   );
 }

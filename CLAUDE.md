@@ -1502,6 +1502,30 @@ affiché partout : **+261 37 34 379 12, TECHER Jean Christopher** (copié sous l
 - ⏳ **Non vérifié** : l'admin connecté (connexion Google), une relance réelle (exige un JWT
   admin), le choix du livreur et la carte sur un vrai téléphone.
 
+## 🧾 Le restaurant voit ses reversements (2026-10-12)
+
+Né du Nandipo (« il manque de l'argent » alors que tout était reversé). Migration
+`20261012204922_le_restaurant_voit_ses_reversements`, commit `74084ab`, web + OTA ×3.
+
+- **Historique de l'espace restaurateur** : sous chaque commande livrée, `components/
+  ReversementCommande.tsx` — pastille verte « Reversé le 12/10 · réf. D22570 » + montant de CETTE
+  commande, et en petit « versement de 213 300 Ar pour 4 commandes » (un virement couvre souvent
+  plusieurs commandes) ; « Réglé à la commande » (Les Siciliens) ; pastille grise « À reverser ».
+  « Voir le calcul » : plats + emballage − **commission Taxi Food (taux en clair, décision du
+  porteur du projet)** − part offerte = reversé.
+- **« Mes versements »** : `app/(restaurant)/versements.tsx` (`href: null`, pas un onglet), ouvert
+  depuis une carte des Réglages ; un versement par ligne, ses numéros TF-.
+- **Base** : `mes_reversements_commandes(restaurant)` et `mes_versements(restaurant)`, SECURITY
+  DEFINER, gardées par `is_active_restaurant_staff_of` (autre restaurant refusé, `anon` 401).
+  Montant d'une commande reversée = `settlement_orders.net` **figé** ; sinon la formule
+  d'`admin_commandes_a_reverser` recopiée — ⚠️ toute évolution de la formule se porte aussi ici.
+  `destination_reversement` et l'auteur ne sortent pas.
+- **Langue** : ces textes suivent `restaurants.langue` (`lib/textesReversement.ts`, FR/IT) ; le
+  reste de l'espace restaurateur reste en français.
+- Vérifié en base avec le compte du Nandipo : 5 commandes, 240 300 Ar en deux versements (B33651,
+  D22570), conforme au rapprochement du 12/10. ⏳ **Écrans non vus** (aucune session restaurateur
+  dans le navigateur) : à regarder sur un vrai téléphone.
+
 ## 💸 Versements aux restaurants : référence Orange Money + message Telegram (2026-09-22)
 
 Onglet « Rapport de clôture ». Migration `20260922140000_versement_reference_et_message_telegram`

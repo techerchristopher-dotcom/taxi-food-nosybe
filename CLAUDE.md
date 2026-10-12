@@ -37,6 +37,9 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - ✅ **Lot 3 livré** (2026-09-30) : photo du plat par le client, visuel citation 1080×1080 et texte de
   publication dans l'admin. Workflow de publication dans `docs/NOTATION-AVIS.md` § 5.
   ⚠️ **Jamais vu sur un vrai téléphone** (ni la photo, ni le bloc de notation).
+- 📱 **Orange Money encaissé à la livraison** (2026-10-12) : en ligne (base, admin, web, OTA ×3) — voir
+  sa section. **Jamais vu sur un vrai téléphone** (choix du livreur, carte client) ni dans l'admin
+  connecté ; **aucune relance réelle** encore envoyée.
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
@@ -1437,6 +1440,67 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
+## 📱 Orange Money encaissé à la livraison (2026-10-12)
+
+Des clients payaient le porteur du projet par Orange Money sur son numéro personnel, hors de toute
+trace. Le client paie toujours **à la livraison** ; c'est la personne qui **encaisse** — le livreur
+dans l'app, l'admin dans le tableau de bord — qui dit comment : espèces ou Orange Money. Numéro
+affiché partout : **+261 37 34 379 12, TECHER Jean Christopher** (copié sous la forme
+`+261373437912`). Migrations `20261012200849_orange_money_encaisse_a_la_livraison` et
+`20261012203312_orange_money_etat_pour_le_client`, fonction Edge **`relancer-orange-money`**
+(`verify_jwt = false`, admin actif exigé), commits `4d8c83f` et `fe5b335`.
+
+- **L'état vit dans sa propre table, PAS dans `orders.payment_status`** (déduit des
+  `payment_intents` carte par un trigger). `paiements_orange_money` (order_id PK, `etat`
+  `a_verifier` | `recu`, montant figé, `declare_role` livreur | admin, `recu_par` / `recu_le` /
+  `reference` facultative) et `relances_orange_money` (une ligne par relance, résultat push et
+  e-mail). Les deux : RLS **sans aucune policy, aucun droit** — tout passe par des RPC.
+  `orders.payment_method` passe à `orange_money` (valeur de l'enum, inutilisée jusque-là).
+- **Livreur** : `DeliverSheet` demande « Comment le client a-t-il payé ? » (💵 Espèces / 📱 Orange
+  Money). Orange Money = rien à cocher : il ne voit pas le téléphone qui reçoit l'argent, la
+  commande part « à vérifier ». `paymentStatus === 'paye'` (carte) l'emporte toujours.
+- ⚠️ **`mark_order_delivered(p_order_id, p_cash_confirmed, p_mode_encaissement default null)`** :
+  l'ancienne signature à 2 arguments a été **supprimée** avant de créer la nouvelle (piège
+  PGRST203, vérifié par PostgREST). Mode NULL = espèces, comportement d'avant : l'app déjà
+  installée continue de marcher. Formule de commission inchangée.
+- **Admin** : `admin_definir_encaissement(order, 'especes' | 'orange_money')` (commande livrée, pas
+  carte ; retour aux espèces refusé si « reçu »), `admin_om_marquer_recu(order, ref)`,
+  `admin_om_annuler_recu(order)`, `admin_paiements_orange_money()`, toutes `is_admin()`, tracées
+  dans `admin_actions` (`mode_encaissement`, `orange_money_recu`). Temps réel : passer en
+  « Livrée » demande 1 = espèces / 2 = Orange Money.
+- **Onglet admin « 📱 Orange Money »** (`admin/components/OrangeMoney.tsx`) : à vérifier / reçus,
+  client, téléphone, montant, date, jours d'attente, « relancé N fois » ; boutons **Reçu**,
+  **Relancer**, « Payé en espèces », « Annuler reçu », et « Déclarer une commande déjà livrée »
+  (par numéro TF-).
+- **Relance** : push au SEUL client (textes fr/en/it selon la langue du jeton, reçus Expo lus) +
+  e-mail par le **workflow n8n des annonces** (`lire_webhook_annonce_email`), **jamais T7uX**.
+  Garde-fou en base : **une relance par commande et par jour** (index unique `(order_id, jour)
+  where statut <> 'echec'`), refus pour une commande par téléphone (pas de compte client).
+  `om_relance_preparer` / `om_relance_noter` : `service_role` seul. Mécanique Expo recopiée, pas
+  factorisée (même règle qu'`envoyer-annonce` / `notify-order`).
+- **Client** : `components/CarteOrangeMoney.tsx` sur la confirmation et le suivi d'une commande
+  payée à la livraison (ni carte, ni annulée) : numéro en gros, titulaire, montant à envoyer,
+  **motif = numéro de commande**, bouton « Copier le numéro » (`expo-clipboard`, déjà dans les
+  binaires). Une fois « reçu », remplacée par « Paiement Orange Money reçu, merci ! » — lu par
+  `mon_paiement_orange_money(order)` (propriétaire seulement). Clés `orangeMoney.*` FR/EN/IT.
+  ⚠️ Numéro et nom écrits en dur à TROIS endroits : `CarteOrangeMoney.tsx`, `DeliverSheet.tsx`,
+  `relancer-orange-money`.
+- **Rapport de clôture** : bloc « Encaissement, mode par mode » (espèces, Orange Money reçu,
+  Orange Money **à vérifier — non compté comme encaissé**, carte, réellement encaissé) ; la tuile
+  « Encaissé auprès des clients » s'appelle désormais **« Facturé aux clients »**. Le cash par
+  livreur ne compte que les espèces.
+- ⚠️ **`margeTaxiFood` et `ecartCaisse` N'ONT PAS bougé** : ils portent sur le facturé (Σ total),
+  donc un Orange Money à vérifier y compte comme une vente. La refonte de la marge (le livreur
+  garde les frais de livraison) est un chantier à part.
+- `notify_order_status` **non touchée** : changer `payment_method` seul, statut inchangé, n'y
+  déclenche rien.
+- Vérifié : refus sans cash, mode inconnu refusé, Orange Money « à vérifier » puis « reçu »,
+  retour aux espèces refusé après « reçu », garde-fou de relance, propriétaire seul pour l'état
+  client (transactions annulées) ; TF-400 réelle sur Taxi Be, puis supprimée ; clé publique
+  refusée sur les tables et les RPC ; carte rendue à 375 px et « Numéro copié » au clic.
+- ⏳ **Non vérifié** : l'admin connecté (connexion Google), une relance réelle (exige un JWT
+  admin), le choix du livreur et la carte sur un vrai téléphone.
 
 ## 💸 Versements aux restaurants : référence Orange Money + message Telegram (2026-09-22)
 

@@ -410,7 +410,9 @@
     },
     "courierToRestaurant": "Livreur en route vers le restaurant",
     "courierToRestaurantSub": "Un livreur a pris ta commande et va la récupérer au restaurant.",
-    "courierNamedToRestaurantSub": "{{name}} a pris ta commande et va la récupérer au restaurant."
+    "courierNamedToRestaurantSub": "{{name}} a pris ta commande et va la récupérer au restaurant.",
+    "relanceTitle": "Le restaurant tarde un peu",
+    "relanceSub": "{{resto}} n'a pas encore confirmé ta commande. On le relance pour toi — tu seras prévenu dès qu'il répond."
   },
   "profile": {
     "defaultName": "Client",

@@ -510,6 +510,8 @@ export type Order = {
   pickedUp?: boolean;
   /** Jalons du livreur après la récupération : « J'arrive » (≈ 5 min) puis « Je suis là ». */
   arrivingAt?: string | null;
+  /** Le restaurant n'a pas répondu en 3 min : Taxi Food l'a relancé (2026-10-12). */
+  relanceRestaurantLe?: string | null;
   arrivedAt?: string | null;
   /** Quand la commande a été livrée. Sert à savoir si elle peut encore être notée (7 jours). */
   deliveredAt?: string | null;

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlocAvis } from '../../components/BlocAvis';
@@ -47,6 +48,15 @@ export default function OrderTrackingScreen() {
     const t = setInterval(reload, POLL_MS);
     return () => clearInterval(t);
   }, [reload]);
+  // Une notification sur CETTE commande arrive pendant que l'écran est ouvert (acceptée,
+  // relance du restaurant…) : on relit tout de suite, sans attendre le prochain sondage.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = Notifications.addNotificationReceivedListener((n) => {
+      if (n.request.content.data?.orderId === id) reload();
+    });
+    return () => sub.remove();
+  }, [id, reload]);
   // Commande ouverte juste après sa création : si l'estimation n'était pas encore lisible,
   // on la redemande une fois la commande trouvée (puis elle ne bouge plus).
   const commandeTrouvee = !!order;
@@ -97,7 +107,10 @@ export default function OrderTrackingScreen() {
 
   // Sous-états de "en_livraison" : en attente d'un livreur vs récupérée, en route.
   const enLivraison = order.status === 'en_livraison';
-  const bannerIcon = cancelled ? 'cancel' : enLivraison && !order.pickedUp ? 'schedule' : head.icon;
+  // Le restaurant n'a pas répondu en 3 min : Taxi Food l'a relancé (2026-10-12). Le client
+  // le lit ici plutôt que de rester devant « Commande reçue » sans savoir.
+  const relance = order.status === 'recue' && !!order.relanceRestaurantLe;
+  const bannerIcon = cancelled ? 'cancel' : relance || (enLivraison && !order.pickedUp) ? 'schedule' : head.icon;
   // Jalons posés par le livreur après la récupération : « J'arrive » puis « Je suis là ».
   const livreurLa = enLivraison && !!order.arrivedAt;
   const livreurArrive = enLivraison && !livreurLa && !!order.arrivingAt;
@@ -107,6 +120,8 @@ export default function OrderTrackingScreen() {
   const livreurVersResto = enLivraison && !order.pickedUp && !!order.courierId;
   const bannerTitle = cancelled
     ? t('tracking.refusedTitle')
+    : relance
+      ? t('tracking.relanceTitle')
     : livreurLa
       ? t('tracking.courierHere')
       : livreurArrive
@@ -123,6 +138,8 @@ export default function OrderTrackingScreen() {
   const motifRefus = cancelled ? motifRefusAffiche(order) : null;
   const bannerSub = cancelled
     ? (motifRefus ?? t('tracking.refusedDefault'))
+    : relance
+      ? t('tracking.relanceSub', { resto: order.restaurantName })
     : livreurLa
       ? t('tracking.courierHereSub')
       : livreurArrive

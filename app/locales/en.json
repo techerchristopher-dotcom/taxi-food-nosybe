@@ -410,7 +410,9 @@
     },
     "courierToRestaurant": "Courier heading to the restaurant",
     "courierToRestaurantSub": "A courier has taken your order and is going to pick it up at the restaurant.",
-    "courierNamedToRestaurantSub": "{{name}} has taken your order and is going to pick it up at the restaurant."
+    "courierNamedToRestaurantSub": "{{name}} has taken your order and is going to pick it up at the restaurant.",
+    "relanceTitle": "The restaurant is taking a moment",
+    "relanceSub": "{{resto}} hasn't confirmed your order yet. We're chasing them for you — you'll be notified as soon as they reply."
   },
   "profile": {
     "defaultName": "Customer",

@@ -410,7 +410,9 @@
     },
     "courierToRestaurant": "Rider in viaggio verso il ristorante",
     "courierToRestaurantSub": "Un rider ha preso il tuo ordine e va a ritirarlo al ristorante.",
-    "courierNamedToRestaurantSub": "{{name}} ha preso il tuo ordine e va a ritirarlo al ristorante."
+    "courierNamedToRestaurantSub": "{{name}} ha preso il tuo ordine e va a ritirarlo al ristorante.",
+    "relanceTitle": "Il ristorante ci sta mettendo un po'",
+    "relanceSub": "{{resto}} non ha ancora confermato il tuo ordine. Lo stiamo sollecitando per te — ti avviseremo appena risponde."
   },
   "profile": {
     "defaultName": "Cliente",

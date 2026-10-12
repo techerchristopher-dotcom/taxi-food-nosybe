@@ -854,6 +854,7 @@ type OrderJoinRow = {
   picked_up_at: string | null;
   ready_at?: string | null;
   arriving_at?: string | null;
+  relance_restaurant_le?: string | null;
   arrived_at?: string | null;
   delivered_at?: string | null;
   created_at: string;
@@ -890,7 +891,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -958,6 +959,7 @@ function mapOrder(o: OrderJoinRow): Order {
     courierId: o.courier_id,
     pickedUp: o.picked_up_at != null,
     arrivingAt: o.arriving_at ?? null,
+    relanceRestaurantLe: o.relance_restaurant_le ?? null,
     arrivedAt: o.arrived_at ?? null,
     deliveredAt: o.delivered_at ?? null,
     createdAt: o.created_at,

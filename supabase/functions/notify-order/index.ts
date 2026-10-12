@@ -34,9 +34,10 @@ type Payload = {
   /**
    * 'nouvelle' pour un INSERT, 'statut' (défaut) pour un UPDATE, 'noter' pour la
    * relance « Comment c'était ? » envoyée par pg_cron (`relancer_avis_a_donner`)
-   * ~40 min après la livraison.
+   * ~40 min après la livraison. 'relance' : le restaurant n'a pas répondu en 3 min,
+   * on le relance et on prévient le client (`alerter_commandes_sans_reponse`, 2026-10-12).
    */
-  event?: 'nouvelle' | 'statut' | 'noter';
+  event?: 'nouvelle' | 'statut' | 'noter' | 'relance';
   /**
    * Jalon livreur. `assigned` : il vient d'appuyer sur « Je prends la commande » et part
    * vers le restaurant (2026-10-07). `arriving` / `arrived` : après la récupération,
@@ -195,6 +196,14 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     it: { title: 'Allora, com’era? ⭐', body: 'Valuta il tuo ordine da {resto} in 10 secondi — 1.000 Ar nel tuo portafoglio.' },
   },
 
+  // Le restaurant n'a pas répondu en 3 min : on le relance (Telegram) et on le dit au
+  // client, plutôt que de le laisser devant « Commande reçue » sans savoir (2026-10-12).
+  relance_resto: {
+    fr: { title: 'Le restaurant tarde un peu ⏳', body: '{resto} n’a pas encore confirmé ta commande. On le relance pour toi.' },
+    en: { title: 'The restaurant is taking a moment ⏳', body: '{resto} hasn’t confirmed your order yet. We’re chasing them for you.' },
+    it: { title: 'Il ristorante ci sta mettendo un po’ ⏳', body: '{resto} non ha ancora confermato il tuo ordine. Lo stiamo sollecitando per te.' },
+  },
+
   // --- Restaurant ---
   nouvelle_commande: {
     fr: { title: 'Nouvelle commande 🛎️', body: 'Commande {numero} à confirmer.' },
@@ -274,6 +283,9 @@ Deno.serve(async (req: Request) => {
   if (payload.event === 'nouvelle') {
     // Le client vient de la passer, il est devant son écran : lui seul n'a rien à recevoir.
     envois.push({ audience: 'restaurant', key: 'nouvelle_commande' });
+  } else if (payload.event === 'relance') {
+    // Seulement si la commande attend toujours : acceptée entre-temps, on se tait.
+    if (order.status === 'recue') envois.push({ audience: 'client', key: 'relance_resto' });
   } else if (payload.event === 'noter') {
     // La base a déjà vérifié : livrée, sans avis, jamais relancée.
     if (order.status === 'livree') envois.push({ audience: 'client', key: 'noter' });

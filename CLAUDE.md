@@ -41,8 +41,9 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   sa section. **Jamais vu sur un vrai téléphone** (choix du livreur, carte client) ni dans l'admin
   connecté ; **aucune relance réelle** encore envoyée.
 - 💬 **Messagerie de commande** (2026-10-13) : **en ligne** (base, notifications, OTA ×3, web,
-  admin) — voir sa section. **Jamais vue sur un vrai téléphone** ni dans l'admin connecté, **aucun
-  vrai message encore échangé** : premier test à faire sur une vraie commande (photo comprise).
+  admin) — voir sa section. Lot 4 en ligne aussi (traduction, temps réel, « Écrire à Taxi
+  Food »). ⚠️ **Traduction inerte tant que la clé Claude n'est pas au Vault.** **Jamais vue sur
+  un vrai téléphone**, aucun vrai message échangé : premier test sur une vraie commande.
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
@@ -136,10 +137,8 @@ bol renversé ont le porc en OPTION, sans badge possible.
 - Fiche App Store : le contact commerçant DSA publié porte l'**ancien** numéro `+261 37 34 379 12`
   (le site est passé au `+261 36 15 74 521` le 2026-09-10). ⚠️ Le modifier peut relancer une
   vérification Apple et retirer l'app des boutiques de l'UE le temps de l'examen.
-- **Aucun moyen pour un client d'écrire en laissant une trace** : « Contactez-nous » = lien WhatsApp,
-  l'espace client n'a pas de messagerie, et le formulaire « Être rappelé » (restaurateurs) n'avait
-  reçu qu'un test au 2026-09-16. Un client disant avoir « envoyé un message » a écrit par WhatsApp
-  ou e-mail — hors base. Piste ouverte : un vrai formulaire de contact enregistré + notifié n8n.
+- ✅ ~~Aucun moyen pour un client d'écrire en laissant une trace~~ : réglé le 2026-10-13 par
+  « Écrire à Taxi Food » (Profil, voir « Messagerie de commande »). La bulle WhatsApp reste.
 
 - 🏨 **Prospection des hébergements** (2026-09-28, voir sa section) : **799 fiches en base**,
   671 à visiter regroupées en **439 adresses**, 286 téléphones. Espace admin **livré** (file de
@@ -1489,8 +1488,38 @@ Taxi Food (admin), avec photos (appareil photo et galerie). Migrations
 - **Publié le 2026-10-13** : OTA 1.2.3 `e57ac7e4…`, 1.2.2 `8f9176f9…`, 1.2.1 `c6932d7a…` ; web et
   admin redéployés. Vérifié : écran à 375 px (données simulées), recette SQL, charges utiles
   Telegram/push lues dans `net.http_request_queue` (transaction annulée), purge réelle (200).
-- **Reste (lot 4)** : traduction automatique des messages, temps réel, conversation client ↔
-  Taxi Food hors commande.
+- **Lot 4 (2026-10-13, publié : OTA 1.2.3 `0d966239…`, 1.2.2 `2333bab7…`, 1.2.1 `ce2920a9…`,
+  web, admin)** — migrations `20261012235027_messagerie_lot4`, `…235132_…chat_telegram_admin` :
+  - **Traduction automatique** : `notifier-message` (v2) fait traduire chaque message par Claude
+    (`langue_source` + `traductions` {fr,en,it}) AVANT le push, qui part traduit dans la langue
+    de chaque appareil ; Telegram du restaurant et copie admin portent « (traduction : … ) ».
+    L'app affiche la traduction aux AUTRES participants (« Traduit de l'anglais · voir
+    l'original »), jamais à l'auteur. ⚠️ **INERTE tant que `anthropic_api_key` n'est pas au
+    Vault** (même clé que la traduction du menu : `ANTHROPIC_API_KEY=sk-ant-…` dans
+    `.secrets.local`, puis `sh scripts/poser-cle-claude.sh`) — tout le reste marche sans.
+  - **Le Telegram des messages part désormais de `notifier-message`**, plus de la base (pour
+    porter la traduction) ; `messagerie_notifier()` ne fait plus qu'appeler la fonction et
+    émettre le signal temps réel.
+  - **Temps réel** : `realtime.send` (Broadcast PRIVÉ, sans contenu) sur `commande:<id>` /
+    `support:<client>` à chaque message et à chaque traduction ; politique `messagerie_ecoute`
+    sur `realtime.messages` (participants seulement, aucune politique d'émission). L'app
+    (`components/FilConversation.tsx`) relit par la RPC au signal ; sondage 15 s si abonnée,
+    4 s sinon. `maj_le` (trigger) : `messagerie_lire(p_depuis)` rend aussi les messages
+    MIS À JOUR après le curseur (une traduction arrivée après coup est relue).
+  - **« Écrire à Taxi Food »** (fil client ↔ Taxi Food, hors commande) : table
+    `messages_support` (fermée, RPC `support_envoyer` / `support_lire` / `support_non_lus`,
+    admin `admin_support_conversations` / `admin_support_lire` / `admin_support_envoyer`),
+    photos sous `messages/support/<client>/<auteur>/…`. App : Profil → « Écrire à Taxi Food »
+    (badge des réponses non lues) → écran `/aide` ; push au client quand Taxi Food répond
+    (route `/aide`) ; Telegram admin « 🆘 » quand le client écrit. Admin : onglet 💬 Messages →
+    « Clients (hors commande) ». Comble le manque « aucun moyen pour un client d'écrire en
+    laissant une trace ».
+  - Vérifié : recette SQL en transaction annulée (écoute temps réel limitée aux participants,
+    fil d'autrui illisible, relecture après traduction, signal `maj`), clé publique refusée
+    partout (401), test RÉEL sur le seul compte du porteur du projet (Telegram admin + push
+    1 appareil, lignes supprimées ensuite), écran à 375 px (traduction simulée, bascule
+    original/traduction, `/aide` déconnecté).
+- **Reste** : poser la clé Claude ; voir un vrai échange sur téléphone (photo comprise).
 
 ## 📱 Orange Money encaissé à la livraison (2026-10-12)
 

@@ -26,6 +26,8 @@ type SessionState = {
   hydrate: () => Promise<void>;
   /** Recharge la session (rôles inclus) depuis le backend. */
   refresh: () => Promise<Session | null>;
+  /** Compte multi-restaurants : bascule le restaurant piloté (mémorisé en base). */
+  choisirRestaurant: (restaurantId: string) => Promise<Session | null>;
   /** Lance un flux OAuth (Google ou Facebook) et met à jour la session. */
   signInWithOAuth: (provider: auth.OAuthProvider) => Promise<Session | null>;
   /** Connexion native Apple (iOS). null si l'utilisateur annule la feuille système. */
@@ -90,6 +92,11 @@ export const useSession = create<SessionState>((set) => ({
   },
   refresh: async () => {
     const session = await auth.getSession();
+    set({ session });
+    return session;
+  },
+  choisirRestaurant: async (restaurantId: string) => {
+    const session = await auth.choisirRestaurantActif(restaurantId);
     set({ session });
     return session;
   },

@@ -43,9 +43,16 @@ export type Session = {
   hasName: boolean;
   /** Rôles du compte (multi-rôle). Vide pour un client « simple » jamais passé par request_role. */
   roles: RoleEntry[];
-  /** Restaurant lié si le compte est staff restaurant ACTIF (V1 : un compte = un resto). */
+  /**
+   * Restaurant PILOTÉ si le compte est staff restaurant ACTIF. Un compte rattaché à
+   * plusieurs restaurants choisit lequel (`choisirRestaurantActif`) ; le choix est
+   * mémorisé en base (`profiles.restaurant_actif`), et c'est lui que suivent les RPC
+   * de l'espace restaurateur (`current_restaurant_id()`).
+   */
   restaurantId: string | null;
   restaurantName: string | null;
+  /** Tous les restaurants du compte (staff actif) ; le sélecteur n'apparaît qu'au-delà d'un. */
+  restaurants: { id: string; name: string }[];
   /**
    * Date de la visite guidée de l'espace partenaire ; `null` tant qu'elle n'a
    * jamais été vue — c'est ce `null` qui la déclenche. Portée par le COMPTE et
@@ -351,11 +358,18 @@ async function buildSession(): Promise<Session | null> {
   const [{ data: profile }, { data: roleRows }, { data: staffRows }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('full_name, email, phone, visite_pro_vue_le')
+      .select('full_name, email, phone, visite_pro_vue_le, restaurant_actif')
       .eq('id', user.id)
       .maybeSingle(),
     supabase.from('user_roles').select('role, status'),
-    supabase.from('restaurant_staff').select('restaurant_id, restaurants ( name )'),
+    // ⚠️ `.eq('user_id', …)` est indispensable : la policy `restaurant_staff_select_admin`
+    // fait voir à un ADMIN les rattachements de tous les comptes. Sans ce filtre, un compte
+    // admin qui est aussi restaurateur héritait du restaurant d'un autre compte.
+    supabase
+      .from('restaurant_staff')
+      .select('restaurant_id, created_at, restaurants ( name )')
+      .eq('user_id', user.id)
+      .order('created_at'),
   ]);
 
   const meta = (user.user_metadata ?? {}) as { full_name?: string; name?: string };
@@ -375,8 +389,15 @@ async function buildSession(): Promise<Session | null> {
     restaurant_id: string;
     restaurants: { name: string } | { name: string }[] | null;
   }[];
-  const link = hasActiveRestaurant ? staff[0] : undefined;
-  const linkRestaurant = Array.isArray(link?.restaurants) ? link?.restaurants[0] : link?.restaurants;
+  const nomDe = (l: (typeof staff)[number]) =>
+    (Array.isArray(l.restaurants) ? l.restaurants[0]?.name : l.restaurants?.name) ?? 'Mon restaurant';
+  const restaurants = hasActiveRestaurant
+    ? staff.map((l) => ({ id: l.restaurant_id, name: nomDe(l) }))
+    : [];
+  // Même règle que `current_restaurant_id()` en base : le restaurant choisi, sinon le plus
+  // ancien rattachement. L'écran et les RPC désignent ainsi toujours le MÊME restaurant.
+  const actif = (profile as { restaurant_actif?: string | null } | null)?.restaurant_actif ?? null;
+  const choisi = restaurants.find((r) => r.id === actif) ?? restaurants[0];
 
   return {
     userId: user.id,
@@ -386,8 +407,9 @@ async function buildSession(): Promise<Session | null> {
     phone: profile?.phone ?? authPhone,
     hasName: rawName.length > 0,
     roles,
-    restaurantId: link?.restaurant_id ?? null,
-    restaurantName: linkRestaurant?.name ?? null,
+    restaurantId: choisi?.id ?? null,
+    restaurantName: choisi?.name ?? null,
+    restaurants,
     visiteProVueLe: profile?.visite_pro_vue_le ?? null,
   };
 }
@@ -494,6 +516,16 @@ export async function deleteAccount(): Promise<void> {
   if (error) throw new Error(error.message);
   // La session locale ne vaut plus rien : le compte n'existe plus côté serveur.
   await supabase.auth.signOut();
+}
+
+/**
+ * Choisit le restaurant piloté (compte rattaché à plusieurs restaurants). La base vérifie
+ * le rattachement et mémorise le choix ; renvoie la session relue.
+ */
+export async function choisirRestaurantActif(restaurantId: string): Promise<Session | null> {
+  const { error } = await supabase.rpc('choisir_restaurant_actif', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return buildSession();
 }
 
 export async function getSession(): Promise<Session | null> {

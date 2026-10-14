@@ -18,7 +18,9 @@
  * demandé tel quel par le porteur du projet le 2026-09-28 : « si c'est son jour de
  * fermeture on laisse ainsi ».
  */
+import { useEffect, useRef } from 'react';
 import { formatTime } from '../data/types';
+import { useMaintenant } from './horloge';
 
 export const FUSEAU_NOSY_BE = 'Indian/Antananarivo';
 
@@ -78,4 +80,44 @@ export function libelleOuverture(
   }
   if (e.opensInDays === 1) return t('platsDuJour.opensTomorrow', { time: formatTime(e.opensAt) });
   return t('restaurantCard.closed');
+}
+
+/**
+ * Le « quand » d'un restaurant fermé, pour les écrans qui le disent en toutes lettres
+ * (bandeau de la fiche restaurant, bouton de la fiche plat, panier) — 2026-10-14.
+ *
+ * Constat du porteur du projet le soir de l'ouverture de L'escale Créole : à 17 h 58
+ * la fiche disait « fermé pour le moment… reviens à l'ouverture » sans dire QUAND,
+ * alors que la notification « ouvre sur Taxi Food » venait de partir. Rend
+ * « Ouvre dans 2 min » / « Ouvre à 18h » / « Ouvre demain à 11h30 », ou null quand la
+ * base ne promet rien (fermeture manuelle, jour de repos) : l'écran garde alors son
+ * texte générique.
+ *
+ * Tic toutes les 30 s seulement si l'ouverture est aujourd'hui, et `recharger` est
+ * appelé UNE fois quand l'heure d'ouverture est passée : sinon le bouton resterait
+ * grisé jusqu'à ce que le client quitte l'écran — `isOpen` reste le verdict de la base.
+ */
+export function useQuandOuvre(
+  e: EtatOuverture | null | undefined,
+  t: (cle: string, options?: Record<string, unknown>) => string,
+  recharger?: () => void,
+): string | null {
+  const aujourdHui = !!e && !e.isOpen && e.opensInDays === 0 && !!e.opensAt;
+  const maintenant = useMaintenant(aujourdHui);
+  const passe = aujourdHui && minutesAvant(e!.opensAt!, maintenant) === null;
+  const dejaRecharge = useRef(false);
+  useEffect(() => {
+    if (!passe) {
+      dejaRecharge.current = false;
+      return;
+    }
+    if (recharger && !dejaRecharge.current) {
+      dejaRecharge.current = true;
+      // Quelques secondes de marge : la minute pile peut encore être « fermée » en base.
+      const id = setTimeout(recharger, 5_000);
+      return () => clearTimeout(id);
+    }
+  }, [passe, recharger]);
+  if (!e || e.isOpen || !e.opensAt || e.opensInDays === null || e.opensInDays > 1) return null;
+  return libelleOuverture(e, t, maintenant);
 }

@@ -16,6 +16,7 @@ import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../..
 import { usePromo } from '../../store/promo';
 import { useCheckout } from '../../store/checkout';
 import { useLoad } from '../../lib/useLoad';
+import { useQuandOuvre } from '../../lib/ouverture';
 import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { getRestaurant } from '../../data/api';
@@ -61,11 +62,12 @@ export default function CartScreen() {
   // Tant que la lecture n'a pas repondu on laisse commander : `create_order`
   // reste l'autorite, et un bouton grise a tort sur un reseau lent couterait
   // plus cher que le trajet inutile jusqu'a l'ecran d'adresse.
-  const { data: restoAJour } = useLoad(
+  const { data: restoAJour, reload: rechargerResto } = useLoad(
     () => (restaurantId ? getRestaurant(restaurantId) : Promise.resolve(null)),
     [restaurantId],
   );
   const commandable = restoAJour ? restoAJour.isOpen : true;
+  const quandOuvre = useQuandOuvre(restoAJour, t, rechargerResto);
 
   // Aperçu de la remise. `total` reste le montant plein : la remise s'en
   // retranche à l'affichage, et c'est `create_order` qui recalculera tout.
@@ -306,7 +308,9 @@ export default function CartScreen() {
           <Text style={styles.fermeAvis}>
             {restoAJour?.listingStatus === 'coming_soon'
               ? t('cart.restaurantBientot')
-              : t('cart.restaurantFerme')}
+              : quandOuvre
+                ? t('cart.restaurantFermeQuand', { quand: quandOuvre })
+                : t('cart.restaurantFerme')}
           </Text>
         ) : null}
         <Button

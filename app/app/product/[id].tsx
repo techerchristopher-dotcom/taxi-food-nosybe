@@ -33,6 +33,7 @@ import { getProductDetail } from '../../data/api';
 import { AvisDuPlat } from '../../components/AvisDuPlat';
 import { PhotoPleinEcran } from '../../components/PhotoPleinEcran';
 import { useLoad } from '../../lib/useLoad';
+import { useQuandOuvre } from '../../lib/ouverture';
 import { useSession } from '../../store/session';
 import { RestaurantContext, useCart } from '../../store/cart';
 import { lienProduit, textePartageProduit } from '../../lib/partage';
@@ -46,9 +47,10 @@ export default function ProductDetailScreen() {
   const { width } = useWindowDimensions();
   const { t } = useTranslation();
 
-  const { data, loading } = useLoad(() => getProductDetail(id!), [id]);
+  const { data, loading, reload: rechargerProduit } = useLoad(() => getProductDetail(id!), [id]);
   const product = data?.product ?? null;
   const restaurant = data?.restaurant ?? null;
+  const quandOuvre = useQuandOuvre(restaurant, t, rechargerProduit);
   const category = data?.category ?? null;
   // Plat d'un restaurant retire du catalogue (`hidden`) : introuvable, sauf pour
   // le personnel de ce restaurant. Voir restaurant/[id].tsx.
@@ -439,7 +441,7 @@ export default function ProductDetailScreen() {
               {!(restaurant?.isOpen ?? false)
                 ? restaurant?.listingStatus === 'coming_soon'
                   ? t('product.restaurantBientot')
-                  : t('product.restaurantFerme')
+                  : quandOuvre ?? t('product.restaurantFerme')
                 : !product.isAvailable
                   ? t(product.listingStatus === 'coming_soon'
                       ? 'product.produitBientot'

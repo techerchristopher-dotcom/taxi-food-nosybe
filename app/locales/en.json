@@ -148,6 +148,7 @@
     "share": "Share this restaurant",
     "categoryServedFrom": "{{categorie}} is served from {{de}} to {{a}}. You can browse the menu, but these dishes can't be ordered yet.",
     "fermeBandeau": "This restaurant is closed right now. You can browse the menu, but not order — come back when it opens.",
+    "fermeBandeauQuand": "Closed right now · {{quand}}. You can already browse the menu: ordering opens then.",
     "prevenirBtn": "Notify me when it opens",
     "prevenuOk": "You will be notified when it opens",
     "bientotBandeau": "This restaurant is coming soon to Taxi Food. You can browse its menu, ordering is not open yet."
@@ -218,6 +219,7 @@
     "subtotal": "Subtotal",
     "order": "Order",
     "restaurantFerme": "This restaurant is closed right now. Your cart is kept.",
+    "restaurantFermeQuand": "This restaurant is closed right now · {{quand}}. Your cart is kept.",
     "restaurantBientot": "This restaurant is not taking orders yet. Your cart is kept."
   },
   "address": {

@@ -148,6 +148,7 @@
     "share": "Condividi questo ristorante",
     "categoryServedFrom": "{{categorie}} si serve dalle {{de}} alle {{a}}. Puoi guardare il menu, ma questi piatti non sono ancora ordinabili.",
     "fermeBandeau": "Questo ristorante è chiuso in questo momento. Puoi consultare il menu, ma non ordinare — torna all’apertura.",
+    "fermeBandeauQuand": "Chiuso in questo momento · {{quand}}. Puoi già consultare il menu: gli ordini si aprono a quell'ora.",
     "prevenirBtn": "Avvisami all'apertura",
     "prevenuOk": "Sarai avvisato all'apertura",
     "bientotBandeau": "Questo ristorante arriva presto su Taxi Food. Puoi scoprire il menu, gli ordini non sono ancora aperti."
@@ -218,6 +219,7 @@
     "subtotal": "Subtotale",
     "order": "Ordina",
     "restaurantFerme": "Questo ristorante è chiuso in questo momento. Il tuo carrello resta.",
+    "restaurantFermeQuand": "Questo ristorante è chiuso in questo momento · {{quand}}. Il tuo carrello resta.",
     "restaurantBientot": "Questo ristorante non accetta ancora ordini. Il tuo carrello resta."
   },
   "address": {

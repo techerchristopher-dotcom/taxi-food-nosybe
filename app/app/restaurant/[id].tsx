@@ -37,6 +37,7 @@ const BANNER_HEIGHT = 200;
 import { getFraisLivraison, getMenu, getRestaurant, monInteretRestaurant, noterInteretRestaurant } from '../../data/api';
 import { signInFor } from '../../store/authIntent';
 import { useLoad } from '../../lib/useLoad';
+import { useQuandOuvre } from '../../lib/ouverture';
 import { nombre } from '../../lib/nombre';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
 import { useSession } from '../../store/session';
@@ -49,7 +50,7 @@ export default function RestaurantMenuScreen() {
   const { width } = useWindowDimensions();
   const { t } = useTranslation();
 
-  const { data: restaurant, loading } = useLoad(() => getRestaurant(id!), [id]);
+  const { data: restaurant, loading, reload: rechargerRestaurant } = useLoad(() => getRestaurant(id!), [id]);
   // ⚠️ Un restaurant `hidden` a quitte le catalogue (Taxi Be, 2026-09-17) : un
   // ancien lien partage ou un lien profond ne doit pas le rouvrir. Seul SON
   // personnel le voit encore — dont le compte de demonstration Apple.
@@ -103,6 +104,7 @@ export default function RestaurantMenuScreen() {
   const count = useCart((s) => s.lines.reduce((n, l) => n + l.quantity, 0));
   const total = useCart((s) => s.total());
   const cartRestaurantName = useCart((s) => s.restaurantName);
+  const quandOuvre = useQuandOuvre(restaurant, t, rechargerRestaurant);
 
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState<Product | null>(null);
@@ -352,7 +354,9 @@ export default function RestaurantMenuScreen() {
               <Text style={styles.horsServiceTexte}>
                 {restaurant.listingStatus === 'coming_soon'
                   ? t('restaurant.bientotBandeau')
-                  : t('restaurant.fermeBandeau')}
+                  : quandOuvre
+                    ? t('restaurant.fermeBandeauQuand', { quand: quandOuvre })
+                    : t('restaurant.fermeBandeau')}
               </Text>
               {/* En négociation : à la place d'un « Commander » grisé, on capte
                   l'intérêt. Un tap, et la personne sera prévenue à l'ouverture

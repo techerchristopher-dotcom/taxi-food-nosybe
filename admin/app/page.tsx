@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Annonces } from '../components/Annonces';
 import { Audience } from '../components/Audience';
 import { Bandeaux } from '../components/Bandeaux';
+import { Promos } from '../components/Promos';
 import { Avis } from '../components/Avis';
 import { CodesOfferts } from '../components/CodesOfferts';
 import { PorteMonnaie } from '../components/PorteMonnaie';
@@ -22,7 +23,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'messages' | 'telephone' | 'annonces' | 'bandeau' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
+type Tab = 'realtime' | 'messages' | 'telephone' | 'annonces' | 'bandeau' | 'promos' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -121,6 +122,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'bandeau' ? 'active' : ''}`} onClick={() => setTab('bandeau')}>
           📢 Bandeau
         </button>
+        <button className={`tab ${tab === 'promos' ? 'active' : ''}`} onClick={() => setTab('promos')}>
+          🏷️ Promos
+        </button>
         <button className={`tab ${tab === 'audience' ? 'active' : ''}`} onClick={() => setTab('audience')}>
           📈 Audience
         </button>
@@ -169,6 +173,7 @@ export default function AdminPage() {
       {tab === 'telephone' && <CommandeTelephone />}
       {tab === 'annonces' && <Annonces />}
       {tab === 'bandeau' && <Bandeaux />}
+      {tab === 'promos' && <Promos />}
       {tab === 'audience' && <Audience />}
       {tab === 'avis' && <Avis />}
       {tab === 'remboursements' && <Remboursements />}

@@ -592,6 +592,11 @@
     "message": "Bonjour Taxi Food 👋 J'ai une question : ",
     "label": "Écrire à Taxi Food sur WhatsApp"
   },
+  "offres": {
+      "title": "Offres de la semaine",
+      "subtitle": "Prix cassés, pour quelques jours seulement",
+      "jusquA": "Jusqu'à {{jour}} inclus"
+  },
   "nouveautes": {
     "title": "Nouveau sur Taxi Food",
     "subtitle_one": "Il vient de rejoindre l'aventure : découvre sa carte.",

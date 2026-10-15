@@ -62,7 +62,14 @@ export type Product = {
   categoryId: string;
   name: string;
   description: string;
-  price: number; // ariary
+  price: number; // ariary — prix CATALOGUE (celui que le restaurateur modifie), jamais le prix promo
+  /**
+   * Prix promo en cours (table `promotions`, colonne calculée `prix_promo`), null sinon.
+   * ⚠️ Pour afficher ou facturer côté client, passer TOUJOURS par `prixClient()` : il ignore une
+   * promo terminée (panier persisté jusqu'à lundi) — on facture moins qu'annoncé, jamais plus.
+   */
+  promoPrice?: number | null;
+  promoEnd?: string | null;
   isAvailable: boolean;
   /**
    * Libellé de l'indisponibilité — RIEN D'AUTRE.
@@ -689,4 +696,24 @@ export function addressIcon(label: string | null | undefined): Address['icon'] {
   if (l.includes('maison') || l.includes('villa') || l.includes('home')) return 'home';
   if (l.includes('bureau') || l.includes('travail') || l.includes('work')) return 'work';
   return 'location_on';
+}
+
+
+/** Une promo est-elle en cours sur ce plat, à cet instant ? (`promoEnd` vient de la base.) */
+export function enPromo(p: { price: number; promoPrice?: number | null; promoEnd?: string | null }, maintenant = Date.now()): boolean {
+  return (
+    p.promoPrice != null &&
+    p.promoPrice < p.price &&
+    (!p.promoEnd || new Date(p.promoEnd).getTime() > maintenant)
+  );
+}
+
+/** Le prix que voit et paie le client : promo en cours, sinon prix catalogue. */
+export function prixClient(p: { price: number; promoPrice?: number | null; promoEnd?: string | null }): number {
+  return enPromo(p) ? (p.promoPrice as number) : p.price;
+}
+
+/** Remise en pourcentage, arrondie (« −10 % »). */
+export function pourcentRemise(prix: number, promo: number): number {
+  return Math.round(((prix - promo) / prix) * 100);
 }

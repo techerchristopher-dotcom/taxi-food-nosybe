@@ -27,6 +27,7 @@ import { AvisApercu } from '../../components/AvisApercu';
 import { OpenBadge, RestaurantLogo } from '../../components/primitives';
 import { ProductRow } from '../../components/ProductRow';
 import { ProductThumb } from '../../components/ProductThumb';
+import { Prix } from '../../components/Prix';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { BulleWhatsApp } from '../../components/BulleWhatsApp';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
@@ -283,7 +284,7 @@ export default function RestaurantMenuScreen() {
                       <Text style={styles.featuredName} numberOfLines={1}>
                         {p.name}
                       </Text>
-                      <Text style={styles.featuredPrice}>{formatAr(p.price)}</Text>
+                      <Prix p={p} style={styles.featuredPrice} />
                       {/* Même repère que sur la carte : il doit se voir AVANT d'ouvrir le plat. */}
                       {p.dietTags?.includes('porc') ? (
                         <View style={styles.featuredDiet}>

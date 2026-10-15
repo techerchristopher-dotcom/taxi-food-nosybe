@@ -592,6 +592,11 @@
     "message": "Hello Taxi Food 👋 I have a question: ",
     "label": "Message Taxi Food on WhatsApp"
   },
+  "offres": {
+      "title": "Deals of the week",
+      "subtitle": "Slashed prices, for a few days only",
+      "jusquA": "Until {{jour}}"
+  },
   "nouveautes": {
     "title": "New on Taxi Food",
     "subtitle_one": "Just joined us — take a look at the menu.",

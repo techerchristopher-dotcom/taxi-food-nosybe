@@ -17,7 +17,8 @@ import { Icon } from '../../components/Icon';
 import { QtyStepper } from '../../components/QtyStepper';
 import { ConflictSheet } from '../../components/ConflictSheet';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { imageUrl, OptionGroup, SelectedOption, thumbnailUrl } from '../../data/types';
+import { imageUrl, OptionGroup, prixClient, SelectedOption, thumbnailUrl } from '../../data/types';
+import { Prix } from '../../components/Prix';
 
 /**
  * Hauteur du bandeau photo : ~62 % de la largeur (232 pt sur un écran de 375), bornée.
@@ -174,7 +175,7 @@ export default function ProductDetailScreen() {
     return n >= g.minSelect && n <= g.maxSelect;
   });
 
-  const unitPrice = product.price + selectedOptions.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
+  const unitPrice = prixClient(product) + selectedOptions.reduce((n, o) => n + o.priceDelta * o.quantity, 0);
   const lineTotal = unitPrice * qty;
 
   /**
@@ -271,7 +272,7 @@ export default function ProductDetailScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
           <View style={styles.titleRow}>
             <Text style={styles.name}>{product.name}</Text>
-            <Text style={styles.price}>{formatAr(product.price)}</Text>
+            <Prix p={product} style={styles.price} />
           </View>
           {/* ⚠️ Repère alimentaire, ici AUSSI. Il n'existait que sur la ligne de la carte
               (`ProductRow`) : un plat du jour, qui n'est dans aucune catégorie, ne passait

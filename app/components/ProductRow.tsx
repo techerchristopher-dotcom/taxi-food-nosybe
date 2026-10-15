@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Prix } from './Prix';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { ProductThumb } from './ProductThumb';
@@ -80,10 +81,10 @@ export function ProductRow({
         ) : null}
         <View style={[styles.prixLigne, aPhoto && styles.prixLignePhoto]}>
           {available ? (
-            <Text style={styles.price}>{formatAr(product.price)}</Text>
+            <Prix p={product} style={styles.price} />
           ) : (
             <View style={styles.unavailRow}>
-              <Text style={styles.priceMuted}>{formatAr(product.price)}</Text>
+              <Prix p={product} style={styles.priceMuted} muted badge={false} />
               <View style={styles.unavailBadge}>
                 {/* ⚠️ « Bientôt de retour » raconte une RUPTURE — un plat qui revient.
                     Les milkshakes de La Cabane n'ont jamais été servis : ils s'annoncent.

@@ -8,7 +8,8 @@ import { Icon } from '../../components/Icon';
 import { FeaturedRestaurantCard, RestaurantRow } from '../../components/RestaurantCard';
 import { colors, fonts, radius, spacing } from '../../theme/tokens';
 import { useLoad } from '../../lib/useLoad';
-import { getBandeau, listAddresses, listNouveautes, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { getBandeau, listAddresses, listNouveautes, listOffresSemaine, listPlatsDuJour, listRestaurants } from '../../data/api';
+import { CarteOffre } from '../../components/Offre';
 import { Bandeau } from '../../components/Bandeau';
 import { CarteNouveaute } from '../../components/Nouveaute';
 import { CartePlatDuJour } from '../../components/PlatDuJour';
@@ -65,6 +66,8 @@ export default function HomeScreen() {
   // ✨ Les restaurants arrivés depuis moins de 14 jours (RPC `nouveautes_publiques`).
   // Indépendante elle aussi : si elle échoue, la rangée disparaît, l'accueil reste.
   const { data: nouveautes } = useLoad(() => listNouveautes(), []);
+  // 🏷️ Les plats en promo (RPC `offres_semaine_publiques`) : À LA UNE, tout en haut.
+  const { data: offres } = useLoad(() => listOffresSemaine(), []);
   // 📢 Le bandeau d'annonce de l'admin. Indépendant lui aussi : en échec, il n'existe pas.
   const { data: bandeau } = useLoad(() => getBandeau(), []);
   // Le catalogue est public : `listRestaurants()` n'a besoin d'aucun compte. Les adresses,
@@ -195,6 +198,35 @@ export default function HomeScreen() {
             </View>
             <Icon name="chevron_right" size={20} color={colors.textFaint} />
           </Pressable>
+        ) : null}
+
+        {/* 🏷️ OFFRES DE LA SEMAINE — à la une, au-dessus de tout le reste (décision du porteur
+            du projet, 2026-10-15). Une promo a une date de fin : la rangée disparaît d'elle-même
+            quand il n'y en a plus. Masquée pendant une recherche, comme les rangées voisines. */}
+        {!searching && offres && offres.length > 0 ? (
+          <View style={styles.jourWrap}>
+            <View style={styles.jourHead}>
+              <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                <Text style={styles.jourTitle}>🏷️ {t('offres.title')}</Text>
+                <Text style={styles.jourSub} numberOfLines={2}>{t('offres.subtitle')}</Text>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.jourScroll}
+              contentContainerStyle={styles.nouveauRow}
+            >
+              {offres.map((o) => (
+                <CarteOffre
+                  key={o.promotionId}
+                  o={o}
+                  width={largeurNouveaute(offres.length)}
+                  onPress={() => router.push(`/product/${o.productId}`)}
+                />
+              ))}
+            </ScrollView>
+          </View>
         ) : null}
 
         {/* ✨ NOUVEAU SUR TAXI FOOD — au-dessus des plats du jour (décision du porteur du

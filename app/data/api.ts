@@ -118,11 +118,13 @@ type ProductRow = {
   packaging_fee?: number | null;
   packaging_label?: string | null;
   sort_order?: number | null;
+  prix_promo?: number | null;
+  promo_fin?: string | null;
 };
 
 /** Colonnes produit demandées partout : une seule source pour ne pas en oublier une. */
 const PRODUCT_COLS =
-  'id, restaurant_id, category_id, name, description, price, is_available, listing_status, photo_url, vraie_photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order';
+  'id, restaurant_id, category_id, name, description, price, is_available, listing_status, photo_url, vraie_photo_url, stock_quantity, is_featured, featured_label, in_menu, is_archived, diet_tags, packaging_fee, packaging_label, sort_order, prix_promo, promo_fin';
 
 type CategoryRow = {
   id: string;
@@ -223,6 +225,9 @@ function mapProduct(p: ProductRow, hasOptions = false): Product {
     name: p.name,
     description: p.description ?? '',
     price: p.price,
+    // Promo en cours, décidée par la base (`prix_promo`, fin automatique) — voir `prixClient()`.
+    promoPrice: p.prix_promo ?? null,
+    promoEnd: p.promo_fin ?? null,
     isAvailable: p.is_available,
     // ⚠️ Ne vaut QUE le libellé du badge — la commande reste coupée par `isAvailable`.
     // Si `listing_status` manquait à PRODUCT_COLS, on lirait `undefined` et tout
@@ -649,6 +654,53 @@ export async function listNouveautes(): Promise<Nouveaute[]> {
     opensInDays: r.ouvre_dans_jours ?? null,
     opensAt: r.ouvre_a,
     plats: (r.plats ?? []).map((p) => ({ id: p.id, name: tr(p.nom), price: p.prix, photoUrl: p.photo_url })),
+  }));
+}
+
+/**
+ * 🏷️ Les plats en promo en ce moment (RPC `offres_semaine_publiques`, table `promotions`).
+ * Ouverts d'abord, puis la plus forte remise. Vide hors promo : la rubrique disparaît.
+ */
+export type Offre = {
+  promotionId: string;
+  productId: string;
+  name: string;
+  photoUrl: string | null;
+  price: number;
+  promoPrice: number;
+  fin: string;
+  libelle: string | null;
+  restaurantId: string;
+  restaurantName: string;
+  isOpen: boolean;
+  opensAt: string | null;
+  opensInDays: number | null;
+};
+
+type OffreRow = {
+  promotion_id: string; product_id: string; nom: string; photo_url: string | null; prix: number;
+  prix_promo: number; fin: string; libelle: string | null; restaurant_id: string; restaurant_nom: string;
+  ouvert: boolean; ouvre_a: string | null; ouvre_dans_jours: number | null;
+};
+
+export async function listOffresSemaine(): Promise<Offre[]> {
+  await preparerTraductions();
+  const { data, error } = await supabase.rpc('offres_semaine_publiques');
+  if (error) throw error;
+  return ((data as OffreRow[] | null) ?? []).map((r) => ({
+    promotionId: r.promotion_id,
+    productId: r.product_id,
+    name: tr(r.nom),
+    photoUrl: r.photo_url,
+    price: r.prix,
+    promoPrice: r.prix_promo,
+    fin: r.fin,
+    libelle: r.libelle,
+    restaurantId: r.restaurant_id,
+    restaurantName: r.restaurant_nom,
+    isOpen: r.ouvert,
+    opensAt: r.ouvre_a,
+    opensInDays: r.ouvre_dans_jours ?? null,
   }));
 }
 

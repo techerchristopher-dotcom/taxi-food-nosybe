@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import { mesurer } from '../lib/mesure';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { optionsTotal, Product, SelectedOption } from '../data/types';
+import { optionsTotal, prixClient, Product, SelectedOption } from '../data/types';
 
 const CART_KEY = 'taxi-food.cart';
 
@@ -49,7 +49,8 @@ function cleDeLigne(productId: string, options: SelectedOption[], comment?: stri
 
 /** Prix unitaire d'une ligne = base + suppléments. */
 export function lineUnitPrice(line: CartLine): number {
-  return line.product.price + optionsTotal(line.options);
+  // `prixClient` : prix promo tant qu'il court, prix catalogue sinon (panier gardé après la fin).
+  return prixClient(line.product) + optionsTotal(line.options);
 }
 
 /**

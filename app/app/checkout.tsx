@@ -13,7 +13,16 @@ import { colors, fonts, formatAr, spacing } from '../theme/tokens';
 import { formatAddressLine, paymentShort } from '../data/types';
 import { mesurer } from '../lib/mesure';
 import { enregistrerProvenance } from '../lib/provenance';
-import { createOrder, listAddresses, raisonPromoDepuisErreur, refusServiceDepuisErreur } from '../data/api';
+import {
+  createOrder,
+  getRestaurant,
+  listAddresses,
+  raisonPromoDepuisErreur,
+  refusReservationDepuisErreur,
+  refusServiceDepuisErreur,
+} from '../data/api';
+import { ChoixHeureLivraison } from '../components/ChoixHeureLivraison';
+import { heureNosyBe } from '../lib/reservation';
 import {
   apercuMontantMineur,
   ConfigPaiement,
@@ -105,6 +114,17 @@ function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // QUAND livrer (2026-10-16) : null = dès que possible ; sinon une heure du jour
+  // proposée par la base. Restaurant fermé = un créneau est obligatoire.
+  const { data: resto } = useLoad(
+    () => (restaurantId ? getRestaurant(restaurantId) : Promise.resolve(null)),
+    [restaurantId],
+  );
+  const ouvert = resto ? resto.isOpen : null;
+  const [livraisonSouhaitee, setLivraisonSouhaitee] = useState<string | null>(null);
+  const productIds = useMemo(() => Array.from(new Set(lines.map((l) => l.product.id))), [lines]);
+  const heureManquante = ouvert === false && !livraisonSouhaitee;
+
   // Code promo — état PARTAGÉ avec le panier (`store/promo.ts`). Le client l'a
   // très probablement déjà saisi là-bas, au moment où les frais de livraison sont
   // apparus dans son total : il le retrouve ici rempli, remise comprise, et n'a
@@ -162,10 +182,15 @@ function CheckoutForm() {
       setError(t('checkout.needAddress'));
       return;
     }
+    if (heureManquante) {
+      setError(t('reservation.choisirHeure'));
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
       const order = await createOrder({
+        livraisonSouhaitee,
         restaurantId,
         addressId,
         paymentMethod,
@@ -208,6 +233,7 @@ function CheckoutForm() {
         orderNumber: order.orderNumber,
         total: String(order.total),
         payment: paymentMethod,
+        ...(livraisonSouhaitee ? { prevue: livraisonSouhaitee } : {}),
       };
       // ⚠️ La carte s'encaisse AVANT la confirmation. On ne va sur
       // `/confirmation` que quand il n'y a rien à débiter, sinon on afficherait
@@ -229,7 +255,17 @@ function CheckoutForm() {
       // client doit lire l'heure à laquelle revenir.
       const refus = refusServiceDepuisErreur(msg);
       const raison = raisonPromoDepuisErreur(msg);
-      if (refus) {
+      const refusResa = refusReservationDepuisErreur(msg);
+      if (refusResa) {
+        // Le créneau n'est plus tenable (le temps a passé, la cuisine s'est chargée) :
+        // on le dit, avec la première heure encore possible si la base la donne.
+        setLivraisonSouhaitee(null);
+        setError(
+          refusResa.premier
+            ? t('reservation.refusAvecPremier', { heure: refusResa.premier })
+            : t('reservation.refus'),
+        );
+      } else if (refus) {
         setError(
           refus.motif === 'restaurant_ferme'
             ? t('checkout.restaurantFerme')
@@ -296,6 +332,20 @@ function CheckoutForm() {
             <Text style={styles.modify}>{t('common.modify')}</Text>
           </Pressable>
         </Card>
+
+        {restaurantId ? (
+          <>
+            <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('reservation.quand')}</SectionLabel>
+            <ChoixHeureLivraison
+              restaurantId={restaurantId}
+              addressId={addressId}
+              productIds={productIds}
+              ouvert={ouvert}
+              valeur={livraisonSouhaitee}
+              onChange={setLivraisonSouhaitee}
+            />
+          </>
+        ) : null}
 
         <SectionLabel style={{ marginTop: 20, marginBottom: 10 }}>{t('promo.section')}</SectionLabel>
         <Card>
@@ -434,7 +484,17 @@ function CheckoutForm() {
           <Text style={styles.totalLabel}>{t('checkout.totalToPay', { method: paymentShort(paymentMethod) })}</Text>
           <Text style={styles.totalValue}>{formatAr(totalAPayer)}</Text>
         </View>
-        <Button label={t('checkout.validate')} icon="check_circle" onPress={validate} loading={submitting} />
+        <Button
+          label={
+            livraisonSouhaitee
+              ? t('reservation.valider', { heure: heureNosyBe(livraisonSouhaitee, i18n.language) })
+              : t('checkout.validate')
+          }
+          icon="check_circle"
+          onPress={validate}
+          loading={submitting}
+          disabled={heureManquante}
+        />
       </BottomBar>
     </View>
   );

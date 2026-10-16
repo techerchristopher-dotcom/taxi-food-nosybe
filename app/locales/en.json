@@ -802,5 +802,30 @@
       "profilNonLus": "{{count}} new reply",
       "profilNonLus_other": "{{count}} new replies"
     }
-  }
+  },
+    "reservation": {
+      "bandeauResto": "Closed right now · {{quand}}. You can already order: you'll pick your delivery time at checkout.",
+      "panier": "This restaurant is closed right now · {{quand}}. You can order now and be delivered later today.",
+      "quand": "When do you want your delivery?",
+      "checkoutFerme": "The restaurant is closed right now. Pick a delivery time for today: it will receive your order when it opens.",
+      "aucunCreneau": "No more delivery times available today for this restaurant.",
+      "desQuePossible": "As soon as possible",
+      "noteOuvert": "Delivery planned around {{heure}}. The restaurant will prepare it for that time.",
+      "noteFerme": "Delivery planned around {{heure}}. The restaurant receives your order when it opens and prepares it for that time.",
+      "choisirHeure": "Pick your delivery time.",
+      "refusAvecPremier": "That time is no longer possible. Earliest delivery: {{heure}}.",
+      "refus": "That delivery time is no longer possible. Please pick another one.",
+      "valider": "Order for {{heure}}",
+      "prevueLabel": "Planned delivery",
+      "suiviTitre": "Order planned for {{heure}}",
+      "suiviAttenteOuverture": "{{resto}} will receive your order when it opens, at {{heure}}.",
+      "suiviAttenteReponse": "{{resto}} is about to confirm your order.",
+      "prevueA": "Delivery planned around {{heure}}",
+      "indicatif": "Approximate time, based on the restaurant's usual timings.",
+      "annuler": "Cancel my order",
+      "annulerConfirmer": "Yes, cancel my order",
+      "garder": "No, keep it",
+      "annulerTropTard": "The restaurant has already accepted your order: it can't be cancelled here anymore. Message us on WhatsApp.",
+      "annulerEchec": "The cancellation didn't go through. Please try again in a moment."
+    }
 }

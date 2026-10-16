@@ -17,6 +17,7 @@ import { usePromo } from '../../store/promo';
 import { useCheckout } from '../../store/checkout';
 import { useLoad } from '../../lib/useLoad';
 import { useQuandOuvre } from '../../lib/ouverture';
+import { reservableAujourdhui } from '../../lib/reservation';
 import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
 import { getCartSuggestions, Suggestion } from '../../data/suggestions';
 import { getRestaurant } from '../../data/api';
@@ -66,7 +67,8 @@ export default function CartScreen() {
     () => (restaurantId ? getRestaurant(restaurantId) : Promise.resolve(null)),
     [restaurantId],
   );
-  const commandable = restoAJour ? restoAJour.isOpen : true;
+  const reservable = reservableAujourdhui(restoAJour);
+  const commandable = restoAJour ? restoAJour.isOpen || reservable : true;
   const quandOuvre = useQuandOuvre(restoAJour, t, rechargerResto);
 
   // Aperçu de la remise. `total` reste le montant plein : la remise s'en
@@ -304,9 +306,11 @@ export default function CartScreen() {
       </ScrollView>
 
       <BottomBar>
-        {!commandable ? (
+        {restoAJour && !restoAJour.isOpen ? (
           <Text style={styles.fermeAvis}>
-            {restoAJour?.listingStatus === 'coming_soon'
+            {reservable
+              ? t('reservation.panier', { quand: quandOuvre ?? '' })
+              : restoAJour?.listingStatus === 'coming_soon'
               ? t('cart.restaurantBientot')
               : quandOuvre
                 ? t('cart.restaurantFermeQuand', { quand: quandOuvre })

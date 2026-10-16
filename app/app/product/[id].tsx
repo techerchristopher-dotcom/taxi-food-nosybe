@@ -35,6 +35,7 @@ import { AvisDuPlat } from '../../components/AvisDuPlat';
 import { PhotoPleinEcran } from '../../components/PhotoPleinEcran';
 import { useLoad } from '../../lib/useLoad';
 import { useQuandOuvre } from '../../lib/ouverture';
+import { reservableAujourdhui } from '../../lib/reservation';
 import { useSession } from '../../store/session';
 import { RestaurantContext, useCart } from '../../store/cart';
 import { lienProduit, textePartageProduit } from '../../lib/partage';
@@ -148,8 +149,13 @@ export default function ProductDetailScreen() {
   // signale le 2026-09-11. `servedNow` vient de la base, jamais de l'horloge du
   // telephone ; absent (categorie illisible), on ne bloque pas : la base tranche.
   const categorieServie = category?.servedNow ?? true;
+  // Fermé mais rouvre aujourd'hui : commandable pour plus tard (heure choisie au
+  // paiement). La plage horaire de la catégorie est alors vérifiée par la base à
+  // l'heure du LANCEMENT, pas maintenant.
+  const reservable = reservableAujourdhui(restaurant);
   const commandable =
-    (restaurant?.isOpen ?? false) && product.isAvailable && categorieServie;
+    ((restaurant?.isOpen ?? false) || reservable) && product.isAvailable &&
+    (reservable || categorieServie);
 
   const ctx: RestaurantContext | null = restaurant
     ? {
@@ -501,7 +507,7 @@ export default function ProductDetailScreen() {
               {/* Le bouton doit dire POURQUOI il est mort, et le restaurant passe
                   avant le produit : un restaurant ferme ne sert rien du tout, annoncer
                   « Bientot disponible » sur le plat serait alors trompeur. */}
-              {!(restaurant?.isOpen ?? false)
+              {!(restaurant?.isOpen ?? false) && !reservable
                 ? restaurant?.listingStatus === 'coming_soon'
                   ? t('product.restaurantBientot')
                   : quandOuvre ?? t('product.restaurantFerme')
@@ -509,7 +515,7 @@ export default function ProductDetailScreen() {
                   ? t(product.listingStatus === 'coming_soon'
                       ? 'product.produitBientot'
                       : 'product.produitIndisponible')
-                : !categorieServie
+                : !categorieServie && !reservable
                   ? category?.servingFrom
                     ? t('product.servedFrom', { de: category.servingFrom })
                     : t('product.horsService')

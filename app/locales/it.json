@@ -802,5 +802,30 @@
       "profilNonLus": "{{count}} nuova risposta",
       "profilNonLus_other": "{{count}} nuove risposte"
     }
-  }
+  },
+    "reservation": {
+      "bandeauResto": "Chiuso al momento · {{quand}}. Puoi già ordinare: sceglierai l'orario di consegna al momento del pagamento.",
+      "panier": "Il ristorante è chiuso al momento · {{quand}}. Puoi ordinare ora ed essere consegnato più tardi oggi.",
+      "quand": "Quando vuoi la consegna?",
+      "checkoutFerme": "Il ristorante è chiuso al momento. Scegli l'orario di consegna, oggi: riceverà il tuo ordine all'apertura.",
+      "aucunCreneau": "Nessun orario di consegna ancora disponibile oggi per questo ristorante.",
+      "desQuePossible": "Il prima possibile",
+      "noteOuvert": "Consegna prevista verso le {{heure}}. Il ristorante la preparerà per quell'ora.",
+      "noteFerme": "Consegna prevista verso le {{heure}}. Il ristorante riceve il tuo ordine all'apertura e lo prepara per quell'ora.",
+      "choisirHeure": "Scegli l'orario di consegna.",
+      "refusAvecPremier": "Questo orario non è più possibile. Prima consegna possibile: {{heure}}.",
+      "refus": "Questo orario di consegna non è più possibile. Scegline un altro.",
+      "valider": "Ordina per le {{heure}}",
+      "prevueLabel": "Consegna prevista",
+      "suiviTitre": "Ordine previsto per le {{heure}}",
+      "suiviAttenteOuverture": "{{resto}} riceverà il tuo ordine all'apertura, alle {{heure}}.",
+      "suiviAttenteReponse": "{{resto}} sta per confermare il tuo ordine.",
+      "prevueA": "Consegna prevista verso le {{heure}}",
+      "indicatif": "Orario indicativo, calcolato sui tempi abituali del ristorante.",
+      "annuler": "Annulla il mio ordine",
+      "annulerConfirmer": "Sì, annulla il mio ordine",
+      "garder": "No, lo tengo",
+      "annulerTropTard": "Il ristorante ha già accettato il tuo ordine: non può più essere annullato qui. Scrivici su WhatsApp.",
+      "annulerEchec": "L'annullamento non è andato a buon fine. Riprova tra un attimo."
+    }
 }

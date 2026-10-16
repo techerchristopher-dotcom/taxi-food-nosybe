@@ -10,6 +10,7 @@ import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/token
 import { paymentLabel, PaymentMethod } from '../data/types';
 import { getEstimationCommande, getOrderById } from '../data/api';
 import { useLoad } from '../lib/useLoad';
+import { heureNosyBe } from '../lib/reservation';
 
 /** Écran 08 — Confirmation de commande. */
 export default function ConfirmationScreen() {
@@ -20,12 +21,14 @@ export default function ConfirmationScreen() {
     orderNumber?: string;
     total?: string;
     payment?: PaymentMethod;
+    /** Commande programmée : heure de livraison choisie (ISO). */
+    prevue?: string;
   }>();
   const orderId = params.orderId;
   const passedTotal = params.total ? Number(params.total) : null;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: order } = useLoad(() => getOrderById(orderId!), [orderId]);
   // L'estimation FIGÉE par la base (2026-10-07) remplace le « 25–40 min » écrit en dur ;
   // commande sans estimation → ancien libellé.
@@ -37,6 +40,8 @@ export default function ConfirmationScreen() {
         heure: `${String(heureLivree.getHours()).padStart(2, '0')}h${String(heureLivree.getMinutes()).padStart(2, '0')}`,
       })
     : order?.etaLabel;
+  // Commande programmée : l'heure choisie remplace toute estimation « ~45 min ».
+  const prevue = order?.livraisonSouhaitee ?? params.prevue ?? null;
 
   const displayTotal = order?.total ?? passedTotal ?? 0;
   const displayNumber = order?.orderNumber ?? params.orderNumber ?? 'TF-••••';
@@ -123,7 +128,11 @@ export default function ConfirmationScreen() {
           {displayPayment !== 'cb' ? (
             <CarteOrangeMoney orderId={orderId} orderNumber={displayNumber} montant={displayTotal} />
           ) : null}
-          {etaAffiche ? <Detail label={t('confirmation.eta')} value={etaAffiche} /> : null}
+          {prevue ? (
+            <Detail label={t('reservation.prevueLabel')} value={heureNosyBe(prevue, i18n.language)} />
+          ) : etaAffiche ? (
+            <Detail label={t('confirmation.eta')} value={etaAffiche} />
+          ) : null}
         </View>
       </ScrollView>
 

@@ -16,6 +16,8 @@ import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
 import { Order, paymentShort, statusStep } from '../../data/types';
 import { getEstimationCommande, getOrderById } from '../../data/api';
 import { useLoad } from '../../lib/useLoad';
+import { heureNosyBe } from '../../lib/reservation';
+import { BlocReservation } from '../../components/BlocReservation';
 import { motifRefusAffiche } from '../../lib/motifRefus';
 import { BoutonMessagerie } from '../../components/BoutonMessagerie';
 import { useNonLus } from '../../lib/useNonLus';
@@ -39,7 +41,7 @@ export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const { data: order, loading, reload } = useLoad(() => getOrderById(id!), [id]);
   // Messages non lus de la conversation de la commande (2026-10-13).
@@ -115,7 +117,10 @@ export default function OrderTrackingScreen() {
   // Le restaurant n'a pas répondu en 3 min : Taxi Food l'a relancé (2026-10-12). Le client
   // le lit ici plutôt que de rester devant « Commande reçue » sans savoir.
   const relance = order.status === 'recue' && !!order.relanceRestaurantLe;
-  const bannerIcon = cancelled ? 'cancel' : relance || (enLivraison && !order.pickedUp) ? 'schedule' : head.icon;
+  // Commande programmée encore en attente du restaurant (2026-10-16).
+  const reservee = order.status === 'recue' && !!order.livraisonSouhaitee && !relance;
+  const enAttenteOuverture = reservee && !!order.transmissionPrevue && !order.transmiseLe;
+  const bannerIcon = cancelled ? 'cancel' : reservee ? 'event' : relance || (enLivraison && !order.pickedUp) ? 'schedule' : head.icon;
   // Jalons posés par le livreur après la récupération : « J'arrive » puis « Je suis là ».
   const livreurLa = enLivraison && !!order.arrivedAt;
   const livreurArrive = enLivraison && !livreurLa && !!order.arrivingAt;
@@ -127,6 +132,8 @@ export default function OrderTrackingScreen() {
     ? t('tracking.refusedTitle')
     : relance
       ? t('tracking.relanceTitle')
+    : reservee
+      ? t('reservation.suiviTitre', { heure: heureNosyBe(order.livraisonSouhaitee!, i18n.language) })
     : livreurLa
       ? t('tracking.courierHere')
       : livreurArrive
@@ -145,6 +152,10 @@ export default function OrderTrackingScreen() {
     ? (motifRefus ?? t('tracking.refusedDefault'))
     : relance
       ? t('tracking.relanceSub', { resto: order.restaurantName })
+    : enAttenteOuverture
+      ? t('reservation.suiviAttenteOuverture', { resto: order.restaurantName, heure: heureNosyBe(order.transmissionPrevue!, i18n.language) })
+    : reservee
+      ? t('reservation.suiviAttenteReponse', { resto: order.restaurantName })
     : livreurLa
       ? t('tracking.courierHereSub')
       : livreurArrive
@@ -247,6 +258,8 @@ export default function OrderTrackingScreen() {
           })}
         </Card>
         )}
+
+        <BlocReservation order={order} onAnnulee={reload} />
 
         <BlocEstimation order={order} estimation={estimation} />
 

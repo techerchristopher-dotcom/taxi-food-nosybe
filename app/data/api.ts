@@ -912,6 +912,10 @@ type OrderJoinRow = {
   arrived_at?: string | null;
   delivered_at?: string | null;
   created_at: string;
+  livraison_souhaitee_a?: string | null;
+  lancement_prevu_a?: string | null;
+  transmission_prevue_a?: string | null;
+  transmise_le?: string | null;
   restaurants: {
     name: string;
     logo_url: string | null;
@@ -946,6 +950,7 @@ type OrderJoinRow = {
 
 const ORDER_SELECT =
   'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
+  'livraison_souhaitee_a, lancement_prevu_a, transmission_prevue_a, transmise_le, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -1020,6 +1025,11 @@ function mapOrder(o: OrderJoinRow): Order {
     createdAt: o.created_at,
     readyAt: o.ready_at ?? null,
     pickedUpAt: o.picked_up_at ?? null,
+    // Commande programmée pour plus tard, le jour même (2026-10-16).
+    livraisonSouhaitee: o.livraison_souhaitee_a ?? null,
+    lancementPrevu: o.lancement_prevu_a ?? null,
+    transmissionPrevue: o.transmission_prevue_a ?? null,
+    transmiseLe: o.transmise_le ?? null,
   };
 }
 
@@ -1258,6 +1268,13 @@ export type CreateOrderInput = {
    * solde et calcule la remise elle-même ; le client n'envoie qu'un oui / non.
    */
   utiliserPorteMonnaie?: boolean;
+  /**
+   * Heure de livraison choisie (ISO), le jour même. Absente = « dès que possible » :
+   * l'appel reste exactement `create_order`. Présente = `commander_programme`, qui
+   * vérifie le créneau, appelle `create_order` et transmet la commande au restaurant
+   * à son ouverture.
+   */
+  livraisonSouhaitee?: string | null;
 };
 
 /**
@@ -1405,6 +1422,50 @@ export function refusServiceDepuisErreur(message: string): RefusService | null {
   return null;
 }
 
+/** Pourquoi la base a refusé une commande pour plus tard. `premier` = 1er créneau possible (« 19:45 »). */
+export type RefusReservation = {
+  motif: 'jour_meme' | 'trop_tot' | 'hors_service' | 'indisponible' | 'introuvable' | 'deja_acceptee';
+  premier: string | null;
+};
+
+export function refusReservationDepuisErreur(message: string): RefusReservation | null {
+  const m = /reservation:([a-z_]+)(?:\|([0-9:]*))?/i.exec(message ?? '');
+  if (!m) return null;
+  return { motif: m[1] as RefusReservation['motif'], premier: m[2] || null };
+}
+
+/** Un créneau de livraison proposable aujourd'hui (heures ISO). */
+export type Creneau = { livraison: string; lancement: string };
+
+/**
+ * Créneaux de livraison du JOUR, par quart d'heure, calculés par la base
+ * (`creneaux_livraison`) : préparation + livraison estimées + 10 min de marge, et
+ * lancement en cuisine dans un service du restaurant. Liste vide = plus rien
+ * aujourd'hui.
+ */
+export async function listerCreneaux(
+  restaurantId: string,
+  addressId: string | null,
+  productIds: string[],
+): Promise<Creneau[]> {
+  const { data, error } = await supabase.rpc('creneaux_livraison', {
+    p_restaurant_id: restaurantId,
+    p_address_id: addressId,
+    p_produits: productIds.length ? productIds : null,
+  });
+  if (error) throw error;
+  return ((data ?? []) as { livraison: string; lancement: string }[]).map((c) => ({
+    livraison: c.livraison,
+    lancement: c.lancement,
+  }));
+}
+
+/** Le client annule sa commande programmée, tant que le restaurant ne l'a pas acceptée. */
+export async function annulerMaReservation(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('annuler_ma_reservation', { p_order_id: orderId });
+  if (error) throw error;
+}
+
 /**
  * Crée une commande via la RPC `create_order` (atomique, options validées et prix
  * recalculés côté serveur). Renvoie le numéro généré par la base (ex. TF-1).
@@ -1424,7 +1485,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{
   // formes — quatre paramètres (les versions déjà installées sur les magasins)
   // et cinq — et c'est le nombre de clés envoyées qui départage. Omettre la clé
   // ferait retomber l'app sur l'ancienne forme, qui ignore les codes promo.
-  const { data, error } = await supabase.rpc('create_order', {
+  const params = {
     p_restaurant_id: input.restaurantId,
     p_address_id: input.addressId,
     p_payment_method: input.paymentMethod,
@@ -1440,7 +1501,16 @@ export async function createOrder(input: CreateOrderInput): Promise<{
     // Clé envoyée SEULEMENT quand le client veut s'en servir : sans elle, l'appel
     // reste exactement celui des versions précédentes (défaut false en base).
     ...(input.utiliserPorteMonnaie ? { p_utiliser_porte_monnaie: true } : {}),
-  });
+  };
+  // Commande pour plus tard : autre porte, mêmes paramètres + l'heure. Sept clés
+  // TOUJOURS envoyées (une seule signature en base, aucune ambiguïté PostgREST).
+  const { data, error } = input.livraisonSouhaitee
+    ? await supabase.rpc('commander_programme', {
+        ...params,
+        p_utiliser_porte_monnaie: !!input.utiliserPorteMonnaie,
+        p_livraison_souhaitee: input.livraisonSouhaitee,
+      })
+    : await supabase.rpc('create_order', params);
   if (error) throw error;
   // La RPC `RETURNS orders` : selon PostgREST/supabase-js, `data` peut arriver soit
   // comme objet unique, soit comme tableau à un élément. On tolère les deux, et on

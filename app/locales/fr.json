@@ -802,5 +802,30 @@
       "profilNonLus": "{{count}} nouvelle réponse",
       "profilNonLus_other": "{{count}} nouvelles réponses"
     }
-  }
+  },
+    "reservation": {
+      "bandeauResto": "Fermé pour le moment · {{quand}}. Tu peux déjà commander : tu choisiras ton heure de livraison au moment de payer.",
+      "panier": "Le restaurant est fermé pour le moment · {{quand}}. Tu peux commander dès maintenant pour être livré plus tard aujourd'hui.",
+      "quand": "Quand veux-tu être livré ?",
+      "checkoutFerme": "Le restaurant est fermé pour le moment. Choisis ton heure de livraison, aujourd'hui : il recevra ta commande à son ouverture.",
+      "aucunCreneau": "Plus aucun créneau de livraison possible aujourd'hui pour ce restaurant.",
+      "desQuePossible": "Dès que possible",
+      "noteOuvert": "Livraison prévue vers {{heure}}. Le restaurant la préparera pour cette heure-là.",
+      "noteFerme": "Livraison prévue vers {{heure}}. Le restaurant reçoit ta commande à son ouverture et la prépare pour cette heure-là.",
+      "choisirHeure": "Choisis ton heure de livraison.",
+      "refusAvecPremier": "Cette heure n'est plus possible. Première livraison possible : {{heure}}.",
+      "refus": "Cette heure de livraison n'est plus possible. Choisis-en une autre.",
+      "valider": "Commander pour {{heure}}",
+      "prevueLabel": "Livraison prévue",
+      "suiviTitre": "Commande prévue pour {{heure}}",
+      "suiviAttenteOuverture": "{{resto}} recevra ta commande à son ouverture, à {{heure}}.",
+      "suiviAttenteReponse": "{{resto}} va confirmer ta commande.",
+      "prevueA": "Livraison prévue vers {{heure}}",
+      "indicatif": "Heure indicative, calculée d'après les délais habituels du restaurant.",
+      "annuler": "Annuler ma commande",
+      "annulerConfirmer": "Oui, annuler ma commande",
+      "garder": "Non, je la garde",
+      "annulerTropTard": "Le restaurant a déjà accepté ta commande : elle ne peut plus être annulée ici. Écris-nous sur WhatsApp.",
+      "annulerEchec": "L'annulation n'a pas abouti. Réessaie dans un instant."
+    }
 }

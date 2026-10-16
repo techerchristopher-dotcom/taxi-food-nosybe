@@ -39,6 +39,7 @@ import { getFraisLivraison, getMenu, getRestaurant, monInteretRestaurant, noterI
 import { signInFor } from '../../store/authIntent';
 import { useLoad } from '../../lib/useLoad';
 import { useQuandOuvre } from '../../lib/ouverture';
+import { reservableAujourdhui } from '../../lib/reservation';
 import { nombre } from '../../lib/nombre';
 import { lineKey, RestaurantContext, useCart } from '../../store/cart';
 import { useSession } from '../../store/session';
@@ -148,7 +149,10 @@ export default function RestaurantMenuScreen() {
   // base refuse (`commandable_maintenant`), et l'ecran doit le dire AVANT que le
   // client compose un panier entier pour se le voir refuser au dernier bouton.
   // `isOpen` vaut deja faux pour un `coming_soon` (voir data/api.ts).
-  const commandable = restaurant.isOpen;
+  // Fermé mais rouvre aujourd'hui : on compose quand même son panier, l'heure de
+  // livraison se choisit au paiement (commande programmée, 2026-10-16).
+  const reservable = reservableAujourdhui(restaurant);
+  const commandable = restaurant.isOpen || reservable;
 
   // ⚠️ Ouvert ne veut pas dire que TOUT se commande. Chez Bidule & Truc ouvre a
   // midi, mais ses pizzas ne sortent du four qu'a 18 h : le bandeau le disait, et
@@ -159,7 +163,7 @@ export default function RestaurantMenuScreen() {
   const servieMaintenant = (categoryId: string) =>
     categories.find((c) => c.id === categoryId)?.servedNow ?? true;
   const commandableProduit = (product: Product) =>
-    commandable && servieMaintenant(product.categoryId);
+    commandable && (!restaurant.isOpen || servieMaintenant(product.categoryId));
 
   function tryAdd(product: Product) {
     if (!commandableProduit(product)) return;
@@ -350,10 +354,12 @@ export default function RestaurantMenuScreen() {
               composait son panier et se faisait refuser à la validation — le
               plus mauvais moment pour l'apprendre. La base refuse de toute
               façon (`create_order`), ceci ne fait que le dire à temps. */}
-          {!commandable ? (
-            <View style={styles.horsService}>
+          {!restaurant.isOpen ? (
+            <View style={[styles.horsService, reservable && styles.reservable]}>
               <Text style={styles.horsServiceTexte}>
-                {restaurant.listingStatus === 'coming_soon'
+                {reservable
+                  ? t('reservation.bandeauResto', { quand: quandOuvre ?? '' })
+                  : restaurant.listingStatus === 'coming_soon'
                   ? t('restaurant.bientotBandeau')
                   : quandOuvre
                     ? t('restaurant.fermeBandeauQuand', { quand: quandOuvre })
@@ -623,6 +629,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  reservable: { backgroundColor: colors.successBg, borderColor: colors.success },
   horsService: {
     backgroundColor: colors.warnBg,
     borderRadius: radius.tile,

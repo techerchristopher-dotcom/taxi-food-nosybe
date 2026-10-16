@@ -469,6 +469,14 @@ export type OrderItemSnapshot = {
 
 export type Order = {
   id: string;
+  /** Commande programmée (le jour même) : heure de livraison choisie par le client (ISO). */
+  livraisonSouhaitee?: string | null;
+  /** Heure de lancement en cuisine calculée par la base. */
+  lancementPrevu?: string | null;
+  /** Restaurant fermé à la commande : heure à laquelle elle lui sera transmise. */
+  transmissionPrevue?: string | null;
+  /** Moment où elle lui a effectivement été transmise. */
+  transmiseLe?: string | null;
   /** Saisie par téléphone dans l'admin : pas de messagerie (le client n'a pas l'app). */
   parTelephone?: boolean;
   orderNumber: string;

@@ -1544,34 +1544,31 @@ export async function setOrderStatus(
 
 // --- Espace livreur ---------------------------------------------------------
 
-/** Nombre maximum de commandes qu'un livreur peut tenir en même temps. */
-export const MAX_TOURNEE = 3;
-
 /**
- * Commandes DISPONIBLES à livrer (en_livraison, pas encore prises).
- * Filtre explicite `courier_id is null` (pas seulement la RLS).
+ * Commandes DISPONIBLES à livrer (en_livraison, pas encore prises), TOUS
+ * restaurants confondus. Filtre explicite `courier_id is null` (pas seulement
+ * la RLS).
  *
- * `restaurantId` restreint au restaurant demandé. On s'en sert dès que le
- * livreur tient déjà une commande : les autres restaurants lui seraient
- * refusés par la base, autant ne pas les lui montrer. Lui proposer un bouton
- * qui échoue à tous les coups, c'est le piège classique.
+ * ⚠️ Aucun filtre par restaurant ni plafond de nombre (décision du 2026-10-16) :
+ * un livreur prend autant de commandes qu'il veut, chez autant de restaurants
+ * qu'il veut. La base ne limite rien non plus (`claim_order`, migration
+ * `20261016140000_livreur_sans_limite`). Ne pas réintroduire de filtre ici :
+ * c'est lui qui bloquait le livreur sur le restaurant de sa 1re commande.
  */
-export async function listAvailableDeliveries(restaurantId?: string | null): Promise<Order[]> {
-  let q = supabase
+export async function listAvailableDeliveries(): Promise<Order[]> {
+  const { data, error } = await supabase
     .from('orders')
     .select(ORDER_SELECT)
     .eq('status', 'en_livraison')
-    .is('courier_id', null);
-  if (restaurantId) q = q.eq('restaurant_id', restaurantId);
-  const { data, error } = await q.order('created_at', { ascending: true });
+    .is('courier_id', null)
+    .order('created_at', { ascending: true });
   if (error) throw error;
   return (data as unknown as OrderJoinRow[]).map(mapOrder);
 }
 
 /**
  * La tournée du livreur courant : les commandes qu'il tient, de la plus
- * ancienne à la plus récente. Jusqu'à MAX_TOURNEE, toutes du même restaurant
- * — c'est la base qui l'impose (voir la RPC claim_order).
+ * ancienne à la plus récente, sans limite de nombre ni de restaurant.
  *
  * Filtre explicite par `courierId` : un compte multi-rôle a plusieurs
  * politiques de lecture qui se cumulent, la RLS seule laisserait passer

@@ -11,7 +11,6 @@ import {
   getCourierAvailability,
   listMyActiveDeliveries,
   listAvailableDeliveries,
-  MAX_TOURNEE,
   markArrived,
   markArriving,
   markDelivered,
@@ -33,13 +32,10 @@ export default function CourierDeliveriesScreen() {
   const { data, loading, reload } = useLoad(async () => {
     const available = await getCourierAvailability(userId);
     const actives = await listMyActiveDeliveries(userId);
-    // Des qu'il tient une commande, la base n'acceptera plus que le MEME
-    // restaurant : on filtre la file sur celui-la. Lui montrer des commandes
-    // qu'il ne peut pas prendre, c'est lui donner un bouton qui echoue.
-    const resto = actives.length ? actives[0].restaurantId : null;
-    const complet = actives.length >= MAX_TOURNEE;
-    const list = available && !complet ? await listAvailableDeliveries(resto) : [];
-    return { available, actives, list, complet };
+    // Aucune limite : toutes les commandes prêtes, de tous les restaurants,
+    // restent proposées même s'il en tient déjà (il passe chez A, puis B…).
+    const list = available ? await listAvailableDeliveries() : [];
+    return { available, actives, list };
   }, [userId]);
 
   useEffect(() => {
@@ -73,7 +69,6 @@ export default function CourierDeliveriesScreen() {
   const available = data?.available ?? false;
   const actives = data?.actives ?? [];
   const list = data?.list ?? [];
-  const complet = data?.complet ?? false;
 
   return (
     <View style={styles.container}>
@@ -115,7 +110,7 @@ export default function CourierDeliveriesScreen() {
             {actives.length > 0 ? (
               <>
                 <Text style={styles.section}>
-                  Ma tournée · {actives.length}/{MAX_TOURNEE}
+                  Ma tournée · {actives.length}
                 </Text>
                 {actives.map((order) => (
                   <RestaurantOrderCard
@@ -193,23 +188,15 @@ export default function CourierDeliveriesScreen() {
                 <Text style={styles.emptyTitle}>Tu es indisponible</Text>
                 <Text style={styles.emptySub}>Active ta disponibilité pour voir les commandes à livrer.</Text>
               </View>
-            ) : complet ? (
-              <View style={styles.center}>
-                <Icon name="inventory_2" size={40} color={colors.textFaint} />
-                <Text style={styles.emptyTitle}>Ta tournée est complète</Text>
-                <Text style={styles.emptySub}>
-                  Livre une commande pour pouvoir en prendre une autre.
-                </Text>
-              </View>
             ) : list.length === 0 ? (
               <View style={styles.center}>
                 <Icon name="two_wheeler" size={40} color={colors.textFaint} />
                 <Text style={styles.emptyTitle}>
-                  {actives.length ? 'Rien d\'autre dans ce restaurant' : 'Aucune commande à livrer'}
+                  {actives.length ? 'Aucune autre commande prête' : 'Aucune commande à livrer'}
                 </Text>
                 <Text style={styles.emptySub}>
                   {actives.length
-                    ? 'Une tournée ne mélange pas deux restaurants. Livre celles-ci, puis reviens.'
+                    ? 'Les nouvelles commandes prêtes, de n\'importe quel restaurant, apparaîtront ici.'
                     : 'Les commandes prêtes apparaissent ici automatiquement.'}
                 </Text>
               </View>

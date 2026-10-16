@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextStyle, View } from 'react-native';
 import { colors, fonts, formatAr, radius } from '../theme/tokens';
 import { enPromo, pourcentRemise } from '../data/types';
+import i18n from '../lib/i18n';
 
 /**
  * Le prix d'un plat côté client : prix promo + ancien prix barré + badge « −10 % » quand une
@@ -21,6 +22,10 @@ export function Prix({
   muted?: boolean;
   badge?: boolean;
 }) {
+  // Plat « à composer » (prix de base 0, le prix vient des pièces choisies) : jamais « 0 Ar ».
+  if (p.price === 0 && !enPromo(p)) {
+    return <Text style={[styles.prix, style, muted && styles.muted]}>{i18n.t('product.selonComposition')}</Text>;
+  }
   if (!enPromo(p)) {
     return <Text style={[styles.prix, style, muted && styles.muted]}>{formatAr(p.price)}</Text>;
   }

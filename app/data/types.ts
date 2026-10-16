@@ -149,6 +149,12 @@ export type OptionGroup = {
   maxSelect: number;
   required: boolean;
   sortOrder: number;
+  /**
+   * Groupe « à composer » (2026-10-16, sambos de L'escale Créole) : chaque option a une
+   * QUANTITÉ, et `minSelect` / `maxSelect` bornent le NOMBRE DE PIÈCES (somme des
+   * quantités), pas le nombre d'options. La base applique la même règle (`create_order`).
+   */
+  parQuantite: boolean;
   options: ProductOption[];
 };
 

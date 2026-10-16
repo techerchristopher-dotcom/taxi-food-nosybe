@@ -70,6 +70,8 @@ export default function ProductDetailScreen() {
   const [comment, setComment] = useState('');
   // Sélections : { [groupId]: optionId[] }.
   const [sel, setSel] = useState<Record<string, string[]>>({});
+  // Groupes « à composer » (`parQuantite`) : nombre de pièces par option, { [optionId]: n }.
+  const [qte, setQte] = useState<Record<string, number>>({});
   const [conflict, setConflict] = useState(false);
   // Vignettes d'options en échec de chargement → fallback silencieux en texte seul.
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
@@ -93,7 +95,13 @@ export default function ProductDetailScreen() {
   // toujours. La règle pré-remplit, elle n'écrase jamais.
   useEffect(() => {
     const auto: Record<string, string[]> = {};
+    const autoQte: Record<string, number> = {};
     for (const g of groups) {
+      // Groupe à composer avec une seule pièce possible (bouchons) : on pose d'office le minimum.
+      if (g.parQuantite) {
+        if (g.options.length === 1 && g.options[0].isAvailable) autoQte[g.options[0].id] = Math.max(g.minSelect, 1);
+        continue;
+      }
       if (g.required && g.options.length === 1 && g.options[0].isAvailable) {
         auto[g.id] = [g.options[0].id];
         continue;
@@ -102,6 +110,7 @@ export default function ProductDetailScreen() {
       if (parDefaut.length) auto[g.id] = parDefaut.slice(0, Math.max(1, g.maxSelect));
     }
     if (Object.keys(auto).length) setSel((prev) => ({ ...auto, ...prev }));
+    if (Object.keys(autoQte).length) setQte((prev) => ({ ...autoQte, ...prev }));
   }, [groups]);
 
 
@@ -162,15 +171,35 @@ export default function ProductDetailScreen() {
     });
   }
 
+  /** Pièces choisies dans un groupe à composer (somme des quantités). */
+  const piecesDe = (g: OptionGroup) => g.options.reduce((n, o) => n + (qte[o.id] ?? 0), 0);
+
+  function changerQte(g: OptionGroup, optionId: string, delta: number) {
+    setQte((prev) => {
+      const cur = prev[optionId] ?? 0;
+      const next = Math.max(0, cur + delta);
+      if (delta > 0 && piecesDe(g) + delta > g.maxSelect) return prev; // plafond du groupe
+      return { ...prev, [optionId]: next };
+    });
+  }
+
   const selectedOptions: SelectedOption[] = groups.flatMap((g) =>
-    (sel[g.id] ?? []).flatMap((optionId) => {
+    g.parQuantite
+      ? g.options.flatMap((o) => {
+          const q = qte[o.id] ?? 0;
+          if (q <= 0) return [];
+          // Le nom porte la quantité (« 3 × Sambos zébu ») : panier et récapitulatif la lisent.
+          // La base écrit le même libellé dans la commande (create_order).
+          return [{ optionId: o.id, groupId: g.id, name: q > 1 ? `${q} × ${o.name}` : o.name, priceDelta: o.priceDelta, quantity: q, packagingFee: o.packagingFee ?? 0 }];
+        })
+      : (sel[g.id] ?? []).flatMap((optionId) => {
       const o = g.options.find((x) => x.id === optionId);
       return o ? [{ optionId: o.id, groupId: g.id, name: o.name, priceDelta: o.priceDelta, quantity: 1, packagingFee: o.packagingFee ?? 0 }] : [];
-    }),
+        }),
   );
 
   const valid = groups.every((g) => {
-    const n = (sel[g.id] ?? []).length;
+    const n = g.parQuantite ? piecesDe(g) : (sel[g.id] ?? []).length;
     if (g.required && n < Math.max(g.minSelect, 1)) return false;
     return n >= g.minSelect && n <= g.maxSelect;
   });
@@ -324,6 +353,39 @@ export default function ProductDetailScreen() {
           {groups.map((g) => {
             const cur = sel[g.id] ?? [];
             const single = g.maxSelect === 1;
+            if (g.parQuantite) {
+              const n = piecesDe(g);
+              const ok = n >= Math.max(g.minSelect, g.required ? 1 : 0);
+              return (
+                <View key={g.id} style={styles.group}>
+                  <View style={styles.groupHead}>
+                    <Text style={styles.groupName}>{g.name}</Text>
+                    <Text style={[styles.badge, g.required ? styles.badgeReq : styles.badgeOpt]}>
+                      {g.required ? t('product.required') : t('product.optional')}
+                    </Text>
+                  </View>
+                  <Text style={[styles.groupHint, !ok && { color: colors.dangerText }]}>
+                    {t('product.piecesMin', { min: g.minSelect, n })}
+                  </Text>
+                  {g.options.map((o) => (
+                    <View key={o.id} style={styles.qteRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.chipLabel}>{o.name}</Text>
+                        {o.priceDelta > 0 ? (
+                          <Text style={styles.chipPrice}>{t('product.parPiece', { prix: formatAr(o.priceDelta) })}</Text>
+                        ) : null}
+                      </View>
+                      <QtyStepper
+                        value={qte[o.id] ?? 0}
+                        onDec={() => changerQte(g, o.id, -1)}
+                        onInc={() => changerQte(g, o.id, 1)}
+                        size="md"
+                      />
+                    </View>
+                  ))}
+                </View>
+              );
+            }
             return (
               <View key={g.id} style={styles.group}>
                 <View style={styles.groupHead}>
@@ -569,6 +631,14 @@ const styles = StyleSheet.create({
   badgeReq: { backgroundColor: colors.warnBg, color: colors.warnTextAlt },
   badgeOpt: { backgroundColor: colors.fieldBg, color: colors.textMuted },
   groupHint: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  qteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   // Grille à 2 colonnes, identique pour TOUS les groupes (obligatoire/facultatif,
   // choix unique/multiple). La largeur est fixée par la colonne, pas par le contenu :

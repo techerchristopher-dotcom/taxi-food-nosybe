@@ -43,7 +43,8 @@ export function lineKey(productId: string, optionIds: string[] = []): string {
  * chaque lettre tapée (la ligne est rendue avec `key={l.key}`).
  */
 function cleDeLigne(productId: string, options: SelectedOption[], comment?: string | null): string {
-  const base = lineKey(productId, options.map((o) => o.optionId));
+  // La quantité entre dans la clé : « 3 zébu + 2 poulet » et « 2 zébu + 3 poulet » sont deux lignes.
+  const base = lineKey(productId, options.map((o) => (o.quantity > 1 ? `${o.optionId}x${o.quantity}` : o.optionId)));
   return comment?.trim() ? `${base}::c${Date.now()}` : base;
 }
 

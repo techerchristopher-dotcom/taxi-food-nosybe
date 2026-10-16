@@ -167,6 +167,7 @@ type OptionGroupRow = {
   max_select: number;
   required: boolean;
   sort_order: number;
+  par_quantite?: boolean | null;
   product_options: OptionRow[];
 };
 
@@ -268,6 +269,7 @@ function mapOptionGroup(g: OptionGroupRow): OptionGroup {
     maxSelect: g.max_select,
     required: g.required,
     sortOrder: g.sort_order,
+    parQuantite: !!g.par_quantite,
     options: (g.product_options ?? [])
       .filter((o) => o.is_available)
       .map(mapOption)
@@ -765,7 +767,7 @@ export async function getProductDetail(id: string): Promise<{
   const [groupsRes, restaurant, categoryRes, ingredientsRes] = await Promise.all([
     supabase
       .from('product_option_groups')
-      .select('id, name, min_select, max_select, required, sort_order, product_options ( id, name, price_delta, is_available, sort_order, photo_url, par_defaut, packaging_fee )')
+      .select('id, name, min_select, max_select, required, sort_order, par_quantite, product_options ( id, name, price_delta, is_available, sort_order, photo_url, par_defaut, packaging_fee )')
       .eq('product_id', id)
       .order('sort_order', { ascending: true }),
     getRestaurant((data as ProductRow).restaurant_id),

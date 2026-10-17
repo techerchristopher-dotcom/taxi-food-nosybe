@@ -827,5 +827,26 @@
       "garder": "No, keep it",
       "annulerTropTard": "The restaurant has already accepted your order: it can't be cancelled here anymore. Message us on WhatsApp.",
       "annulerEchec": "The cancellation didn't go through. Please try again in a moment."
-    }
+    },
+  "suivi": {
+    "titre": "Your courier, live",
+    "titreNom": "{{name}}, your courier, live",
+    "phase": {
+      "vers_restaurant": "Picking up your order at the restaurant",
+      "vers_toi": "On the way to you",
+      "arrive": "Arriving in a few minutes",
+      "devant_chez_toi": "At your door"
+    },
+    "km": "{{km}} km",
+    "position": "Location updated {{age}} ago",
+    "signalPerdu": "Courier signal lost for {{age}} (network): last known location shown",
+    "attente": "Waiting for the courier's location…",
+    "autreCommande": "They are also delivering another order on their round.",
+    "actualiser": "Refresh",
+    "actualiserDans": "Refresh ({{s}} s)",
+    "autoLent": "Updates automatically every minute",
+    "autoRapide": "Updates automatically every 20 s",
+    "secondes": "{{n}} s",
+    "minutes": "{{n}} min"
+  }
 }

@@ -827,5 +827,26 @@
       "garder": "Non, je la garde",
       "annulerTropTard": "Le restaurant a déjà accepté ta commande : elle ne peut plus être annulée ici. Écris-nous sur WhatsApp.",
       "annulerEchec": "L'annulation n'a pas abouti. Réessaie dans un instant."
-    }
+    },
+  "suivi": {
+    "titre": "Ton livreur en direct",
+    "titreNom": "{{name}}, ton livreur, en direct",
+    "phase": {
+      "vers_restaurant": "Il va chercher ta commande au restaurant",
+      "vers_toi": "Il est en route vers toi",
+      "arrive": "Il arrive dans quelques minutes",
+      "devant_chez_toi": "Il est devant chez toi"
+    },
+    "km": "{{km}} km",
+    "position": "Position mise à jour il y a {{age}}",
+    "signalPerdu": "Signal du livreur perdu depuis {{age}} (réseau) : dernière position affichée",
+    "attente": "En attente de la position du livreur…",
+    "autreCommande": "Il livre aussi une autre commande de sa tournée.",
+    "actualiser": "Actualiser",
+    "actualiserDans": "Actualiser ({{s}} s)",
+    "autoLent": "Mise à jour automatique chaque minute",
+    "autoRapide": "Mise à jour automatique toutes les 20 s",
+    "secondes": "{{n}} s",
+    "minutes": "{{n}} min"
+  }
 }

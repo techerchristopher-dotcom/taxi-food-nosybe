@@ -827,5 +827,26 @@
       "garder": "No, lo tengo",
       "annulerTropTard": "Il ristorante ha già accettato il tuo ordine: non può più essere annullato qui. Scrivici su WhatsApp.",
       "annulerEchec": "L'annullamento non è andato a buon fine. Riprova tra un attimo."
-    }
+    },
+  "suivi": {
+    "titre": "Il tuo rider in diretta",
+    "titreNom": "{{name}}, il tuo rider, in diretta",
+    "phase": {
+      "vers_restaurant": "Sta ritirando il tuo ordine al ristorante",
+      "vers_toi": "È in viaggio verso di te",
+      "arrive": "Arriva tra pochi minuti",
+      "devant_chez_toi": "È davanti a casa tua"
+    },
+    "km": "{{km}} km",
+    "position": "Posizione aggiornata {{age}} fa",
+    "signalPerdu": "Segnale del rider perso da {{age}} (rete): ultima posizione mostrata",
+    "attente": "In attesa della posizione del rider…",
+    "autreCommande": "Sta consegnando anche un altro ordine del suo giro.",
+    "actualiser": "Aggiorna",
+    "actualiserDans": "Aggiorna ({{s}} s)",
+    "autoLent": "Aggiornamento automatico ogni minuto",
+    "autoRapide": "Aggiornamento automatico ogni 20 s",
+    "secondes": "{{n}} s",
+    "minutes": "{{n}} min"
+  }
 }

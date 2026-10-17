@@ -258,7 +258,7 @@ Deno.serve(async (req: Request) => {
       return Response.json({ telegram_admin: tg, traduit: !!trad });
     }
     // Taxi Food répond : push au client.
-    const { data: tokens } = await supabase.from('push_tokens').select('token, language, user_id').eq('user_id', clientId).returns<TokenRow[]>();
+    const { data: tokens } = await supabase.from('push_tokens').select('token, language, user_id').eq('user_id', clientId).eq('app', 'client').returns<TokenRow[]>();
     const messages = (tokens ?? []).map((row) => {
       const lang = langueDe(row.language);
       let texte = (pourLecteur(m.texte, source, trad, lang) ?? '').replace(/\s+/g, ' ').trim();
@@ -310,12 +310,18 @@ Deno.serve(async (req: Request) => {
   let push = { sent: 0, removed: 0 };
   if (destinataires.length) {
     const roleDe = new Map(destinataires.map((d) => [d.userId, d.role]));
-    const { data: tokens } = await supabase
+    const { data: tousJetons } = await supabase
       .from('push_tokens')
-      .select('token, language, user_id')
+      .select('token, language, user_id, app')
       .in('user_id', destinataires.map((d) => d.userId))
-      .returns<TokenRow[]>();
-    const messages = (tokens ?? []).map((row) => {
+      .returns<(TokenRow & { app?: string })[]>();
+    // Deux applications (2026-10-17) : le livreur reçoit dans l'app livreur s'il l'a,
+    // sinon dans l'app client ; client et restaurant, toujours dans l'app client.
+    const avecAppLivreur = new Set((tousJetons ?? []).filter((r) => r.app === 'livreur').map((r) => r.user_id));
+    const tokens = (tousJetons ?? []).filter((r) =>
+      roleDe.get(r.user_id) === 'livreur' && avecAppLivreur.has(r.user_id) ? r.app === 'livreur' : (r.app ?? 'client') === 'client',
+    );
+    const messages = tokens.map((row) => {
       const lang = langueDe(row.language);
       const role = roleDe.get(row.user_id) ?? 'client';
       const qui =

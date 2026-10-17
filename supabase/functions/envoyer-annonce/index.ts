@@ -239,6 +239,7 @@ Deno.serve(async (req: Request) => {
       const { data: clients, error: clientsError } = await admin
         .from('push_tokens')
         .select('user_id')
+        .eq('app', 'client')
         .returns<{ user_id: string }[]>();
       if (clientsError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_clients' });
       userIds = [...new Set((clients ?? []).map((r) => r.user_id))];
@@ -246,7 +247,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const { data: jetons, error: jetonsError } = userIds.length
-    ? await admin.from('push_tokens').select('token').in('user_id', userIds).returns<{ token: string }[]>()
+    ? await admin.from('push_tokens').select('token').eq('app', 'client').in('user_id', userIds).returns<{ token: string }[]>()
     : { data: [], error: null };
   if (jetonsError) return json(500, { erreur: 'erreur_serveur', code: 'lecture_jetons' });
 

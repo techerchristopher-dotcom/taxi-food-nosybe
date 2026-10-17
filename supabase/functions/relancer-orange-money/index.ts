@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
   const morts: string[] = [];
   try {
     const { data: jetons } = await admin
-      .from('push_tokens').select('token, language').eq('user_id', p.user_id!)
+      .from('push_tokens').select('token, language').eq('user_id', p.user_id!).eq('app', 'client')
       .returns<{ token: string; language: string | null }[]>();
     const liste = jetons ?? [];
     detail.appareils = liste.length;

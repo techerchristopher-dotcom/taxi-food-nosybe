@@ -108,7 +108,19 @@ function motifRefus(order: Order, lang: Lang): string | null {
   return detail ? `${libelle}${lang === 'fr' ? ' : ' : ': '}${detail}` : libelle;
 }
 
-type TokenRow = { token: string; language: Lang; platform: string };
+type TokenRow = { token: string; language: Lang; platform: string; app?: string; user_id?: string };
+
+/**
+ * Deux applications depuis le 2026-10-17 (Taxi Food et Taxi Food Livreur) : chaque jeton
+ * porte son `app`. Client et restaurant → jetons de l'app client. Livreur → jetons de l'app
+ * livreur s'il en a, sinon ses jetons de l'app client (livreur pas encore passé à la nouvelle
+ * app). Sans ce tri, un même téléphone avec les deux apps recevrait tout en double.
+ */
+function trierParApplication(rows: TokenRow[], audience: Audience): TokenRow[] {
+  if (audience !== 'livreur') return rows.filter((r) => (r.app ?? 'client') === 'client');
+  const avecApp = new Set(rows.filter((r) => r.app === 'livreur').map((r) => r.user_id));
+  return rows.filter((r) => (avecApp.has(r.user_id) ? r.app === 'livreur' : (r.app ?? 'client') === 'client'));
+}
 
 type Message = {
   to: string;
@@ -328,10 +340,10 @@ Deno.serve(async (req: Request) => {
     if (!userIds.length) return [];
     const { data: tokens } = await supabase
       .from('push_tokens')
-      .select('token, language, platform')
+      .select('token, language, platform, app, user_id')
       .in('user_id', userIds)
       .returns<TokenRow[]>();
-    return tokens ?? [];
+    return trierParApplication(tokens ?? [], audience);
   }
 
   const messages: Message[] = [];

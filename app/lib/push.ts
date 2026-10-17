@@ -72,7 +72,7 @@ async function ensureAndroidChannel(): Promise<void> {
  *
  * Ne lève jamais : une notification ratée ne doit pas empêcher de commander.
  */
-export async function registerForPush(): Promise<string | null> {
+export async function registerForPush(app: 'client' | 'livreur' = 'client'): Promise<string | null> {
   if (!pushSupported()) return null;
 
   try {
@@ -98,6 +98,10 @@ export async function registerForPush(): Promise<string | null> {
       // La langue voyage avec le jeton : c'est le serveur qui rédige la notification,
       // il n'a aucun autre moyen de savoir dans quelle langue lire l'app.
       p_language: (i18n.language ?? 'fr').slice(0, 2),
+      // Deux applications depuis le 2026-10-17 : le serveur trie les notifications par
+      // app (« course disponible » dans l'app livreur, suivi de commande dans l'app client).
+      // N'est envoyé que par l'app livreur : les apps client gardent l'appel d'origine.
+      ...(app === 'livreur' ? { p_app: 'livreur' } : {}),
     });
     if (error) throw error;
 

@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "227662072769",
+    "project_id": "taxifoodnosybe",
+    "storage_bucket": "taxifoodnosybe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227662072769:android:db36612400e2822805fd40",
+        "android_client_info": {
+          "package_name": "com.chris97416.taxifoodlivreur"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "227662072769-rsiqeuqffjr2197v4a287vjmq8nn5r2b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chris97416.taxifoodlivreur",
+            "certificate_hash": "0038c88d230d447ec8d17904048b971a95bf08c3"
+          }
+        },
+        {
+          "client_id": "227662072769-hjj9fcplq80l8eiqqc3luo9h49h91fpt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClALkSUUBGKupBdML9BGedHsgA3siEsg4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "227662072769-hjj9fcplq80l8eiqqc3luo9h49h91fpt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "227662072769-91mcfidthj8ibi0k01sgrooi69n54cr8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.chris97416.taxi-food-nosybe"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

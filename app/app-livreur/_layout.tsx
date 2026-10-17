@@ -2,7 +2,8 @@
 // relance l'app sans écran pour livrer des positions, seul ce module est exécuté.
 import '../lib/livreur/suiviGps';
 
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
 import { AppState, Image, Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -26,6 +27,7 @@ import i18n from '../lib/i18n';
 import { miseAJourAuDemarrage, miseAJourAuRetour } from '../lib/miseAJour';
 import { BandeauMiseAJour } from '../components/BandeauMiseAJour';
 import { relireEtatGps } from '../lib/livreur/suiviGps';
+import { registerForPush } from '../lib/push';
 
 /**
  * Racine de l'app Taxi Food Livreur (2026-10-17). Même socle que l'app client
@@ -87,7 +89,35 @@ export default function RacineLivreur() {
     return () => sub.remove();
   }, []);
 
+  // Notifications : le jeton est enregistré comme « livreur » (le serveur y envoie
+  // « Course disponible » et les messages des commandes du livreur).
+  const userId = useSession((s) => s.session?.userId ?? null);
+  useEffect(() => {
+    if (!userId || Platform.OS === 'web') return;
+    void registerForPush('livreur');
+  }, [userId]);
+
+  // Tap sur une notification : une conversation s'ouvre telle quelle, tout le reste
+  // ramène aux Livraisons (la route « /(livreur) » envoyée par le serveur est celle de
+  // l'espace livreur de l'app client, elle n'existe pas ici).
+  const router = useRouter();
+  const [routeEnAttente, setRouteEnAttente] = useState<string | null>(null);
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = Notifications.addNotificationResponseReceivedListener((r) => {
+      const route = (r.notification.request.content.data as { route?: string } | undefined)?.route ?? '';
+      setRouteEnAttente(route.startsWith('/messages/') ? route : '/(onglets)');
+    });
+    return () => sub.remove();
+  }, []);
+
   const ready = (!sessionLoading && langue && majVerifiee && (Platform.OS === 'web' || fontsLoaded)) || delaiDepasse;
+  useEffect(() => {
+    if (!ready || !routeEnAttente || !userId) return;
+    setRouteEnAttente(null);
+    router.push(routeEnAttente as never);
+  }, [ready, routeEnAttente, userId, router]);
+
   if (!ready) return <Splash />;
 
   return (

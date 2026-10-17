@@ -7,9 +7,9 @@
  *
  * ⚠️ L'app livreur ne déclare AUCUN lien universel (associatedDomains, intentFilters
  * https) : sinon les liens partagés aux clients s'ouvriraient dans l'app livreur.
- * ⚠️ Elle n'a pas de `google-services.json` : le package n'est pas encore déclaré dans
- * Firebase, donc pas de notifications sur Android pour l'instant (elles restent dans
- * l'app client). Voir § 6.1 du cahier des charges.
+ * Notifications Android : `google-services-livreur.json` (app Firebase
+ * `1:227662072769:android:db36612400e2822805fd40`). Les jetons sont rangés par app
+ * (`push_tokens.app`), voir § 6.1 du cahier des charges.
  */
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
@@ -82,6 +82,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     android: {
       ...android,
       package: 'com.chris97416.taxifoodlivreur',
+      // App déclarée dans Firebase le 2026-10-17 (notifications Android, FCM).
+      googleServicesFile: './google-services-livreur.json',
       adaptiveIcon: {
         ...(android.adaptiveIcon ?? {}),
         foregroundImage: './assets/livreur/android-icon-foreground.png',

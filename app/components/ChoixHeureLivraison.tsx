@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Card } from './primitives';
@@ -26,6 +26,7 @@ export function ChoixHeureLivraison({
   ouvert,
   valeur,
   onChange,
+  rafraichir = 0,
 }: {
   restaurantId: string;
   addressId: string | null;
@@ -35,25 +36,36 @@ export function ChoixHeureLivraison({
   /** Heure ISO choisie, ou null = dès que possible. */
   valeur: string | null;
   onChange: (iso: string | null) => void;
+  /** Incrémenté par l'écran quand la base a refusé le créneau : relit les créneaux. */
+  rafraichir?: number;
 }) {
   const { t, i18n } = useTranslation();
   const cle = productIds.join(',');
+  // Les créneaux vieillissent pendant que le client hésite : relus chaque minute, et
+  // aussitôt quand la base vient d'en refuser un (`rafraichir`).
+  const [tic, setTic] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTic((x) => x + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const { data: creneaux, loading } = useLoad(
     () => listerCreneaux(restaurantId, addressId, productIds),
-    [restaurantId, addressId, cle],
+    [restaurantId, addressId, cle, tic, rafraichir],
   );
 
   // Fermé : pas de « dès que possible », le premier créneau est pris d'office.
-  // Un créneau choisi qui a disparu (le temps a passé) est remplacé, jamais gardé.
+  // Un créneau choisi qui a disparu (le temps a passé, la base l'a refusé) est remplacé
+  // par le premier créneau qui le suit — jamais gardé, et jamais remplacé en silence par
+  // « dès que possible » : le client voulait être livré PLUS TARD.
   useEffect(() => {
     if (!creneaux || ouvert === null) return;
-    const encore = valeur && creneaux.some((c) => c.livraison === valeur);
-    if (encore) return;
-    if (ouvert) {
-      if (valeur) onChange(null);
-    } else {
-      onChange(creneaux[0]?.livraison ?? null);
+    if (!valeur) {
+      if (!ouvert && creneaux[0]) onChange(creneaux[0].livraison);
+      return;
     }
+    if (creneaux.some((c) => c.livraison === valeur)) return;
+    const suivant = creneaux.find((c) => c.livraison > valeur) ?? creneaux[creneaux.length - 1];
+    onChange(suivant ? suivant.livraison : null);
   }, [creneaux, ouvert, valeur, onChange]);
 
   if (ouvert === null) return null;

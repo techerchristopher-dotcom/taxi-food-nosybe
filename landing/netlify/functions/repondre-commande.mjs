@@ -56,6 +56,8 @@ const IT = {
   ouvrir: 'Apri il mio spazio',
   acceptee: (n) => `Ordine ${n} accettato`,
   accepteeAuto: 'Fatto. Il cliente è stato appena avvisato. L’ordine passa in preparazione da solo in meno di un minuto: dovrai solo segnarlo come pronto nel tuo spazio.',
+  // Prenotazione (2026-10-17) : la preparazione automatica aspetta l'ora di avvio.
+  accepteePrenotazione: (ora) => `Fatto. Il cliente è stato appena avvisato. È una PRENOTAZIONE: l’ordine passa in preparazione da solo verso le ${ora}, non prima. Poi dovrai solo segnarlo come pronto.`,
   accepteeManuel: 'Fatto. Il cliente è stato appena avvisato. Apri il tuo spazio per metterlo in preparazione, poi segnarlo come pronto.',
   voir: (n) => `Vedi l’ordine ${n ?? ''}`.trim(),
   refusee: (n) => `Ordine ${n} rifiutato`,
@@ -268,7 +270,8 @@ export default async (request) => {
 
     if (d?.ok && d?.langue === 'it') {
       return rendre(page('✅', IT.acceptee(esc(d.numero)),
-        d.preparation_auto === true ? IT.accepteeAuto : IT.accepteeManuel,
+        d.lancement_prevu ? IT.accepteePrenotazione(esc(d.lancement_prevu))
+          : d.preparation_auto === true ? IT.accepteeAuto : IT.accepteeManuel,
         '#157F3C', { libelle: IT.voir(d.numero), href: `${APP}/pro` }, 'it'));
     }
 
@@ -277,7 +280,11 @@ export default async (request) => {
         // `preparation_auto` (2026-09-22) : la base passe seule la commande en
         // preparation 30 a 60 s apres l'acceptation. Absent (ancienne RPC) =
         // ancien texte, jamais une promesse fausse.
-        d.preparation_auto === true
+        // Réservation (2026-10-17) : `lancement_prevu` = heure de lancement à venir ;
+        // la préparation automatique l'attend, « moins d'une minute » serait faux.
+        d.lancement_prevu
+          ? `C’est noté. Le client vient d’être prévenu. C’est une RÉSERVATION : la commande passe en préparation toute seule vers ${esc(String(d.lancement_prevu).replace(':', 'h'))}, pas avant. Il te restera ensuite à la marquer prête.`
+          : d.preparation_auto === true
           ? 'C’est noté. Le client vient d’être prévenu. La commande passe en préparation toute seule dans moins d’une minute : il te restera seulement à la marquer prête dans ton espace.'
           : 'C’est noté. Le client vient d’être prévenu. Ouvre ton espace pour la passer en préparation, puis la marquer prête.',
         '#157F3C',

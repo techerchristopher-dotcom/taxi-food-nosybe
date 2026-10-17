@@ -23,6 +23,12 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   `upload-plats-du-jour-bidul` — encore ACTIVE (vérifié le 2026-09-17). Sa version 1 portait la
   `service_role`. L'API MCP ne sait pas supprimer une fonction.
 
+**Commande programmée le jour même (2026-10-16/17)** — voir sa section
+- ✅ Base, app client, espace restaurateur, admin, annonce (lundi 19/10 : push + e-mail 10 h,
+  Facebook 11 h, Reel 18 h). Test réel passé le 2026-10-17 (TF-427/428).
+- ⚠️ **Inerte tant que les restaurants sont fermés à la main** (`auto_open = false`, cas de tous
+  le 2026-10-17 depuis 11 h 02). Jamais vu sur un vrai téléphone.
+
 **Mesure et référencement**
 - (Facultatif) propriété Search Console pour l'app web `taxifood.distripro207.com`.
 - 🏷️ **Groupes Facebook mesurés** (2026-09-25, voir sa section) : liens `?g=<slug>`, comptés dans
@@ -1443,6 +1449,90 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
+## 📅 Commande programmée le jour même (2026-10-16/17)
+
+Un client peut commander chez un restaurant **FERMÉ** s'il rouvre **AUJOURD'HUI** selon ses
+horaires, en choisissant son heure de livraison. **Le jour même seulement, jamais le lendemain**
+(décision du porteur du projet). Un restaurant ouvert propose aussi « Dès que possible » + des
+créneaux. Migrations `20261015160000_canal_admin_telegram_renvoi_automatique` et
+`20261016100000_commande_programmee_jour_meme` ; annonce aux clients `20261017100000`.
+
+**Qui est réservable** : `listing_status = 'visible'` **ET `auto_open = true`** ET ouvert à
+l'heure de lancement (`commandable_a`). ⚠️ Un restaurant **fermé à la main** (`auto_open =
+false`) n'est **jamais** réservable : ses horaires ne promettent rien. Le 2026-10-17 à 11 h 02,
+le compte admin a fermé les 6 restaurants visibles d'un seul geste → **la fonction était inerte
+ce jour-là** ; elle revient dès qu'un restaurant repasse en ouverture automatique.
+
+**La base fait foi**
+- `creneaux_livraison(resto, adresse, produits)` : créneaux de 15 min du jour ; délai =
+  `estimer_delais` + 10 min (`delai_reservation_min`).
+- `commander_programme(...7 args..., p_livraison_souhaitee)` : refus `reservation:indisponible`,
+  `:jour_meme`, `:trop_tot|HH:MI`, `:hors_service|HH:MI` ; appelle `create_order` (drapeau de
+  transaction `taxifood.lancement_prevu`, **jamais une surcharge de `create_order`** — PGRST203)
+  puis pose `livraison_souhaitee_a`, `lancement_prevu_a`, `transmission_prevue_a` (= début du
+  service si le resto est fermé, NULL s'il est ouvert).
+- À la réservation (trigger différé `orders_reservation_info`) : message **« 📅 RÉSERVATION »**
+  au groupe Telegram du restaurant (FR/IT) + copie au canal admin. Le restaurant **ne reçoit pas**
+  la commande à accepter (`notify_order_status` muette tant que `transmise_le` est NULL).
+- `traiter_commandes_programmees()` (pg_cron **`commandes-programmees`**, chaque minute) :
+  à l'ouverture → `transmise_le`, **« 🔔 RAPPEL RÉSERVATION »** au resto, puis la commande
+  normale (n8n + push « Nouvelle commande ») ; resto toujours fermé 20 min après → **annulée
+  seule** (code `fermeture`, client prévenu, ligne au canal admin) ; à `lancement_prevu_a`
+  → **« 👨‍🍳 C'EST L'HEURE »** au resto.
+- `passer_en_preparation_automatiquement` attend `lancement_prevu_a` ; les relances « sans
+  réponse » (3 min) et l'appel vocal comptent depuis `transmise_le` (`commande_annoncee_le`) ;
+  l'estimation des délais ne figure pas les réservations.
+- `annuler_ma_reservation(order)` : le client annule tant que le statut est `recue`
+  (sinon `reservation:deja_acceptee`). Push dédiée **« Réservation annulée ✅ »** (`notify-order`
+  v10, clé `annulee_client`, reconnue par la précision « Annulée par le client ») — l'ancien texte
+  disait que le restaurant « n'a pas pu honorer ».
+
+**Canal Telegram admin fiabilisé** (TF-412 perdue sur une expiration Telegram) : file
+`telegram_admin_envois` + `telegram_admin_envoyer(texte)` / `telegram_resto_envoyer(chat, texte)`,
+renvoi automatique (pg_cron `telegram-admin-relance`, 5 essais, délai dépassé / 429 / 5xx).
+⚠️ Les autres envois Telegram (avis, messages privés, relance resto) passent encore en direct.
+
+**Écrans** : client — bandeau vert sur la fiche d'un restaurant fermé réservable, bloc « Quand ? »
+au paiement (`ChoixHeureLivraison`), bouton « Commander pour 19h00 », suivi avec « Livraison
+prévue vers… » et « Annuler ma commande » en deux taps (`BlocReservation`). Restaurateur
+(2026-10-17) — bandeau jaune **« 📅 RÉSERVATION — à livrer à 19h00 »** sur la carte
+(`RestaurantOrderCard`) : avant 18 h la commande y est déjà visible, et sans ce bandeau elle
+ressemblait à une commande à préparer tout de suite. Admin Temps réel — « 📅 à livrer à… »,
+jamais « RETARD » avant la transmission.
+
+**Test réel du 2026-10-17** (L'escale Créole, dont le groupe Telegram est celui du porteur ;
+client = compte admin ; restaurant ouvert/fermé seulement à l'intérieur des transactions) :
+TF-427 réservée pour 19 h → message resto + canal admin remis ; visible par le client avec ses
+droits ; transmise → rappel + commande + ligne admin ; acceptée ; aucune alerte « sans réponse » ;
+restée `confirmee` jusqu'au lancement puis passée seule en préparation ; « C'EST L'HEURE » remis ;
+annulée (test). TF-428 : annulée par le client → push « Réservation annulée » + Telegram admin.
+Tous les envois Telegram `envoye` du 1er coup, push Expo `ok`.
+
+**Relecture du 2026-10-17 — corrigé** (migrations `20261017150000_commande_programmee_correctifs_revue`,
+`20261017151000_commande_programmee_page_acceptee_lancement`, vérifiées en transaction annulée) :
+- **Réservation CARTE impayée** : le restaurant ne reçoit plus rien (`reservation_carte_en_attente`) ;
+  le « 📅 RÉSERVATION » part à la capture (trigger `orders_reservation_info_paiement`) ; toujours
+  impayée à l'heure de transmission et créée depuis 30 min → annulée, ligne au canal admin.
+- « C'EST L'HEURE » part aussi si la commande est déjà `en_preparation` (course avec la
+  préparation automatique).
+- `creneaux_livraison` respecte les plages des catégories (pizzas Chez Bidule : premier créneau 20 h).
+- `estimer_delais` ne compte plus les réservations non transmises dans la charge de la cuisine.
+- App : créneau refusé → créneaux relus (et chaque minute), choix passé au créneau SUIVANT —
+  jamais le même refusé, jamais « dès que possible » en silence ; heure du refus en « 19h45 ».
+- Espace restaurateur : « passera en préparation toute seule vers 18h11, pas avant » au lieu de
+  « dans moins d'une minute » ; idem page `/a/…` du bouton Telegram (`lancement_prevu` rendu par
+  `repondre_commande_par_jeton`, FR/IT).
+- Admin Temps réel : « RETARD » compté depuis la transmission seulement si la réservation était
+  différée (resto ouvert → depuis la création, comme avant).
+
+**Annonce** : notification + e-mail lundi 19/10 à 10 h (tâches `annonce_plus_tard_*`), publication
+Facebook 11 h, **Reel vidéo 18 h** (calendrier Rentanoo, brouillon 569, tâche à usage unique
+`reel_taxifood_commande_plus_tard`) — `visuels-reseaux/commande-programmee/LEGENDE.md`.
+
+**Reste ouvert** : jamais vu sur un vrai téléphone (côté client comme restaurateur) ; le message
+n8n « Nouvelle commande » au restaurant ne dit pas l'heure de livraison (le rappel qui le précède
+la donne ; T7uX non modifié) ; pas de réservation pour le lendemain (voulu).
 
 ## 🛵 App Taxi Food Livreur + suivi du livreur en temps réel (2026-10-17)
 

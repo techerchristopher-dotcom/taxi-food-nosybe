@@ -95,6 +95,10 @@ const MOTIFS_REFUS: Record<string, Record<Lang, string>> = {
   },
 };
 
+/** Précision posée par `annuler_ma_reservation` : la seule façon de reconnaître une
+ *  annulation faite par le client (le code reste `autre`). Même texte qu'en base. */
+const ANNULEE_PAR_LE_CLIENT = 'Annulée par le client';
+
 const MOT_MOTIF: Record<Lang, string> = { fr: 'Motif :', en: 'Reason:', it: 'Motivo:' };
 
 /** Motif lisible dans la langue du client ; repli sur le texte composé par la base. */
@@ -171,6 +175,14 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     fr: { title: 'Commande annulée', body: '{resto} n’a pas pu honorer ta commande.' },
     en: { title: 'Order cancelled', body: '{resto} could not fulfil your order.' },
     it: { title: 'Ordine annullato', body: '{resto} non ha potuto evadere il tuo ordine.' },
+  },
+  // Réservation annulée par le CLIENT lui-même (`annuler_ma_reservation`, 2026-10-16) :
+  // le texte « annulee » dirait que le restaurant n'a pas pu l'honorer — faux, et c'est
+  // le restaurant qu'il accuserait.
+  annulee_client: {
+    fr: { title: 'Réservation annulée ✅', body: 'Ta commande chez {resto} est bien annulée. Tu n’as rien à payer.' },
+    en: { title: 'Booking cancelled ✅', body: 'Your order from {resto} has been cancelled. You have nothing to pay.' },
+    it: { title: 'Prenotazione annullata ✅', body: 'Il tuo ordine da {resto} è stato annullato. Non devi pagare nulla.' },
   },
   // Le livreur ACCEPTE la course (« Je prends la commande ») : il part chercher la
   // commande au restaurant. Seul `courier_id` change — demande du porteur du projet,
@@ -302,7 +314,10 @@ Deno.serve(async (req: Request) => {
     // La base a déjà vérifié : livrée, sans avis, jamais relancée.
     if (order.status === 'livree') envois.push({ audience: 'client', key: 'noter' });
   } else {
-    const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up' : payload.status;
+    const parLeClient = payload.status === 'annulee' && order.cancellation_code === 'autre'
+      && order.cancellation_detail === ANNULEE_PAR_LE_CLIENT;
+    const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up'
+      : parLeClient ? 'annulee_client' : payload.status;
     if (MESSAGES[key]) envois.push({ audience: 'client', key });
     // Course libérée par le restaurant et pas encore prise : les livreurs disponibles
     // sont prévenus. Si `courier_id` est déjà rempli, la course est attribuée — inutile

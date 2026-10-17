@@ -1,3 +1,4 @@
+import { heureNosyBe } from '../../lib/reservation';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
@@ -211,7 +212,11 @@ function OrderActions({
       return (
         <View style={{ gap: 8 }}>
           <Text style={styles.autoNote}>
-            Acceptée — passe en préparation toute seule dans moins d'une minute.
+            {/* Réservation : la base attend l'heure de lancement (`lancement_prevu_a`)
+                avant de la passer en préparation — « moins d'une minute » serait faux. */}
+            {order.lancementPrevu && new Date(order.lancementPrevu).getTime() > Date.now()
+              ? `Acceptée — réservation : passera en préparation toute seule vers ${heureNosyBe(order.lancementPrevu, 'fr')}. Pas avant.`
+              : "Acceptée — passe en préparation toute seule dans moins d'une minute."}
           </Text>
           <Button
             label="Démarrer maintenant"

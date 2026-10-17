@@ -122,6 +122,7 @@ function CheckoutForm() {
   );
   const ouvert = resto ? resto.isOpen : null;
   const [livraisonSouhaitee, setLivraisonSouhaitee] = useState<string | null>(null);
+  const [relireCreneaux, setRelireCreneaux] = useState(0);
   const productIds = useMemo(() => Array.from(new Set(lines.map((l) => l.product.id))), [lines]);
   const heureManquante = ouvert === false && !livraisonSouhaitee;
 
@@ -258,11 +259,15 @@ function CheckoutForm() {
       const refusResa = refusReservationDepuisErreur(msg);
       if (refusResa) {
         // Le créneau n'est plus tenable (le temps a passé, la cuisine s'est chargée) :
-        // on le dit, avec la première heure encore possible si la base la donne.
-        setLivraisonSouhaitee(null);
+        // on le dit, avec la première heure encore possible si la base la donne, et on
+        // relit les créneaux : le choix passe au suivant tenable (jamais « dès que
+        // possible » en silence, jamais le même créneau refusé une seconde fois).
+        setRelireCreneaux((x) => x + 1);
         setError(
           refusResa.premier
-            ? t('reservation.refusAvecPremier', { heure: refusResa.premier })
+            ? t('reservation.refusAvecPremier', {
+                heure: i18n.language.startsWith('fr') ? refusResa.premier.replace(':', 'h') : refusResa.premier,
+              })
             : t('reservation.refus'),
         );
       } else if (refus) {
@@ -343,6 +348,7 @@ function CheckoutForm() {
               ouvert={ouvert}
               valeur={livraisonSouhaitee}
               onChange={setLivraisonSouhaitee}
+              rafraichir={relireCreneaux}
             />
           </>
         ) : null}

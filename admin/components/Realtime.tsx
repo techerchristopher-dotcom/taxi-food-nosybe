@@ -52,6 +52,11 @@ type OrderRow = {
   user_id: string | null;
   picked_up_at: string | null;
   status_updated_at: string | null;
+  /** Commande programmée le jour même (2026-10-16) : heure de livraison choisie par le
+   *  client, et quand la base la transmet au restaurant (à son ouverture). */
+  livraison_souhaitee_a?: string | null;
+  transmission_prevue_a?: string | null;
+  transmise_le?: string | null;
   payment_method: string;
   /** Statut du PAIEMENT, pas de la commande : « paye » veut dire qu'un débit a eu lieu. */
   payment_status: string;
@@ -78,6 +83,13 @@ type RestoRow = {
 };
 
 function isLate(o: OrderRow): boolean {
+  // Une réservation n'attend le restaurant qu'à partir de sa transmission : avant,
+  // personne n'a rien à faire, elle n'est jamais « en retard ».
+  // Restaurant ouvert à la réservation : transmise tout de suite (`transmission_prevue_a`
+  // vide), elle compte depuis sa création comme une commande ordinaire.
+  if (o.status === 'recue' && o.transmission_prevue_a) {
+    return !!o.transmise_le && minutesSince(o.transmise_le) >= LATE_RECUE_MIN;
+  }
   if (o.status === 'recue') return minutesSince(o.created_at) >= LATE_RECUE_MIN;
   if (o.status === 'en_livraison' && !o.courier_id) {
     return minutesSince(o.status_updated_at ?? o.created_at) >= LATE_UNASSIGNED_MIN;
@@ -150,7 +162,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, livraison_souhaitee_a, transmission_prevue_a, transmise_le, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -422,6 +434,14 @@ export function Realtime() {
                     <td data-label="Statut">
                       <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
+                      {o.livraison_souhaitee_a ? (
+                        <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700 }}>
+                          📅 à livrer à {timeLabel(o.livraison_souhaitee_a)}
+                          {o.status === 'recue' && !o.transmise_le && o.transmission_prevue_a
+                            ? <span className="muted" style={{ fontWeight: 400 }}> · transmise au resto à {timeLabel(o.transmission_prevue_a)}</span>
+                            : null}
+                        </div>
+                      ) : null}
                       {/* Sans ce rappel, on annule une commande encaissee sans le
                           savoir : c'est exactement ce qui est arrive a TF-96. */}
                       {o.payment_status === 'paye' || o.payment_status === 'rembourse' ? (

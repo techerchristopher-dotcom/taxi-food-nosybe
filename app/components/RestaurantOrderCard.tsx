@@ -9,6 +9,7 @@ import { colors, fonts, formatAr, radius } from '../theme/tokens';
 import { Order, paymentLabel } from '../data/types';
 import { BoutonMessagerie } from './BoutonMessagerie';
 import { RoleMessagerie } from '../data/messagerie';
+import { heureNosyBe } from '../lib/reservation';
 
 /**
  * Carte commande côté restaurant : détail complet (articles, options, total, paiement,
@@ -34,6 +35,27 @@ export function RestaurantOrderCard({
         </View>
         <StatusBadge status={order.status} />
       </View>
+
+      {/* Commande programmée le jour même (2026-10-16) : sans ce bandeau, une
+          réservation ressemble à une commande à préparer TOUT DE SUITE — le plat
+          sortirait des heures avant l'heure voulue par le client. */}
+      {order.livraisonSouhaitee ? (
+        <View style={styles.resa}>
+          <Text style={styles.resaTitre}>
+            📅 RÉSERVATION — à livrer à {heureNosyBe(order.livraisonSouhaitee, 'fr')}
+          </Text>
+          {order.status === 'recue' && !order.transmiseLe && order.transmissionPrevue ? (
+            <Text style={styles.resaTexte}>
+              Elle vous sera transmise à {heureNosyBe(order.transmissionPrevue, 'fr')}, à votre ouverture. Rien à faire d'ici là.
+            </Text>
+          ) : null}
+          {order.lancementPrevu && ['recue', 'confirmee'].includes(order.status) ? (
+            <Text style={styles.resaTexte}>
+              👨‍🍳 Préparation à lancer vers {heureNosyBe(order.lancementPrevu, 'fr')}, pas avant.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <Divider style={{ marginVertical: 12 }} />
 
@@ -210,4 +232,15 @@ const styles = StyleSheet.create({
   courierRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   courierText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.textDark },
   footer: { marginTop: 14, gap: 10 },
+  resa: {
+    marginTop: 12,
+    padding: 10,
+    gap: 4,
+    borderRadius: radius.tile,
+    backgroundColor: '#FFF4D6',
+    borderWidth: 1,
+    borderColor: '#FFC72C',
+  },
+  resaTitre: { fontFamily: fonts.extrabold, fontSize: 13.5, color: colors.ink },
+  resaTexte: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.textDark },
 });

@@ -1,0 +1,72 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f06 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f06 .cam, #f06 .push { position:absolute; inset:0; will-change:transform; }
+#f06 .push { perspective:2400px; }
+#f06 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f06 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f06 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f06 .titre { position:absolute; left:110px; top:250px; font-size:54px; font-weight:800; letter-spacing:10px; text-transform:uppercase; color:#E8342A; }
+#f06 .rail { position:absolute; left:205px; top:430px; width:18px; height:1140px; border-radius:9px; background:rgba(24,19,15,.12); overflow:hidden; }
+#f06 .plein { position:absolute; left:0; top:0; width:100%; height:100%; background:#FFC72C; }
+#f06 .jalon { position:absolute; left:130px; display:flex; align-items:center; gap:46px; }
+#f06 .j1 { top:380px; } #f06 .j2 { top:860px; } #f06 .j3 { top:1480px; }
+#f06 .pt { width:168px; height:168px; border-radius:50%; background:#18130F; color:#FFC72C; display:flex; align-items:center;
+  justify-content:center; font-size:76px; font-weight:900; box-shadow:0 0 0 12px #F6EFE2; }
+#f06 .pt.vide { background:#E8342A; color:#fff; }
+#f06 .h { font-size:150px; font-weight:900; letter-spacing:-6px; line-height:1; width:300px; }
+#f06 .t { font-size:46px; font-weight:700; color:rgba(24,19,15,.7); }
+#f06 .bulle { position:absolute; left:320px; top:1060px; padding:30px 44px; border-radius:40px 40px 40px 8px; background:#FFFBF4;
+  font-size:42px; font-weight:800; box-shadow:0 26px 60px rgba(24,19,15,.16), 0 0 0 4px #FFC72C; }
+#f06 .scoot { position:absolute; left:145px; top:1270px; width:140px; height:140px; border-radius:36px; background:#E8342A;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 20px 40px rgba(232,52,42,.4); }
+#f06 .scoot img { width:104px; height:auto; display:block; }
+</style>
+<div data-hf-id="hf-v9p3" id="f06" data-composition-id="f06" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-dnee" class="fantome" aria-hidden="true" data-layout-allow-overflow style="top:1610px;">10h 16h 19h</div>
+<div data-hf-id="hf-y0ln" class="titre">Aujourd'hui</div>
+<div data-hf-id="hf-qzq8" class="rail"><div data-hf-id="hf-7wkg" class="plein"></div></div>
+<div data-hf-id="hf-8axt" class="jalon j1"><div data-hf-id="hf-5wx1" class="pt">✓</div><div data-hf-id="hf-7x2b" class="h">10h</div><div data-hf-id="hf-0yea" class="t">Tu commandes</div></div>
+<div data-hf-id="hf-c91u" class="jalon j2"><div data-hf-id="hf-8dvd" class="pt">✓</div><div data-hf-id="hf-9gdx" class="h">16h</div><div data-hf-id="hf-91li" class="t">La Cabane ouvre</div></div>
+<div data-hf-id="hf-bm3m" class="bulle">La Cabane a reçu ta commande</div>
+<div data-hf-id="hf-hgcw" class="scoot"><img data-hf-id="hf-ngjc" src="../../assets/taxifood-transparent.png" alt=""></div>
+<div data-hf-id="hf-g75v" class="jalon j3"><div data-hf-id="hf-08py" class="pt vide"></div><div data-hf-id="hf-s83m" class="h">19h</div><div data-hf-id="hf-fh5b" class="t">Tu es livré</div></div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f06 .cam", {scale:0.75, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.320, ease:"power3.out"}, 0.000);
+tl.fromTo("#f06 .fantome", {x:0}, {x:-260, duration:4.000, ease:"none"}, 0.000);
+tl.fromTo("#f06 .titre", {opacity:0, x:-80}, {opacity:1, x:0, duration:0.400, ease:"power3.out"}, 0.150);
+tl.fromTo("#f06 .plein", {scaleY:0}, {scaleY:0.04, duration:0.200, ease:"power2.out", transformOrigin:"50% 0%"}, 0.300);
+tl.fromTo("#f06 .j1 .pt", {scale:0}, {scale:1, duration:0.350, ease:"back.out(2.6)"}, 0.300);
+tl.fromTo("#f06 .j1 .h, #f06 .j1 .t", {x:-60, opacity:0}, {x:0, opacity:1, duration:0.300, ease:"power3.out", stagger:0.06}, 0.400);
+tl.fromTo("#f06 .plein", {scaleY:0.04}, {scaleY:0.45, duration:0.700, ease:"power2.inOut", immediateRender:false}, 0.600);
+tl.fromTo("#f06 .j2 .pt", {scale:0}, {scale:1, duration:0.350, ease:"back.out(2.6)"}, 1.250);
+tl.fromTo("#f06 .j2 .h, #f06 .j2 .t", {x:-60, opacity:0}, {x:0, opacity:1, duration:0.300, ease:"power3.out", stagger:0.06}, 1.320);
+tl.fromTo("#f06 .bulle", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.400, ease:"back.out(2.2)", transformOrigin:"0% 100%"}, 1.500);
+tl.fromTo("#f06 .scoot", {scale:0}, {scale:1, duration:0.300, ease:"back.out(2)"}, 1.850);
+tl.fromTo("#f06 .scoot", {y:-380}, {y:0, duration:1.250, ease:"power1.inOut"}, 2.000);
+tl.fromTo("#f06 .scoot", {rotation:-4}, {rotation:4, duration:0.120, ease:"sine.inOut", yoyo:true, repeat:9, immediateRender:false}, 2.000);
+tl.fromTo("#f06 .plein", {scaleY:0.45}, {scaleY:0.8, duration:1.250, ease:"power1.inOut", immediateRender:false}, 2.000);
+tl.fromTo("#f06 .j3 .pt", {scale:0}, {scale:1, duration:0.350, ease:"back.out(2.6)"}, 2.200);
+tl.fromTo("#f06 .j3 .h, #f06 .j3 .t", {x:-60, opacity:0}, {x:0, opacity:1, duration:0.300, ease:"power3.out", stagger:0.06}, 2.270);
+tl.fromTo("#f06 .j3 .pt", {scale:1}, {scale:1.14, duration:0.220, ease:"sine.inOut", yoyo:true, repeat:1, immediateRender:false}, 3.250);
+tl.fromTo("#f06 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.180, ease:"power2.in", immediateRender:false}, 3.820);
+
+  window.__timelines["f06"] = tl;
+})();
+</script>
+</template>
+</body></html>

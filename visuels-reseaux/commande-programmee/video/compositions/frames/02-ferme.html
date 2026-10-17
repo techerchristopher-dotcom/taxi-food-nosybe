@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f02 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f02 .cam, #f02 .push { position:absolute; inset:0; will-change:transform; }
+#f02 .push { perspective:2400px; }
+#f02 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f02 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f02 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f02 .horloge { position:absolute; left:80px; top:170px; display:flex; align-items:center; gap:34px; }
+#f02 .cadran { width:150px; height:150px; }
+#f02 .heure { font-size:190px; font-weight:900; letter-spacing:-8px; line-height:1; font-variant-numeric:tabular-nums; }
+#f02 .carte { position:absolute; left:80px; right:80px; top:480px; height:1250px; border-radius:64px; background:#FFFBF4;
+  box-shadow:0 50px 110px rgba(24,19,15,.18), 0 0 0 4px rgba(24,19,15,.06); overflow:hidden; }
+#f02 .photo { height:700px; background:#1d1814; overflow:hidden; }
+#f02 .photo img { width:100%; height:100%; object-fit:cover; transform:scale(1.35); display:block; }
+#f02 .logo { position:absolute; left:60px; top:600px; width:200px; height:200px; border-radius:50%; overflow:hidden;
+  box-shadow:0 0 0 10px #FFFBF4, 0 16px 34px rgba(0,0,0,.25); }
+#f02 .logo img { width:100%; height:100%; object-fit:cover; display:block; }
+#f02 .nom { position:absolute; left:60px; top:840px; font-size:92px; font-weight:900; letter-spacing:-3px; }
+#f02 .type { position:absolute; left:60px; top:956px; font-size:38px; font-weight:500; color:rgba(24,19,15,.6); }
+#f02 .plustard { position:absolute; left:60px; right:60px; top:1060px; height:130px; border-radius:65px; display:flex;
+  align-items:center; justify-content:center; font-size:46px; font-weight:900; color:#E8342A; box-shadow:inset 0 0 0 5px #E8342A; }
+#f02 .badge { position:absolute; right:56px; top:612px; padding:22px 34px; border-radius:60px; background:#18130F; color:#fff;
+  font-size:42px; font-weight:900; letter-spacing:-.5px; box-shadow:0 0 0 6px #FFC72C, 0 20px 40px rgba(0,0,0,.3); }
+</style>
+<div data-hf-id="hf-3yon" id="f02" data-composition-id="f02" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-vtsc" class="horloge">
+  <svg data-hf-id="hf-ttd7" viewBox="0 0 120 120" class="cadran"><circle data-hf-id="hf-lpjt" cx="60" cy="60" r="52" fill="none" stroke="#18130F" stroke-width="9"/>
+    <line data-hf-id="hf-fvhq" x1="60" y1="60" x2="60" y2="24" stroke="#18130F" stroke-width="9" stroke-linecap="round"/>
+    <line data-hf-id="hf-h6ub" x1="60" y1="60" x2="36" y2="60" stroke="#E8342A" stroke-width="9" stroke-linecap="round"/></svg>
+  <div data-hf-id="hf-6cim" class="heure">10:00</div>
+</div>
+<div data-hf-id="hf-ty8b" class="carte">
+  <div data-hf-id="hf-1pjo" class="photo"><img data-hf-id="hf-acjv" src="../../assets/c2.png" alt="" data-layout-allow-overflow></div>
+  <div data-hf-id="hf-e319" class="logo"><img data-hf-id="hf-muor" src="../../assets/logo-cabane.jpg" alt=""></div>
+  <div data-hf-id="hf-vom7" class="nom">La Cabane</div>
+  <div data-hf-id="hf-m9pf" class="type">Tacos, burgers · Ambatoloaka</div>
+  <div data-hf-id="hf-na8z" class="badge">Fermé · Ouvre à 16h</div>
+  <div data-hf-id="hf-kn7q" class="plustard">Commander pour plus tard</div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f02 .cam", {scale:0.8, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.333, ease:"power3.out"}, 0.000);
+tl.fromTo("#f02 .push", {scale:1}, {scale:1.07, duration:1.778, ease:"sine.inOut"}, 0.222);
+(function(){
+  var h = document.querySelector("#f02 .heure");
+  var aig = document.querySelectorAll("#f02 .cadran line");
+  var p = {m:420};
+  tl.fromTo(p, {m:420}, {m:600, duration:0.944, ease:"power2.out", onUpdate:function(){
+    var m = Math.round(p.m/5)*5, hh = Math.floor(m/60), mm = m%60;
+    h.textContent = (hh<10?"0":"")+hh+":"+(mm<10?"0":"")+mm;
+    aig[0].setAttribute("transform","rotate("+(m*6)+" 60 60)");
+    aig[1].setAttribute("transform","rotate("+((m/60-9)*30)+" 60 60)");
+  }}, 0.111);
+})();
+tl.fromTo("#f02 .carte", {y:1000, rotation:7}, {y:0, rotation:0, duration:0.667, ease:"power4.out"}, 0.222);
+tl.fromTo("#f02 .photo img", {scale:1.75}, {scale:1.35, duration:1.111, ease:"power2.out"}, 0.222);
+tl.fromTo("#f02 .logo", {scale:0}, {scale:1, duration:0.444, ease:"back.out(2.4)"}, 0.667);
+tl.fromTo("#f02 .nom, #f02 .type", {y:50, opacity:0}, {y:0, opacity:1, duration:0.389, ease:"power3.out", stagger:0.07}, 0.722);
+tl.fromTo("#f02 .badge", {scale:2.6, rotation:-14, opacity:0}, {scale:1, rotation:-3, opacity:1, duration:0.356, ease:"back.out(3)"}, 1.333);
+tl.fromTo("#f02 .carte", {x:0}, {x:14, duration:0.056, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 1.411);
+tl.fromTo("#f02 .plustard", {y:40, opacity:0}, {y:0, opacity:1, duration:0.333, ease:"power3.out"}, 1.556);
+tl.fromTo("#f02 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(16px)", duration:0.200, ease:"power2.in", immediateRender:false}, 2.022);
+
+  window.__timelines["f02"] = tl;
+})();
+</script>
+</template>
+</body></html>

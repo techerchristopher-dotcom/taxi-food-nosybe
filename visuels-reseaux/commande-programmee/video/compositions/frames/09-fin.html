@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f09 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f09 .cam, #f09 .push { position:absolute; inset:0; will-change:transform; }
+#f09 .push { perspective:2400px; }
+#f09 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f09 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f09 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f09 .bloc { position:absolute; left:0; right:0; top:330px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+#f09 .carre { width:250px; height:250px; border-radius:62px; background:#E8342A; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 30px 60px rgba(232,52,42,.35); }
+#f09 .carre img { width:184px; height:auto; display:block; }
+#f09 .mot { margin-top:40px; font-size:110px; font-weight:900; letter-spacing:-4px; }
+#f09 .phrase { margin-top:110px; font-size:82px; font-weight:900; letter-spacing:-3.5px; line-height:1.02; }
+#f09 .phrase span { color:#E8342A; }
+#f09 .badges { margin-top:120px; display:flex; gap:28px; }
+#f09 .badges img { height:120px; width:auto; display:block; }
+#f09 .url { margin-top:60px; font-size:38px; font-weight:700; color:rgba(24,19,15,.55); }
+</style>
+<div data-hf-id="hf-al7z" id="f09" data-composition-id="f09" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-glsg" class="bloc">
+  <div data-hf-id="hf-5e55" class="carre"><img data-hf-id="hf-ngjc" src="../../assets/taxifood-transparent.png" alt=""></div>
+  <div data-hf-id="hf-poi4" class="mot">Taxi Food</div>
+  <div data-hf-id="hf-zz0c" class="phrase">Commande à l'avance,<br data-hf-id="hf-x5px"><span data-hf-id="hf-y257">le jour même.</span></div>
+  <div data-hf-id="hf-1bhc" class="badges"><img data-hf-id="hf-1tsp" src="../../assets/appstore.png" alt=""><img data-hf-id="hf-h72q" src="../../assets/googleplay.png" alt=""></div>
+  <div data-hf-id="hf-vemd" class="url">taxifoodnosybe.distripro207.com</div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f09 .cam", {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:0.311, ease:"power2.out"}, 0.000);
+tl.fromTo("#f09 .lueur", {scale:1}, {scale:1.12, duration:0.889, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
+tl.fromTo("#f09 .carre", {scale:0, rotation:-20}, {scale:1, rotation:0, duration:0.400, ease:"back.out(2.2)"}, 0.044);
+tl.fromTo("#f09 .mot", {y:50, opacity:0}, {y:0, opacity:1, duration:0.311, ease:"power3.out"}, 0.222);
+tl.fromTo("#f09 .phrase", {y:80, opacity:0}, {y:0, opacity:1, duration:0.356, ease:"power4.out"}, 0.356);
+tl.fromTo("#f09 .badges img", {y:40, opacity:0}, {y:0, opacity:1, duration:0.311, ease:"back.out(1.8)", stagger:0.08}, 0.533);
+tl.fromTo("#f09 .url", {opacity:0}, {opacity:1, duration:0.267, ease:"power2.out"}, 0.711);
+
+  window.__timelines["f09"] = tl;
+})();
+</script>
+</template>
+</body></html>

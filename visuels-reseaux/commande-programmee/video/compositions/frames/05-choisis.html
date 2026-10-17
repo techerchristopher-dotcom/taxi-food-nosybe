@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f05 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f05 .cam, #f05 .push { position:absolute; inset:0; will-change:transform; }
+#f05 .push { perspective:2400px; }
+#f05 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f05 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f05 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f05 .mots { position:absolute; left:70px; right:70px; top:0; bottom:0; display:flex; flex-direction:column;
+  justify-content:center; gap:6px; }
+#f05 .w { font-weight:900; line-height:.9; letter-spacing:-8px; text-transform:uppercase; white-space:nowrap; }
+</style>
+<div data-hf-id="hf-vou7" id="f05" data-composition-id="f05" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push"><div data-hf-id="hf-h60x" class="grain"></div><div data-hf-id="hf-q7v3" class="mots"><div data-hf-id="hf-b8nb" class="w" style="color:#18130F;font-size:196px;">Choisis</div><div data-hf-id="hf-k2wq" class="w" style="color:#18130F;font-size:196px;">ton</div><div data-hf-id="hf-6566" class="w" style="color:#E8342A;font-size:220px;">heure.</div></div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f05 .w:nth-child(1)", {x:900}, {x:0, duration:0.22, ease:"power4.out"}, 0.000);
+tl.fromTo("#f05 .w:nth-child(2)", {y:240, opacity:0}, {y:0, opacity:1, duration:0.2, ease:"power4.out"}, 0.444);
+tl.fromTo("#f05 .w:nth-child(3)", {scale:2.4, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"power3.out", transformOrigin:"0% 50%"}, 0.889);
+tl.fromTo("#f05 .mots", {scale:1}, {scale:1.05, duration:0.4, ease:"sine.out", immediateRender:false}, 0.939);
+tl.fromTo("#f05 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.6, filter:"blur(18px)", duration:0.15, ease:"power2.in", immediateRender:false}, 1.183);
+
+  window.__timelines["f05"] = tl;
+})();
+</script>
+</template>
+</body></html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f04 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f04 .cam, #f04 .push { position:absolute; inset:0; will-change:transform; }
+#f04 .push { perspective:2400px; }
+#f04 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f04 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f04 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f04 .panier { position:absolute; left:80px; right:80px; top:200px; display:flex; align-items:center; gap:40px; padding:36px;
+  border-radius:48px; background:#FFFBF4; box-shadow:0 30px 70px rgba(24,19,15,.12); }
+#f04 .vign { width:190px; height:190px; border-radius:36px; overflow:hidden; background:#1d1814; flex:0 0 auto; }
+#f04 .vign img { width:100%; height:100%; object-fit:cover; transform:scale(1.4); display:block; }
+#f04 .pn { font-size:64px; font-weight:900; letter-spacing:-2px; }
+#f04 .pr { margin-top:8px; font-size:34px; font-weight:500; color:rgba(24,19,15,.6); }
+#f04 .feuille { position:absolute; left:0; right:0; bottom:0; height:1340px; border-radius:72px 72px 0 0; background:#FFFBF4;
+  box-shadow:0 -30px 90px rgba(24,19,15,.18); padding:40px 80px 0; }
+#f04 .poignee { width:140px; height:14px; border-radius:7px; background:rgba(24,19,15,.15); margin:0 auto 70px; }
+#f04 .q { font-size:96px; font-weight:900; letter-spacing:-4px; line-height:1.0; }
+#f04 .chips { position:relative; margin-top:70px; display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+#f04 .chip { height:170px; border-radius:40px; display:flex; align-items:center; justify-content:center; font-size:76px;
+  font-weight:800; letter-spacing:-2px; background:#F6EFE2; box-shadow:inset 0 0 0 4px rgba(24,19,15,.12);
+  font-variant-numeric:tabular-nums; }
+#f04 .chip.on { background:#E8342A; color:#fff; }
+#f04 .sel { position:absolute; left:0; top:0; width:445px; height:170px; border-radius:40px; box-shadow:0 0 0 9px #FFC72C; pointer-events:none; }
+#f04 .onde { position:absolute; left:50%; top:50%; width:320px; height:320px; margin:-160px 0 0 -160px; border-radius:50%; background:rgba(255,255,255,.55); }
+#f04 .bouton span { position:relative; }
+#f04 .note { margin-top:60px; font-size:38px; font-weight:500; line-height:1.3; color:rgba(24,19,15,.65); }
+#f04 .bouton { position:absolute; left:80px; right:80px; bottom:110px; height:170px; border-radius:85px; background:#E8342A;
+  color:#fff; display:flex; align-items:center; justify-content:center; font-size:62px; font-weight:900; letter-spacing:-1px;
+  box-shadow:0 30px 60px rgba(232,52,42,.4); overflow:hidden; }
+</style>
+<div data-hf-id="hf-tefj" id="f04" data-composition-id="f04" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-s8qn" class="panier">
+  <div data-hf-id="hf-88x8" class="vign"><img data-hf-id="hf-acjv" src="../../assets/c2.png" alt="" data-layout-allow-overflow></div>
+  <div data-hf-id="hf-yeow"><div data-hf-id="hf-o2ak" class="pn">Tacos</div><div data-hf-id="hf-sw2f" class="pr">La Cabane · fermé jusqu'à 16h</div></div>
+</div>
+<div data-hf-id="hf-8luu" class="feuille">
+  <div data-hf-id="hf-dy5p" class="poignee"></div>
+  <div data-hf-id="hf-to94" class="q">Quand veux-tu<br data-hf-id="hf-x5px">être livré ?</div>
+  <div data-hf-id="hf-exrd" class="chips">
+    <div data-hf-id="hf-4e98" class="chip">18:30</div><div data-hf-id="hf-2foc" class="chip">18:45</div>
+    <div data-hf-id="hf-futj" class="chip on">19:00</div><div data-hf-id="hf-hu3o" class="chip">19:15</div>
+    <div data-hf-id="hf-qyxs" class="sel"></div>
+  </div>
+  <div data-hf-id="hf-hwgm" class="note">La Cabane reçoit ta commande à son ouverture et la prépare pour 19h00.</div>
+  <div data-hf-id="hf-z9g1" class="bouton"><div data-hf-id="hf-yjbe" class="onde"></div><span data-hf-id="hf-jyhv">Commander pour 19h00</span></div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f04 .cam", {y:800, filter:"blur(18px)"}, {y:0, filter:"blur(0px)", duration:0.345, ease:"power4.out"}, 0.000);
+tl.fromTo("#f04 .panier", {y:-220, opacity:0}, {y:0, opacity:1, duration:0.406, ease:"power3.out"}, 0.102);
+tl.fromTo("#f04 .feuille", {y:1400}, {y:0, duration:0.610, ease:"back.out(1.1)"}, 0.254);
+tl.fromTo("#f04 .q", {y:60, opacity:0}, {y:0, opacity:1, duration:0.356, ease:"power3.out"}, 0.610);
+tl.fromTo("#f04 .chip", {scale:0.6, opacity:0}, {scale:1, opacity:1, duration:0.305, ease:"back.out(2)", stagger:0.06}, 0.813);
+tl.fromTo("#f04 .sel", {opacity:0, scale:1.15, x:0, y:0}, {opacity:1, scale:1, duration:0.203, ease:"power2.out"}, 1.333);
+tl.fromTo("#f04 .sel", {x:0, y:0}, {x:475, y:0, duration:0.203, ease:"power3.inOut", immediateRender:false}, 1.778);
+tl.fromTo("#f04 .sel", {x:475, y:0}, {x:0, y:200, duration:0.244, ease:"back.out(1.6)", immediateRender:false}, 2.222);
+tl.fromTo("#f04 .chip.on", {backgroundColor:"#F6EFE2", color:"#18130F", boxShadow:"inset 0 0 0 4px rgba(24,19,15,.12), 0 0px 0px rgba(232,52,42,0)"}, {backgroundColor:"#E8342A", color:"#ffffff", boxShadow:"inset 0 0 0 0px rgba(24,19,15,0), 0 24px 50px rgba(232,52,42,.4)", duration:0.183, ease:"power2.out"}, 2.286);
+tl.fromTo("#f04 .chip.on", {scale:1}, {scale:1.06, duration:0.122, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}, 2.286);
+tl.fromTo("#f04 .note", {opacity:0, y:20}, {opacity:1, y:0, duration:0.305, ease:"power2.out"}, 2.438);
+tl.fromTo("#f04 .bouton", {backgroundColor:"#FFFBF4", color:"#E8342A"}, {backgroundColor:"#E8342A", color:"#ffffff", duration:0.305, ease:"power2.out"}, 2.591);
+tl.fromTo("#f04 .bouton", {scale:1}, {scale:0.93, duration:0.081, ease:"power1.in", immediateRender:false}, 3.027);
+tl.fromTo("#f04 .bouton", {scale:0.93}, {scale:1, duration:0.305, ease:"back.out(3)", immediateRender:false}, 3.109);
+tl.fromTo("#f04 .onde", {scale:0.2, opacity:0.55}, {scale:2.6, opacity:0, duration:0.457, ease:"power2.out"}, 3.048);
+tl.fromTo("#f04 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.35, filter:"blur(16px)", duration:0.183, ease:"power2.in", immediateRender:false}, 3.373);
+
+  window.__timelines["f04"] = tl;
+})();
+</script>
+</template>
+</body></html>

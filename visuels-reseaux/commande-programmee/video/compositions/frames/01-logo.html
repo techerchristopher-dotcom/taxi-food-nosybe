@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f01 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f01 .cam, #f01 .push { position:absolute; inset:0; will-change:transform; }
+#f01 .push { perspective:2400px; }
+#f01 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f01 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f01 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f01 .bloc { position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }
+#f01 .carre { width:340px; height:340px; border-radius:84px; background:#E8342A; display:flex; align-items:center;
+  justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }
+#f01 .carre img { width:250px; height:auto; display:block; }
+#f01 .mot { margin-top:64px; font-size:150px; font-weight:900; letter-spacing:-6px; line-height:1; }
+#f01 .filet { margin-top:30px; width:560px; height:18px; border-radius:9px; background:#FFC72C; }
+#f01 .lieu { margin-top:34px; font-size:34px; font-weight:800; letter-spacing:14px; text-transform:uppercase; color:#E8342A; }
+</style>
+<div data-hf-id="hf-figf" id="f01" data-composition-id="f01" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-glsg" class="bloc">
+  <div data-hf-id="hf-5e55" class="carre"><img data-hf-id="hf-ngjc" src="../../assets/taxifood-transparent.png" alt=""></div>
+  <div data-hf-id="hf-poi4" class="mot">Taxi Food</div>
+  <div data-hf-id="hf-1sg2" class="filet"></div>
+  <div data-hf-id="hf-qhbl" class="lieu">Nosy Be</div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f01 .cam", {scale:1.6, filter:"blur(18px)"}, {scale:1, filter:"blur(0px)", duration:0.311, ease:"power3.out"}, 0.000);
+tl.fromTo("#f01 .lueur", {scale:1}, {scale:1.12, duration:0.667, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
+tl.fromTo("#f01 .carre", {scale:0, rotation:-28}, {scale:1, rotation:0, duration:0.489, ease:"back.out(2.2)"}, 0.044);
+tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.356, ease:"power4.out"}, 0.267);
+tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.400, ease:"power3.out"}, 0.400);
+tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.311, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.667);
+tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.356, ease:"power2.out"}, 0.800);
+tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.178, ease:"power2.in", immediateRender:false}, 1.156);
+
+  window.__timelines["f01"] = tl;
+})();
+</script>
+</template>
+</body></html>

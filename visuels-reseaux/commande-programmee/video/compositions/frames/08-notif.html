@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f08 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f08 .cam, #f08 .push { position:absolute; inset:0; will-change:transform; }
+#f08 .push { perspective:2400px; }
+#f08 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f08 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f08 .fantome { position:absolute; left:-40px; font-size:420px; font-weight:900; line-height:.85;
+  letter-spacing:-18px; color:rgba(232,52,42,.07); white-space:nowrap; }
+
+#f08 .tel { position:absolute; left:110px; top:220px; width:860px; height:1560px; border-radius:130px; background:#18130F;
+  padding:26px; box-shadow:0 60px 120px rgba(24,19,15,.35); }
+#f08 .ecran { position:relative; width:100%; height:100%; border-radius:106px; overflow:hidden; }
+#f08 .fond { position:absolute; inset:0; background:radial-gradient(120% 90% at 20% 110%, #FFC72C 0%, #E8342A 45%, #8f1d16 100%); }
+#f08 .heureTel { position:absolute; left:0; right:0; top:560px; text-align:center; font-size:230px; font-weight:800; color:rgba(255,251,244,.92); letter-spacing:-8px; }
+#f08 .ilot { position:absolute; left:34px; right:34px; top:34px; padding:40px 44px 46px; border-radius:76px; background:#0e0b09; color:#fff; }
+#f08 .haut { display:flex; align-items:center; gap:24px; }
+#f08 .ico { width:96px; height:96px; border-radius:26px; background:#E8342A; display:flex; align-items:center; justify-content:center; }
+#f08 .ico img { width:72px; height:auto; display:block; }
+#f08 .marque { font-size:46px; font-weight:900; flex:1; }
+#f08 .eta { font-size:46px; font-weight:900; color:#FFC72C; font-variant-numeric:tabular-nums; }
+#f08 .l1 { margin-top:34px; font-size:48px; font-weight:600; }
+#f08 .l1 b { color:#FFC72C; font-weight:900; }
+#f08 .l2 { margin-top:10px; font-size:38px; font-weight:500; color:rgba(255,255,255,.7); }
+#f08 .barre { position:relative; margin-top:40px; height:14px; border-radius:7px; background:rgba(255,255,255,.18); }
+#f08 .rempli { position:absolute; left:0; top:0; height:100%; width:100%; border-radius:7px; background:#FFC72C; }
+#f08 .moto { position:absolute; left:0; top:-17px; width:48px; height:48px; margin-left:-24px; border-radius:50%; background:#E8342A; box-shadow:0 0 0 6px #0e0b09; }
+#f08 .fin { position:absolute; right:-6px; top:-8px; width:30px; height:30px; border-radius:50%; background:#fff; }
+</style>
+<div data-hf-id="hf-mbbj" id="f08" data-composition-id="f08" data-width="1080" data-height="1920"><div data-hf-id="hf-12x1" class="cam"><div data-hf-id="hf-wzho" class="push">
+<div data-hf-id="hf-2jq7" class="lueur"></div><div data-hf-id="hf-h60x" class="grain"></div>
+<div data-hf-id="hf-8z2f" class="tel">
+  <div data-hf-id="hf-g64f" class="ecran">
+    <div data-hf-id="hf-tbpr" class="fond"></div>
+    <div data-hf-id="hf-38p6" class="ilot">
+      <div data-hf-id="hf-qmce" class="haut"><div data-hf-id="hf-5hk7" class="ico"><img data-hf-id="hf-ngjc" src="../../assets/taxifood-transparent.png" alt=""></div>
+        <div data-hf-id="hf-kast" class="marque">Taxi Food</div><div data-hf-id="hf-9sus" class="eta">19:00</div></div>
+      <div data-hf-id="hf-edrf" class="l1">Livraison prévue à <b data-hf-id="hf-nsbh">19h00</b></div>
+      <div data-hf-id="hf-x8dl" class="l2">La Cabane prépare ta commande</div>
+      <div data-hf-id="hf-uwsg" class="barre"><div data-hf-id="hf-rrcx" class="rempli"></div><div data-hf-id="hf-be9f" class="moto"></div><div data-hf-id="hf-ts4n" class="fin"></div></div>
+    </div>
+    <div data-hf-id="hf-onkm" class="heureTel">18:27</div>
+  </div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f08 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.267, ease:"power3.out"}, 0.000);
+tl.fromTo("#f08 .tel", {rotationX:38, rotationY:-28, y:560, scale:0.82}, {rotationX:0, rotationY:0, y:0, scale:1, duration:0.667, ease:"power3.out"}, 0.000);
+tl.fromTo("#f08 .heureTel", {opacity:0, scale:0.9}, {opacity:1, scale:1, duration:0.356, ease:"power2.out"}, 0.311);
+tl.fromTo("#f08 .ilot", {scaleX:0.34, scaleY:0.22}, {scaleX:1, scaleY:1, duration:0.444, ease:"back.out(1.5)", transformOrigin:"50% 0%"}, 0.622);
+tl.fromTo("#f08 .ilot > *", {opacity:0, y:14}, {opacity:1, y:0, duration:0.267, ease:"power2.out", stagger:0.06}, 0.844);
+tl.fromTo("#f08 .rempli", {scaleX:0}, {scaleX:0.62, duration:0.800, ease:"power2.inOut", transformOrigin:"0% 50%"}, 1.111);
+tl.fromTo("#f08 .moto", {x:0}, {x:436, duration:0.800, ease:"power2.inOut"}, 1.111);
+tl.fromTo("#f08 .push", {scale:1}, {scale:1.05, duration:1.956, ease:"sine.inOut"}, 0.178);
+tl.fromTo("#f08 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(14px)", duration:0.160, ease:"power2.in", immediateRender:false}, 2.062);
+
+  window.__timelines["f08"] = tl;
+})();
+</script>
+</template>
+</body></html>

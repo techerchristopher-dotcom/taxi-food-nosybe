@@ -272,7 +272,9 @@
     "needGps": "GPS location missing on this address. Go back to the address step and capture your location.",
     "failed": "The order could not be created. Please try again.",
     "restaurantFerme": "This restaurant is closed right now. Your order was not sent — come back when it opens, your cart is kept.",
-    "categorieHorsService": "{{categorie}} is only served between {{de}} and {{a}}. Remove those dishes from your cart, or come back at {{de}}."
+    "categorieHorsService": "{{categorie}} is only served between {{de}} and {{a}}. Remove those dishes from your cart, or come back at {{de}}.",
+    "orangeEnLigneSub": "Pay now with your Orange Money account",
+    "omEnLigneInfo": "You pay now with Orange Money: an Orange page opens and you confirm with your PIN. The restaurant receives your order as soon as the payment is confirmed."
   },
   "paiement": {
     "titre": "Card payment",
@@ -417,7 +419,10 @@
     "courierToRestaurantSub": "A courier has taken your order and is going to pick it up at the restaurant.",
     "courierNamedToRestaurantSub": "{{name}} has taken your order and is going to pick it up at the restaurant.",
     "relanceTitle": "The restaurant is taking a moment",
-    "relanceSub": "{{resto}} hasn't confirmed your order yet. We're chasing them for you — you'll be notified as soon as they reply."
+    "relanceSub": "{{resto}} hasn't confirmed your order yet. We're chasing them for you — you'll be notified as soon as they reply.",
+    "payeOrangeMoney": "Already paid with Orange Money",
+    "paiementOmEnAttente": "Orange Money payment being checked.",
+    "paiementOmEchoue": "The Orange Money payment didn't go through. The restaurant hasn't received your order yet."
   },
   "profile": {
     "defaultName": "Customer",
@@ -596,9 +601,9 @@
     "label": "Message Taxi Food on WhatsApp"
   },
   "offres": {
-      "title": "Deals of the week",
-      "subtitle": "Slashed prices, for a few days only",
-      "jusquA": "Until {{jour}}"
+    "title": "Deals of the week",
+    "subtitle": "Slashed prices, for a few days only",
+    "jusquA": "Until {{jour}}"
   },
   "nouveautes": {
     "title": "New on Taxi Food",
@@ -803,31 +808,31 @@
       "profilNonLus_other": "{{count}} new replies"
     }
   },
-    "reservation": {
-      "bandeauResto": "Closed right now · {{quand}}. You can already order: you'll pick your delivery time at checkout.",
-      "panier": "This restaurant is closed right now · {{quand}}. You can order now and be delivered later today.",
-      "quand": "When do you want your delivery?",
-      "checkoutFerme": "The restaurant is closed right now. Pick a delivery time for today: it will receive your order when it opens.",
-      "aucunCreneau": "No more delivery times available today for this restaurant.",
-      "desQuePossible": "As soon as possible",
-      "noteOuvert": "Delivery planned around {{heure}}. The restaurant will prepare it for that time.",
-      "noteFerme": "Delivery planned around {{heure}}. The restaurant receives your order when it opens and prepares it for that time.",
-      "choisirHeure": "Pick your delivery time.",
-      "refusAvecPremier": "That time is no longer possible. Earliest delivery: {{heure}}.",
-      "refus": "That delivery time is no longer possible. Please pick another one.",
-      "valider": "Order for {{heure}}",
-      "prevueLabel": "Planned delivery",
-      "suiviTitre": "Order planned for {{heure}}",
-      "suiviAttenteOuverture": "{{resto}} will receive your order when it opens, at {{heure}}.",
-      "suiviAttenteReponse": "{{resto}} is about to confirm your order.",
-      "prevueA": "Delivery planned around {{heure}}",
-      "indicatif": "Approximate time, based on the restaurant's usual timings.",
-      "annuler": "Cancel my order",
-      "annulerConfirmer": "Yes, cancel my order",
-      "garder": "No, keep it",
-      "annulerTropTard": "The restaurant has already accepted your order: it can't be cancelled here anymore. Message us on WhatsApp.",
-      "annulerEchec": "The cancellation didn't go through. Please try again in a moment."
-    },
+  "reservation": {
+    "bandeauResto": "Closed right now · {{quand}}. You can already order: you'll pick your delivery time at checkout.",
+    "panier": "This restaurant is closed right now · {{quand}}. You can order now and be delivered later today.",
+    "quand": "When do you want your delivery?",
+    "checkoutFerme": "The restaurant is closed right now. Pick a delivery time for today: it will receive your order when it opens.",
+    "aucunCreneau": "No more delivery times available today for this restaurant.",
+    "desQuePossible": "As soon as possible",
+    "noteOuvert": "Delivery planned around {{heure}}. The restaurant will prepare it for that time.",
+    "noteFerme": "Delivery planned around {{heure}}. The restaurant receives your order when it opens and prepares it for that time.",
+    "choisirHeure": "Pick your delivery time.",
+    "refusAvecPremier": "That time is no longer possible. Earliest delivery: {{heure}}.",
+    "refus": "That delivery time is no longer possible. Please pick another one.",
+    "valider": "Order for {{heure}}",
+    "prevueLabel": "Planned delivery",
+    "suiviTitre": "Order planned for {{heure}}",
+    "suiviAttenteOuverture": "{{resto}} will receive your order when it opens, at {{heure}}.",
+    "suiviAttenteReponse": "{{resto}} is about to confirm your order.",
+    "prevueA": "Delivery planned around {{heure}}",
+    "indicatif": "Approximate time, based on the restaurant's usual timings.",
+    "annuler": "Cancel my order",
+    "annulerConfirmer": "Yes, cancel my order",
+    "garder": "No, keep it",
+    "annulerTropTard": "The restaurant has already accepted your order: it can't be cancelled here anymore. Message us on WhatsApp.",
+    "annulerEchec": "The cancellation didn't go through. Please try again in a moment."
+  },
   "suivi": {
     "titre": "Your courier, live",
     "titreNom": "{{name}}, your courier, live",
@@ -848,5 +853,33 @@
     "autoRapide": "Updates automatically every 20 s",
     "secondes": "{{n}} s",
     "minutes": "{{n}} min"
+  },
+  "paiementOm": {
+    "titre": "Orange Money payment",
+    "aPayer": "Amount to pay",
+    "mention": "Secure payment on the official Orange Money page. The restaurant receives your order once the payment is confirmed.",
+    "commentTitre": "How it works",
+    "comment1": "1. Tap “Pay with Orange Money”: the Orange page opens.",
+    "comment2": "2. Enter your Orange Money number, then the code you get from #144#.",
+    "comment3": "3. Confirm: you come back here automatically.",
+    "payer": "Pay with Orange Money",
+    "dejaPaye": "I've paid, check",
+    "pasEncore": "No payment found yet. If you confirmed on the Orange page, tap “I've paid, check” in a moment.",
+    "ouverture": "Opening the Orange Money page…",
+    "surOrange": "Payment in progress with Orange Money",
+    "surOrangeTexte": "Finish your payment on the Orange page, then come back here.",
+    "verification": "Checking the payment with Orange…",
+    "payeTitre": "Orange Money payment received!",
+    "indisponibleTitre": "Orange Money unavailable",
+    "echecTitre": "The payment couldn't start",
+    "motif": {
+      "canalFerme": "In-app Orange Money payment isn't available right now. You can pay cash on delivery.",
+      "commandeIntrouvable": "This order can't be found.",
+      "commandeNonPayable": "This order can no longer be paid (it may have been cancelled).",
+      "authentification": "Sign in to pay.",
+      "reseau": "Connection lost. Check your network and try again.",
+      "orangeIndisponible": "Orange Money isn't responding right now. Nothing was charged: try again in a moment, or pay cash.",
+      "inconnu": "The payment couldn't start. Nothing was charged."
+    }
   }
 }

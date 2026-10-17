@@ -272,7 +272,9 @@
     "needGps": "Posizione GPS mancante su questo indirizzo. Torna al passaggio indirizzo e registra la tua posizione.",
     "failed": "Non è stato possibile creare l'ordine. Riprova.",
     "restaurantFerme": "Questo ristorante è chiuso in questo momento. Il tuo ordine non è stato inviato — torna all'apertura, il carrello resta.",
-    "categorieHorsService": "{{categorie}} si serve solo tra le {{de}} e le {{a}}. Togli questi piatti dal carrello, oppure torna alle {{de}}."
+    "categorieHorsService": "{{categorie}} si serve solo tra le {{de}} e le {{a}}. Togli questi piatti dal carrello, oppure torna alle {{de}}.",
+    "orangeEnLigneSub": "Paga ora con il tuo conto Orange Money",
+    "omEnLigneInfo": "Paghi ora con Orange Money: si apre una pagina Orange e confermi con il tuo codice segreto. Il ristorante riceve l'ordine appena il pagamento è confermato."
   },
   "paiement": {
     "titre": "Pagamento con carta",
@@ -417,7 +419,10 @@
     "courierToRestaurantSub": "Un rider ha preso il tuo ordine e va a ritirarlo al ristorante.",
     "courierNamedToRestaurantSub": "{{name}} ha preso il tuo ordine e va a ritirarlo al ristorante.",
     "relanceTitle": "Il ristorante ci sta mettendo un po'",
-    "relanceSub": "{{resto}} non ha ancora confermato il tuo ordine. Lo stiamo sollecitando per te — ti avviseremo appena risponde."
+    "relanceSub": "{{resto}} non ha ancora confermato il tuo ordine. Lo stiamo sollecitando per te — ti avviseremo appena risponde.",
+    "payeOrangeMoney": "Già pagato con Orange Money",
+    "paiementOmEnAttente": "Pagamento Orange Money in verifica.",
+    "paiementOmEchoue": "Il pagamento Orange Money non è andato a buon fine. Il ristorante non ha ancora ricevuto l'ordine."
   },
   "profile": {
     "defaultName": "Cliente",
@@ -596,9 +601,9 @@
     "label": "Scrivi a Taxi Food su WhatsApp"
   },
   "offres": {
-      "title": "Offerte della settimana",
-      "subtitle": "Prezzi scontati, solo per pochi giorni",
-      "jusquA": "Fino a {{jour}} incluso"
+    "title": "Offerte della settimana",
+    "subtitle": "Prezzi scontati, solo per pochi giorni",
+    "jusquA": "Fino a {{jour}} incluso"
   },
   "nouveautes": {
     "title": "Novità su Taxi Food",
@@ -803,31 +808,31 @@
       "profilNonLus_other": "{{count}} nuove risposte"
     }
   },
-    "reservation": {
-      "bandeauResto": "Chiuso al momento · {{quand}}. Puoi già ordinare: sceglierai l'orario di consegna al momento del pagamento.",
-      "panier": "Il ristorante è chiuso al momento · {{quand}}. Puoi ordinare ora ed essere consegnato più tardi oggi.",
-      "quand": "Quando vuoi la consegna?",
-      "checkoutFerme": "Il ristorante è chiuso al momento. Scegli l'orario di consegna, oggi: riceverà il tuo ordine all'apertura.",
-      "aucunCreneau": "Nessun orario di consegna ancora disponibile oggi per questo ristorante.",
-      "desQuePossible": "Il prima possibile",
-      "noteOuvert": "Consegna prevista verso le {{heure}}. Il ristorante la preparerà per quell'ora.",
-      "noteFerme": "Consegna prevista verso le {{heure}}. Il ristorante riceve il tuo ordine all'apertura e lo prepara per quell'ora.",
-      "choisirHeure": "Scegli l'orario di consegna.",
-      "refusAvecPremier": "Questo orario non è più possibile. Prima consegna possibile: {{heure}}.",
-      "refus": "Questo orario di consegna non è più possibile. Scegline un altro.",
-      "valider": "Ordina per le {{heure}}",
-      "prevueLabel": "Consegna prevista",
-      "suiviTitre": "Ordine previsto per le {{heure}}",
-      "suiviAttenteOuverture": "{{resto}} riceverà il tuo ordine all'apertura, alle {{heure}}.",
-      "suiviAttenteReponse": "{{resto}} sta per confermare il tuo ordine.",
-      "prevueA": "Consegna prevista verso le {{heure}}",
-      "indicatif": "Orario indicativo, calcolato sui tempi abituali del ristorante.",
-      "annuler": "Annulla il mio ordine",
-      "annulerConfirmer": "Sì, annulla il mio ordine",
-      "garder": "No, lo tengo",
-      "annulerTropTard": "Il ristorante ha già accettato il tuo ordine: non può più essere annullato qui. Scrivici su WhatsApp.",
-      "annulerEchec": "L'annullamento non è andato a buon fine. Riprova tra un attimo."
-    },
+  "reservation": {
+    "bandeauResto": "Chiuso al momento · {{quand}}. Puoi già ordinare: sceglierai l'orario di consegna al momento del pagamento.",
+    "panier": "Il ristorante è chiuso al momento · {{quand}}. Puoi ordinare ora ed essere consegnato più tardi oggi.",
+    "quand": "Quando vuoi la consegna?",
+    "checkoutFerme": "Il ristorante è chiuso al momento. Scegli l'orario di consegna, oggi: riceverà il tuo ordine all'apertura.",
+    "aucunCreneau": "Nessun orario di consegna ancora disponibile oggi per questo ristorante.",
+    "desQuePossible": "Il prima possibile",
+    "noteOuvert": "Consegna prevista verso le {{heure}}. Il ristorante la preparerà per quell'ora.",
+    "noteFerme": "Consegna prevista verso le {{heure}}. Il ristorante riceve il tuo ordine all'apertura e lo prepara per quell'ora.",
+    "choisirHeure": "Scegli l'orario di consegna.",
+    "refusAvecPremier": "Questo orario non è più possibile. Prima consegna possibile: {{heure}}.",
+    "refus": "Questo orario di consegna non è più possibile. Scegline un altro.",
+    "valider": "Ordina per le {{heure}}",
+    "prevueLabel": "Consegna prevista",
+    "suiviTitre": "Ordine previsto per le {{heure}}",
+    "suiviAttenteOuverture": "{{resto}} riceverà il tuo ordine all'apertura, alle {{heure}}.",
+    "suiviAttenteReponse": "{{resto}} sta per confermare il tuo ordine.",
+    "prevueA": "Consegna prevista verso le {{heure}}",
+    "indicatif": "Orario indicativo, calcolato sui tempi abituali del ristorante.",
+    "annuler": "Annulla il mio ordine",
+    "annulerConfirmer": "Sì, annulla il mio ordine",
+    "garder": "No, lo tengo",
+    "annulerTropTard": "Il ristorante ha già accettato il tuo ordine: non può più essere annullato qui. Scrivici su WhatsApp.",
+    "annulerEchec": "L'annullamento non è andato a buon fine. Riprova tra un attimo."
+  },
   "suivi": {
     "titre": "Il tuo rider in diretta",
     "titreNom": "{{name}}, il tuo rider, in diretta",
@@ -848,5 +853,33 @@
     "autoRapide": "Aggiornamento automatico ogni 20 s",
     "secondes": "{{n}} s",
     "minutes": "{{n}} min"
+  },
+  "paiementOm": {
+    "titre": "Pagamento Orange Money",
+    "aPayer": "Importo da pagare",
+    "mention": "Pagamento sicuro sulla pagina ufficiale di Orange Money. Il ristorante riceve l'ordine una volta confermato il pagamento.",
+    "commentTitre": "Come funziona",
+    "comment1": "1. Tocca «Paga con Orange Money»: si apre la pagina Orange.",
+    "comment2": "2. Inserisci il tuo numero Orange Money, poi il codice ricevuto con il #144#.",
+    "comment3": "3. Conferma: torni qui automaticamente.",
+    "payer": "Paga con Orange Money",
+    "dejaPaye": "Ho pagato, verifica",
+    "pasEncore": "Nessun pagamento trovato per ora. Se hai confermato su Orange, tocca «Ho pagato, verifica» tra un istante.",
+    "ouverture": "Apertura della pagina Orange Money…",
+    "surOrange": "Pagamento in corso con Orange Money",
+    "surOrangeTexte": "Completa il pagamento sulla pagina Orange, poi torna qui.",
+    "verification": "Verifica del pagamento con Orange…",
+    "payeTitre": "Pagamento Orange Money ricevuto!",
+    "indisponibleTitre": "Orange Money non disponibile",
+    "echecTitre": "Il pagamento non è potuto partire",
+    "motif": {
+      "canalFerme": "Il pagamento Orange Money nell'app non è disponibile al momento. Puoi pagare in contanti alla consegna.",
+      "commandeIntrouvable": "Ordine non trovato.",
+      "commandeNonPayable": "Questo ordine non può più essere pagato (forse è stato annullato).",
+      "authentification": "Accedi per pagare.",
+      "reseau": "Connessione persa. Controlla la rete e riprova.",
+      "orangeIndisponible": "Orange Money non risponde al momento. Nessun addebito: riprova tra un istante o paga in contanti.",
+      "inconnu": "Il pagamento non è potuto partire. Nessun addebito."
+    }
   }
 }

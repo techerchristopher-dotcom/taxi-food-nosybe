@@ -279,7 +279,7 @@ export default function OrderTrackingScreen() {
         </View>
 
         <EtatPaiement order={order} onReprendre={() => router.push({
-          pathname: '/paiement',
+          pathname: order.omEnLigne ? '/paiement-om' : '/paiement',
           params: { orderId: order.id, orderNumber: order.orderNumber, total: String(order.total) },
         })} />
 
@@ -332,7 +332,7 @@ export default function OrderTrackingScreen() {
             <Text style={styles.totalValue}>{formatAr(order.total)}</Text>
           </View>
           {/* Paiement à la livraison : on rappelle discrètement qu'Orange Money marche aussi. */}
-          {!carte && order.status !== 'annulee' ? (
+          {!carte && !order.omEnLigne && order.status !== 'annulee' ? (
             <CarteOrangeMoney
               orderId={order.id}
               orderNumber={order.orderNumber}
@@ -362,7 +362,11 @@ export default function OrderTrackingScreen() {
  */
 function EtatPaiement({ order, onReprendre }: { order: Order; onReprendre: () => void }) {
   const { t } = useTranslation();
-  if (order.paymentMethod !== 'cb') return null;
+  // Orange Money payé DANS l'app (2026-10-17) suit exactement la carte : même
+  // verdict serveur, même reprise. L'Orange Money encaissé à la porte, lui, garde
+  // sa carte « Payer par Orange Money » (CarteOrangeMoney).
+  const om = order.paymentMethod === 'orange_money' && order.omEnLigne === true;
+  if (order.paymentMethod !== 'cb' && !om) return null;
 
   // `non_requis` sur une commande carte = aucun paiement n'a jamais ete engage.
   // C'est le cas de l'abandon pur et simple : a traiter comme un echec, sinon
@@ -372,12 +376,12 @@ function EtatPaiement({ order, onReprendre }: { order: Order; onReprendre: () =>
 
   const contenu =
     order.paymentStatus === 'paye'
-      ? { icone: 'check_circle', couleur: colors.success, texte: t('tracking.payToCourierCarte') }
+      ? { icone: 'check_circle', couleur: colors.success, texte: t(om ? 'tracking.payeOrangeMoney' : 'tracking.payToCourierCarte') }
       : order.paymentStatus === 'rembourse'
         ? { icone: 'undo', couleur: colors.textMuted, texte: t('tracking.paiementRembourse') }
         : order.paymentStatus === 'en_attente'
-          ? { icone: 'schedule', couleur: colors.secondary, texte: t('tracking.paiementEnAttente') }
-          : { icone: 'error', couleur: colors.dangerText, texte: t('tracking.paiementEchoue') };
+          ? { icone: 'schedule', couleur: colors.secondary, texte: t(om ? 'tracking.paiementOmEnAttente' : 'tracking.paiementEnAttente') }
+          : { icone: 'error', couleur: colors.dangerText, texte: t(om ? 'tracking.paiementOmEchoue' : 'tracking.paiementEchoue') };
 
   return (
     <Card style={[styles.paiementCarte, { marginTop: 14 }]}>
@@ -389,7 +393,7 @@ function EtatPaiement({ order, onReprendre }: { order: Order; onReprendre: () =>
         <Button
           label={t('tracking.reprendrePaiement')}
           variant="outline"
-          icon="credit_card"
+          icon={om ? 'smartphone' : 'credit_card'}
           onPress={onReprendre}
           style={{ marginTop: 12 }}
         />

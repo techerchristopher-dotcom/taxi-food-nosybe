@@ -146,3 +146,15 @@ verify_jwt = false
 # elle-même `x-hook-secret` (Vault `push_hook_secret`) — même patron que notify-order.
 [functions.notifier-message]
 verify_jwt = false
+
+[functions.paiement-orange-money]
+# Appelee par l'app (client connecte) ET par pg_cron (balayage, en-tete
+# x-hook-secret). `false` pour la meme raison qu'`envoyer-annonce` : la fonction
+# exige elle-meme un VRAI utilisateur pour `creer`/`verifier`, et le secret de
+# crochet pour `balayer`.
+verify_jwt = false
+
+[functions.om-notification]
+# L'appelant est Orange Money. Barrieres : le notif_token (temps constant) puis
+# la reverification aupres de l'API transactionstatus. Voir son en-tete.
+verify_jwt = false

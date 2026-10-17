@@ -34,6 +34,8 @@ const NOMS = new Set([
   'anthropic_api_key',
   'facebook_page_token',
   'rounded_api_key',
+  'om_merchant_key',
+  'om_auth_header',
 ]);
 
 const TAILLE_MAX = 16 * 1024;

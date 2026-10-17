@@ -512,6 +512,8 @@ export type Order = {
   paymentMethod: PaymentMethod;
   /** Verdict du webhook Stripe. `non_requis` pour un reglement a la livraison. */
   paymentStatus: StatutPaiement;
+  /** Vrai si la commande est née en Orange Money payé dans l'app (API WebPay). */
+  omEnLigne?: boolean;
   status: OrderStatus;
   addressLabel: string;
   addressDetail: string;

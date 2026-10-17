@@ -33,6 +33,8 @@ export type ConfigPaiement = {
   carteActive: boolean;
   /** Minimum accepté par Stripe, en unité mineure (50 centimes pour l'euro). */
   montantMinimumMinor: number;
+  /** Orange Money payé DANS l'app (API WebPay). Faux = l'option reste « Bientôt ». */
+  omEnLigneActive: boolean;
 };
 
 /**
@@ -46,6 +48,7 @@ export const CONFIG_PAIEMENT_ETEINTE: ConfigPaiement = {
   devise: 'eur',
   carteActive: false,
   montantMinimumMinor: 50,
+  omEnLigneActive: false,
 };
 
 /**
@@ -55,7 +58,7 @@ export const CONFIG_PAIEMENT_ETEINTE: ConfigPaiement = {
 export async function lireConfigPaiement(): Promise<ConfigPaiement> {
   const { data, error } = await supabase
     .from('payment_config')
-    .select('fx_ar_per_eur, devise_paiement, carte_active, montant_minimum_minor')
+    .select('fx_ar_per_eur, devise_paiement, carte_active, montant_minimum_minor, om_en_ligne_active')
     .eq('id', 1)
     .maybeSingle();
   if (error || !data) return CONFIG_PAIEMENT_ETEINTE;
@@ -64,12 +67,14 @@ export async function lireConfigPaiement(): Promise<ConfigPaiement> {
     devise_paiement: string | null;
     carte_active: boolean | null;
     montant_minimum_minor: number | null;
+    om_en_ligne_active?: boolean | null;
   };
   return {
     fxArParEur: Number(row.fx_ar_per_eur) || 0,
     devise: (row.devise_paiement ?? 'eur').toLowerCase(),
     carteActive: row.carte_active === true,
     montantMinimumMinor: row.montant_minimum_minor ?? 50,
+    omEnLigneActive: row.om_en_ligne_active === true,
   };
 }
 

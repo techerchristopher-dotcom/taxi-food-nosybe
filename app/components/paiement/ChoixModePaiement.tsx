@@ -48,14 +48,21 @@ export function ChoixModePaiement({
   valeur,
   onChange,
   carteProposable,
+  orangeMoneyEnLigne = false,
 }: {
   valeur: PaymentMethod;
   onChange: (m: PaymentMethod) => void;
   /** Faux = la carte n'apparaît pas du tout (interrupteur base, ou montant trop faible). */
   carteProposable: boolean;
+  /** Vrai = Orange Money se paie DANS l'app (API WebPay) : l'option devient sélectionnable. */
+  orangeMoneyEnLigne?: boolean;
 }) {
   const { t } = useTranslation();
-  const visibles = METHODS.filter((m) => m.key !== 'cb' || carteProposable);
+  const visibles = METHODS.filter((m) => m.key !== 'cb' || carteProposable).map((m) =>
+    m.key === 'orange_money' && orangeMoneyEnLigne
+      ? { ...m, bientot: false, subKey: 'checkout.orangeEnLigneSub' }
+      : m,
+  );
 
   return (
     <View style={{ gap: 10 }}>

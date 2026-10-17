@@ -16,7 +16,7 @@
 | Lot | État |
 |---|---|
 | 0 Variante (même projet, `APP_VARIANT=livreur`) | ✅ `app.config.ts`, config client inchangée (vérifié octet pour octet), projet EAS `@chris97416/taxi-food-livreur` |
-| 1 Base | ✅ appliquée en production (`claimed_at`, `positions_livreur`, `suivi_livreur`, purge 7 j) — vérifiée en transaction annulée et par PostgREST. ⏸️ `push_tokens.app` (§ 6.1) **pas fait** : l'app livreur n'enregistre aucun jeton tant que Firebase n'a pas le package |
+| 1 Base | ✅ appliquée en production (`claimed_at`, `positions_livreur`, `suivi_livreur`, purge 7 j, `push_tokens.app`) — vérifiée en transaction annulée et par PostgREST |
 | 2 App livreur (écrans) | ✅ connexion, pas-livreur, Livraisons, Historique + récap du jour, Profil |
 | 3 GPS arrière-plan | ✅ écrit, dans le build Android ; ⏳ **à éprouver sur un vrai téléphone** |
 | 4 Carte client | ✅ publiée : OTA ×3 + web (vérifiée sur données simulées à 375 px) |
@@ -30,7 +30,8 @@
    clé EAS `00:38:C8:8D:23:0D:44:7E:C8:D1:79:04:04:8B:97:1A:95:BF:08:C3`. Google annonce 5 min à quelques
    heures avant effet. ⚠️ Le jour où l'app passe par le Play Store, ajouter AUSSI l'empreinte de la clé
    Play App Signing (autre identifiant OAuth, même package).
-2. Firebase : ajouter l'app Android `com.chris97416.taxifoodlivreur`, puis § 6.1 (notifications).
+2. ✅ **Fait le 2026-10-17** : app Firebase, `google-services-livreur.json`, clé FCM reliée dans Expo,
+   § 6.1 livré (`push_tokens.app`, 4 fonctions Edge déployées), build Android n° 2.
 3. iPhone : `APP_VARIANT=livreur npx eas build -p ios --profile livreur-production` en interactif
    (nouvel App ID avec Sign in with Apple ; Supabase → Apple : ajouter le bundle).
 4. Play Console (plus tard) : créer l'app, déclaration « localisation en arrière-plan » + vidéo.

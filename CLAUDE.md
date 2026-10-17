@@ -1457,12 +1457,19 @@ bundle iOS `com.chris97416.taxifood-livreur`, projet EAS **`@chris97416/taxi-foo
 (`e0d5567e-9321-4071-94e8-44910ab1434d`, flux de mises à jour séparé), identifiant OAuth Android `227662072769-rsiqeuqffjr2197v4a287vjmq8nn5r2b` (SHA-1 EAS `00:38:C8:…:08:C3`), runtime `1.0.0`, écrans dans
 **`app/app-livreur/`** (option `root` d'expo-router : les écrans client n'entrent pas dans le paquet),
 icône `assets/livreur/`. ⚠️ **Aucun lien universel** dans l'app livreur (sinon les liens partagés aux
-clients s'y ouvriraient). ⚠️ **Pas de `google-services.json`** : le package n'est pas déclaré dans
-Firebase → **aucune notification dans l'app livreur Android** ; les « course disponible » restent dans
-l'app client, comme avant. Les jetons push sont rangés par COMPTE (`push_tokens.user_id`), pas par
-app : avant d'enregistrer des jetons depuis l'app livreur, faire le § 6.1 du cahier des charges
-(colonne `app`, filtre dans `notify-order`, `notifier-message`, `envoyer-annonce`,
-`relancer-orange-money` — non factorisées).
+clients s'y ouvriraient).
+
+**Notifications de l'app livreur (2026-10-17, après-midi)** : app Firebase Android
+`1:227662072769:android:db36612400e2822805fd40` → `app/google-services-livreur.json` (fabriqué à la main
+depuis la console : clé « Android key (auto created by Firebase) », PAS la clé Maps restreinte au
+package client). Clé FCM V1 du compte Expo reliée au projet livreur (API GraphQL d'Expo). **Jetons
+rangés par application** : `push_tokens.app` (`client` par défaut), `register_push_token(…, p_app)`
+(ancienne signature supprimée, pas de surcharge — vérifié par PostgREST : l'appel à 3 clés passe).
+`notify-order` et `notifier-message` : un **livreur** reçoit dans l'app livreur **s'il y a un jeton**,
+sinon dans l'app client (transition) ; client et restaurant **toujours** dans l'app client.
+`envoyer-annonce` et `relancer-orange-money` : app client seulement. ⚠️ Toute nouvelle fonction qui
+lit `push_tokens` doit filtrer `app`. Déployées par `supabase functions deploy … --no-verify-jwt`
+(CLI connecté) ; envoi test réel à l'admin : reçu Expo `ok`.
 
 - **Écrans** : connexion (Google natif, Apple sur iPhone, e-mail ; « Mot de passe oublié » marche
   aussi pour un compte Google : il lui ajoute un mot de passe, le lien s'ouvre dans l'app client),

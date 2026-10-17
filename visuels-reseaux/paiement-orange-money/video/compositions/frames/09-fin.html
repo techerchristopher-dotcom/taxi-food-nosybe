@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f09 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f09 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f09 .cam, #f09 .push { position:absolute; inset:0; will-change:transform; }
 #f09 .push { perspective:2400px; }
@@ -30,8 +30,9 @@
 #f09 .badges { margin-top:90px; display:flex; gap:28px; }
 #f09 .badges img { height:120px; width:auto; display:block; }
 #f09 .url { margin-top:56px; font-size:38px; font-weight:700; color:rgba(24,19,15,.55); }
-</style>
-<div id="f09" data-composition-id="f09" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+
+#f09 .cam { background:#F6EFE2; }</style>
+<div id="f09" data-composition-id="f09" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f09-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur om"></div><div class="grain"></div>
 <div class="bloc">
   <div class="duo">
@@ -48,8 +49,8 @@
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
-tl.fromTo("#f09 .cam", {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:0.350, ease:"power2.out"}, 0.000);
+  tl.fromTo("#f09 .cam", {opacity:0, filter:"blur(14px)"}, {opacity:1, filter:"blur(0px)", duration:0.5, ease:"sine.inOut"}, 0);
+
 tl.fromTo("#f09 .lueur", {scale:1}, {scale:1.12, duration:1.100, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
 tl.fromTo("#f09 .carre", {scale:0, rotation:-20}, {scale:1, rotation:0, duration:0.420, ease:"back.out(2.2)"}, 0.050);
 tl.fromTo("#f09 .fois", {scale:0}, {scale:1, duration:0.300, ease:"back.out(3)"}, 0.180);

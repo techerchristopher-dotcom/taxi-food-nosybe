@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f02 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f02 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f02 .cam, #f02 .push { position:absolute; inset:0; will-change:transform; }
 #f02 .push { perspective:2400px; }
@@ -33,8 +33,9 @@
 #f02 .bulle { position:absolute; left:540px; right:50px; top:1040px; padding:32px 36px; border-radius:48px 48px 48px 10px;
   background:#18130F; color:#fff; font-size:50px; font-weight:900; letter-spacing:-1.5px; line-height:1.08;
   box-shadow:0 0 0 8px #FFC72C, 0 30px 60px rgba(0,0,0,.3); }
-</style>
-<div id="f02" data-composition-id="f02" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+
+#f02 .cam { background:#F6EFE2; }</style>
+<div id="f02" data-composition-id="f02" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f02-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur"></div><div class="grain"></div>
 <div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
 <div class="apayer"><div class="lab">À payer</div><div class="mt"><span class="n">43 000</span> Ar</div></div>
@@ -44,12 +45,14 @@
 </div>
 <div class="maki"><img src="../../assets/maki-desole.png" alt="" data-layout-allow-overflow></div>
 <div class="bulle">Désolé… j'ai pas la monnaie sur&nbsp;50&nbsp;000&nbsp;!</div>
-</div></div></div>
+</div><div class="seam" style="position:absolute;right:-10px;top:0;width:10px;height:100%;background:#FFC72C;opacity:1;"></div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
-tl.fromTo("#f02 .cam", {scale:0.8, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.450, ease:"power3.out"}, 0.000);
+  tl.fromTo("#f02 .cam", {x:-1080}, {x:0, duration:0.3, ease:"power3.inOut"}, 0);
+(function(){var el=document.querySelector("#f02 .cam");var f=document.querySelector("#f02-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f02-hb)":"";}},0);})();
+tl.fromTo("#f02 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
+
 tl.fromTo("#f02 .push", {scale:1}, {scale:1.06, duration:3.450, ease:"sine.inOut"}, 0.300);
 tl.fromTo("#f02 .ding", {y:-80, opacity:0}, {y:0, opacity:1, duration:0.525, ease:"back.out(1.8)"}, 0.075);
 tl.fromTo("#f02 .ding", {rotation:-2}, {rotation:2, duration:0.090, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.525);
@@ -67,8 +70,9 @@ tl.fromTo("#f02 .bulle", {scale:0, rotation:-8, opacity:0}, {scale:1, rotation:-
 tl.fromTo("#f02 .maki", {rotation:0}, {rotation:-3, duration:0.270, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}, 2.625);
 tl.fromTo("#f02 .push", {x:0}, {x:12, duration:0.075, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 2.730);
 tl.fromTo("#f02 .billet", {opacity:1}, {opacity:0.4, duration:0.450, ease:"power1.out", immediateRender:false}, 3.000);
-tl.fromTo("#f02 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.270, ease:"power2.in", immediateRender:false}, 3.720);
 
+tl.fromTo("#f02 .cam", {x:0}, {x:-1080, duration:0.3, ease:"power3.inOut", immediateRender:false}, 4.0);
+(function(){var el=document.querySelector("#f02 .cam");var f=document.querySelector("#f02-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f02-hb)":"";}},4.0);})();
   window.__timelines["f02"] = tl;
 })();
 </script>

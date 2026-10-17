@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f08 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f08 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f08 .cam, #f08 .push { position:absolute; inset:0; will-change:transform; }
 #f08 .push { perspective:2400px; }
@@ -28,20 +28,23 @@
 #f08 .bon { position:absolute; left:0; right:0; top:1620px; text-align:center; font-size:104px; font-weight:900; letter-spacing:-4px;
   line-height:1.0; }
 #f08 .bon span { color:#CF6200; }
-</style>
-<div id="f08" data-composition-id="f08" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+
+#f08 .cam { background:#F6EFE2; }</style>
+<div id="f08" data-composition-id="f08" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f08-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur om"></div><div class="grain"></div>
 <div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
 <div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
   <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
 <div class="maki"><img src="../../assets/maki-livre.png" alt="" data-layout-allow-overflow></div>
 <div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>
-</div></div></div>
+</div><div class="seam" style="position:absolute;left:-10px;top:0;width:10px;height:100%;background:#FFC72C;opacity:1;"></div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
-tl.fromTo("#f08 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.350, ease:"power3.out"}, 0.000);
+  tl.fromTo("#f08 .cam", {x:1080}, {x:0, duration:0.3, ease:"power3.inOut"}, 0);
+(function(){var el=document.querySelector("#f08 .cam");var f=document.querySelector("#f08-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f08-hb)":"";}},0);})();
+tl.fromTo("#f08 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
+
 tl.fromTo("#f08 .ding", {y:-80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"back.out(1.8)"}, 0.058);
 tl.fromTo("#f08 .ding", {rotation:-2}, {rotation:2, duration:0.070, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.408);
 tl.fromTo("#f08 .maki", {y:1200, rotation:4}, {y:0, rotation:0, duration:0.758, ease:"back.out(1.1)"}, 0.350);
@@ -50,8 +53,8 @@ tl.fromTo("#f08 .paye", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.46
 tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.350, ease:"back.out(3)"}, 1.400);
 tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"power4.out"}, 1.750);
 tl.fromTo("#f08 .push", {scale:1}, {scale:1.04, duration:2.800, ease:"sine.inOut"}, 0.233);
-tl.fromTo("#f08 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(14px)", duration:0.210, ease:"power2.in", immediateRender:false}, 2.893);
 
+tl.fromTo("#f08 .cam", {opacity:1, filter:"blur(0px)"}, {opacity:0, filter:"blur(14px)", duration:0.5, ease:"sine.inOut", immediateRender:false}, 3.1111);
   window.__timelines["f08"] = tl;
 })();
 </script>

@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f03 { position:absolute; inset:0; overflow:hidden; background:#18130F !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f03 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f03 .cam, #f03 .push { position:absolute; inset:0; will-change:transform; }
 #f03 .push { perspective:2400px; }
@@ -19,20 +19,25 @@
 #f03 .mots { position:absolute; left:70px; right:70px; top:0; bottom:0; display:flex; flex-direction:column;
   justify-content:center; gap:6px; }
 #f03 .w { font-weight:900; line-height:.9; letter-spacing:-8px; text-transform:uppercase; white-space:nowrap; }
-</style>
-<div id="f03" data-composition-id="f03" data-width="1080" data-height="1920"><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#FFFBF4;font-size:220px;">Plus</div><div class="w" style="color:#FFFBF4;font-size:220px;">besoin</div><div class="w" style="color:rgba(255,251,244,.4);font-size:170px;">de</div><div class="w" style="color:#FF7900;font-size:150px;">monnaie.</div></div>
-</div></div></div>
+
+#f03 .cam { background:#18130F; }</style>
+<div id="f03" data-composition-id="f03" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f03-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#FFFBF4;font-size:220px;">Plus</div><div class="w" style="color:#FFFBF4;font-size:220px;">besoin</div><div class="w" style="color:rgba(255,251,244,.4);font-size:170px;">de</div><div class="w" style="color:#FF7900;font-size:150px;">monnaie.</div></div>
+</div><div class="seam" style="position:absolute;left:-10px;top:0;width:10px;height:100%;background:#FFC72C;opacity:1;"></div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
+  tl.fromTo("#f03 .cam", {x:1080}, {x:0, duration:0.3, ease:"power3.inOut"}, 0);
+(function(){var el=document.querySelector("#f03 .cam");var f=document.querySelector("#f03-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f03-hb)":"";}},0);})();
+tl.fromTo("#f03 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
+
 tl.fromTo("#f03 .w:nth-child(1)", {x:-800}, {x:0, duration:0.400, ease:"power4.out"}, 0.000);
 tl.fromTo("#f03 .w:nth-child(2)", {y:-260, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 0.888);
 tl.fromTo("#f03 .w:nth-child(3)", {scale:2.2, opacity:0}, {scale:1, opacity:1, duration:0.360, ease:"power3.out", transformOrigin:"0% 50%"}, 1.778);
 tl.fromTo("#f03 .w:nth-child(4)", {scale:0, rotation:8}, {scale:1, rotation:0, duration:0.560, ease:"back.out(2.6)", transformOrigin:"0% 50%"}, 2.666);
 tl.fromTo("#f03 .mots", {x:0}, {x:-10, duration:0.080, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 2.766);
-tl.fromTo("#f03 .cam", {y:0, filter:"blur(0px)"}, {y:900, filter:"blur(20px)", duration:0.300, ease:"power3.in", immediateRender:false}, 3.240);
 
+tl.fromTo("#f03 .cam", {y:0}, {y:-1920, duration:0.3, ease:"power3.inOut", immediateRender:false}, 3.5556);
+(function(){var el=document.querySelector("#f03 .cam");var f=document.querySelector("#f03-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",("0 "+b.toFixed(2)));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f03-hb)":"";}},3.5556);})();
   window.__timelines["f03"] = tl;
 })();
 </script>

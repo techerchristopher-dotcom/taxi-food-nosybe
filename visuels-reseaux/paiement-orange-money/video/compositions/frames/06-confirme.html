@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f06 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f06 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f06 .cam, #f06 .push { position:absolute; inset:0; will-change:transform; }
 #f06 .push { perspective:2400px; }
@@ -20,15 +20,16 @@
 #f06 .disque { position:absolute; left:-230px; top:-230px; width:460px; height:460px; border-radius:50%; background:#FF7900;
   box-shadow:0 0 0 22px rgba(255,121,0,.18), 0 40px 90px rgba(255,121,0,.45); display:flex; align-items:center; justify-content:center; }
 #f06 .disque svg { width:300px; height:300px; }
-#f06 .ec { position:absolute; left:-22px; top:-22px; width:44px; height:44px; border-radius:12px; }
+#f06 .ec { position:absolute; left:-18px; top:-18px; width:36px; height:24px; border-radius:6px; opacity:0; will-change:transform,opacity; }
 #f06 .txt { position:absolute; left:60px; right:60px; top:1060px; text-align:center; }
 #f06 .t1 { font-size:118px; font-weight:900; letter-spacing:-5px; line-height:1; }
 #f06 .t2 { margin-top:34px; font-size:56px; font-weight:800; color:#CF6200; }
 #f06 .t3 { margin-top:22px; font-size:44px; font-weight:600; color:rgba(24,19,15,.6); }
-</style>
-<div id="f06" data-composition-id="f06" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+
+#f06 .cam { background:#F6EFE2; }</style>
+<div id="f06" data-composition-id="f06" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f06-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur om"></div><div class="grain"></div>
-<div class="centre"><div class="ec e0" style="background:#FF7900;"></div><div class="ec e1" style="background:#FFC72C;"></div><div class="ec e2" style="background:#FFC72C;"></div><div class="ec e3" style="background:#FF7900;"></div><div class="ec e4" style="background:#FF7900;"></div><div class="ec e5" style="background:#FFC72C;"></div><div class="ec e6" style="background:#FFC72C;"></div><div class="ec e7" style="background:#E8342A;"></div><div class="ec e8" style="background:#E8342A;"></div><div class="ec e9" style="background:#FF7900;"></div><div class="ec e10" style="background:#E8342A;"></div><div class="ec e11" style="background:#FF7900;"></div>
+<div class="centre"><div class="ec e0" style="background:#FF7900;"></div><div class="ec e1" style="background:#FFC72C;"></div><div class="ec e2" style="background:#E8342A;"></div><div class="ec e3" style="background:#FFFFFF;"></div><div class="ec e4" style="background:#FF7900;"></div><div class="ec e5" style="background:#FFC72C;"></div><div class="ec e6" style="background:#E8342A;"></div><div class="ec e7" style="background:#FFFFFF;"></div><div class="ec e8" style="background:#FF7900;"></div><div class="ec e9" style="background:#FFC72C;"></div><div class="ec e10" style="background:#E8342A;"></div><div class="ec e11" style="background:#FFFFFF;"></div><div class="ec e12" style="background:#FF7900;"></div><div class="ec e13" style="background:#FFC72C;"></div><div class="ec e14" style="background:#E8342A;"></div><div class="ec e15" style="background:#FFFFFF;"></div><div class="ec e16" style="background:#FF7900;"></div><div class="ec e17" style="background:#FFC72C;"></div><div class="ec e18" style="background:#E8342A;"></div><div class="ec e19" style="background:#FFFFFF;"></div><div class="ec e20" style="background:#FF7900;"></div><div class="ec e21" style="background:#FFC72C;"></div><div class="ec e22" style="background:#E8342A;"></div><div class="ec e23" style="background:#FFFFFF;"></div><div class="ec e24" style="background:#FF7900;"></div><div class="ec e25" style="background:#FFC72C;"></div><div class="ec e26" style="background:#E8342A;"></div><div class="ec e27" style="background:#FFFFFF;"></div><div class="ec e28" style="background:#FF7900;"></div><div class="ec e29" style="background:#FFC72C;"></div><div class="ec e30" style="background:#E8342A;"></div><div class="ec e31" style="background:#FFFFFF;"></div>
   <div class="disque"><svg viewBox="0 0 200 200"><path class="trait" d="M52 104 L88 140 L152 66" fill="none" stroke="#fff"
     stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 </div>
@@ -41,39 +42,29 @@
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
-tl.fromTo("#f06 .cam", {scale:0.7, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.350, ease:"power3.out"}, 0.000);
-tl.fromTo("#f06 .disque", {scale:0}, {scale:1, duration:0.500, ease:"back.out(2.4)"}, 0.050);
+  tl.fromTo("#f06 .cam", {scale:0.72, opacity:0}, {scale:1, opacity:1, duration:0.3, ease:"power3.out"}, 0);
+
+tl.fromTo("#f06 .disque", {scale:0, rotation:-18}, {scale:1, rotation:0, duration:0.500, ease:"back.out(2.4)"}, 0.050);
 tl.fromTo("#f06 .trait", {strokeDasharray:200, strokeDashoffset:200}, {strokeDasharray:200, strokeDashoffset:0, duration:0.375, ease:"power2.out"}, 0.350);
-tl.fromTo("#f06 .e0", {x:0, y:0, scale:0, rotation:0}, {x:-330, y:-300, scale:1, rotation:-90, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e0", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e1", {x:0, y:0, scale:0, rotation:0}, {x:330, y:-280, scale:1, rotation:-43, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e1", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e2", {x:0, y:0, scale:0, rotation:0}, {x:-400, y:40, scale:1, rotation:4, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e2", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e3", {x:0, y:0, scale:0, rotation:0}, {x:400, y:60, scale:1, rotation:51, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e3", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e4", {x:0, y:0, scale:0, rotation:0}, {x:-260, y:330, scale:1, rotation:-82, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e4", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e5", {x:0, y:0, scale:0, rotation:0}, {x:270, y:340, scale:1, rotation:-35, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e5", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e6", {x:0, y:0, scale:0, rotation:0}, {x:0, y:-420, scale:1, rotation:12, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e6", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e7", {x:0, y:0, scale:0, rotation:0}, {x:-120, y:430, scale:1, rotation:59, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e7", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e8", {x:0, y:0, scale:0, rotation:0}, {x:140, y:-440, scale:1, rotation:-74, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e8", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e9", {x:0, y:0, scale:0, rotation:0}, {x:420, y:-120, scale:1, rotation:-27, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e9", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e10", {x:0, y:0, scale:0, rotation:0}, {x:-430, y:-110, scale:1, rotation:20, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e10", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
-tl.fromTo("#f06 .e11", {x:0, y:0, scale:0, rotation:0}, {x:60, y:450, scale:1, rotation:67, duration:0.625, ease:"power3.out"}, 0.400);
-tl.fromTo("#f06 .e11", {opacity:1}, {opacity:0, duration:0.500, ease:"power1.in"}, 1.188);
+(function(){
+  var ps = document.querySelectorAll("#f06 .ec"); var N = ps.length;
+  var prand = function(n){ var x = Math.sin(n*127.1+311.7)*43758.5453; return x - Math.floor(x); };
+  var P = []; for (var i=0;i<N;i++){ var a = -Math.PI/2 + (prand(i*3+1)-0.5)*Math.PI*1.7; var sp = 900 + prand(i*7+2)*900;
+    P.push({vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 300, spin:(prand(i*11+3)-0.5)*1400, sc:0.7+prand(i*13+4)*0.6}); }
+  var G = 2600, D = 1.1, o = {T:0};
+  tl.fromTo(o, {T:0}, {T:1, duration:D, ease:"none", onUpdate:function(){
+    var t = o.T*D, fade = o.T < 0.65 ? 1 : Math.max(0, 1 - (o.T-0.65)/0.35);
+    for (var i=0;i<N;i++){ var p = P[i];
+      ps[i].style.transform = "translate("+(p.vx*t)+"px,"+(p.vy*t+0.5*G*t*t)+"px) rotate("+(p.spin*t)+"deg) scale("+p.sc+")";
+      ps[i].style.opacity = (o.T>0 ? fade : 0); }
+  }}, 0.400);
+})();
 tl.fromTo("#f06 .t1", {y:80, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 0.500);
 tl.fromTo("#f06 .t2, #f06 .t3", {y:40, opacity:0}, {y:0, opacity:1, duration:0.375, ease:"power3.out", stagger:0.1}, 0.750);
 tl.fromTo("#f06 .push", {scale:1}, {scale:1.05, duration:1.875, ease:"sine.out"}, 0.375);
-tl.fromTo("#f06 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.55, filter:"blur(18px)", duration:0.200, ease:"power2.in", immediateRender:false}, 2.000);
 
+tl.fromTo("#f06 .cam", {y:0}, {y:-1920, duration:0.3, ease:"power3.inOut", immediateRender:false}, 2.2222);
+(function(){var el=document.querySelector("#f06 .cam");var f=document.querySelector("#f06-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",("0 "+b.toFixed(2)));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f06-hb)":"";}},2.2222);})();
   window.__timelines["f06"] = tl;
 })();
 </script>

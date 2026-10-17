@@ -6,7 +6,7 @@ scène), grille 135 BPM : un temps = 0,444 s.
 Mêmes enveloppes que le 1er film : .cam (entrée / sortie avec flou de vitesse), .push (caméra lente).
 fromTo partout (seek-safe), aucun aléatoire, aucune animation sur le .clip hôte.
 """
-ROUGE, OR, CREME, ENCRE, BLANC, OM = '#E8342A', '#FFC72C', '#F6EFE2', '#18130F', '#FFFBF4', '#FF7900'
+ROUGE, OR, CREME, ENCRE, BLANC, OM, OMT = '#E8342A', '#FFC72C', '#F6EFE2', '#18130F', '#FFFBF4', '#FF7900', '#CF6200'
 
 B = 60 / 135
 ECLATS = [(-330, -300), (330, -280), (-400, 40), (400, 60), (-260, 330), (270, 340),
@@ -49,7 +49,10 @@ tl.fromTo("#f01 .carre img", {{x:-170, opacity:0}}, {{x:0, opacity:1, duration:0
 tl.fromTo("#f01 .mot", {{clipPath:"inset(0% 100% 0% 0%)", y:30}}, {{clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.4, ease:"power3.out"}}, 0.4);
 tl.fromTo("#f01 .filet", {{scaleX:0}}, {{scaleX:1, duration:0.3, ease:"power2.inOut", transformOrigin:"0% 50%"}}, 0.66);
 tl.fromTo("#f01 .lieu", {{opacity:0, y:24, scaleX:1.25}}, {{opacity:1, y:0, scaleX:1, duration:0.34, ease:"power2.out"}}, 0.78);
-tl.fromTo("#f01 .scoot", {{x:-760, rotation:-3}}, {{x:1140, rotation:0, duration:1.0, ease:"power2.inOut"}}, 0.3);
+tl.fromTo("#f01 .scoot .g0", {{x:-760}}, {{x:1140, duration:1.0, ease:"power2.inOut"}}, 0.3);
+tl.fromTo("#f01 .scoot .g1", {{x:-760}}, {{x:1140, duration:1.0, ease:"power2.inOut"}}, 0.33);
+tl.fromTo("#f01 .scoot .g2", {{x:-760}}, {{x:1140, duration:1.0, ease:"power2.inOut"}}, 0.36);
+tl.fromTo("#f01 .scoot .g3", {{x:-760}}, {{x:1140, duration:1.0, ease:"power2.inOut"}}, 0.39);
 tl.fromTo("#f01 .scoot", {{y:0}}, {{y:-10, duration:0.08, ease:"sine.inOut", yoyo:true, repeat:11, immediateRender:false}}, 0.3);
 {sortie_zoom('#f01', 1.15, 1.7, 18, 0.18)}
 '''
@@ -102,7 +105,7 @@ tl.fromTo("#f04 .m3", {{backgroundColor:"{CREME}", boxShadow:"inset 0 0 0 4px rg
 tl.fromTo("#f04 .m3 .mn", {{color:"{ENCRE}"}}, {{color:"{ENCRE}", duration:0.2, immediateRender:false}}, 2.22);
 tl.fromTo("#f04 .m3 .ms", {{color:"rgba(24,19,15,.55)"}}, {{color:"rgba(24,19,15,.8)", duration:0.2, immediateRender:false}}, 2.22);
 tl.fromTo("#f04 .m3", {{scale:1}}, {{scale:1.04, duration:0.12, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}}, 2.22);
-tl.fromTo("#f04 .bouton", {{backgroundColor:"{BLANC}", color:"{OM}"}}, {{backgroundColor:"{OM}", color:"#ffffff", duration:0.3, ease:"power2.out"}}, 2.5);
+tl.fromTo("#f04 .bouton", {{backgroundColor:"{BLANC}", color:"{OMT}"}}, {{backgroundColor:"{OM}", color:"{ENCRE}", duration:0.3, ease:"power2.out"}}, 2.5);
 tl.fromTo("#f04 .bouton", {{scale:1}}, {{scale:0.93, duration:0.08, ease:"power1.in", immediateRender:false}}, 2.98);
 tl.fromTo("#f04 .bouton", {{scale:0.93}}, {{scale:1, duration:0.28, ease:"back.out(3)", immediateRender:false}}, 3.06);
 tl.fromTo("#f04 .onde", {{scale:0.2, opacity:0.55}}, {{scale:2.6, opacity:0, duration:0.45, ease:"power2.out"}}, 3.0);
@@ -141,16 +144,26 @@ tl.fromTo("#f05 .push", {{scale:1}}, {{scale:1.04, duration:2.4, ease:"sine.inOu
 '''
 
 # ------------------------------------------------------- 6. Paiement confirmé (1,778 s)
-_eclats = '\n'.join(
-    f'tl.fromTo("#f06 .e{i}", {{x:0, y:0, scale:0, rotation:0}}, {{x:{x}, y:{y}, scale:1, rotation:{(i*47)%180 - 90}, '
-    f'duration:0.5, ease:"power3.out"}}, 0.32);\n'
-    f'tl.fromTo("#f06 .e{i}", {{opacity:1}}, {{opacity:0, duration:0.4, ease:"power1.in"}}, 0.95);'
-    for i, (x, y) in enumerate(ECLATS))
+# Particules balistiques (règle particle-burst) : une seule tween motrice en ease:"none", chaque particule
+# = fonction pure du temps (vol 1,1 s, gravité, rotation, mort par fondu sur le dernier tiers).
+_confettis = """(function(){
+  var ps = document.querySelectorAll("#f06 .ec"); var N = ps.length;
+  var prand = function(n){ var x = Math.sin(n*127.1+311.7)*43758.5453; return x - Math.floor(x); };
+  var P = []; for (var i=0;i<N;i++){ var a = -Math.PI/2 + (prand(i*3+1)-0.5)*Math.PI*1.7; var sp = 900 + prand(i*7+2)*900;
+    P.push({vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 300, spin:(prand(i*11+3)-0.5)*1400, sc:0.7+prand(i*13+4)*0.6}); }
+  var G = 2600, D = 1.1, o = {T:0};
+  tl.fromTo(o, {T:0}, {T:1, duration:D, ease:"none", onUpdate:function(){
+    var t = o.T*D, fade = o.T < 0.65 ? 1 : Math.max(0, 1 - (o.T-0.65)/0.35);
+    for (var i=0;i<N;i++){ var p = P[i];
+      ps[i].style.transform = "translate("+(p.vx*t)+"px,"+(p.vy*t+0.5*G*t*t)+"px) rotate("+(p.spin*t)+"deg) scale("+p.sc+")";
+      ps[i].style.opacity = (o.T>0 ? fade : 0); }
+  }}, 0.32);
+})();"""
 M['f06'] = f'''
 {entree_zoom('#f06', 0.7, 14, 0.28)}
-tl.fromTo("#f06 .disque", {{scale:0}}, {{scale:1, duration:0.4, ease:"back.out(2.4)"}}, 0.04);
+tl.fromTo("#f06 .disque", {{scale:0, rotation:-18}}, {{scale:1, rotation:0, duration:0.4, ease:"back.out(2.4)"}}, 0.04);
 tl.fromTo("#f06 .trait", {{strokeDasharray:200, strokeDashoffset:200}}, {{strokeDasharray:200, strokeDashoffset:0, duration:0.3, ease:"power2.out"}}, 0.28);
-{_eclats}
+{_confettis}
 tl.fromTo("#f06 .t1", {{y:80, opacity:0}}, {{y:0, opacity:1, duration:0.32, ease:"power4.out"}}, 0.4);
 tl.fromTo("#f06 .t2, #f06 .t3", {{y:40, opacity:0}}, {{y:0, opacity:1, duration:0.3, ease:"power3.out", stagger:0.1}}, 0.6);
 tl.fromTo("#f06 .push", {{scale:1}}, {{scale:1.05, duration:1.5, ease:"sine.out"}}, 0.3);

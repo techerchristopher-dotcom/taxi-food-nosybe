@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f07 { position:absolute; inset:0; overflow:hidden; background:#FF7900 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f07 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f07 .cam, #f07 .push { position:absolute; inset:0; will-change:transform; }
 #f07 .push { perspective:2400px; }
@@ -19,19 +19,24 @@
 #f07 .mots { position:absolute; left:70px; right:70px; top:0; bottom:0; display:flex; flex-direction:column;
   justify-content:center; gap:6px; }
 #f07 .w { font-weight:900; line-height:.9; letter-spacing:-8px; text-transform:uppercase; white-space:nowrap; }
-</style>
-<div id="f07" data-composition-id="f07" data-width="1080" data-height="1920"><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#18130F;font-size:270px;">Payé.</div><div class="w" style="color:#18130F;font-size:196px;">Rien à</div><div class="w" style="color:#18130F;font-size:220px;">sortir.</div></div>
-</div></div></div>
+
+#f07 .cam { background:#FF7900; }</style>
+<div id="f07" data-composition-id="f07" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f07-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#18130F;font-size:270px;">Payé.</div><div class="w" style="color:#18130F;font-size:196px;">Rien à</div><div class="w" style="color:#18130F;font-size:220px;">sortir.</div></div>
+</div><div class="seam" style="position:absolute;top:-10px;left:0;height:10px;width:100%;background:#FFC72C;opacity:1;"></div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
-  
+  tl.fromTo("#f07 .cam", {y:1920}, {y:0, duration:0.3, ease:"power3.inOut"}, 0);
+(function(){var el=document.querySelector("#f07 .cam");var f=document.querySelector("#f07-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",("0 "+b.toFixed(2)));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f07-hb)":"";}},0);})();
+tl.fromTo("#f07 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
+
 tl.fromTo("#f07 .w:nth-child(1)", {scale:2.6, opacity:0}, {scale:1, opacity:1, duration:0.400, ease:"power3.out", transformOrigin:"0% 50%"}, 0.000);
 tl.fromTo("#f07 .w:nth-child(2)", {x:800}, {x:0, duration:0.400, ease:"power4.out"}, 0.888);
 tl.fromTo("#f07 .w:nth-child(3)", {y:240, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 1.778);
 tl.fromTo("#f07 .mots", {x:0}, {x:10, duration:0.080, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 1.878);
-tl.fromTo("#f07 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.6, filter:"blur(18px)", duration:0.300, ease:"power2.in", immediateRender:false}, 2.360);
 
+tl.fromTo("#f07 .cam", {x:0}, {x:-1080, duration:0.3, ease:"power3.inOut", immediateRender:false}, 2.6667);
+(function(){var el=document.querySelector("#f07 .cam");var f=document.querySelector("#f07-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f07-hb)":"";}},2.6667);})();
   window.__timelines["f07"] = tl;
 })();
 </script>

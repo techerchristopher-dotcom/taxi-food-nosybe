@@ -1,0 +1,10 @@
+{
+  "compositions/components/caption-kinetic-slam.html": "86b7a54e045f626d1375636a2f1cde19c2f3cbdad1df1d7d0204fe6b4452044a",
+  "compositions/components/confetti.html": "e1aab1fba4eac8fcbed7367d94a262c41b08dc26cd723a3a0cde51158f7c864f",
+  "compositions/components/directional-wipe.html": "1630a4c974ba6d9ea9a23fdb84627ee464c1447cd7b6b963defe4c5bf9867a48",
+  "compositions/components/headline-slam.html": "b16ac28b01bf7f352d6a3f267838253de85794cd9bedd8065b48d7675e9295cd",
+  "compositions/components/shutter-slam.html": "b5c28857acbd57d0b7c14b029b9a7de1ee0900bbfa7b84a261bd89c85537aec7",
+  "compositions/components/success-check.html": "49f306892b85ecdbe9510593b8dc8d76b2e3c7becfff06726d967407ff01c393",
+  "compositions/components/whip-pan-cut.html": "2e21c04b6b72c4c4087b9e926da4f83b95940e798b9e5ad26e4845c41e6df7b7",
+  "compositions/components/zoom-through-transition.html": "8201b6de2c2908e3c8d9ca8d36d1b55b8093484ec40bd37bdf7754ae7b61d97d"
+}

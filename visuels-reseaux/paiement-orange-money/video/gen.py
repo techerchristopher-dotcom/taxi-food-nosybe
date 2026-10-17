@@ -60,10 +60,12 @@ BODY['f01'] = '''
   <div class="filet"></div>
   <div class="lieu">Nosy Be</div>
 </div>
-<div class="scoot"><img src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>'''
+<div class="scoot"><img class="g3" src="../../assets/maki-scooter.png?g=3" alt="" data-layout-allow-overflow><img class="g2" src="../../assets/maki-scooter.png?g=2" alt="" data-layout-allow-overflow><img class="g1" src="../../assets/maki-scooter.png?g=1" alt="" data-layout-allow-overflow><img class="g0" src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>'''
 CSS['f01'] = f'''
-#ID .scoot {{ position:absolute; left:0; top:1240px; width:620px; }}
-#ID .scoot img {{ width:100%; height:auto; display:block; filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }}
+#ID .scoot {{ position:absolute; left:0; top:1240px; width:620px; height:460px; }}
+#ID .scoot img {{ position:absolute; left:0; top:0; width:100%; height:auto; display:block; }}
+#ID .scoot .g0 {{ filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }}
+#ID .scoot .g1 {{ opacity:.28; }} #ID .scoot .g2 {{ opacity:.16; }} #ID .scoot .g3 {{ opacity:.08; }}
 #ID .bloc {{ position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }}
 #ID .carre {{ width:340px; height:340px; border-radius:84px; background:{ROUGE}; display:flex; align-items:center;
   justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }}
@@ -168,7 +170,7 @@ CSS['f04'] = f'''
   font-size:30px; font-weight:900; letter-spacing:2px; text-transform:uppercase; }}
 #ID .sel {{ position:absolute; left:0; top:0; width:100%; height:190px; border-radius:44px; box-shadow:0 0 0 10px {OR}; pointer-events:none; }}
 #ID .bouton {{ position:absolute; left:80px; right:80px; bottom:110px; height:170px; border-radius:85px; background:{OM};
-  color:#fff; display:flex; align-items:center; justify-content:center; font-size:62px; font-weight:900; letter-spacing:-1px;
+  color:{ENCRE}; display:flex; align-items:center; justify-content:center; font-size:62px; font-weight:900; letter-spacing:-1px;
   box-shadow:0 30px 60px rgba(255,121,0,.4); overflow:hidden; }}
 #ID .onde {{ position:absolute; left:50%; top:50%; width:320px; height:320px; margin:-160px 0 0 -160px; border-radius:50%; background:rgba(255,255,255,.55); }}
 #ID .bouton span {{ position:relative; }}
@@ -202,11 +204,11 @@ CSS['f05'] = f'''
 '''
 
 # ------------------------------------------------------------- 6. Paiement confirmé
-ECLATS = [(-330, -300, OM), (330, -280, OR), (-400, 40, OR), (400, 60, OM), (-260, 330, OM), (270, 340, OR),
-          (0, -420, OR), (-120, 430, ROUGE), (140, -440, ROUGE), (420, -120, OM), (-430, -110, ROUGE), (60, 450, OM)]
+N_CONF = 32
+PALETTE_CONF = [OM, OR, ROUGE, '#FFFFFF']
 BODY['f06'] = '''
 <div class="lueur om"></div><div class="grain"></div>
-<div class="centre">''' + ''.join(f'<div class="ec e{i}" style="background:{c};"></div>' for i, (x, y, c) in enumerate(ECLATS)) + '''
+<div class="centre">''' + ''.join(f'<div class="ec e{i}" style="background:{PALETTE_CONF[i % 4]};"></div>' for i in range(N_CONF)) + '''
   <div class="disque"><svg viewBox="0 0 200 200"><path class="trait" d="M52 104 L88 140 L152 66" fill="none" stroke="#fff"
     stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 </div>
@@ -220,7 +222,7 @@ CSS['f06'] = f'''
 #ID .disque {{ position:absolute; left:-230px; top:-230px; width:460px; height:460px; border-radius:50%; background:{OM};
   box-shadow:0 0 0 22px rgba(255,121,0,.18), 0 40px 90px rgba(255,121,0,.45); display:flex; align-items:center; justify-content:center; }}
 #ID .disque svg {{ width:300px; height:300px; }}
-#ID .ec {{ position:absolute; left:-22px; top:-22px; width:44px; height:44px; border-radius:12px; }}
+#ID .ec {{ position:absolute; left:-18px; top:-18px; width:36px; height:24px; border-radius:6px; opacity:0; will-change:transform,opacity; }}
 #ID .txt {{ position:absolute; left:60px; right:60px; top:1060px; text-align:center; }}
 #ID .t1 {{ font-size:118px; font-weight:900; letter-spacing:-5px; line-height:1; }}
 #ID .t2 {{ margin-top:34px; font-size:56px; font-weight:800; color:{OMT}; }}
@@ -283,26 +285,124 @@ CSS['f09'] = f'''
 
 import motion, re
 
+# ------------------------------------------------------------- TRANSITIONS (v4)
+# Règle du skill hyperframes-animation : pas de « sortie » puis « entrée » (coupe avec un creux),
+# l'ancienne et la nouvelle scène bougent EN MÊME TEMPS. Les clips se chevauchent de OVERLAP s :
+# la scène N continue sous la scène N+1 (plus haute dans le DOM) pendant le raccord.
+# Une transition principale (fouetté latéral, flou directionnel plafonné à 16 px, même tween des
+# deux côtés = vitesse de couture identique), un accent vertical pour les scènes de mots, un zoom
+# traversant au climax (paiement confirmé), un fondu flou vers la fin (wind-down).
+OVERLAP = 0.30
+# frontière (scène sortante → entrante) : type, direction
+TRANSITIONS = {
+    'f01': ('push', 'right'),   # suit le scooter de Maki, qui sort à droite
+    'f02': ('push', 'left'),
+    'f03': ('push', 'up'),      # les mots montent, l'écran de paiement arrive par le bas
+    'f04': ('push', 'left'),
+    'f05': ('zoom', None),      # climax : on traverse le #144# vers la coche
+    'f06': ('push', 'up'),
+    'f07': ('push', 'left'),
+    'f08': ('fade', None),      # outro : fondu flou
+}
+# (axe, départ de l'entrante, arrivée de la sortante) : « left » = le contenu file vers la gauche.
+AXE = {'left': ('x', W, -W), 'right': ('x', -W, W), 'up': ('y', H, -H), 'down': ('y', -H, H)}
+
+
+def flou_directionnel(cid, axe, t, duree):
+    # Flou de vitesse sur l'axe du mouvement, pic à mi-course (vitesse max), 0 aux deux bouts.
+    # Valeur = fonction pure de la progression : rejouable au seek.
+    sd = '(b.toFixed(2)+" 0")' if axe == 'x' else '("0 "+b.toFixed(2))'
+    return (f'(function(){{var el=document.querySelector("#{cid} .cam");'
+            f'var f=document.querySelector("#{cid}-hb feGaussianBlur");var p={{v:0}};'
+            f'tl.fromTo(p,{{v:0}},{{v:1,duration:{duree},ease:"none",immediateRender:false,onUpdate:function(){{'
+            f'var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",{sd});'
+            f'el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#{cid}-hb)":"";}}}},{t});}})();')
+
+
+def trans_out(cid, kind, dir_, t):
+    if kind == 'push':
+        axe, _de, vers = AXE[dir_]
+        return (f'tl.fromTo("#{cid} .cam", {{{axe}:0}}, {{{axe}:{vers}, duration:{OVERLAP}, ease:"power3.inOut", immediateRender:false}}, {t});\n'
+                + flou_directionnel(cid, axe, t, OVERLAP))
+    if kind == 'zoom':
+        return (f'tl.fromTo("#{cid} .cam", {{scale:1, opacity:1, filter:"blur(0px)"}}, '
+                f'{{scale:1.7, opacity:0, filter:"blur(10px)", duration:{OVERLAP}, ease:"power2.in", immediateRender:false}}, {t});')
+    if kind == 'fade':
+        return (f'tl.fromTo("#{cid} .cam", {{opacity:1, filter:"blur(0px)"}}, '
+                f'{{opacity:0, filter:"blur(14px)", duration:{OVERLAP + 0.2}, ease:"sine.inOut", immediateRender:false}}, {t});')
+    return ''
+
+
+def trans_in(cid, kind, dir_):
+    if kind == 'push':
+        axe, de, _vers = AXE[dir_]
+        return (f'tl.fromTo("#{cid} .cam", {{{axe}:{de}}}, {{{axe}:0, duration:{OVERLAP}, ease:"power3.inOut"}}, 0);\n'
+                + flou_directionnel(cid, axe, 0, OVERLAP)
+                + f'\ntl.fromTo("#{cid} .seam", {{opacity:1}}, {{opacity:0, duration:0.08, ease:"none", immediateRender:false}}, {OVERLAP - 0.02});')
+    if kind == 'zoom':
+        return (f'tl.fromTo("#{cid} .cam", {{scale:0.72, opacity:0}}, {{scale:1, opacity:1, duration:{OVERLAP}, ease:"power3.out"}}, 0);')
+    if kind == 'fade':
+        return (f'tl.fromTo("#{cid} .cam", {{opacity:0, filter:"blur(14px)"}}, {{opacity:1, filter:"blur(0px)", duration:{OVERLAP + 0.2}, ease:"sine.inOut"}}, 0);')
+    return ''
+
+
+def seam_html(cid, kind, dir_):
+    # Hairline or à la frontière entre les deux scènes pendant le fouetté (whip-pan-cut) : le bord
+    # du cadre qui passe, pas un ornement permanent.
+    if kind != 'push':
+        return ''
+    axe, de, _v = AXE[dir_]
+    if axe == 'x':
+        pos = 'left:-10px;top:0;width:10px;height:100%' if de > 0 else 'right:-10px;top:0;width:10px;height:100%'
+    else:
+        pos = 'top:-10px;left:0;height:10px;width:100%' if de > 0 else 'bottom:-10px;left:0;height:10px;width:100%'
+    return f'<div class="seam" style="position:absolute;{pos};background:{OR};opacity:1;"></div>'
+
+
+def filtre_html(cid):
+    return (f'<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="{cid}-hb" x="-20%" y="-20%" width="140%" height="140%">'
+            f'<feGaussianBlur stdDeviation="0 0"/></filter></svg>')
+
+
 def etirer(js, k):
     js = re.sub(r'duration:([0-9.]+)', lambda m: 'duration:%.3f' % (float(m.group(1)) * k), js)
     js = re.sub(r'\}, ([0-9.]+)\);', lambda m: '}, %.3f);' % (float(m.group(1)) * k), js)
     return js
 
-MOTION = {c: etirer(motion.M[c], K[c]) for c, _f, _s, _d in SCENES}
+# Les anciennes entrées/sorties « .cam » de motion.py sont retirées : les raccords vivent ici.
+def sans_cam(js):
+    return '\n'.join(l for l in js.split('\n') if '.cam"' not in l)
+
+ORDRE = [c for c, _f, _s, _d in SCENES]
+MOTION, ENTREE_HTML, SEAM = {}, {}, {}
+for i, (c, _f, _s, d) in enumerate(SCENES):
+    js = etirer(sans_cam(motion.M[c]), K[c])
+    if i > 0:
+        kind, dir_ = TRANSITIONS[ORDRE[i - 1]]
+        js = trans_in(c, kind, dir_) + '\n' + js
+        ENTREE_HTML[c] = filtre_html(c)
+        SEAM[c] = seam_html(c, kind, dir_)
+    else:
+        ENTREE_HTML[c] = filtre_html(c)
+    if c in TRANSITIONS:
+        kind, dir_ = TRANSITIONS[c]
+        js = js + '\n' + trans_out(c, kind, dir_, round(d, 4))
+    MOTION[c] = js
 
 
 def frame(cid, fichier):
     fond = FONDS.get(cid, CREME)
     css = (BASE_CSS + CSS[cid]).replace('#ID', '#' + cid)
     css = css.replace(f'#{cid} {{ position:absolute; inset:0; overflow:hidden;',
-                      f'#{cid} {{ position:absolute; inset:0; overflow:hidden; background:{fond} !important;', 1)
+                      f'#{cid} {{ position:absolute; inset:0; overflow:hidden; background:transparent !important;', 1)
+    css += f'\n#{cid} .cam {{ background:{fond}; }}'
     return f'''<!doctype html>
 <html><head><meta charset="UTF-8"></head><body>
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>{css}</style>
-<div id="{cid}" data-composition-id="{cid}" data-width="{W}" data-height="{H}"><div class="cam"><div class="push">{BODY[cid]}
-</div></div></div>
+<div id="{cid}" data-composition-id="{cid}" data-width="{W}" data-height="{H}">{ENTREE_HTML[cid]}<div class="cam"><div class="push">{BODY[cid]}
+</div>{SEAM.get(cid, '')}</div></div>
 <script>
 (function(){{
   const tl = gsap.timeline({{ paused: true }});
@@ -319,8 +419,9 @@ def index():
     total = round(SCENES[-1][2] + SCENES[-1][3], 4)
     hotes = '\n'.join(
         f'      <div id="{cid}" class="clip" data-composition-id="{cid}" data-composition-src="compositions/frames/{f}.html" '
-        f'data-start="{s}" data-duration="{d}" data-track-index="1" data-width="{W}" data-height="{H}"></div>'
-        for cid, f, s, d in SCENES)
+        f'data-start="{s}" data-duration="{round(d + (OVERLAP if i < len(SCENES) - 1 else 0), 4)}" data-track-index="1" '
+        f'data-width="{W}" data-height="{H}" style="z-index:{i + 1}"></div>'
+        for i, (cid, f, s, d) in enumerate(SCENES))
     return f'''<!doctype html>
 <html lang="fr">
   <head>
@@ -365,12 +466,12 @@ SFX_L = [
     ('f04', -0.15, 'whoosh', 0.65), ('f04', 0.2, 'whoosh', 0.4), ('f04', 0.75, 'pop', 0.4),
     ('f04', 1.30, 'clic', 0.7), ('f04', 1.72, 'clic', 0.7), ('f04', 2.14, 'clic', 0.75), ('f04', 2.20, 'scintille', 0.3),
     ('f04', 3.00, 'clic', 0.8), ('f04', 3.30, 'whoosh', 0.6),
-    ('f05', 0.40, 'clic', 0.7), ('f05', 0.62, 'clic', 0.7), ('f05', 0.84, 'clic', 0.7), ('f05', 1.06, 'clic', 0.7),
+    ('f05', -0.12, 'whoosh', 0.6), ('f05', 0.40, 'clic', 0.7), ('f05', 0.62, 'clic', 0.7), ('f05', 0.84, 'clic', 0.7), ('f05', 1.06, 'clic', 0.7),
     ('f05', 1.28, 'clic', 0.75), ('f05', 1.35, 'whoosh', 0.45),
     ('f05', 1.58, 'pop', 0.45), ('f05', 1.71, 'pop', 0.45), ('f05', 1.84, 'pop', 0.45), ('f05', 1.97, 'pop', 0.45),
     ('f05', 2.10, 'pop', 0.45), ('f05', 2.23, 'pop', 0.5), ('f05', 2.45, 'whoosh', 0.6),
-    ('f06', 0.05, 'impact', 0.65), ('f06', 0.2, 'carillon', 0.6), ('f06', 0.35, 'scintille', 0.4), ('f06', 1.6, 'whoosh', 0.6),
-    ('f07', -0.03, 'impact', 0.75), ('f07', B - 0.03, 'impact', 0.6), ('f07', 2 * B - 0.03, 'impact', 0.7), ('f07', 2 * B + 0.25, 'whoosh', 0.55),
+    ('f06', -0.12, 'whoosh', 0.55), ('f06', 0.05, 'impact', 0.65), ('f06', 0.2, 'carillon', 0.6), ('f06', 0.35, 'scintille', 0.4), ('f06', 1.6, 'whoosh', 0.6),
+    ('f07', -0.14, 'whoosh', 0.55), ('f07', -0.03, 'impact', 0.75), ('f07', B - 0.03, 'impact', 0.6), ('f07', 2 * B - 0.03, 'impact', 0.7), ('f07', 2 * B + 0.25, 'whoosh', 0.55),
     ('f08', 0.0, 'whoosh', 0.4), ('f08', 0.55, 'carillon', 0.6), ('f08', 1.1, 'pop', 0.45), ('f08', 1.5, 'pop', 0.45),
     ('f08', 1.8, 'scintille', 0.3), ('f08', 2.45, 'whoosh', 0.5),
     ('f09', 0.05, 'pop', 0.45), ('f09', 0.25, 'pop', 0.45), ('f09', 0.5, 'scintille', 0.4), ('f09', 1.1, 'pop', 0.4),

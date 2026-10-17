@@ -24,6 +24,13 @@ même chose ») :
 - le geste montré est le #144# (code de paiement), que tout le monde connaît déjà ;
 - une scène sur fond orange (les mots « PAYÉ. RIEN À SORTIR. »).
 
+v4 (18/10) — passe avec les skills de domaine (hyperframes-animation, -registry, -core) : vrais raccords simultanés
+(clips chevauchés de 0,3 s, fond de scène porté par `.cam`), fouetté latéral en transition principale avec flou
+directionnel plafonné à 16 px et couture or (whip-pan-cut), fouetté vertical pour les mots, zoom traversant au
+climax, fondu flou en sortie ; confettis balistiques déterministes (particle-burst) ; traînée fantôme sur le
+scooter (motion-blur-streak) ; rotation d'arrivée de la coche (success-check). Composants du registre installés
+dans `compositions/components/` pour référence ; aucun bloc hébergé (tout reste dans gen.py / motion.py).
+
 ## Assets
 
 - assets/maki-desole.png, maki-scooter.png, maki-livre.png — Maki, la mascotte livreur (élément Higgsfield

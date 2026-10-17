@@ -3,7 +3,7 @@
 <template>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
 <style>
-#f01 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+#f01 { position:absolute; inset:0; overflow:hidden; background:transparent !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
   -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
 #f01 .cam, #f01 .push { position:absolute; inset:0; will-change:transform; }
 #f01 .push { perspective:2400px; }
@@ -16,8 +16,10 @@
 #f01 .om-logo { display:block; background:#000; overflow:hidden; }
 #f01 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
 
-#f01 .scoot { position:absolute; left:0; top:1240px; width:620px; }
-#f01 .scoot img { width:100%; height:auto; display:block; filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }
+#f01 .scoot { position:absolute; left:0; top:1240px; width:620px; height:460px; }
+#f01 .scoot img { position:absolute; left:0; top:0; width:100%; height:auto; display:block; }
+#f01 .scoot .g0 { filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }
+#f01 .scoot .g1 { opacity:.28; } #f01 .scoot .g2 { opacity:.16; } #f01 .scoot .g3 { opacity:.08; }
 #f01 .bloc { position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }
 #f01 .carre { width:340px; height:340px; border-radius:84px; background:#E8342A; display:flex; align-items:center;
   justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }
@@ -25,8 +27,9 @@
 #f01 .mot { margin-top:64px; font-size:150px; font-weight:900; letter-spacing:-6px; line-height:1; }
 #f01 .filet { margin-top:30px; width:560px; height:18px; border-radius:9px; background:#FFC72C; }
 #f01 .lieu { margin-top:34px; font-size:34px; font-weight:800; letter-spacing:14px; text-transform:uppercase; color:#E8342A; }
-</style>
-<div id="f01" data-composition-id="f01" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+
+#f01 .cam { background:#F6EFE2; }</style>
+<div id="f01" data-composition-id="f01" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f01-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur"></div><div class="grain"></div>
 <div class="bloc">
   <div class="carre"><img src="../../assets/taxifood-transparent.png" alt=""></div>
@@ -34,23 +37,26 @@
   <div class="filet"></div>
   <div class="lieu">Nosy Be</div>
 </div>
-<div class="scoot"><img src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>
+<div class="scoot"><img class="g3" src="../../assets/maki-scooter.png?g=3" alt="" data-layout-allow-overflow><img class="g2" src="../../assets/maki-scooter.png?g=2" alt="" data-layout-allow-overflow><img class="g1" src="../../assets/maki-scooter.png?g=1" alt="" data-layout-allow-overflow><img class="g0" src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>
 </div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f01 .cam", {scale:1.6, filter:"blur(18px)"}, {scale:1, filter:"blur(0px)", duration:0.427, ease:"power3.out"}, 0.000);
 tl.fromTo("#f01 .lueur", {scale:1}, {scale:1.12, duration:0.893, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
 tl.fromTo("#f01 .carre", {scale:0, rotation:-28}, {scale:1, rotation:0, duration:0.667, ease:"back.out(2.2)"}, 0.053);
 tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.480, ease:"power4.out"}, 0.347);
 tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.533, ease:"power3.out"}, 0.533);
 tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.400, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.880);
 tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.453, ease:"power2.out"}, 1.040);
-tl.fromTo("#f01 .scoot", {x:-760, rotation:-3}, {x:1140, rotation:0, duration:1.333, ease:"power2.inOut"}, 0.400);
+tl.fromTo("#f01 .scoot .g0", {x:-760}, {x:1140, duration:1.333, ease:"power2.inOut"}, 0.400);
+tl.fromTo("#f01 .scoot .g1", {x:-760}, {x:1140, duration:1.333, ease:"power2.inOut"}, 0.440);
+tl.fromTo("#f01 .scoot .g2", {x:-760}, {x:1140, duration:1.333, ease:"power2.inOut"}, 0.480);
+tl.fromTo("#f01 .scoot .g3", {x:-760}, {x:1140, duration:1.333, ease:"power2.inOut"}, 0.520);
 tl.fromTo("#f01 .scoot", {y:0}, {y:-10, duration:0.107, ease:"sine.inOut", yoyo:true, repeat:11, immediateRender:false}, 0.400);
-tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.240, ease:"power2.in", immediateRender:false}, 1.533);
 
+tl.fromTo("#f01 .cam", {x:0}, {x:1080, duration:0.3, ease:"power3.inOut", immediateRender:false}, 1.7778);
+(function(){var el=document.querySelector("#f01 .cam");var f=document.querySelector("#f01-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f01-hb)":"";}},1.7778);})();
   window.__timelines["f01"] = tl;
 })();
 </script>

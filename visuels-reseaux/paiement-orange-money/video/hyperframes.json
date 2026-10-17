@@ -9,5 +9,47 @@
   "media": {
     "autoProxy": true
   },
-  "authoringSkill": "general-video"
+  "authoringSkill": "general-video",
+  "registryItems": [
+    {
+      "name": "whip-pan-cut",
+      "type": "hyperframes:component",
+      "target": "compositions/components/whip-pan-cut.html"
+    },
+    {
+      "name": "confetti",
+      "type": "hyperframes:component",
+      "target": "compositions/components/confetti.html"
+    },
+    {
+      "name": "success-check",
+      "type": "hyperframes:component",
+      "target": "compositions/components/success-check.html"
+    },
+    {
+      "name": "caption-kinetic-slam",
+      "type": "hyperframes:component",
+      "target": "compositions/components/caption-kinetic-slam.html"
+    },
+    {
+      "name": "headline-slam",
+      "type": "hyperframes:component",
+      "target": "compositions/components/headline-slam.html"
+    },
+    {
+      "name": "shutter-slam",
+      "type": "hyperframes:component",
+      "target": "compositions/components/shutter-slam.html"
+    },
+    {
+      "name": "zoom-through-transition",
+      "type": "hyperframes:component",
+      "target": "compositions/components/zoom-through-transition.html"
+    },
+    {
+      "name": "directional-wipe",
+      "type": "hyperframes:component",
+      "target": "compositions/components/directional-wipe.html"
+    }
+  ]
 }

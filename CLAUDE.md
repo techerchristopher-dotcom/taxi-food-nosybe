@@ -1454,7 +1454,7 @@ Décisions du porteur du projet (2026-10-16) : **option 2** (rafraîchissement e
 `app.json` **tel quel** (vérifié : `expo config` identique octet pour octet) ; avec
 `APP_VARIANT=livreur` → « Taxi Food Livreur », package Android `com.chris97416.taxifoodlivreur`,
 bundle iOS `com.chris97416.taxifood-livreur`, projet EAS **`@chris97416/taxi-food-livreur`**
-(`e0d5567e-9321-4071-94e8-44910ab1434d`, flux de mises à jour séparé), runtime `1.0.0`, écrans dans
+(`e0d5567e-9321-4071-94e8-44910ab1434d`, flux de mises à jour séparé), identifiant OAuth Android `227662072769-rsiqeuqffjr2197v4a287vjmq8nn5r2b` (SHA-1 EAS `00:38:C8:…:08:C3`), runtime `1.0.0`, écrans dans
 **`app/app-livreur/`** (option `root` d'expo-router : les écrans client n'entrent pas dans le paquet),
 icône `assets/livreur/`. ⚠️ **Aucun lien universel** dans l'app livreur (sinon les liens partagés aux
 clients s'y ouvriraient). ⚠️ **Pas de `google-services.json`** : le package n'est pas déclaré dans

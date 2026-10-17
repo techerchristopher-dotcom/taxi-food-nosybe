@@ -25,8 +25,11 @@
 | 7 Magasins | ⏳ Android : APK installable par lien (pas de fiche Play) ; iPhone : build interactif à lancer par le porteur du projet |
 
 **Gestes restants (consoles, à faire par le porteur du projet)** — voir le compte rendu de livraison :
-1. Google Cloud : identifiant OAuth **Android** pour `com.chris97416.taxifoodlivreur` + empreinte SHA-1
-   de la clé EAS (sinon « Continuer avec Google » refuse ; l'e-mail marche).
+1. ✅ **Fait le 2026-10-17** : identifiant OAuth Android « Android client Taxi Food Livreur »
+   (`227662072769-rsiqeuqffjr2197v4a287vjmq8nn5r2b`), package `com.chris97416.taxifoodlivreur`, SHA-1 de la
+   clé EAS `00:38:C8:8D:23:0D:44:7E:C8:D1:79:04:04:8B:97:1A:95:BF:08:C3`. Google annonce 5 min à quelques
+   heures avant effet. ⚠️ Le jour où l'app passe par le Play Store, ajouter AUSSI l'empreinte de la clé
+   Play App Signing (autre identifiant OAuth, même package).
 2. Firebase : ajouter l'app Android `com.chris97416.taxifoodlivreur`, puis § 6.1 (notifications).
 3. iPhone : `APP_VARIANT=livreur npx eas build -p ios --profile livreur-production` en interactif
    (nouvel App ID avec Sign in with Apple ; Supabase → Apple : ajouter le bundle).

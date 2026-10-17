@@ -34,27 +34,28 @@
 <div class="lueur om"></div><div class="grain"></div>
 <div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
 <div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
-  <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
+  <div class="pt">Déjà payé · Orange&nbsp;Money</div><div class="ok">✓</div></div>
 <div class="maki"><img src="../../assets/maki-livre.png" alt="" data-layout-allow-overflow></div>
 <div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>
 </div><div class="seam" style="position:absolute;left:-10px;top:0;width:10px;height:100%;background:#FFC72C;opacity:1;"></div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
+  
   tl.fromTo("#f08 .cam", {x:1080}, {x:0, duration:0.3, ease:"power3.inOut"}, 0);
 (function(){var el=document.querySelector("#f08 .cam");var f=document.querySelector("#f08-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f08-hb)":"";}},0);})();
 tl.fromTo("#f08 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
 
-tl.fromTo("#f08 .ding", {y:-80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"back.out(1.8)"}, 0.058);
-tl.fromTo("#f08 .ding", {rotation:-2}, {rotation:2, duration:0.070, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.408);
-tl.fromTo("#f08 .maki", {y:1200, rotation:4}, {y:0, rotation:0, duration:0.758, ease:"back.out(1.1)"}, 0.350);
-tl.fromTo("#f08 .maki", {scale:1}, {scale:1.04, duration:0.583, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}, 1.167);
-tl.fromTo("#f08 .paye", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.467, ease:"back.out(2)"}, 1.050);
-tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.350, ease:"back.out(3)"}, 1.400);
-tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"power4.out"}, 1.750);
-tl.fromTo("#f08 .push", {scale:1}, {scale:1.04, duration:2.800, ease:"sine.inOut"}, 0.233);
+tl.fromTo("#f08 .push", {scale:1}, {scale:1.04, duration:3.556, ease:"sine.inOut"}, 0);
+tl.fromTo("#f08 .ding", {y:-80, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"back.out(1.8)"}, 0.120);
+tl.fromTo("#f08 .ding", {rotation:-2}, {rotation:2, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.420);
+tl.fromTo("#f08 .maki", {y:1200, rotation:4}, {y:0, rotation:0, duration:0.65, ease:"back.out(1.1)"}, 0.781);
+tl.fromTo("#f08 .maki", {scale:1}, {scale:1.04, duration:0.5, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}, 1.481);
+tl.fromTo("#f08 .paye", {rotationX:-95, scale:0.7, opacity:0}, {rotationX:0, scale:1, opacity:1, duration:0.45, ease:"back.out(1.8)", transformOrigin:"50% 0%"}, 1.763);
+tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.3, ease:"back.out(3)"}, 2.142);
+tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"power4.out"}, 2.529);
 
-tl.fromTo("#f08 .cam", {opacity:1, filter:"blur(0px)"}, {opacity:0, filter:"blur(14px)", duration:0.5, ease:"sine.inOut", immediateRender:false}, 3.1111);
+tl.fromTo("#f08 .cam", {opacity:1, filter:"blur(0px)"}, {opacity:0, filter:"blur(14px)", duration:0.5, ease:"sine.inOut", immediateRender:false}, 3.5556);
   window.__timelines["f08"] = tl;
 })();
 </script>

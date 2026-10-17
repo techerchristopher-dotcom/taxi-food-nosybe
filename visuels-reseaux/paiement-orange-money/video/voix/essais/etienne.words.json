@@ -1,0 +1,428 @@
+[
+  {
+    "id": "w0",
+    "text": "Nouveau",
+    "start": 0.299,
+    "end": 0.597
+  },
+  {
+    "id": "w1",
+    "text": "sur",
+    "start": 0.64,
+    "end": 0.768
+  },
+  {
+    "id": "w2",
+    "text": "Taxi",
+    "start": 0.811,
+    "end": 1.109
+  },
+  {
+    "id": "w3",
+    "text": "Food",
+    "start": 1.152,
+    "end": 1.365
+  },
+  {
+    "id": "w4",
+    "text": "!",
+    "start": 1.564,
+    "end": 1.764
+  },
+  {
+    "id": "w5",
+    "text": "Ding-dong",
+    "start": 1.963,
+    "end": 2.517
+  },
+  {
+    "id": "w6",
+    "text": "!",
+    "start": 2.688,
+    "end": 2.859
+  },
+  {
+    "id": "w7",
+    "text": "Ton",
+    "start": 3.029,
+    "end": 3.157
+  },
+  {
+    "id": "w8",
+    "text": "livreur",
+    "start": 3.2,
+    "end": 3.541
+  },
+  {
+    "id": "w9",
+    "text": "est",
+    "start": 3.584,
+    "end": 3.669
+  },
+  {
+    "id": "w10",
+    "text": "là…",
+    "start": 3.712,
+    "end": 4.053
+  },
+  {
+    "id": "w11",
+    "text": "mais",
+    "start": 4.309,
+    "end": 4.48
+  },
+  {
+    "id": "w12",
+    "text": "il",
+    "start": 4.523,
+    "end": 4.608
+  },
+  {
+    "id": "w13",
+    "text": "n'a",
+    "start": 4.651,
+    "end": 4.7787
+  },
+  {
+    "id": "w14",
+    "text": "pas",
+    "start": 4.821,
+    "end": 4.864
+  },
+  {
+    "id": "w15",
+    "text": "la",
+    "start": 4.907,
+    "end": 4.949
+  },
+  {
+    "id": "w16",
+    "text": "monnaie.",
+    "start": 4.992,
+    "end": 5.461
+  },
+  {
+    "id": "w17",
+    "text": "Plus",
+    "start": 5.675,
+    "end": 5.888
+  },
+  {
+    "id": "w18",
+    "text": "besoin",
+    "start": 5.931,
+    "end": 6.229
+  },
+  {
+    "id": "w19",
+    "text": "de",
+    "start": 6.272,
+    "end": 6.315
+  },
+  {
+    "id": "w20",
+    "text": "monnaie",
+    "start": 6.357,
+    "end": 6.571
+  },
+  {
+    "id": "w21",
+    "text": "!",
+    "start": 6.684,
+    "end": 6.798
+  },
+  {
+    "id": "w22",
+    "text": "Au",
+    "start": 6.912,
+    "end": 7.296
+  },
+  {
+    "id": "w23",
+    "text": "moment",
+    "start": 7.339,
+    "end": 7.424
+  },
+  {
+    "id": "w24",
+    "text": "de",
+    "start": 7.552,
+    "end": 7.637
+  },
+  {
+    "id": "w25",
+    "text": "payer,",
+    "start": 7.68,
+    "end": 8.128
+  },
+  {
+    "id": "w26",
+    "text": "choisis",
+    "start": 8.277,
+    "end": 8.832
+  },
+  {
+    "id": "w27",
+    "text": "Orange",
+    "start": 8.917,
+    "end": 9.301
+  },
+  {
+    "id": "w28",
+    "text": "Money.",
+    "start": 9.429,
+    "end": 9.856
+  },
+  {
+    "id": "w29",
+    "text": "Compose",
+    "start": 10.155,
+    "end": 10.5387
+  },
+  {
+    "id": "w30",
+    "text": "le",
+    "start": 10.624,
+    "end": 10.709
+  },
+  {
+    "id": "w31",
+    "text": "dièse",
+    "start": 10.752,
+    "end": 11.008
+  },
+  {
+    "id": "w32",
+    "text": "cent",
+    "start": 11.179,
+    "end": 11.4347
+  },
+  {
+    "id": "w33",
+    "text": "quarante-quatre",
+    "start": 11.477,
+    "end": 11.989
+  },
+  {
+    "id": "w34",
+    "text": "dièse,",
+    "start": 12.117,
+    "end": 12.608
+  },
+  {
+    "id": "w35",
+    "text": "puis",
+    "start": 12.843,
+    "end": 13.013
+  },
+  {
+    "id": "w36",
+    "text": "tape",
+    "start": 13.056,
+    "end": 13.184
+  },
+  {
+    "id": "w37",
+    "text": "ton",
+    "start": 13.269,
+    "end": 13.3547
+  },
+  {
+    "id": "w38",
+    "text": "code.",
+    "start": 13.397,
+    "end": 13.718
+  },
+  {
+    "id": "w39",
+    "text": "Paiement",
+    "start": 13.869,
+    "end": 14.21
+  },
+  {
+    "id": "w40",
+    "text": "confirmé",
+    "start": 14.253,
+    "end": 14.765
+  },
+  {
+    "id": "w41",
+    "text": ":",
+    "start": 14.85,
+    "end": 15.021
+  },
+  {
+    "id": "w42",
+    "text": "La",
+    "start": 15.319,
+    "end": 15.447
+  },
+  {
+    "id": "w43",
+    "text": "Cabane",
+    "start": 15.49,
+    "end": 15.7887
+  },
+  {
+    "id": "w44",
+    "text": "reçoit",
+    "start": 15.874,
+    "end": 16.1727
+  },
+  {
+    "id": "w45",
+    "text": "ta",
+    "start": 16.215,
+    "end": 16.3007
+  },
+  {
+    "id": "w46",
+    "text": "commande.",
+    "start": 16.343,
+    "end": 17.154
+  },
+  {
+    "id": "w47",
+    "text": "Payé.",
+    "start": 17.666,
+    "end": 18.391
+  },
+  {
+    "id": "w48",
+    "text": "Rien",
+    "start": 18.733,
+    "end": 19.031
+  },
+  {
+    "id": "w49",
+    "text": "à",
+    "start": 19.074,
+    "end": 19.159
+  },
+  {
+    "id": "w50",
+    "text": "sortir.",
+    "start": 19.202,
+    "end": 19.949
+  },
+  {
+    "id": "w51",
+    "text": "Ding-dong",
+    "start": 20.354,
+    "end": 21.079
+  },
+  {
+    "id": "w52",
+    "text": "!",
+    "start": 21.279,
+    "end": 21.478
+  },
+  {
+    "id": "w53",
+    "text": "Cette",
+    "start": 21.677,
+    "end": 21.9327
+  },
+  {
+    "id": "w54",
+    "text": "fois,",
+    "start": 21.975,
+    "end": 22.402
+  },
+  {
+    "id": "w55",
+    "text": "c'est",
+    "start": 22.615,
+    "end": 22.8287
+  },
+  {
+    "id": "w56",
+    "text": "déjà",
+    "start": 22.871,
+    "end": 23.127
+  },
+  {
+    "id": "w57",
+    "text": "payé.",
+    "start": 23.17,
+    "end": 23.746
+  },
+  {
+    "id": "w58",
+    "text": "Bon",
+    "start": 24.066,
+    "end": 24.279
+  },
+  {
+    "id": "w59",
+    "text": "appétit",
+    "start": 24.322,
+    "end": 24.749
+  },
+  {
+    "id": "w60",
+    "text": "!",
+    "start": 24.991,
+    "end": 25.232
+  },
+  {
+    "id": "w61",
+    "text": "Taxi",
+    "start": 25.474,
+    "end": 25.815
+  },
+  {
+    "id": "w62",
+    "text": "Food",
+    "start": 25.858,
+    "end": 26.071
+  },
+  {
+    "id": "w63",
+    "text": ":",
+    "start": 26.199,
+    "end": 26.285
+  },
+  {
+    "id": "w64",
+    "text": "paie",
+    "start": 26.413,
+    "end": 26.711
+  },
+  {
+    "id": "w65",
+    "text": "avec",
+    "start": 26.754,
+    "end": 26.9247
+  },
+  {
+    "id": "w66",
+    "text": "Orange",
+    "start": 27.01,
+    "end": 27.3087
+  },
+  {
+    "id": "w67",
+    "text": "Money.",
+    "start": 27.394,
+    "end": 27.863
+  },
+  {
+    "id": "w68",
+    "text": "Sans",
+    "start": 28.205,
+    "end": 28.418
+  },
+  {
+    "id": "w69",
+    "text": "frais",
+    "start": 28.503,
+    "end": 28.717
+  },
+  {
+    "id": "w70",
+    "text": "!",
+    "start": 28.882,
+    "end": 29.046553287981858
+  }
+]

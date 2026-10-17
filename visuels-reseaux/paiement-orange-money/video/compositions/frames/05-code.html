@@ -30,6 +30,8 @@
 #f05 .c { width:126px; height:170px; border-radius:30px; background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 4px rgba(255,255,255,.18);
   display:flex; align-items:center; justify-content:center; font-size:110px; font-weight:900; color:#fff; }
 
+#f05 .clavier { transform-style:preserve-3d; }
+
 #f05 .cam { background:#F6EFE2; }</style>
 <div id="f05" data-composition-id="f05" data-width="1080" data-height="1920"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="f05-hb" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0 0"/></filter></svg><div class="cam"><div class="push">
 <div class="lueur om"></div><div class="grain"></div>
@@ -44,44 +46,46 @@
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
+  
   tl.fromTo("#f05 .cam", {x:1080}, {x:0, duration:0.3, ease:"power3.inOut"}, 0);
 (function(){var el=document.querySelector("#f05 .cam");var f=document.querySelector("#f05-hb feGaussianBlur");var p={v:0};tl.fromTo(p,{v:0},{v:1,duration:0.3,ease:"none",immediateRender:false,onUpdate:function(){var b=16*Math.sin(Math.PI*p.v);f.setAttribute("stdDeviation",(b.toFixed(2)+" 0"));el.style.filter=(p.v>0.001&&p.v<0.999)?"url(#f05-hb)":"";}},0);})();
 tl.fromTo("#f05 .seam", {opacity:1}, {opacity:0, duration:0.08, ease:"none", immediateRender:false}, 0.27999999999999997);
 
-tl.fromTo("#f05 .titre", {y:-60, opacity:0}, {y:0, opacity:1, duration:0.450, ease:"power3.out"}, 0.075);
-tl.fromTo("#f05 .k", {scale:0.6, opacity:0}, {scale:1, opacity:1, duration:0.300, ease:"back.out(2)", stagger:0.01}, 0.120);
-tl.fromTo("#f05 .curseur", {opacity:1}, {opacity:0, duration:0.180, ease:"none", yoyo:true, repeat:9}, 0.150);
+tl.fromTo("#f05 .push", {scale:1}, {scale:1.04, duration:4.000, ease:"sine.inOut"}, 0);
+tl.fromTo("#f05 .titre", {y:-60, opacity:0}, {y:0, opacity:1, duration:0.3, ease:"power3.out"}, 0.05);
+tl.fromTo("#f05 .clavier", {rotationX:34, y:90}, {rotationX:12, y:0, duration:0.55, ease:"power3.out", transformOrigin:"50% 100%"}, 0.05);
+tl.fromTo("#f05 .k", {scale:0.6, opacity:0}, {scale:1, opacity:1, duration:0.2, ease:"back.out(2)", stagger:0.012}, 0.08);
+tl.fromTo("#f05 .curseur", {opacity:1}, {opacity:0, duration:0.12, ease:"none", yoyo:true, repeat:17}, 0.1);
 (function(){
-  var s = document.querySelector("#f05 .saisie"); var txt = "#144#"; var p = {v:0};
-  tl.fromTo(p, {v:0}, {v:5, duration:1.650, ease:"none", onUpdate:function(){
-    s.textContent = txt.slice(0, Math.min(5, Math.floor(p.v + 0.0001)));
-  }}, 0.270);
+  var s = document.querySelector("#f05 .saisie"), txt = "#144#", ks = [0.762, 1.104, 1.274, 1.532, 1.786], p = {t:0};
+  tl.fromTo(p, {t:0}, {t:4.000, duration:4.000, ease:"none", onUpdate:function(){
+    var n = 0; for (var i=0;i<ks.length;i++) if (p.t >= ks[i]) n++; s.textContent = txt.slice(0, n);
+  }}, 0);
 })();
-tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.090, ease:"power1.out", immediateRender:false}, 0.600);
-tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.180, ease:"power2.out", immediateRender:false}, 0.720);
-tl.fromTo("#f05 .k1", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.090, ease:"power1.out", immediateRender:false}, 0.930);
-tl.fromTo("#f05 .k1", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.180, ease:"power2.out", immediateRender:false}, 1.050);
-tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.090, ease:"power1.out", immediateRender:false}, 1.260);
-tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.180, ease:"power2.out", immediateRender:false}, 1.380);
-tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.090, ease:"power1.out", immediateRender:false}, 1.590);
-tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.180, ease:"power2.out", immediateRender:false}, 1.710);
-tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.090, ease:"power1.out", immediateRender:false}, 1.920);
-tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.180, ease:"power2.out", immediateRender:false}, 2.040);
-tl.fromTo("#f05 .saisie", {scale:1}, {scale:1.08, duration:0.180, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}, 1.935);
-tl.fromTo("#f05 .code", {y:900}, {y:0, duration:0.600, ease:"back.out(1.3)"}, 2.025);
-tl.fromTo("#f05 .c0", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 2.400);
-tl.fromTo("#f05 .c0 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 2.400);
-tl.fromTo("#f05 .c1", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 2.595);
-tl.fromTo("#f05 .c1 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 2.595);
-tl.fromTo("#f05 .c2", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 2.790);
-tl.fromTo("#f05 .c2 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 2.790);
-tl.fromTo("#f05 .c3", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 2.985);
-tl.fromTo("#f05 .c3 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 2.985);
-tl.fromTo("#f05 .c4", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 3.180);
-tl.fromTo("#f05 .c4 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 3.180);
-tl.fromTo("#f05 .c5", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.150, ease:"power2.out"}, 3.375);
-tl.fromTo("#f05 .c5 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.330, ease:"back.out(3)"}, 3.375);
-tl.fromTo("#f05 .push", {scale:1}, {scale:1.04, duration:3.600, ease:"sine.inOut"}, 0.300);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40, duration:0.06, ease:"power1.out", immediateRender:false}, 0.762);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0, duration:0.14, ease:"power2.out", immediateRender:false}, 0.852);
+tl.fromTo("#f05 .k1", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40, duration:0.06, ease:"power1.out", immediateRender:false}, 1.104);
+tl.fromTo("#f05 .k1", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0, duration:0.14, ease:"power2.out", immediateRender:false}, 1.194);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40, duration:0.06, ease:"power1.out", immediateRender:false}, 1.274);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0, duration:0.14, ease:"power2.out", immediateRender:false}, 1.364);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40, duration:0.06, ease:"power1.out", immediateRender:false}, 1.532);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0, duration:0.14, ease:"power2.out", immediateRender:false}, 1.623);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40, duration:0.06, ease:"power1.out", immediateRender:false}, 1.786);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, z:-40}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, z:0, duration:0.14, ease:"power2.out", immediateRender:false}, 1.876);
+tl.fromTo("#f05 .saisie", {scale:1}, {scale:1.1, duration:0.12, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}, 1.786);
+tl.fromTo("#f05 .code", {y:900, rotationX:-28}, {y:0, rotationX:0, duration:0.45, ease:"back.out(1.3)", transformOrigin:"50% 0%"}, 2.221);
+tl.fromTo("#f05 .c0", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.512);
+tl.fromTo("#f05 .c0 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.512);
+tl.fromTo("#f05 .c1", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.663);
+tl.fromTo("#f05 .c1 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.663);
+tl.fromTo("#f05 .c2", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.813);
+tl.fromTo("#f05 .c2 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.813);
+tl.fromTo("#f05 .c3", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.964);
+tl.fromTo("#f05 .c3 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.964);
+tl.fromTo("#f05 .c4", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 3.114);
+tl.fromTo("#f05 .c4 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 3.114);
+tl.fromTo("#f05 .c5", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 3.265);
+tl.fromTo("#f05 .c5 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 3.265);
 
 tl.fromTo("#f05 .cam", {scale:1, opacity:1, filter:"blur(0px)"}, {scale:1.7, opacity:0, filter:"blur(10px)", duration:0.3, ease:"power2.in", immediateRender:false}, 4.0);
   window.__timelines["f05"] = tl;

@@ -52,3 +52,18 @@ dans `compositions/components/` pour référence ; aucun bloc hébergé (tout re
 - « Sans frais » : validé par le porteur du projet le 17/10.
 - Exemple chiffré : commande La Cabane de 43 000 Ar ; le client n'a qu'un billet de 50 000.
 - Trame validée par le porteur du projet le 17/10 (9 séquences). v2 du 17/10 : « trop rapide » → 28 s, tout ralenti.
+
+v5 (18/10) — demandée par le porteur du projet après la vidéo de référence (tuto Maxence Tison) : « la v5 avec la
+voix off et 3D ». Générateur à part (`gen5.py`, qui réutilise gen.py) ; la v4 validée se régénère toujours par
+`python3 gen.py`.
+- Voix off française (HeyGen, voix « Chloé » en attendant le choix du porteur du projet ; essais Théo et Étienne
+  dans `voix/essais/`). Une prise, découpée en neuf répliques (`voix.py`) ; chaque geste tombe sur l'attaque de SON
+  mot (touches du #144# sur « dièse / cent / quarante / quatre / dièse », sélection d'Orange Money sur « Orange »…).
+  Durées de scène tirées de la voix, arrondies au temps musical. Texte : `voix/script.txt`.
+- Mixage : musique creusée sous la voix (carve, skill hyperframes-audio, force 0,8), allongée d'une mesure prise dans
+  le refrain pour que son coup final tombe deux temps avant la fin. Film : 70 temps = 31,1 s, -16,5 LUFS.
+- 3D réelle (Three.js r147, `trois.py`) : l'icône Taxi Food en tuile laquée (f01), la pièce Orange Money qui arrive
+  en tournant, sa coche blanche en relief qui se trace, confettis 3D (f06), le duo Taxi Food × Orange Money en tuiles
+  qui se balancent (f09). Textures = les vrais logos (aucun logo redessiné). Mots plein cadre en volume (extrusion CSS
+  3D, 16 couches) ; billet, feuille de paiement, clavier et pastille « Déjà payé » qui basculent en perspective.
+- Construction : `VOIX=chloe sh construire5.sh` (génère, creuse, contrôle), puis le rendu indiqué dans le script.

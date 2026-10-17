@@ -2,3 +2,6 @@
 .thumbnails/
 .waveform-cache/
 .media/
+
+# v5 : régénérée par gen5.py à chaque construction
+assets/audio/musique-v5.wav

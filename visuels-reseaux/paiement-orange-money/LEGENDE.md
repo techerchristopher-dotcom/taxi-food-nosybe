@@ -2,6 +2,10 @@
 
 ✅ **Vidéo v4 et visuel VALIDÉS par le porteur du projet le 18/10/2026** (Maki, 28 s, raccords simultanés — passe skills de domaine). Ne plus retoucher sans sa demande.
 
+🆕 **v5 (voix off + 3D) livrée le 18/10/2026, EN ATTENTE de validation** : `VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4`
+(31 s, voix « Chloé » provisoire — choix de la voix à faire parmi Chloé, Théo, Étienne). Sources : `video/gen5.py`,
+`video/trois.py`, `video/voix.py` (détail dans `video/BRIEF.md`). Tant qu'elle n'est pas validée, la v4 reste la version de référence.
+
 ⛔ **À NE PAS PROGRAMMER avant l'ouverture officielle** : production Orange Money (compte marchand
 Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om_environnement = 'mg'` et
 `om_en_ligne_active = true`. Au 17/10/2026, le paiement tourne en bac à sable seulement.

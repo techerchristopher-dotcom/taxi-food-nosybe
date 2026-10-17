@@ -40,6 +40,12 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - 📱 **Orange Money encaissé à la livraison** (2026-10-12) : en ligne (base, admin, web, OTA ×3) — voir
   sa section. **Jamais vu sur un vrai téléphone** (choix du livreur, carte client) ni dans l'admin
   connecté ; **aucune relance réelle** encore envoyée.
+- 🧡 **Orange Money PAYÉ DANS L'APP** (API WebPay, 2026-10-17) : construit, **testé de bout en bout en bac à
+  sable** (TF-435 payée, annoncée au restaurant, refusée, demande de remboursement + alerte admin), publié
+  web + OTA ×3, **interrupteur `om_en_ligne_active` ÉTEINT**. ⏳ Attend Orange Money Madagascar : compte
+  marchand **Rentanoo** (numéro + code) et invitation « WebPay Madagascar » (demande envoyée par WhatsApp le
+  17/10, cahier de tests joint). Annonce (vidéo Maki 28 s + visuel) **validée, à programmer à l'ouverture**.
+  ⚠️ Accès sandbox Orange : 30 jours après l'invitation du 01/10 → vers le **31/10**. Voir sa section.
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
@@ -1501,6 +1507,77 @@ affiché partout : **+261 37 34 379 12, TECHER Jean Christopher** (copié sous l
   refusée sur les tables et les RPC ; carte rendue à 375 px et « Numéro copié » au clic.
 - ⏳ **Non vérifié** : l'admin connecté (connexion Google), une relance réelle (exige un JWT
   admin), le choix du livreur et la carte sur un vrai téléphone.
+
+## 🧡 Orange Money payé DANS l'app — API Orange Money WebPay (2026-10-17)
+
+**Document de référence : [docs/PAIEMENT-ORANGE-MONEY.md](docs/PAIEMENT-ORANGE-MONEY.md)** (API relue sur le
+portail, ce qui est construit, reste à faire). Dossier Orange (brief, guide, cahier de tests, logo) :
+`orange monnaie/`. Branche `orange-money` ; publication faite depuis `om-publication` (= `main` + Orange Money,
+worktree `../taxi-food-nosybe-om`), parce que `orange-money` n'avait pas les chantiers livrés le même jour
+(commande programmée, suivi livreur).
+
+**Ce que c'est.** Le client choisit « Orange Money » à la validation ; une page **officielle Orange** s'ouvre
+(numéro + code de paiement obtenu par le `#144#`) ; le restaurant ne reçoit la commande **qu'une fois le
+paiement confirmé par Orange**. Sans frais pour le client (décision du porteur du projet). Montant en ariary,
+pas de conversion. **Différent de l'Orange Money encaissé à la livraison** (section précédente) : ici la
+commande NAÎT en `orange_money` (`orders.om_en_ligne = true`, posé par trigger BEFORE INSERT) ; à la porte,
+c'est un UPDATE à la livraison.
+
+- ⛔ **INTERRUPTEUR : `payment_config.om_en_ligne_active`, FAUX au 2026-10-17.** Éteint = l'option reste
+  « Bientôt » dans l'app, et `create_order` refuse `orange_money` (`paiement:orange_money_inactif`). Rallumer :
+  `select public.admin_set_om_en_ligne(true);`. **Ne pas rallumer tant que `om_environnement = 'dev'`** : un
+  client paierait en monnaie fictive (OUV, plafonné à `om_montant_test_max` = 1 000) et sa commande partirait
+  quand même au restaurant.
+- **Accès Orange** : compte developer.orange.com techerchristopher@gmail.com, application « Taxi Food Nosy Be »
+  (`P33QqjHu9LCPHE40`) abonnée à « Orange Money WebPay Dev » avec le marchand de test d'Orange
+  (`7701900014` / `100935`) ; **client de test `7701100014`, PIN `7271`** (le brief d'Orange dit 7701900014
+  pour les deux : faux, les 3 premiers essais ont échoué « code incorrect ») ; simulateur OTP
+  https://mpayment.orange-money.com/mpayment-otp/login (login `7701900014`, mdp `MerchantWP00014`).
+  Clés dans `.secrets.local` (`OM_DEV_MERCHANT_KEY`, `OM_DEV_AUTH_HEADER`) et au Vault (`om_merchant_key`,
+  `om_auth_header`, posées par `scripts/poser-cles-orange-money.sh` via `deposer-secret`, liste blanche
+  étendue). `om_hook_secret` généré en base. L'affichage du `client_secret` sur le portail exige un code
+  envoyé par e-mail : geste du porteur du projet.
+- **Base** (migrations `20261017184411`, `20261017184859`, `20261017200750`) : tentatives dans
+  `payment_intents` (provider `orange_money`, `amount_minor` = ariary, `fx_rate` 1, `om_reference` =
+  order_id Orange, `payment_url`, `expire_le`) ; `notif_token` dans `payment_intents_om_jetons` (aucun droit
+  client) ; **`commande_en_attente_de_paiement(orders)` = LA définition de « muette tant que non payée »**
+  (carte + Orange Money en ligne), désormais utilisée par `notify_order_status`,
+  `passer_en_preparation_automatiquement`, `commande_annoncee_le` (alertes 3 min, appels) et
+  `reservation_carte_en_attente` ; policy `orders_select_restaurant` : une commande Orange Money impayée est
+  **invisible au restaurant quelle que soit la version de l'app** ; `basculer_en_especes` accepte une
+  commande Orange Money en ligne (remet `om_en_ligne` à faux) ; `om_expirer_commandes()` annule en silence
+  après 25 min sans paiement ; tâche pg_cron `orange-money-balayage` (chaque minute, n'appelle la fonction
+  Edge que s'il y a à faire) ; `mon_paiement_om_en_ligne(order)` (propriétaire seul).
+- **Remboursement : Orange n'a PAS d'API.** `declencher_remboursement` n'envoie plus à Stripe qu'un paiement
+  Stripe ; une demande Orange Money reste `demande` + **alerte Telegram admin « 💸 REMBOURSEMENT ORANGE MONEY
+  À FAIRE »** (montant réellement prélevé, téléphone du client) ; transfert à la main, puis
+  `admin_om_remboursement_effectue(refund_id, référence)` (passe par `enregistrer_verdict_remboursement` :
+  e-mail « remboursé » au client). ⏳ Pas encore de bouton dans l'admin.
+- **Fonctions Edge** (`verify_jwt = false`, chacune vérifie elle-même) : **`paiement-orange-money`**
+  (`creer` : utilisateur réel + propriétaire, relit `orders.total`, rend `payment_url`, reprend un lien encore
+  valide ; `verifier` ; `balayer` : en-tête `x-hook-secret`) et **`om-notification?i=<payment_intents.id>`**
+  (compare le `notif_token` à temps constant **puis revérifie par `transactionstatus`** avant d'écrire —
+  une notification forgée ne marque jamais une commande payée). ⚠️ Non factorisées, volontairement.
+  Vérifié : refus sans utilisateur, avec la clé publique, avec un faux secret, avec un faux jeton.
+- **App** : option sélectionnable si l'interrupteur est allumé (`ChoixModePaiement`), écran
+  `app/paiement-om.tsx` (bouton « Payer avec Orange Money » → page Orange dans `openAuthSessionAsync` /
+  l'onglet sur le web → retour → **vérification serveur**, l'app ne décide jamais), `data/paiementOrangeMoney.ts`,
+  suivi et confirmation adaptés, textes `paiementOm.*` FR/EN/IT. **Aucun module natif ajouté** : OTA
+  possible, publiée le 17/10 (1.2.1 `990d7c08`, 1.2.2 `f088e018`, 1.2.3 `7df6a5aa`) + web.
+  Vitrine : page de retour `/om/<commande>` (`landing/om/index.html`, `?w=1` = web).
+- ✅ **Test de bout en bout réussi le 17/10** (L'escale Créole ouverte à la main pour l'essai, puis refermée) :
+  TF-435 payée (Orange `SUCCESS`, txn `MP261017.2204.A01158`), commande annoncée au restaurant à la seconde du
+  paiement, refusée depuis Telegram → demande de remboursement + alerte admin ; TF-430 à TF-433 (échecs) :
+  rien envoyé au restaurant, annulées automatiquement à 25 min. Cahier de tests Orange rempli
+  (`orange monnaie/OMM_Cahier_de_tests_Webpayment_TAXI-FOOD_2026-10-17.xlsx`, société **Rentanoo**).
+- **Annonce** (`visuels-reseaux/paiement-orange-money/`, **validée le 17/10**) : vidéo motion design 9:16 de
+  28 s avec **Maki** (poses Higgsfield depuis l'élément validé, `video/assets/maki-*.png`), visuel 1080×1350,
+  légendes dans `LEGENDE.md`. ⛔ **Ne rien programmer avant la production.**
+- ⏳ **Reste** : (1) réponse d'Orange Money Madagascar (numéro + code marchand Rentanoo, invitation « WebPay
+  Madagascar ») ; (2) app de prod sur le portail, `poser-cles-orange-money.sh`, `om_environnement = 'mg'`,
+  rallumer, test réel à 1 000 Ar ; (3) admin : bouton « remboursement Orange Money fait », ventilation du
+  rapport de clôture (une commande payée en ligne a `payment_status = 'paye'`) ; (4) programmer l'annonce ;
+  (5) le remboursement de TF-435 reste en `demande` (bac à sable, rien à rendre).
 
 ## 🧾 Le restaurant voit ses reversements (2026-10-12)
 

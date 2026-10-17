@@ -95,8 +95,8 @@ tl.fromTo("#f04 .sel", {{opacity:0, scale:1.08, y:0}}, {{opacity:1, scale:1, dur
 tl.fromTo("#f04 .sel", {{y:0}}, {{y:218, duration:0.22, ease:"power3.inOut", immediateRender:false}}, 1.72);
 tl.fromTo("#f04 .sel", {{y:218}}, {{y:436, duration:0.26, ease:"back.out(1.6)", immediateRender:false}}, 2.14);
 tl.fromTo("#f04 .m3", {{backgroundColor:"{CREME}", boxShadow:"inset 0 0 0 4px rgba(24,19,15,.10), 0 0px 0px rgba(255,121,0,0)"}}, {{backgroundColor:"{OM}", boxShadow:"inset 0 0 0 0px rgba(24,19,15,0), 0 26px 54px rgba(255,121,0,.35)", duration:0.2, ease:"power2.out", immediateRender:false}}, 2.22);
-tl.fromTo("#f04 .m3 .mn", {{color:"{ENCRE}"}}, {{color:"#ffffff", duration:0.2, immediateRender:false}}, 2.22);
-tl.fromTo("#f04 .m3 .ms", {{color:"rgba(24,19,15,.55)"}}, {{color:"rgba(255,255,255,.85)", duration:0.2, immediateRender:false}}, 2.22);
+tl.fromTo("#f04 .m3 .mn", {{color:"{ENCRE}"}}, {{color:"{ENCRE}", duration:0.2, immediateRender:false}}, 2.22);
+tl.fromTo("#f04 .m3 .ms", {{color:"rgba(24,19,15,.55)"}}, {{color:"rgba(24,19,15,.8)", duration:0.2, immediateRender:false}}, 2.22);
 tl.fromTo("#f04 .m3", {{scale:1}}, {{scale:1.04, duration:0.12, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}}, 2.22);
 tl.fromTo("#f04 .bouton", {{backgroundColor:"{BLANC}", color:"{OM}"}}, {{backgroundColor:"{OM}", color:"#ffffff", duration:0.3, ease:"power2.out"}}, 2.5);
 tl.fromTo("#f04 .bouton", {{scale:1}}, {{scale:0.93, duration:0.08, ease:"power1.in", immediateRender:false}}, 2.98);

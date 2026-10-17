@@ -37,14 +37,14 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f01 .cam", {scale:1.6, filter:"blur(18px)"}, {scale:1, filter:"blur(0px)", duration:0.32, ease:"power3.out"}, 0);
-tl.fromTo("#f01 .lueur", {scale:1}, {scale:1.12, duration:0.67, ease:"sine.inOut", yoyo:true, repeat:1}, 0);
-tl.fromTo("#f01 .carre", {scale:0, rotation:-28}, {scale:1, rotation:0, duration:0.5, ease:"back.out(2.2)"}, 0.04);
-tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.36, ease:"power4.out"}, 0.26);
-tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.4, ease:"power3.out"}, 0.4);
-tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.3, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.66);
-tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.34, ease:"power2.out"}, 0.78);
-tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.18, ease:"power2.in", immediateRender:false}, 1.15);
+tl.fromTo("#f01 .cam", {scale:1.6, filter:"blur(18px)"}, {scale:1, filter:"blur(0px)", duration:0.427, ease:"power3.out"}, 0.000);
+tl.fromTo("#f01 .lueur", {scale:1}, {scale:1.12, duration:0.893, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
+tl.fromTo("#f01 .carre", {scale:0, rotation:-28}, {scale:1, rotation:0, duration:0.667, ease:"back.out(2.2)"}, 0.053);
+tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.480, ease:"power4.out"}, 0.347);
+tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.533, ease:"power3.out"}, 0.533);
+tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.400, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.880);
+tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.453, ease:"power2.out"}, 1.040);
+tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.240, ease:"power2.in", immediateRender:false}, 1.533);
 
   window.__timelines["f01"] = tl;
 })();

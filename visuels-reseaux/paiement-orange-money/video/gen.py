@@ -14,19 +14,24 @@ OM = '#FF7900'          # orange Orange Money : la couleur d'action de ce film (
 OMT = '#CF6200'         # le même orange, assombri pour le TEXTE sur crème (contraste ≥ 3:1)
 
 B = 60 / 135            # un temps de la musique (135 BPM) = 0,4444 s
-# (id, fichier, début en temps, durée en temps) — 45 temps = 20,0 s ; la reprise (temps 13) tombe
-# sur l'écran de paiement.
+# (id, fichier, début en temps, durée en temps) — 64 temps = 28,4 s (v2 du 17/10 : « trop rapide »,
+# tout est ralenti). La musique part de son début : sa reprise (14,196 s ≈ temps 32) tombe sur le
+# #144#, et sa vraie fin (28,4 s) sur la fin de la vidéo.
 SCENES_T = [
-    ('f01', '01-logo', 0, 3),
-    ('f02', '02-monnaie', 3, 6),
-    ('f03', '03-plus-besoin', 9, 4),
-    ('f04', '04-choix', 13, 8),
-    ('f05', '05-code', 21, 6),
-    ('f06', '06-confirme', 27, 4),
-    ('f07', '07-paye', 31, 3),
-    ('f08', '08-livre', 34, 6),
-    ('f09', '09-fin', 40, 5),
+    ('f01', '01-logo', 0, 4),
+    ('f02', '02-monnaie', 4, 9),
+    ('f03', '03-plus-besoin', 13, 8),      # mots : x2 exact, chaque mot reste sur un temps
+    ('f04', '04-choix', 21, 11),
+    ('f05', '05-code', 32, 9),
+    ('f06', '06-confirme', 41, 5),
+    ('f07', '07-paye', 46, 6),             # mots : x2 exact
+    ('f08', '08-livre', 52, 7),
+    ('f09', '09-fin', 59, 5),
 ]
+# Durées (en temps) pour lesquelles motion.py est écrit : chaque scène est étirée de nouvelle/ancienne.
+ECRIT_T = {'f01': 3, 'f02': 6, 'f03': 4, 'f04': 8, 'f05': 6, 'f06': 4, 'f07': 3, 'f08': 6, 'f09': 5}
+K = {c: d / ECRIT_T[c] for c, _f, _s, d in SCENES_T}
+DEBUT = {c: s0 * B for c, _f, s0, _d in SCENES_T}
 SCENES = [(c, f, round(s0 * B, 4), round(d * B, 4)) for c, f, s0, d in SCENES_T]
 
 BASE_CSS = f'''
@@ -299,8 +304,14 @@ CSS['f09'] = f'''
 #ID .url {{ margin-top:56px; font-size:38px; font-weight:700; color:rgba(24,19,15,.55); }}
 '''
 
-import motion
-MOTION = {c: motion.M[c] for c, _f, _s, _d in SCENES}
+import motion, re
+
+def etirer(js, k):
+    js = re.sub(r'duration:([0-9.]+)', lambda m: 'duration:%.3f' % (float(m.group(1)) * k), js)
+    js = re.sub(r'\}, ([0-9.]+)\);', lambda m: '}, %.3f);' % (float(m.group(1)) * k), js)
+    return js
+
+MOTION = {c: etirer(motion.M[c], K[c]) for c, _f, _s, _d in SCENES}
 
 
 def frame(cid, fichier):
@@ -366,35 +377,30 @@ def index():
 def t(beat, local=0.0):
     return round(beat * B + local, 3)
 
-MUSIQUE = ('assets/audio/musique.wav', 8.418, 0.6)
-SFX = [
-    # 1. logo
-    ('whoosh', 0.00, 0.55), ('pop', 0.10, 0.5), ('scintille', 0.62, 0.35),
-    # 2. pas de monnaie (début 1,333)
-    ('whoosh', t(3, -0.25), 0.6), ('pop', t(3, 0.15), 0.5), ('pop', t(3, 0.55), 0.45),
-    ('whoosh', t(3, 0.95), 0.55), ('impact', t(3, 1.70), 0.75),
-    # 3. mots (début 4,0) — une frappe par mot
-    ('whoosh', t(9, -0.2), 0.6), ('impact', t(9, -0.03), 0.65), ('pop', t(10, -0.1), 0.55),
-    ('pop', t(11, -0.1), 0.5), ('impact', t(12, -0.03), 0.75),
-    # 4. choix (début 5,778)
-    ('whoosh', t(13, -0.15), 0.65), ('whoosh', t(13, 0.2), 0.4), ('pop', t(13, 0.75), 0.4),
-    ('clic', t(13, 1.30), 0.7), ('clic', t(13, 1.72), 0.7), ('clic', t(13, 2.14), 0.75), ('scintille', t(13, 2.20), 0.3),
-    ('clic', t(13, 3.00), 0.8), ('whoosh', t(13, 3.30), 0.6),
-    # 5. #144# (début 9,333)
-    ('clic', t(21, 0.40), 0.7), ('clic', t(21, 0.62), 0.7), ('clic', t(21, 0.84), 0.7), ('clic', t(21, 1.06), 0.7),
-    ('clic', t(21, 1.28), 0.75), ('whoosh', t(21, 1.35), 0.45),
-    ('pop', t(21, 1.58), 0.45), ('pop', t(21, 1.71), 0.45), ('pop', t(21, 1.84), 0.45), ('pop', t(21, 1.97), 0.45),
-    ('pop', t(21, 2.10), 0.45), ('pop', t(21, 2.23), 0.5), ('whoosh', t(21, 2.45), 0.6),
-    # 6. confirmé (début 12,0)
-    ('impact', t(27, 0.05), 0.65), ('carillon', t(27, 0.2), 0.6), ('scintille', t(27, 0.35), 0.4), ('whoosh', t(27, 1.6), 0.6),
-    # 7. payé (début 13,778)
-    ('impact', t(31, -0.03), 0.75), ('impact', t(32, -0.03), 0.6), ('impact', t(33, -0.03), 0.7), ('whoosh', t(33, 0.25), 0.55),
-    # 8. livreur (début 15,111)
-    ('whoosh', t(34, 0.0), 0.4), ('carillon', t(34, 0.55), 0.6), ('pop', t(34, 1.1), 0.45), ('pop', t(34, 1.5), 0.45),
-    ('scintille', t(34, 1.8), 0.3), ('whoosh', t(34, 2.45), 0.5),
-    # 9. fin (début 17,778)
-    ('pop', t(40, 0.05), 0.45), ('pop', t(40, 0.25), 0.45), ('scintille', t(40, 0.5), 0.4), ('pop', t(40, 1.1), 0.4),
+MUSIQUE = ('assets/audio/musique.wav', 0.0, 0.6)
+# (scène, temps LOCAL tel qu'écrit dans motion.py, effet, volume) : le temps est étiré comme l'animation.
+SFX_L = [
+    ('f01', 0.00, 'whoosh', 0.55), ('f01', 0.10, 'pop', 0.5), ('f01', 0.62, 'scintille', 0.35),
+    ('f02', -0.25, 'whoosh', 0.6), ('f02', 0.15, 'pop', 0.5), ('f02', 0.55, 'pop', 0.45),
+    ('f02', 0.95, 'whoosh', 0.55), ('f02', 1.70, 'impact', 0.75),
+    ('f03', -0.2, 'whoosh', 0.6), ('f03', -0.03, 'impact', 0.65), ('f03', B - 0.1, 'pop', 0.55),
+    ('f03', 2 * B - 0.1, 'pop', 0.5), ('f03', 3 * B - 0.03, 'impact', 0.75),
+    ('f04', -0.15, 'whoosh', 0.65), ('f04', 0.2, 'whoosh', 0.4), ('f04', 0.75, 'pop', 0.4),
+    ('f04', 1.30, 'clic', 0.7), ('f04', 1.72, 'clic', 0.7), ('f04', 2.14, 'clic', 0.75), ('f04', 2.20, 'scintille', 0.3),
+    ('f04', 3.00, 'clic', 0.8), ('f04', 3.30, 'whoosh', 0.6),
+    ('f05', 0.40, 'clic', 0.7), ('f05', 0.62, 'clic', 0.7), ('f05', 0.84, 'clic', 0.7), ('f05', 1.06, 'clic', 0.7),
+    ('f05', 1.28, 'clic', 0.75), ('f05', 1.35, 'whoosh', 0.45),
+    ('f05', 1.58, 'pop', 0.45), ('f05', 1.71, 'pop', 0.45), ('f05', 1.84, 'pop', 0.45), ('f05', 1.97, 'pop', 0.45),
+    ('f05', 2.10, 'pop', 0.45), ('f05', 2.23, 'pop', 0.5), ('f05', 2.45, 'whoosh', 0.6),
+    ('f06', 0.05, 'impact', 0.65), ('f06', 0.2, 'carillon', 0.6), ('f06', 0.35, 'scintille', 0.4), ('f06', 1.6, 'whoosh', 0.6),
+    ('f07', -0.03, 'impact', 0.75), ('f07', B - 0.03, 'impact', 0.6), ('f07', 2 * B - 0.03, 'impact', 0.7), ('f07', 2 * B + 0.25, 'whoosh', 0.55),
+    ('f08', 0.0, 'whoosh', 0.4), ('f08', 0.55, 'carillon', 0.6), ('f08', 1.1, 'pop', 0.45), ('f08', 1.5, 'pop', 0.45),
+    ('f08', 1.8, 'scintille', 0.3), ('f08', 2.45, 'whoosh', 0.5),
+    ('f09', 0.05, 'pop', 0.45), ('f09', 0.25, 'pop', 0.45), ('f09', 0.5, 'scintille', 0.4), ('f09', 1.1, 'pop', 0.4),
 ]
+# Un effet placé AVANT le geste (pic du son) garde son avance : seul le geste est étiré.
+AVANCE = {'whoosh': 0.16, 'pop': 0.12, 'carillon': 0.24, 'impact': 0.03, 'clic': 0.0, 'scintille': 0.0, 'tic': 0.0}
+SFX = [(nom, round(DEBUT[c] + (loc + AVANCE[nom]) * K[c] - AVANCE[nom], 3), v) for c, loc, nom, v in SFX_L]
 DUREES = {'whoosh': 0.6, 'pop': 0.7, 'impact': 2.1, 'clic': 0.4, 'tic': 0.4, 'carillon': 2.5, 'scintille': 1.8}
 
 

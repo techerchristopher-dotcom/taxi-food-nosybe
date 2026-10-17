@@ -61,16 +61,16 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f08 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.3, ease:"power3.out"}, 0);
-tl.fromTo("#f08 .tel", {rotationX:38, rotationY:-28, y:560, scale:0.82}, {rotationX:0, rotationY:0, y:0, scale:1, duration:0.7, ease:"power3.out"}, 0.0);
-tl.fromTo("#f08 .ilot", {scaleX:0.34, scaleY:0.22}, {scaleX:1, scaleY:1, duration:0.5, ease:"back.out(1.5)", transformOrigin:"50% 0%"}, 0.55);
-tl.fromTo("#f08 .ilot > *", {opacity:0, y:14}, {opacity:1, y:0, duration:0.28, ease:"power2.out", stagger:0.08}, 0.78);
-tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.3, ease:"back.out(3)"}, 1.1);
-tl.fromTo("#f08 .plat", {y:700, rotation:6, opacity:0}, {y:0, rotation:0, opacity:1, duration:0.5, ease:"power4.out"}, 1.15);
-tl.fromTo("#f08 .plat img", {scale:1.6}, {scale:1.25, duration:1.0, ease:"power2.out"}, 1.15);
-tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"power4.out"}, 1.5);
-tl.fromTo("#f08 .push", {scale:1}, {scale:1.05, duration:2.4, ease:"sine.inOut"}, 0.2);
-tl.fromTo("#f08 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(14px)", duration:0.18, ease:"power2.in", immediateRender:false}, 2.48);
+tl.fromTo("#f08 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.350, ease:"power3.out"}, 0.000);
+tl.fromTo("#f08 .tel", {rotationX:38, rotationY:-28, y:560, scale:0.82}, {rotationX:0, rotationY:0, y:0, scale:1, duration:0.817, ease:"power3.out"}, 0.000);
+tl.fromTo("#f08 .ilot", {scaleX:0.34, scaleY:0.22}, {scaleX:1, scaleY:1, duration:0.583, ease:"back.out(1.5)", transformOrigin:"50% 0%"}, 0.642);
+tl.fromTo("#f08 .ilot > *", {opacity:0, y:14}, {opacity:1, y:0, duration:0.327, ease:"power2.out", stagger:0.08}, 0.910);
+tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.350, ease:"back.out(3)"}, 1.283);
+tl.fromTo("#f08 .plat", {y:700, rotation:6, opacity:0}, {y:0, rotation:0, opacity:1, duration:0.583, ease:"power4.out"}, 1.342);
+tl.fromTo("#f08 .plat img", {scale:1.6}, {scale:1.25, duration:1.167, ease:"power2.out"}, 1.342);
+tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"power4.out"}, 1.750);
+tl.fromTo("#f08 .push", {scale:1}, {scale:1.05, duration:2.800, ease:"sine.inOut"}, 0.233);
+tl.fromTo("#f08 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(14px)", duration:0.210, ease:"power2.in", immediateRender:false}, 2.893);
 
   window.__timelines["f08"] = tl;
 })();

@@ -6,7 +6,7 @@ Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om
 
 - Visuel : `PUB-orange-money.png` (1080 × 1350, rendu en 2160 × 2700). Rendu : `sh rendre_orange_money.sh`
   (Chrome du Mac, contrôles mesurés : débord 0, police Archivo).
-- Vidéo : `VIDEO-FINALE/taxi-food-orange-money-9x16.mp4` (1080 × 1920, 20 s, motion design HyperFrames,
+- Vidéo : `VIDEO-FINALE/taxi-food-orange-money-9x16.mp4` (1080 × 1920, 28 s, motion design HyperFrames,
   sources dans `video/`, re-rendu : `cd video && python3 gen.py && npx --yes hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16.mp4`).
 - Logo officiel Orange Money (fourni par Orange) : utilisation validée par le porteur du projet le 17/10.
 - « Sans frais » : validé par le porteur du projet le 17/10.

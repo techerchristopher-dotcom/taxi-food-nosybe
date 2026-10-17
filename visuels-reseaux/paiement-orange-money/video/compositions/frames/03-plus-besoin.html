@@ -26,12 +26,12 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f03 .w:nth-child(1)", {x:-800}, {x:0, duration:0.2, ease:"power4.out"}, 0.000);
-tl.fromTo("#f03 .w:nth-child(2)", {y:-260, opacity:0}, {y:0, opacity:1, duration:0.2, ease:"power4.out"}, 0.444);
-tl.fromTo("#f03 .w:nth-child(3)", {scale:2.2, opacity:0}, {scale:1, opacity:1, duration:0.18, ease:"power3.out", transformOrigin:"0% 50%"}, 0.889);
-tl.fromTo("#f03 .w:nth-child(4)", {scale:0, rotation:8}, {scale:1, rotation:0, duration:0.28, ease:"back.out(2.6)", transformOrigin:"0% 50%"}, 1.333);
-tl.fromTo("#f03 .mots", {x:0}, {x:-10, duration:0.04, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 1.383);
-tl.fromTo("#f03 .cam", {y:0, filter:"blur(0px)"}, {y:900, filter:"blur(20px)", duration:0.15, ease:"power3.in", immediateRender:false}, 1.62);
+tl.fromTo("#f03 .w:nth-child(1)", {x:-800}, {x:0, duration:0.400, ease:"power4.out"}, 0.000);
+tl.fromTo("#f03 .w:nth-child(2)", {y:-260, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 0.888);
+tl.fromTo("#f03 .w:nth-child(3)", {scale:2.2, opacity:0}, {scale:1, opacity:1, duration:0.360, ease:"power3.out", transformOrigin:"0% 50%"}, 1.778);
+tl.fromTo("#f03 .w:nth-child(4)", {scale:0, rotation:8}, {scale:1, rotation:0, duration:0.560, ease:"back.out(2.6)", transformOrigin:"0% 50%"}, 2.666);
+tl.fromTo("#f03 .mots", {x:0}, {x:-10, duration:0.080, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 2.766);
+tl.fromTo("#f03 .cam", {y:0, filter:"blur(0px)"}, {y:900, filter:"blur(20px)", duration:0.300, ease:"power3.in", immediateRender:false}, 3.240);
 
   window.__timelines["f03"] = tl;
 })();

@@ -55,23 +55,23 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f02 .cam", {scale:0.8, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.3, ease:"power3.out"}, 0);
-tl.fromTo("#f02 .push", {scale:1}, {scale:1.06, duration:2.3, ease:"sine.inOut"}, 0.2);
-tl.fromTo("#f02 .arrivee", {y:-300, opacity:0}, {y:0, opacity:1, duration:0.45, ease:"back.out(1.6)"}, 0.05);
-tl.fromTo("#f02 .ico", {rotation:0}, {rotation:10, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.45);
-tl.fromTo("#f02 .apayer", {y:60, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"power3.out"}, 0.35);
+tl.fromTo("#f02 .cam", {scale:0.8, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.450, ease:"power3.out"}, 0.000);
+tl.fromTo("#f02 .push", {scale:1}, {scale:1.06, duration:3.450, ease:"sine.inOut"}, 0.300);
+tl.fromTo("#f02 .arrivee", {y:-300, opacity:0}, {y:0, opacity:1, duration:0.675, ease:"back.out(1.6)"}, 0.075);
+tl.fromTo("#f02 .ico", {rotation:0}, {rotation:10, duration:0.090, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.675);
+tl.fromTo("#f02 .apayer", {y:60, opacity:0}, {y:0, opacity:1, duration:0.525, ease:"power3.out"}, 0.525);
 (function(){
   var n = document.querySelector("#f02 .n"); var p = {v:0};
-  tl.fromTo(p, {v:0}, {v:43000, duration:0.55, ease:"power2.out", onUpdate:function(){
+  tl.fromTo(p, {v:0}, {v:43000, duration:0.825, ease:"power2.out", onUpdate:function(){
     var v = Math.round(p.v/1000)*1000; n.textContent = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  }}, 0.4);
+  }}, 0.600);
 })();
-tl.fromTo("#f02 .billet", {y:900, rotation:14}, {y:0, rotation:-4, duration:0.55, ease:"power4.out"}, 0.85);
-tl.fromTo("#f02 .billet", {rotation:-4}, {rotation:-2, duration:0.8, ease:"sine.inOut", immediateRender:false}, 1.4);
-tl.fromTo("#f02 .bulle", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.3, ease:"back.out(2.6)", transformOrigin:"0% 100%"}, 1.73);
-tl.fromTo("#f02 .push", {x:0}, {x:16, duration:0.05, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 1.82);
-tl.fromTo("#f02 .billet", {opacity:1}, {opacity:0.45, duration:0.3, ease:"power1.out", immediateRender:false}, 2.0);
-tl.fromTo("#f02 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.18, ease:"power2.in", immediateRender:false}, 2.48);
+tl.fromTo("#f02 .billet", {y:900, rotation:14}, {y:0, rotation:-4, duration:0.825, ease:"power4.out"}, 1.275);
+tl.fromTo("#f02 .billet", {rotation:-4}, {rotation:-2, duration:1.200, ease:"sine.inOut", immediateRender:false}, 2.100);
+tl.fromTo("#f02 .bulle", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.450, ease:"back.out(2.6)", transformOrigin:"0% 100%"}, 2.595);
+tl.fromTo("#f02 .push", {x:0}, {x:16, duration:0.075, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 2.730);
+tl.fromTo("#f02 .billet", {opacity:1}, {opacity:0.45, duration:0.450, ease:"power1.out", immediateRender:false}, 3.000);
+tl.fromTo("#f02 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.270, ease:"power2.in", immediateRender:false}, 3.720);
 
   window.__timelines["f02"] = tl;
 })();

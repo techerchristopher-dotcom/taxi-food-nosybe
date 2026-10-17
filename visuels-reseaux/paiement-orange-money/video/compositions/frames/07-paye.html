@@ -26,11 +26,11 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f07 .w:nth-child(1)", {scale:2.6, opacity:0}, {scale:1, opacity:1, duration:0.2, ease:"power3.out", transformOrigin:"0% 50%"}, 0.000);
-tl.fromTo("#f07 .w:nth-child(2)", {x:800}, {x:0, duration:0.2, ease:"power4.out"}, 0.444);
-tl.fromTo("#f07 .w:nth-child(3)", {y:240, opacity:0}, {y:0, opacity:1, duration:0.2, ease:"power4.out"}, 0.889);
-tl.fromTo("#f07 .mots", {x:0}, {x:10, duration:0.04, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 0.939);
-tl.fromTo("#f07 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.6, filter:"blur(18px)", duration:0.15, ease:"power2.in", immediateRender:false}, 1.18);
+tl.fromTo("#f07 .w:nth-child(1)", {scale:2.6, opacity:0}, {scale:1, opacity:1, duration:0.400, ease:"power3.out", transformOrigin:"0% 50%"}, 0.000);
+tl.fromTo("#f07 .w:nth-child(2)", {x:800}, {x:0, duration:0.400, ease:"power4.out"}, 0.888);
+tl.fromTo("#f07 .w:nth-child(3)", {y:240, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 1.778);
+tl.fromTo("#f07 .mots", {x:0}, {x:10, duration:0.080, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 1.878);
+tl.fromTo("#f07 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.6, filter:"blur(18px)", duration:0.300, ease:"power2.in", immediateRender:false}, 2.360);
 
   window.__timelines["f07"] = tl;
 })();

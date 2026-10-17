@@ -6,7 +6,7 @@ message: "Plus besoin de monnaie : paie avec Orange Money, directement dans l'ap
 destination: tiktok-reels
 aspect: 1080x1920
 language: fr
-length: 20s
+length: 28s
 audience: clients Taxi Food à Nosy Be (Réunionnais, expatriés, Malgaches), sur Facebook / TikTok / Reels
 ---
 
@@ -40,4 +40,4 @@ même chose ») :
 - Aucune image générée par IA. Le billet de 50 000 Ar est un rectangle stylisé (aucune reproduction de billet).
 - « Sans frais » : validé par le porteur du projet le 17/10.
 - Exemple chiffré : commande La Cabane de 43 000 Ar ; le client n'a qu'un billet de 50 000.
-- Trame validée par le porteur du projet le 17/10 (9 séquences, 20 s).
+- Trame validée par le porteur du projet le 17/10 (9 séquences). v2 du 17/10 : « trop rapide » → 28 s, tout ralenti.

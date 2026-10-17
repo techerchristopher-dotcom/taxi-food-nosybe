@@ -49,15 +49,15 @@
 (function(){
   const tl = gsap.timeline({ paused: true });
   
-tl.fromTo("#f09 .cam", {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:0.35, ease:"power2.out"}, 0);
-tl.fromTo("#f09 .lueur", {scale:1}, {scale:1.12, duration:1.10, ease:"sine.inOut", yoyo:true, repeat:1}, 0);
-tl.fromTo("#f09 .carre", {scale:0, rotation:-20}, {scale:1, rotation:0, duration:0.42, ease:"back.out(2.2)"}, 0.05);
-tl.fromTo("#f09 .fois", {scale:0}, {scale:1, duration:0.3, ease:"back.out(3)"}, 0.18);
-tl.fromTo("#f09 .omc", {scale:0, rotation:20}, {scale:1, rotation:0, duration:0.42, ease:"back.out(2.2)"}, 0.25);
-tl.fromTo("#f09 .phrase", {y:80, opacity:0}, {y:0, opacity:1, duration:0.4, ease:"power4.out"}, 0.45);
-tl.fromTo("#f09 .frais", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.32, ease:"back.out(2.6)"}, 1.1);
-tl.fromTo("#f09 .badges img", {y:40, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"back.out(1.8)", stagger:0.08}, 0.8);
-tl.fromTo("#f09 .url", {opacity:0}, {opacity:1, duration:0.3, ease:"power2.out"}, 1.0);
+tl.fromTo("#f09 .cam", {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:0.350, ease:"power2.out"}, 0.000);
+tl.fromTo("#f09 .lueur", {scale:1}, {scale:1.12, duration:1.100, ease:"sine.inOut", yoyo:true, repeat:1}, 0.000);
+tl.fromTo("#f09 .carre", {scale:0, rotation:-20}, {scale:1, rotation:0, duration:0.420, ease:"back.out(2.2)"}, 0.050);
+tl.fromTo("#f09 .fois", {scale:0}, {scale:1, duration:0.300, ease:"back.out(3)"}, 0.180);
+tl.fromTo("#f09 .omc", {scale:0, rotation:20}, {scale:1, rotation:0, duration:0.420, ease:"back.out(2.2)"}, 0.250);
+tl.fromTo("#f09 .phrase", {y:80, opacity:0}, {y:0, opacity:1, duration:0.400, ease:"power4.out"}, 0.450);
+tl.fromTo("#f09 .frais", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.320, ease:"back.out(2.6)"}, 1.100);
+tl.fromTo("#f09 .badges img", {y:40, opacity:0}, {y:0, opacity:1, duration:0.350, ease:"back.out(1.8)", stagger:0.08}, 0.800);
+tl.fromTo("#f09 .url", {opacity:0}, {opacity:1, duration:0.300, ease:"power2.out"}, 1.000);
 
   window.__timelines["f09"] = tl;
 })();

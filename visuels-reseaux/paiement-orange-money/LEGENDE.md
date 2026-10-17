@@ -1,10 +1,9 @@
 # Légende — « Plus besoin de monnaie. Paie avec Orange Money. »
 
-✅ **Vidéo v4 et visuel VALIDÉS par le porteur du projet le 18/10/2026** (Maki, 28 s, raccords simultanés — passe skills de domaine). Ne plus retoucher sans sa demande.
-
-🆕 **v5 (voix off + 3D) livrée le 18/10/2026, EN ATTENTE de validation** : `VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4`
-(31 s, voix « Chloé » provisoire — choix de la voix à faire parmi Chloé, Théo, Étienne). Sources : `video/gen5.py`,
-`video/trois.py`, `video/voix.py` (détail dans `video/BRIEF.md`). Tant qu'elle n'est pas validée, la v4 reste la version de référence.
+✅ **Vidéo v5 VALIDÉE par le porteur du projet le 18/10/2026 — c'est la version à publier** :
+`VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4` (31 s, voix off « Chloé » choisie parmi trois, 3D réelle, Maki).
+Visuel fixe validé le 17/10. Ne plus retoucher sans sa demande. La v4 (28 s, sans voix, validée le 18/10 au matin)
+reste dans `VIDEO-FINALE/` et se régénère par `video/gen.py` ; elle n'est plus la version de référence.
 
 ⛔ **À NE PAS PROGRAMMER avant l'ouverture officielle** : production Orange Money (compte marchand
 Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om_environnement = 'mg'` et
@@ -12,8 +11,11 @@ Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om
 
 - Visuel : `PUB-orange-money.png` (1080 × 1350, rendu en 2160 × 2700). Rendu : `sh rendre_orange_money.sh`
   (Chrome du Mac, contrôles mesurés : débord 0, police Archivo).
-- Vidéo : `VIDEO-FINALE/taxi-food-orange-money-9x16.mp4` (1080 × 1920, 28 s, motion design HyperFrames,
-  sources dans `video/`, re-rendu : `cd video && python3 gen.py && npx --yes hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16.mp4`).
+- Vidéo (v5) : `VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4` (1080 × 1920, 31 s, -16,5 LUFS, motion design
+  HyperFrames + Three.js, voix HeyGen « Chloé »). Re-rendu : `cd video && VOIX=chloe sh construire5.sh && npx --yes
+  hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4`.
+- Vidéo (v4, sans voix) : `VIDEO-FINALE/taxi-food-orange-money-9x16.mp4` (28 s) ; re-rendu : `cd video && python3
+  gen.py && npx --yes hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16.mp4`.
 - v3 (17/10) : Maki, la mascotte livreur, dans l'ouverture (scooter), la scène « pas la monnaie » et la livraison ;
   et sur le visuel fixe (colonne droite). Poses : `video/assets/maki-*.png` (aussi dans `src/`).
 - Logo officiel Orange Money (fourni par Orange) : utilisation validée par le porteur du projet le 17/10.

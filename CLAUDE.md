@@ -44,7 +44,8 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
   sable** (TF-435 payée, annoncée au restaurant, refusée, demande de remboursement + alerte admin), publié
   web + OTA ×3, **interrupteur `om_en_ligne_active` ÉTEINT**. ⏳ Attend Orange Money Madagascar : compte
   marchand **Rentanoo** (numéro + code) et invitation « WebPay Madagascar » (demande envoyée par WhatsApp le
-  17/10, cahier de tests joint). Annonce (vidéo Maki 28 s + visuel) **validée, à programmer à l'ouverture**.
+  17/10, cahier de tests joint). Annonce **v5 validée le 18/10** (vidéo 31 s, voix off « Chloé » + 3D, et visuel),
+  **à programmer à l'ouverture**.
   ⚠️ Accès sandbox Orange : 30 jours après l'invitation du 01/10 → vers le **31/10**. Voir sa section.
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
@@ -1570,9 +1571,13 @@ c'est un UPDATE à la livraison.
   paiement, refusée depuis Telegram → demande de remboursement + alerte admin ; TF-430 à TF-433 (échecs) :
   rien envoyé au restaurant, annulées automatiquement à 25 min. Cahier de tests Orange rempli
   (`orange monnaie/OMM_Cahier_de_tests_Webpayment_TAXI-FOOD_2026-10-17.xlsx`, société **Rentanoo**).
-- **Annonce** (`visuels-reseaux/paiement-orange-money/`, **validée le 17/10**) : vidéo motion design 9:16 de
-  28 s avec **Maki** (poses Higgsfield depuis l'élément validé, `video/assets/maki-*.png`), visuel 1080×1350,
-  légendes dans `LEGENDE.md`. ⛔ **Ne rien programmer avant la production.**
+- **Annonce** (`visuels-reseaux/paiement-orange-money/`) : **vidéo v5 VALIDÉE le 18/10** —
+  `VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4`, 9:16, 31 s : **voix off française** (HeyGen, voix « Chloé »,
+  chaque geste calé sur son mot), **3D réelle** (Three.js : tuile Taxi Food, pièce Orange Money avec coche et
+  confettis, duo final ; mots en volume), **Maki** (poses Higgsfield depuis l'élément validé) ; musique creusée sous
+  la voix, -16,5 LUFS. Sources `video/gen5.py`, `trois.py`, `voix.py` ; reconstruire : `VOIX=chloe sh
+  video/construire5.sh` puis le rendu indiqué dans le script. La v4 (28 s, sans voix) reste au dépôt (`gen.py`).
+  Visuel 1080×1350 et légendes dans `LEGENDE.md`. ⛔ **Ne rien programmer avant la production.**
 - ⏳ **Reste** : (1) réponse d'Orange Money Madagascar (numéro + code marchand Rentanoo, invitation « WebPay
   Madagascar ») ; (2) app de prod sur le portail, `poser-cles-orange-money.sh`, `om_environnement = 'mg'`,
   rallumer, test réel à 1 000 Ar ; (3) admin : bouton « remboursement Orange Money fait », ventilation du

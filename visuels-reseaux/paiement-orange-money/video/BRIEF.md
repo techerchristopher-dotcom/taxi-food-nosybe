@@ -56,8 +56,8 @@ dans `compositions/components/` pour référence ; aucun bloc hébergé (tout re
 v5 (18/10) — demandée par le porteur du projet après la vidéo de référence (tuto Maxence Tison) : « la v5 avec la
 voix off et 3D ». Générateur à part (`gen5.py`, qui réutilise gen.py) ; la v4 validée se régénère toujours par
 `python3 gen.py`.
-- Voix off française (HeyGen, voix « Chloé » en attendant le choix du porteur du projet ; essais Théo et Étienne
-  dans `voix/essais/`). Une prise, découpée en neuf répliques (`voix.py`) ; chaque geste tombe sur l'attaque de SON
+- Voix off française (HeyGen, voix « Chloé », **choisie par le porteur du projet le 18/10** parmi Chloé, Théo et
+  Étienne ; les trois essais restent dans `voix/essais/`). **v5 validée le 18/10.** Une prise, découpée en neuf répliques (`voix.py`) ; chaque geste tombe sur l'attaque de SON
   mot (touches du #144# sur « dièse / cent / quarante / quatre / dièse », sélection d'Orange Money sur « Orange »…).
   Durées de scène tirées de la voix, arrondies au temps musical. Texte : `voix/script.txt`.
 - Mixage : musique creusée sous la voix (carve, skill hyperframes-audio, force 0,8), allongée d'une mesure prise dans

@@ -11,6 +11,12 @@ Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om
 
 - Visuel : `PUB-orange-money.png` (1080 × 1350, rendu en 2160 × 2700). Rendu : `sh rendre_orange_money.sh`
   (Chrome du Mac, contrôles mesurés : débord 0, police Archivo).
+- 🆕 Visuel **3D** (18/10, demandé par le porteur du projet, **en attente de validation**) :
+  `PUB-orange-money-3d.png`. Même HTML que le visuel validé, transformé par `pub_orange_money_3d.py` (le plat
+  ressort à l'octet près) : étapes en objets Three.js comme dans la vidéo v5 (tuile au vrai logo Orange Money,
+  tuile « #144# », pièce et coche), titres en volume, plats en tambour. Rendu : `sh rendre_orange_money_3d.sh`
+  (Chrome du Mac avec `--allow-file-access-from-files`, sinon le logo ne passe pas en texture). Contrôles :
+  objets 3D 3/3 visibles, air objet → libellé 16 px, marges des plats 76 px, mise en page identique au plat.
 - Vidéo (v5) : `VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4` (1080 × 1920, 31 s, -16,5 LUFS, motion design
   HyperFrames + Three.js, voix HeyGen « Chloé »). Re-rendu : `cd video && VOIX=chloe sh construire5.sh && npx --yes
   hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16-v5.mp4`.

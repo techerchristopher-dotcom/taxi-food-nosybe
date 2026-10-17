@@ -1526,6 +1526,10 @@ Tous les envois Telegram `envoye` du 1er coup, push Expo `ok`.
 - Admin Temps réel : « RETARD » compté depuis la transmission seulement si la réservation était
   différée (resto ouvert → depuis la création, comme avant).
 
+**Publié le 2026-10-17 vers 13 h 30** : OTA `0635d33b` (1.2.3), `8b53c5ee` (1.2.2), `29a95f1b` (1.2.1),
+app web, admin, vitrine (fonctions sans cache), `notify-order` v10. L'app Livreur n'a pas reçu d'OTA :
+elle n'affiche que des commandes déjà prêtes, le bandeau n'y change rien d'utile.
+
 **Annonce** : notification + e-mail lundi 19/10 à 10 h (tâches `annonce_plus_tard_*`), publication
 Facebook 11 h, **Reel vidéo 18 h** (calendrier Rentanoo, brouillon 569, tâche à usage unique
 `reel_taxifood_commande_plus_tard`) — `visuels-reseaux/commande-programmee/LEGENDE.md`.

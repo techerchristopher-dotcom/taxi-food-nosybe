@@ -38,7 +38,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   plugins.unshift(['expo-router', { root: './app-livreur' }]);
   plugins.push([
     'expo-image-picker',
-    { photosPermission: 'Taxi Food Livreur accède à tes photos seulement si tu en envoies une dans la messagerie d’une commande.' },
+    {
+      photosPermission: 'Taxi Food Livreur accède à tes photos seulement si tu en envoies une dans la messagerie d’une commande.',
+      cameraPermission: 'Taxi Food Livreur utilise l’appareil photo seulement si tu envoies une photo dans la messagerie d’une commande.',
+      microphonePermission: false,
+    },
   ]);
   plugins.push([
     'expo-location',

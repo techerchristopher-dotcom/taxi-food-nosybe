@@ -1,5 +1,7 @@
 # Légende — « Plus besoin de monnaie. Paie avec Orange Money. »
 
+✅ **Vidéo v3 et visuel VALIDÉS par le porteur du projet le 17/10/2026** (Maki, 28 s). Ne plus retoucher sans sa demande.
+
 ⛔ **À NE PAS PROGRAMMER avant l'ouverture officielle** : production Orange Money (compte marchand
 Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om_environnement = 'mg'` et
 `om_en_ligne_active = true`. Au 17/10/2026, le paiement tourne en bac à sable seulement.

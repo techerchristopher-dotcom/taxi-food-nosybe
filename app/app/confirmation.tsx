@@ -41,6 +41,8 @@ export default function ConfirmationScreen() {
   const displayTotal = order?.total ?? passedTotal ?? 0;
   const displayNumber = order?.orderNumber ?? params.orderNumber ?? 'TF-••••';
   const displayPayment = order?.paymentMethod ?? params.payment ?? 'especes';
+  // Orange Money payé dans l'app (2026-10-17), à distinguer de l'Orange Money encaissé à la porte.
+  const omEnLigne = displayPayment === 'orange_money' && (order ? order.omEnLigne === true : true);
 
   return (
     <LinearGradient
@@ -116,11 +118,15 @@ export default function ConfirmationScreen() {
           <Detail
             label={t('confirmation.payment')}
             value={t(
-              displayPayment === 'cb' ? 'confirmation.paymentValueCarte' : 'confirmation.paymentValue',
+              displayPayment === 'cb' || omEnLigne
+                ? 'confirmation.paymentValueCarte'
+                : 'confirmation.paymentValue',
               { method: paymentLabel(displayPayment) },
             )}
           />
-          {displayPayment !== 'cb' ? (
+          {/* Orange Money ici = payé DANS l'app (le seul chemin qui mène à la confirmation
+              avec ce mode) : pas de carte « payer au numéro », ce serait payer deux fois. */}
+          {displayPayment !== 'cb' && !omEnLigne ? (
             <CarteOrangeMoney orderId={orderId} orderNumber={displayNumber} montant={displayTotal} />
           ) : null}
           {etaAffiche ? <Detail label={t('confirmation.eta')} value={etaAffiche} /> : null}

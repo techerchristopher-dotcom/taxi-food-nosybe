@@ -267,7 +267,9 @@
     "needGps": "Position GPS manquante sur cette adresse. Reviens à l'étape adresse et capte ta position.",
     "failed": "La commande n'a pas pu être créée. Réessaie.",
     "restaurantFerme": "Ce restaurant est fermé pour le moment. Ta commande n'a pas été envoyée — reviens à l'ouverture, ton panier est gardé.",
-    "categorieHorsService": "{{categorie}} n'est servi qu'entre {{de}} et {{a}}. Retire ces plats de ton panier, ou reviens à {{de}}."
+    "categorieHorsService": "{{categorie}} n'est servi qu'entre {{de}} et {{a}}. Retire ces plats de ton panier, ou reviens à {{de}}.",
+    "orangeEnLigneSub": "Paie maintenant avec ton compte Orange Money",
+    "omEnLigneInfo": "Tu paies maintenant par Orange Money : une page Orange s'ouvre, tu valides avec ton code secret. Le restaurant reçoit ta commande dès que le paiement est confirmé."
   },
   "paiement": {
     "titre": "Paiement par carte",
@@ -412,7 +414,10 @@
     "courierToRestaurantSub": "Un livreur a pris ta commande et va la récupérer au restaurant.",
     "courierNamedToRestaurantSub": "{{name}} a pris ta commande et va la récupérer au restaurant.",
     "relanceTitle": "Le restaurant tarde un peu",
-    "relanceSub": "{{resto}} n'a pas encore confirmé ta commande. On le relance pour toi — tu seras prévenu dès qu'il répond."
+    "relanceSub": "{{resto}} n'a pas encore confirmé ta commande. On le relance pour toi — tu seras prévenu dès qu'il répond.",
+    "payeOrangeMoney": "Déjà payé par Orange Money",
+    "paiementOmEnAttente": "Paiement Orange Money en cours de vérification.",
+    "paiementOmEchoue": "Le paiement Orange Money n'a pas abouti. Le restaurant n'a pas encore reçu ta commande."
   },
   "profile": {
     "defaultName": "Client",
@@ -725,5 +730,33 @@
     "copie": "Numéro copié",
     "ouEspeces": "Ou en espèces au livreur, comme tu préfères.",
     "recu": "Paiement Orange Money reçu, merci !"
+  },
+  "paiementOm": {
+    "titre": "Paiement Orange Money",
+    "aPayer": "Montant à payer",
+    "mention": "Paiement sécurisé sur la page officielle d'Orange Money. Le restaurant reçoit ta commande une fois le paiement confirmé.",
+    "commentTitre": "Comment ça marche",
+    "comment1": "1. Appuie sur « Payer avec Orange Money » : la page Orange s'ouvre.",
+    "comment2": "2. Saisis ton numéro Orange Money, puis le code reçu par le #144#.",
+    "comment3": "3. Valide : tu reviens ici automatiquement.",
+    "payer": "Payer avec Orange Money",
+    "dejaPaye": "J'ai payé, vérifier",
+    "pasEncore": "Aucun paiement constaté pour l'instant. Si tu as validé chez Orange, appuie sur « J'ai payé, vérifier » dans un instant.",
+    "ouverture": "Ouverture de la page Orange Money…",
+    "surOrange": "Paiement en cours chez Orange Money",
+    "surOrangeTexte": "Termine ton paiement sur la page Orange, puis reviens ici.",
+    "verification": "Vérification du paiement auprès d'Orange…",
+    "payeTitre": "Paiement Orange Money reçu !",
+    "indisponibleTitre": "Orange Money indisponible",
+    "echecTitre": "Le paiement n'a pas pu démarrer",
+    "motif": {
+      "canalFerme": "Le paiement Orange Money dans l'app n'est pas disponible pour le moment. Tu peux payer en espèces à la livraison.",
+      "commandeIntrouvable": "Cette commande est introuvable.",
+      "commandeNonPayable": "Cette commande ne peut plus être payée (elle a peut-être été annulée).",
+      "authentification": "Connecte-toi pour payer.",
+      "reseau": "Connexion perdue. Vérifie ton réseau et réessaie.",
+      "orangeIndisponible": "Orange Money ne répond pas pour l'instant. Rien n'a été débité : réessaie dans un instant, ou paie en espèces.",
+      "inconnu": "Le paiement n'a pas pu démarrer. Rien n'a été débité."
+    }
   }
 }

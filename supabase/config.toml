@@ -141,3 +141,15 @@ verify_jwt = false
 # raison qu'`envoyer-annonce` : la fonction lit le jeton de l'appelant et exige
 # `user_roles.role = 'admin'` ACTIF.
 verify_jwt = false
+
+[functions.paiement-orange-money]
+# Appelee par l'app (client connecte) ET par pg_cron (balayage, en-tete
+# x-hook-secret). `false` pour la meme raison qu'`envoyer-annonce` : la fonction
+# exige elle-meme un VRAI utilisateur pour `creer`/`verifier`, et le secret de
+# crochet pour `balayer`.
+verify_jwt = false
+
+[functions.om-notification]
+# L'appelant est Orange Money. Barrieres : le notif_token (temps constant) puis
+# la reverification aupres de l'API transactionstatus. Voir son en-tete.
+verify_jwt = false

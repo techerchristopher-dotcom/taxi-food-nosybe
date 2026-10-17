@@ -846,6 +846,7 @@ type OrderJoinRow = {
   total: number;
   payment_method: PaymentMethod;
   payment_status?: StatutPaiement | null;
+  om_en_ligne?: boolean | null;
   status: OrderStatus;
   cancellation_reason: string | null;
   cancellation_code?: string | null;
@@ -891,7 +892,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
   'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
@@ -941,6 +942,8 @@ function mapOrder(o: OrderJoinRow): Order {
     // Verdict du webhook Stripe, deduit de `payment_intents` par un trigger.
     // `non_requis` pour tout ce qui se regle a la livraison.
     paymentStatus: o.payment_status ?? 'non_requis',
+    // Née en Orange Money payé DANS l'app (2026-10-17), pas encaissée à la porte.
+    omEnLigne: o.om_en_ligne === true,
     status: o.status,
     addressLabel,
     addressDetail: addr?.landmark ?? '',

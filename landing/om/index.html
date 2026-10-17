@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Retour du paiement — Taxi Food</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; background: #FFF8F1; color: #1F1B16; }
+  main { max-width: 420px; margin: 0 auto; padding: 48px 16px; text-align: center; }
+  h1 { font-size: 20px; margin: 16px 0 8px; }
+  p { font-size: 15px; line-height: 1.5; color: #5C4F42; margin: 0 0 20px; }
+  a.bouton { display: block; background: #E06A00; color: #fff; text-decoration: none; font-weight: 700;
+             padding: 15px 16px; border-radius: 14px; margin-bottom: 12px; font-size: 16px; }
+  a.lien { color: #E8342A; font-weight: 700; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <div style="font-size:40px">🛵</div>
+  <h1>Retour du paiement Orange Money</h1>
+  <p>On vérifie ton paiement auprès d'Orange. Si rien ne se passe, touche le bouton ci-dessous.</p>
+  <a class="bouton" id="app" href="#">Retourner dans l'app Taxi Food</a>
+  <a class="lien" id="web" href="#">Continuer sur le site</a>
+</main>
+<script>
+// Page de RETOUR d'Orange Money WebPay (return_url et cancel_url) : /om/<commande>.
+// Elle ne décide de rien : elle ramène le client sur l'écran de paiement, qui
+// demande au serveur de revérifier auprès d'Orange. ?w=1 = paiement lancé depuis
+// le site web ; sinon depuis l'app (session de navigateur fermée par le schéma taxifood://).
+(function () {
+  var id = (location.pathname.split('/').filter(Boolean)[1] || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) { location.replace('/'); return; }
+  var q = '?orderId=' + encodeURIComponent(id) + '&retour=1';
+  var web = 'https://taxifood.distripro207.com/paiement-om' + q;
+  var app = 'taxifood://paiement-om' + q;
+  document.getElementById('app').href = app;
+  document.getElementById('web').href = web;
+  if (new URLSearchParams(location.search).get('w') === '1') { location.replace(web); return; }
+  location.replace(app);
+})();
+</script>
+</body>
+</html>

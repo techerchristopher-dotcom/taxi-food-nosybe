@@ -55,3 +55,7 @@ http://taxifood.rentanoo.com/*                 https://taxifoodnosybe.distripro2
 # site de commande. Le repli est donc automatique, sans detection de navigateur
 # — laquelle se trompe toujours sur un cas ou l'autre.
 /o/*  https://taxifood.distripro207.com/order/:splat  302
+
+# Retour du paiement Orange Money (return_url / cancel_url d'Orange WebPay) : /om/<commande>.
+# Page statique qui ramene le client sur l'ecran de paiement (app ou site), qui revérifie.
+/om/*  /om/index.html  200

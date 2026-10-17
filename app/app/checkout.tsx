@@ -157,6 +157,13 @@ function CheckoutForm() {
     if (paymentMethod === 'cb' && !carteProposable) setPayment('especes');
   }, [paymentMethod, carteProposable, setPayment]);
 
+  // Orange Money payé dans l'app (2026-10-17) : même règle que la carte. Coupé
+  // en base, l'option redevient « Bientôt » et le choix retombe sur les espèces.
+  const orangeMoneyEnLigne = configPaiement.omEnLigneActive;
+  useEffect(() => {
+    if (paymentMethod === 'orange_money' && !orangeMoneyEnLigne) setPayment('especes');
+  }, [paymentMethod, orangeMoneyEnLigne, setPayment]);
+
   async function validate() {
     if (!restaurantId || !addressId) {
       setError(t('checkout.needAddress'));
@@ -215,7 +222,9 @@ function CheckoutForm() {
       router.replace(
         paymentMethod === 'cb'
           ? { pathname: '/paiement', params }
-          : { pathname: '/confirmation', params },
+          : paymentMethod === 'orange_money'
+            ? { pathname: '/paiement-om', params }
+            : { pathname: '/confirmation', params },
       );
     } catch (e) {
       const msg = (e as { message?: string })?.message ?? '';
@@ -229,7 +238,10 @@ function CheckoutForm() {
       // client doit lire l'heure à laquelle revenir.
       const refus = refusServiceDepuisErreur(msg);
       const raison = raisonPromoDepuisErreur(msg);
-      if (refus) {
+      if (/paiement:orange_money_inactif/.test(msg)) {
+        setPayment('especes');
+        setError(t('paiementOm.motif.canalFerme'));
+      } else if (refus) {
         setError(
           refus.motif === 'restaurant_ferme'
             ? t('checkout.restaurantFerme')
@@ -334,6 +346,7 @@ function CheckoutForm() {
           valeur={paymentMethod}
           onChange={setPayment}
           carteProposable={carteProposable}
+          orangeMoneyEnLigne={orangeMoneyEnLigne}
         />
 
         {/* ⚠️ « aucun débit maintenant » devient FAUX dès qu'une carte est
@@ -348,6 +361,8 @@ function CheckoutForm() {
                 taux: formatTaux(configPaiement.fxArParEur),
               })}
             </InfoBanner>
+          ) : paymentMethod === 'orange_money' ? (
+            <InfoBanner icon="smartphone">{t('checkout.omEnLigneInfo')}</InfoBanner>
           ) : (
             <InfoBanner>{t('checkout.noCharge')}</InfoBanner>
           )}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f03 { position:absolute; inset:0; overflow:hidden; background:#18130F !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f03 .cam, #f03 .push { position:absolute; inset:0; will-change:transform; }
+#f03 .push { perspective:2400px; }
+#f03 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f03 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f03 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f03 .om-logo { display:block; background:#000; overflow:hidden; }
+#f03 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f03 .mots { position:absolute; left:70px; right:70px; top:0; bottom:0; display:flex; flex-direction:column;
+  justify-content:center; gap:6px; }
+#f03 .w { font-weight:900; line-height:.9; letter-spacing:-8px; text-transform:uppercase; white-space:nowrap; }
+</style>
+<div id="f03" data-composition-id="f03" data-width="1080" data-height="1920"><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#FFFBF4;font-size:220px;">Plus</div><div class="w" style="color:#FFFBF4;font-size:220px;">besoin</div><div class="w" style="color:rgba(255,251,244,.4);font-size:170px;">de</div><div class="w" style="color:#FF7900;font-size:150px;">monnaie.</div></div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f03 .w:nth-child(1)", {x:-800}, {x:0, duration:0.2, ease:"power4.out"}, 0.000);
+tl.fromTo("#f03 .w:nth-child(2)", {y:-260, opacity:0}, {y:0, opacity:1, duration:0.2, ease:"power4.out"}, 0.444);
+tl.fromTo("#f03 .w:nth-child(3)", {scale:2.2, opacity:0}, {scale:1, opacity:1, duration:0.18, ease:"power3.out", transformOrigin:"0% 50%"}, 0.889);
+tl.fromTo("#f03 .w:nth-child(4)", {scale:0, rotation:8}, {scale:1, rotation:0, duration:0.28, ease:"back.out(2.6)", transformOrigin:"0% 50%"}, 1.333);
+tl.fromTo("#f03 .mots", {x:0}, {x:-10, duration:0.04, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 1.383);
+tl.fromTo("#f03 .cam", {y:0, filter:"blur(0px)"}, {y:900, filter:"blur(20px)", duration:0.15, ease:"power3.in", immediateRender:false}, 1.62);
+
+  window.__timelines["f03"] = tl;
+})();
+</script>
+</template>
+</body></html>

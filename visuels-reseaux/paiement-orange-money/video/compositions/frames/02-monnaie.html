@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f02 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f02 .cam, #f02 .push { position:absolute; inset:0; will-change:transform; }
+#f02 .push { perspective:2400px; }
+#f02 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f02 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f02 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f02 .om-logo { display:block; background:#000; overflow:hidden; }
+#f02 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f02 .arrivee { position:absolute; left:80px; right:80px; top:170px; display:flex; align-items:center; gap:36px; padding:36px 40px;
+  border-radius:48px; background:#FFFBF4; box-shadow:0 30px 70px rgba(24,19,15,.14); }
+#f02 .ico { width:150px; height:150px; border-radius:40px; background:#E8342A; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+#f02 .ico img { width:112px; height:auto; display:block; }
+#f02 .a1 { font-size:46px; font-weight:900; letter-spacing:-1.5px; line-height:1.05; }
+#f02 .a2 { margin-top:10px; font-size:40px; font-weight:700; color:#E8342A; }
+#f02 .apayer { position:absolute; left:80px; right:80px; top:500px; text-align:center; }
+#f02 .lab { font-size:44px; font-weight:800; letter-spacing:12px; text-transform:uppercase; color:rgba(24,19,15,.5); }
+#f02 .mt { margin-top:6px; font-size:200px; font-weight:900; letter-spacing:-9px; line-height:1; font-variant-numeric:tabular-nums; }
+#f02 .billet { position:absolute; left:140px; top:880px; width:800px; height:400px; border-radius:30px;
+  background:linear-gradient(135deg,#c9a86b 0%,#e8d3a1 45%,#b98f4f 100%);
+  box-shadow:inset 0 0 0 14px rgba(255,255,255,.35), inset 0 0 0 18px rgba(90,60,20,.35), 0 40px 80px rgba(24,19,15,.28); }
+#f02 .b-coin { position:absolute; left:46px; top:34px; font-size:46px; font-weight:900; color:rgba(70,45,10,.75); letter-spacing:-1px; }
+#f02 .b-coin.bas { left:auto; top:auto; right:46px; bottom:34px; }
+#f02 .b-centre { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; }
+#f02 .b-val { font-size:150px; font-weight:900; letter-spacing:-6px; white-space:nowrap; color:rgba(70,45,10,.85); line-height:1; }
+#f02 .b-ar { margin-top:6px; font-size:34px; font-weight:800; letter-spacing:18px; color:rgba(70,45,10,.6); }
+#f02 .bulle { position:absolute; left:110px; right:110px; top:1390px; padding:44px 54px; border-radius:56px 56px 56px 12px;
+  background:#18130F; color:#fff; font-size:66px; font-weight:900; letter-spacing:-2px; line-height:1.08;
+  box-shadow:0 0 0 8px #FFC72C, 0 30px 60px rgba(0,0,0,.3); }
+#f02 .qui { font-size:32px; font-weight:800; letter-spacing:6px; text-transform:uppercase; color:#FFC72C; margin-bottom:14px; }
+</style>
+<div id="f02" data-composition-id="f02" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+<div class="lueur"></div><div class="grain"></div>
+<div class="arrivee">
+  <div class="ico"><img src="../../assets/taxifood-transparent.png" alt=""></div>
+  <div><div class="a1">Ton livreur est devant chez toi</div><div class="a2">Ding-dong !</div></div>
+</div>
+<div class="apayer"><div class="lab">À payer</div><div class="mt"><span class="n">43 000</span> Ar</div></div>
+<div class="billet">
+  <div class="b-coin">50 000</div><div class="b-centre"><div class="b-val">50 000</div><div class="b-ar">ARIARY</div></div>
+  <div class="b-coin bas">50 000</div>
+</div>
+<div class="bulle"><div class="qui">Le livreur</div>Désolé… j'ai pas la monnaie sur&nbsp;50&nbsp;000&nbsp;!</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f02 .cam", {scale:0.8, filter:"blur(14px)"}, {scale:1, filter:"blur(0px)", duration:0.3, ease:"power3.out"}, 0);
+tl.fromTo("#f02 .push", {scale:1}, {scale:1.06, duration:2.3, ease:"sine.inOut"}, 0.2);
+tl.fromTo("#f02 .arrivee", {y:-300, opacity:0}, {y:0, opacity:1, duration:0.45, ease:"back.out(1.6)"}, 0.05);
+tl.fromTo("#f02 .ico", {rotation:0}, {rotation:10, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.45);
+tl.fromTo("#f02 .apayer", {y:60, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"power3.out"}, 0.35);
+(function(){
+  var n = document.querySelector("#f02 .n"); var p = {v:0};
+  tl.fromTo(p, {v:0}, {v:43000, duration:0.55, ease:"power2.out", onUpdate:function(){
+    var v = Math.round(p.v/1000)*1000; n.textContent = v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }}, 0.4);
+})();
+tl.fromTo("#f02 .billet", {y:900, rotation:14}, {y:0, rotation:-4, duration:0.55, ease:"power4.out"}, 0.85);
+tl.fromTo("#f02 .billet", {rotation:-4}, {rotation:-2, duration:0.8, ease:"sine.inOut", immediateRender:false}, 1.4);
+tl.fromTo("#f02 .bulle", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.3, ease:"back.out(2.6)", transformOrigin:"0% 100%"}, 1.73);
+tl.fromTo("#f02 .push", {x:0}, {x:16, duration:0.05, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 1.82);
+tl.fromTo("#f02 .billet", {opacity:1}, {opacity:0.45, duration:0.3, ease:"power1.out", immediateRender:false}, 2.0);
+tl.fromTo("#f02 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.18, ease:"power2.in", immediateRender:false}, 2.48);
+
+  window.__timelines["f02"] = tl;
+})();
+</script>
+</template>
+</body></html>

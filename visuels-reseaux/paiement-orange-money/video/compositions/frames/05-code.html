@@ -1,0 +1,88 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f05 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f05 .cam, #f05 .push { position:absolute; inset:0; will-change:transform; }
+#f05 .push { perspective:2400px; }
+#f05 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f05 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f05 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f05 .om-logo { display:block; background:#000; overflow:hidden; }
+#f05 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f05 .titre { position:absolute; left:0; right:0; top:170px; text-align:center; font-size:70px; font-weight:900; letter-spacing:-2.5px; }
+#f05 .ecranTel { position:absolute; left:0; right:0; top:280px; height:240px; display:flex; align-items:center; justify-content:center; }
+#f05 .saisie { font-size:230px; font-weight:900; letter-spacing:-6px; color:#CF6200; line-height:1; font-variant-numeric:tabular-nums; }
+#f05 .curseur { width:12px; height:190px; margin-left:12px; border-radius:6px; background:#18130F; }
+#f05 .clavier { position:absolute; left:150px; right:150px; top:600px; display:grid; grid-template-columns:repeat(3,1fr); gap:30px 46px; }
+#f05 .k { height:170px; border-radius:85px; background:#FFFBF4; display:flex; align-items:center; justify-content:center;
+  font-size:80px; font-weight:800; box-shadow:0 14px 30px rgba(24,19,15,.10), inset 0 0 0 4px rgba(24,19,15,.06); }
+#f05 .code { position:absolute; left:70px; right:70px; top:1180px; padding:50px 46px 56px; border-radius:56px; background:#18130F;
+  box-shadow:0 40px 90px rgba(24,19,15,.35); }
+#f05 .cl { font-size:40px; font-weight:800; letter-spacing:8px; text-transform:uppercase; color:#FFC72C; text-align:center; }
+#f05 .cases { margin-top:40px; display:flex; justify-content:center; gap:22px; }
+#f05 .c { width:126px; height:170px; border-radius:30px; background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 4px rgba(255,255,255,.18);
+  display:flex; align-items:center; justify-content:center; font-size:110px; font-weight:900; color:#fff; }
+</style>
+<div id="f05" data-composition-id="f05" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+<div class="lueur om"></div><div class="grain"></div>
+<div class="titre">Ton code de paiement&nbsp;: tape</div>
+<div class="ecranTel"><span class="saisie"></span><span class="curseur"></span></div>
+<div class="clavier"><div class="k k1">1</div><div class="k k2">2</div><div class="k k3">3</div><div class="k k4">4</div><div class="k k5">5</div><div class="k k6">6</div><div class="k k7">7</div><div class="k k8">8</div><div class="k k9">9</div><div class="k ke">*</div><div class="k k0">0</div><div class="k kd">#</div></div>
+<div class="code" data-layout-allow-overflow>
+  <div class="cl">Code de paiement</div>
+  <div class="cases"><div class="c c0"><span>7</span></div><div class="c c1"><span>4</span></div><div class="c c2"><span>7</span></div><div class="c c3"><span>1</span></div><div class="c c4"><span>1</span></div><div class="c c5"><span>2</span></div></div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f05 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.3, ease:"power3.out"}, 0);
+tl.fromTo("#f05 .titre", {y:-60, opacity:0}, {y:0, opacity:1, duration:0.3, ease:"power3.out"}, 0.05);
+tl.fromTo("#f05 .k", {scale:0.6, opacity:0}, {scale:1, opacity:1, duration:0.2, ease:"back.out(2)", stagger:0.01}, 0.08);
+tl.fromTo("#f05 .curseur", {opacity:1}, {opacity:0, duration:0.12, ease:"none", yoyo:true, repeat:9}, 0.1);
+(function(){
+  var s = document.querySelector("#f05 .saisie"); var txt = "#144#"; var p = {v:0};
+  tl.fromTo(p, {v:0}, {v:5, duration:1.10, ease:"none", onUpdate:function(){
+    s.textContent = txt.slice(0, Math.min(5, Math.floor(p.v + 0.0001)));
+  }}, 0.18);
+})();
+tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.06, ease:"power1.out", immediateRender:false}, 0.40);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.12, ease:"power2.out", immediateRender:false}, 0.48);
+tl.fromTo("#f05 .k1", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.06, ease:"power1.out", immediateRender:false}, 0.62);
+tl.fromTo("#f05 .k1", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.12, ease:"power2.out", immediateRender:false}, 0.70);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.06, ease:"power1.out", immediateRender:false}, 0.84);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.12, ease:"power2.out", immediateRender:false}, 0.92);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.06, ease:"power1.out", immediateRender:false}, 1.06);
+tl.fromTo("#f05 .k4", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.12, ease:"power2.out", immediateRender:false}, 1.14);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FFFBF4", color:"#18130F", scale:1}, {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92, duration:0.06, ease:"power1.out", immediateRender:false}, 1.28);
+tl.fromTo("#f05 .kd", {backgroundColor:"#FF7900", color:"#ffffff", scale:0.92}, {backgroundColor:"#FFFBF4", color:"#18130F", scale:1, duration:0.12, ease:"power2.out", immediateRender:false}, 1.36);
+tl.fromTo("#f05 .saisie", {scale:1}, {scale:1.08, duration:0.12, ease:"power2.out", yoyo:true, repeat:1, immediateRender:false}, 1.29);
+tl.fromTo("#f05 .code", {y:900}, {y:0, duration:0.4, ease:"back.out(1.3)"}, 1.35);
+tl.fromTo("#f05 .c0", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 1.60);
+tl.fromTo("#f05 .c0 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 1.60);
+tl.fromTo("#f05 .c1", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 1.73);
+tl.fromTo("#f05 .c1 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 1.73);
+tl.fromTo("#f05 .c2", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 1.86);
+tl.fromTo("#f05 .c2 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 1.86);
+tl.fromTo("#f05 .c3", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 1.99);
+tl.fromTo("#f05 .c3 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 1.99);
+tl.fromTo("#f05 .c4", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.12);
+tl.fromTo("#f05 .c4 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.12);
+tl.fromTo("#f05 .c5", {backgroundColor:"rgba(255,255,255,.08)"}, {backgroundColor:"#FF7900", duration:0.1, ease:"power2.out"}, 2.25);
+tl.fromTo("#f05 .c5 span", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.22, ease:"back.out(3)"}, 2.25);
+tl.fromTo("#f05 .push", {scale:1}, {scale:1.04, duration:2.4, ease:"sine.inOut"}, 0.2);
+tl.fromTo("#f05 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.45, filter:"blur(16px)", duration:0.18, ease:"power2.in", immediateRender:false}, 2.48);
+
+  window.__timelines["f05"] = tl;
+})();
+</script>
+</template>
+</body></html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f01 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f01 .cam, #f01 .push { position:absolute; inset:0; will-change:transform; }
+#f01 .push { perspective:2400px; }
+#f01 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f01 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f01 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f01 .om-logo { display:block; background:#000; overflow:hidden; }
+#f01 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f01 .bloc { position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }
+#f01 .carre { width:340px; height:340px; border-radius:84px; background:#E8342A; display:flex; align-items:center;
+  justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }
+#f01 .carre img { width:250px; height:auto; display:block; }
+#f01 .mot { margin-top:64px; font-size:150px; font-weight:900; letter-spacing:-6px; line-height:1; }
+#f01 .filet { margin-top:30px; width:560px; height:18px; border-radius:9px; background:#FFC72C; }
+#f01 .lieu { margin-top:34px; font-size:34px; font-weight:800; letter-spacing:14px; text-transform:uppercase; color:#E8342A; }
+</style>
+<div id="f01" data-composition-id="f01" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+<div class="lueur"></div><div class="grain"></div>
+<div class="bloc">
+  <div class="carre"><img src="../../assets/taxifood-transparent.png" alt=""></div>
+  <div class="mot">Taxi Food</div>
+  <div class="filet"></div>
+  <div class="lieu">Nosy Be</div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f01 .cam", {scale:1.6, filter:"blur(18px)"}, {scale:1, filter:"blur(0px)", duration:0.32, ease:"power3.out"}, 0);
+tl.fromTo("#f01 .lueur", {scale:1}, {scale:1.12, duration:0.67, ease:"sine.inOut", yoyo:true, repeat:1}, 0);
+tl.fromTo("#f01 .carre", {scale:0, rotation:-28}, {scale:1, rotation:0, duration:0.5, ease:"back.out(2.2)"}, 0.04);
+tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.36, ease:"power4.out"}, 0.26);
+tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.4, ease:"power3.out"}, 0.4);
+tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.3, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.66);
+tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.34, ease:"power2.out"}, 0.78);
+tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.18, ease:"power2.in", immediateRender:false}, 1.15);
+
+  window.__timelines["f01"] = tl;
+})();
+</script>
+</template>
+</body></html>

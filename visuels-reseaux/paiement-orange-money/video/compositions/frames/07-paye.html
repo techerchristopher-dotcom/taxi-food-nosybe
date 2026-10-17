@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f07 { position:absolute; inset:0; overflow:hidden; background:#FF7900 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f07 .cam, #f07 .push { position:absolute; inset:0; will-change:transform; }
+#f07 .push { perspective:2400px; }
+#f07 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f07 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f07 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f07 .om-logo { display:block; background:#000; overflow:hidden; }
+#f07 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f07 .mots { position:absolute; left:70px; right:70px; top:0; bottom:0; display:flex; flex-direction:column;
+  justify-content:center; gap:6px; }
+#f07 .w { font-weight:900; line-height:.9; letter-spacing:-8px; text-transform:uppercase; white-space:nowrap; }
+</style>
+<div id="f07" data-composition-id="f07" data-width="1080" data-height="1920"><div class="cam"><div class="push"><div class="grain"></div><div class="mots"><div class="w" style="color:#18130F;font-size:270px;">Payé.</div><div class="w" style="color:#18130F;font-size:196px;">Rien à</div><div class="w" style="color:#18130F;font-size:220px;">sortir.</div></div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f07 .w:nth-child(1)", {scale:2.6, opacity:0}, {scale:1, opacity:1, duration:0.2, ease:"power3.out", transformOrigin:"0% 50%"}, 0.000);
+tl.fromTo("#f07 .w:nth-child(2)", {x:800}, {x:0, duration:0.2, ease:"power4.out"}, 0.444);
+tl.fromTo("#f07 .w:nth-child(3)", {y:240, opacity:0}, {y:0, opacity:1, duration:0.2, ease:"power4.out"}, 0.889);
+tl.fromTo("#f07 .mots", {x:0}, {x:10, duration:0.04, ease:"none", yoyo:true, repeat:3, immediateRender:false}, 0.939);
+tl.fromTo("#f07 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.6, filter:"blur(18px)", duration:0.15, ease:"power2.in", immediateRender:false}, 1.18);
+
+  window.__timelines["f07"] = tl;
+})();
+</script>
+</template>
+</body></html>

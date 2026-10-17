@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="UTF-8"></head><body>
+<template>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>
+#f09 { position:absolute; inset:0; overflow:hidden; background:#F6EFE2 !important; font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; color:#18130F; background:#F6EFE2; }
+#f09 .cam, #f09 .push { position:absolute; inset:0; will-change:transform; }
+#f09 .push { perspective:2400px; }
+#f09 .grain { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background-image:radial-gradient(rgba(24,19,15,.10) 1px, transparent 1.2px);
+  background-size:6px 6px; }
+#f09 .lueur { position:absolute; width:1400px; height:1400px; border-radius:50%; left:-160px; top:260px;
+  background:radial-gradient(circle, rgba(255,199,44,.28) 0%, rgba(255,199,44,0) 62%); }
+#f09 .lueur.om { background:radial-gradient(circle, rgba(255,121,0,.22) 0%, rgba(255,121,0,0) 62%); }
+#f09 .om-logo { display:block; background:#000; overflow:hidden; }
+#f09 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
+
+#f09 .bloc { position:absolute; left:0; right:0; top:250px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+#f09 .duo { display:flex; align-items:center; gap:46px; }
+#f09 .carre { width:250px; height:250px; border-radius:62px; background:#E8342A; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 30px 60px rgba(232,52,42,.35); }
+#f09 .carre img { width:184px; height:auto; display:block; }
+#f09 .fois { font-size:110px; font-weight:900; color:rgba(24,19,15,.6); }
+#f09 .omc { width:250px; height:250px; border-radius:62px; box-shadow:0 30px 60px rgba(0,0,0,.3); }
+#f09 .phrase { margin-top:100px; font-size:110px; font-weight:900; letter-spacing:-5px; line-height:1.0; }
+#f09 .phrase span { color:#CF6200; }
+#f09 .frais { margin-top:56px; padding:22px 52px; border-radius:60px; background:#18130F; color:#FFC72C; font-size:52px; font-weight:900;
+  letter-spacing:4px; text-transform:uppercase; }
+#f09 .badges { margin-top:90px; display:flex; gap:28px; }
+#f09 .badges img { height:120px; width:auto; display:block; }
+#f09 .url { margin-top:56px; font-size:38px; font-weight:700; color:rgba(24,19,15,.55); }
+</style>
+<div id="f09" data-composition-id="f09" data-width="1080" data-height="1920"><div class="cam"><div class="push">
+<div class="lueur om"></div><div class="grain"></div>
+<div class="bloc">
+  <div class="duo">
+    <div class="carre"><img src="../../assets/taxifood-transparent.png" alt=""></div>
+    <div class="fois">×</div>
+    <div class="om-logo omc"><img src="../../assets/om-logo.png" alt=""></div>
+  </div>
+  <div class="phrase">Paie avec<br><span>Orange Money</span><br>dans l'appli.</div>
+  <div class="frais">Sans frais</div>
+  <div class="badges"><img src="../../assets/appstore.png" alt=""><img src="../../assets/googleplay.png" alt=""></div>
+  <div class="url">taxifoodnosybe.distripro207.com</div>
+</div>
+</div></div></div>
+<script>
+(function(){
+  const tl = gsap.timeline({ paused: true });
+  
+tl.fromTo("#f09 .cam", {opacity:0, scale:1.06}, {opacity:1, scale:1, duration:0.35, ease:"power2.out"}, 0);
+tl.fromTo("#f09 .lueur", {scale:1}, {scale:1.12, duration:1.10, ease:"sine.inOut", yoyo:true, repeat:1}, 0);
+tl.fromTo("#f09 .carre", {scale:0, rotation:-20}, {scale:1, rotation:0, duration:0.42, ease:"back.out(2.2)"}, 0.05);
+tl.fromTo("#f09 .fois", {scale:0}, {scale:1, duration:0.3, ease:"back.out(3)"}, 0.18);
+tl.fromTo("#f09 .omc", {scale:0, rotation:20}, {scale:1, rotation:0, duration:0.42, ease:"back.out(2.2)"}, 0.25);
+tl.fromTo("#f09 .phrase", {y:80, opacity:0}, {y:0, opacity:1, duration:0.4, ease:"power4.out"}, 0.45);
+tl.fromTo("#f09 .frais", {scale:2.2, rotation:-8, opacity:0}, {scale:1, rotation:-2, opacity:1, duration:0.32, ease:"back.out(2.6)"}, 1.1);
+tl.fromTo("#f09 .badges img", {y:40, opacity:0}, {y:0, opacity:1, duration:0.35, ease:"back.out(1.8)", stagger:0.08}, 0.8);
+tl.fromTo("#f09 .url", {opacity:0}, {opacity:1, duration:0.3, ease:"power2.out"}, 1.0);
+
+  window.__timelines["f09"] = tl;
+})();
+</script>
+</template>
+</body></html>

@@ -1444,6 +1444,64 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
 
+## 🛵 App Taxi Food Livreur + suivi du livreur en temps réel (2026-10-17)
+
+Cahier des charges : [docs/APP-LIVREUR-CAHIER-DES-CHARGES.md](docs/APP-LIVREUR-CAHIER-DES-CHARGES.md).
+Décisions du porteur du projet (2026-10-16) : **option 2** (rafraîchissement espacé + bouton),
+**une app dédiée aux livreurs**, **Android d'abord, iPhone ensuite** (lui-même livre sur iPhone).
+
+**Une variante du même projet, pas un second projet.** `app/app.config.ts` : sans variable, il rend
+`app.json` **tel quel** (vérifié : `expo config` identique octet pour octet) ; avec
+`APP_VARIANT=livreur` → « Taxi Food Livreur », package Android `com.chris97416.taxifoodlivreur`,
+bundle iOS `com.chris97416.taxifood-livreur`, projet EAS **`@chris97416/taxi-food-livreur`**
+(`e0d5567e-9321-4071-94e8-44910ab1434d`, flux de mises à jour séparé), runtime `1.0.0`, écrans dans
+**`app/app-livreur/`** (option `root` d'expo-router : les écrans client n'entrent pas dans le paquet),
+icône `assets/livreur/`. ⚠️ **Aucun lien universel** dans l'app livreur (sinon les liens partagés aux
+clients s'y ouvriraient). ⚠️ **Pas de `google-services.json`** : le package n'est pas déclaré dans
+Firebase → **aucune notification dans l'app livreur Android** ; les « course disponible » restent dans
+l'app client, comme avant. Les jetons push sont rangés par COMPTE (`push_tokens.user_id`), pas par
+app : avant d'enregistrer des jetons depuis l'app livreur, faire le § 6.1 du cahier des charges
+(colonne `app`, filtre dans `notify-order`, `notifier-message`, `envoyer-annonce`,
+`relancer-orange-money` — non factorisées).
+
+- **Écrans** : connexion (Google natif, Apple sur iPhone, e-mail ; « Mot de passe oublié » marche
+  aussi pour un compte Google : il lui ajoute un mot de passe, le lien s'ouvre dans l'app client),
+  « pas livreur » (demande de rôle), **Livraisons** = l'espace livreur de l'app client repris à
+  l'identique (mêmes RPC, sans limite) + bandeau GPS + **« Itinéraire »** (vers le restaurant avant
+  récupération, vers le client après) + écran allumé pendant la tournée ; **Historique** + récap du
+  jour (**espèces à remettre**, Orange Money, carte) ; **Profil** (autorisation, version, suppression).
+  Messagerie : réexport de `app/messages/[id]`.
+- **GPS** (`lib/livreur/suiviGps.ts`) : `expo-task-manager` + `startLocationUpdatesAsync`, **15 s ou
+  50 m**, service de premier plan Android (notification permanente), file hors ligne AsyncStorage
+  (500 points), envoi par lots de 100. Démarré quand la tournée n'est pas vide, arrêté sinon ; la base
+  refuse tout point hors course (`aucune_course`) et la tâche s'arrête. ⚠️ **Le démarrage automatique
+  ne DEMANDE jamais l'autorisation** (il la lit) : seul le bouton du bandeau, après l'explication, la
+  demande — sinon Android rouvrirait les réglages à chaque rafraîchissement, et Google Play exige
+  l'avertissement AVANT la demande. ⚠️ `defineTask` au chargement du module, importé EN PREMIER par
+  `app-livreur/_layout.tsx`.
+- **Base** (migrations `20261017100000_suivi_livreur_temps_reel`, `…101000_…trace_tolerance`) :
+  `orders.claimed_at` (trigger `orders_heure_de_prise` sur `courier_id`, remis à NULL à l'abandon) ;
+  table **`positions_livreur`** (RLS sans policy, aucun droit, purge pg_cron
+  `positions-livreur-purge` à 7 jours) ; `couriers.derniere_*` ; **`livreur_envoyer_positions(jsonb)`**
+  (livreur actif, ≤ 100 points, dans Nosy Be, horodatage ≤ 2 h) ; **`suivi_livreur(commande)`**
+  (propriétaire ou admin, `en_livraison` avec livreur, rien après la livraison ; position seulement si
+  postérieure à la prise − 2 min ; **trace vide si le livreur tient d'autres commandes** — elle
+  dessinerait le chemin vers un autre client ; distance × 1,3 et ETA maison 1,7 min/km) ;
+  `admin_positions_livreurs()`. Vérifié en transaction annulée et par PostgREST (clé publique : 401
+  partout).
+- **Client** (`components/suivi/`) : `BlocSuiviLivreur` en tête du suivi de commande, **60 s**, **20 s**
+  après « J'arrive » ou sous 1 km, **bouton Actualiser grisé 15 s**, arrêt en arrière-plan ; « signal
+  perdu » au-delà de 3 min. **Caché tant qu'aucune position n'arrive** (livreur sur l'ancienne app).
+  Carte native = `react-native-maps` (déjà dans les binaires : OTA possible) ; web =
+  `CarteSuivi.web.tsx`, tuiles OSM + SVG, **aucun script externe**. **Zéro appel Google.**
+  Textes `suivi.*` FR/EN/IT. Publié le 2026-10-17 : OTA ×3 (1.2.1/1.2.2/1.2.3), web, admin (carte des
+  livreurs en course dans Temps réel).
+- **Commandes** : build APK de test `APP_VARIANT=livreur npx eas build -p android --profile livreur-apk`
+  (lien d'installation direct) ; magasin `--profile livreur-production` ; OTA
+  `APP_VARIANT=livreur npx expo export … && APP_VARIANT=livreur npx eas update --branch production …`.
+  ⚠️ Toujours `--clear` en changeant de variante (cache Metro). ⚠️ **iOS** : nouvel identifiant avec
+  Sign in with Apple + localisation en arrière-plan → **build interactif par le porteur du projet**.
+
 ## 💬 Messagerie de commande — client, livreur, restaurant, Taxi Food (2026-10-13)
 
 Une conversation PAR COMMANDE, partagée entre le client, le livreur assigné, le restaurant et
@@ -3207,6 +3265,10 @@ FIABLE pour savoir si une mise a jour est arrivee. L'ancienne constante ecrite a
 la main avait induit en erreur deux fois.
 
 ## ⚠️ Une correction se livre sur QUATRE surfaces (2026-09-09)
+
+> ⚠️ **Depuis le 2026-10-17 il y a une 5ᵉ surface : l'app Taxi Food Livreur** (projet EAS séparé,
+> `APP_VARIANT=livreur`). Un correctif dans un fichier partagé (`data/api.ts`, `components/…`) doit
+> AUSSI partir en OTA livreur. Voir « App Taxi Food Livreur ».
 
 **Le même code `app/` tourne à trois endroits, qui se mettent à jour séparément.
 Corriger l'un ne corrige pas les autres.** Oublier la troisième est l'erreur

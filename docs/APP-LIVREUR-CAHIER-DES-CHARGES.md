@@ -11,6 +11,27 @@
 
 ---
 
+## 0. ÉTAT AU 2026-10-17 — ce qui est livré
+
+| Lot | État |
+|---|---|
+| 0 Variante (même projet, `APP_VARIANT=livreur`) | ✅ `app.config.ts`, config client inchangée (vérifié octet pour octet), projet EAS `@chris97416/taxi-food-livreur` |
+| 1 Base | ✅ appliquée en production (`claimed_at`, `positions_livreur`, `suivi_livreur`, purge 7 j) — vérifiée en transaction annulée et par PostgREST. ⏸️ `push_tokens.app` (§ 6.1) **pas fait** : l'app livreur n'enregistre aucun jeton tant que Firebase n'a pas le package |
+| 2 App livreur (écrans) | ✅ connexion, pas-livreur, Livraisons, Historique + récap du jour, Profil |
+| 3 GPS arrière-plan | ✅ écrit, dans le build Android ; ⏳ **à éprouver sur un vrai téléphone** |
+| 4 Carte client | ✅ publiée : OTA ×3 + web (vérifiée sur données simulées à 375 px) |
+| 5 Admin | ✅ « 📍 Livreurs en course » dans Temps réel, déployé |
+| 6 Itinéraire Google | ⏸️ non fait (V1 sans Google, décision § 5.4) |
+| 7 Magasins | ⏳ Android : APK installable par lien (pas de fiche Play) ; iPhone : build interactif à lancer par le porteur du projet |
+
+**Gestes restants (consoles, à faire par le porteur du projet)** — voir le compte rendu de livraison :
+1. Google Cloud : identifiant OAuth **Android** pour `com.chris97416.taxifoodlivreur` + empreinte SHA-1
+   de la clé EAS (sinon « Continuer avec Google » refuse ; l'e-mail marche).
+2. Firebase : ajouter l'app Android `com.chris97416.taxifoodlivreur`, puis § 6.1 (notifications).
+3. iPhone : `APP_VARIANT=livreur npx eas build -p ios --profile livreur-production` en interactif
+   (nouvel App ID avec Sign in with Apple ; Supabase → Apple : ajouter le bundle).
+4. Play Console (plus tard) : créer l'app, déclaration « localisation en arrière-plan » + vidéo.
+
 ## 1. Pourquoi une app à part (rappel)
 
 | Raison | Détail |

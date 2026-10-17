@@ -73,10 +73,10 @@ body{{width:1080px;height:1350px;overflow:hidden;font-family:Archivo,"Helvetica 
 .pr .b{{margin-top:5px;font-size:20px;font-weight:600;color:rgba(255,255,255,0.9);}}
 .pr .b b{{font-weight:900;color:{OR};}}
 .ur{{margin-top:12px;font-size:17px;font-weight:600;color:rgba(255,255,255,0.72);}}
-.dc{{display:flex;flex-direction:column;align-items:center;gap:16px;width:{COL_W}px;flex:0 0 auto;}}
+.dc{{display:flex;flex-direction:column;align-items:center;gap:14px;width:{COL_W}px;flex:0 0 auto;}}
 .dc .bd{{display:flex;flex-direction:column;gap:11px;width:{COL_W}px;}}
 .dc img{{width:{COL_W}px;height:auto;display:block;}}
-.dc .lg{{width:150px;filter:drop-shadow(0 10px 22px rgba(0,0,0,0.38));}}
+.dc .lg{{width:178px;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.35));}}
 </style></head><body><div class="cv">
   <div class="cr">
     <div class="st"><b>Nouveau</b> dans l’appli Taxi Food</div>
@@ -97,7 +97,7 @@ body{{width:1080px;height:1350px;overflow:hidden;font-family:Archivo,"Helvetica 
       <div class="ur">taxifoodnosybe.distripro207.com</div>
     </div>
     <div class="dc"><div class="bd"><img src="src/appstore.png" alt="App Store"><img src="src/googleplay.png" alt="Google Play"></div>
-      <img class="lg" src="src/taxifood-transparent.png" alt="Taxi Food"></div>
+      <img class="lg" src="src/maki-livre.png" alt="Maki, le livreur Taxi Food"></div>
   </div>
 </div>
 <script>

@@ -16,60 +16,40 @@
 #f08 .om-logo { display:block; background:#000; overflow:hidden; }
 #f08 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
 
-#f08 .tel { position:absolute; left:110px; top:200px; width:860px; height:1580px; border-radius:130px; background:#18130F;
-  padding:26px; box-shadow:0 60px 120px rgba(24,19,15,.35); }
-#f08 .ecran { position:relative; width:100%; height:100%; border-radius:106px; overflow:hidden; }
-#f08 .fond { position:absolute; inset:0; background:radial-gradient(120% 90% at 20% 110%, #FFC72C 0%, #FF7900 45%, #a33f00 100%); }
-#f08 .ilot { position:absolute; left:34px; right:34px; top:34px; padding:40px 44px 44px; border-radius:76px; background:#0e0b09; color:#fff; }
-#f08 .haut { display:flex; align-items:center; gap:24px; }
-#f08 .ico { width:96px; height:96px; border-radius:26px; background:#E8342A; display:flex; align-items:center; justify-content:center; }
-#f08 .ico img { width:72px; height:auto; display:block; }
-#f08 .marque { font-size:46px; font-weight:900; flex:1; }
-#f08 .eta { font-size:42px; font-weight:900; color:#FFC72C; }
-#f08 .l1 { margin-top:30px; font-size:48px; font-weight:700; line-height:1.1; }
-#f08 .paye { margin-top:28px; display:flex; align-items:center; gap:22px; padding:20px 24px; border-radius:36px; background:rgba(255,121,0,.18);
-  box-shadow:inset 0 0 0 3px rgba(255,121,0,.6); }
-#f08 .pl { width:74px; height:74px; border-radius:20px; flex:0 0 auto; }
-#f08 .pt { flex:1; font-size:38px; font-weight:800; color:#fff; }
-#f08 .ok { width:64px; height:64px; border-radius:50%; background:#FF7900; color:#fff; display:flex; align-items:center; justify-content:center;
-  font-size:40px; font-weight:900; }
-#f08 .plat { position:absolute; left:110px; right:110px; top:640px; height:470px; border-radius:60px; overflow:hidden; background:#1d1814;
-  box-shadow:0 40px 80px rgba(0,0,0,.35); }
-#f08 .plat img { width:100%; height:100%; object-fit:cover; transform:scale(1.25); display:block; }
-#f08 .bon { position:absolute; left:0; right:0; top:1190px; text-align:center; font-size:92px; font-weight:900; letter-spacing:-4px;
-  line-height:1.02; color:#fff; }
-#f08 .bon span { color:#18130F; }
+#f08 .ding { position:absolute; left:0; right:0; top:150px; text-align:center; font-size:46px; font-weight:900; letter-spacing:-1px; color:#E8342A; }
+#f08 .paye { position:absolute; left:110px; right:110px; top:250px; display:flex; align-items:center; gap:26px; padding:24px 30px; border-radius:44px;
+  background:#18130F; box-shadow:0 0 0 8px #FF7900, 0 30px 60px rgba(0,0,0,.25); }
+#f08 .pl { width:96px; height:96px; border-radius:26px; flex:0 0 auto; }
+#f08 .pt { flex:1; font-size:46px; font-weight:900; color:#fff; letter-spacing:-1px; }
+#f08 .ok { width:80px; height:80px; border-radius:50%; background:#FF7900; color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:50px; font-weight:900; }
+#f08 .maki { position:absolute; left:180px; top:470px; width:720px; }
+#f08 .maki img { width:100%; height:auto; display:block; filter:drop-shadow(0 40px 50px rgba(24,19,15,.28)); }
+#f08 .bon { position:absolute; left:0; right:0; top:1620px; text-align:center; font-size:104px; font-weight:900; letter-spacing:-4px;
+  line-height:1.0; }
+#f08 .bon span { color:#CF6200; }
 </style>
 <div id="f08" data-composition-id="f08" data-width="1080" data-height="1920"><div class="cam"><div class="push">
 <div class="lueur om"></div><div class="grain"></div>
-<div class="tel">
-  <div class="ecran">
-    <div class="fond"></div>
-    <div class="ilot">
-      <div class="haut"><div class="ico"><img src="../../assets/taxifood-transparent.png" alt=""></div>
-        <div class="marque">Taxi Food</div><div class="eta">Arrivé</div></div>
-      <div class="l1">Ton livreur est devant chez toi</div>
-      <div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
-        <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
-    </div>
-    <div class="plat"><img src="../../assets/c2.png" alt="" data-layout-allow-overflow></div>
-    <div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>
-  </div>
-</div>
+<div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
+<div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
+  <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
+<div class="maki"><img src="../../assets/maki-livre.png" alt="" data-layout-allow-overflow></div>
+<div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>
 </div></div></div>
 <script>
 (function(){
   const tl = gsap.timeline({ paused: true });
   
 tl.fromTo("#f08 .cam", {scale:0.85, filter:"blur(12px)"}, {scale:1, filter:"blur(0px)", duration:0.350, ease:"power3.out"}, 0.000);
-tl.fromTo("#f08 .tel", {rotationX:38, rotationY:-28, y:560, scale:0.82}, {rotationX:0, rotationY:0, y:0, scale:1, duration:0.817, ease:"power3.out"}, 0.000);
-tl.fromTo("#f08 .ilot", {scaleX:0.34, scaleY:0.22}, {scaleX:1, scaleY:1, duration:0.583, ease:"back.out(1.5)", transformOrigin:"50% 0%"}, 0.642);
-tl.fromTo("#f08 .ilot > *", {opacity:0, y:14}, {opacity:1, y:0, duration:0.327, ease:"power2.out", stagger:0.08}, 0.910);
-tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.350, ease:"back.out(3)"}, 1.283);
-tl.fromTo("#f08 .plat", {y:700, rotation:6, opacity:0}, {y:0, rotation:0, opacity:1, duration:0.583, ease:"power4.out"}, 1.342);
-tl.fromTo("#f08 .plat img", {scale:1.6}, {scale:1.25, duration:1.167, ease:"power2.out"}, 1.342);
+tl.fromTo("#f08 .ding", {y:-80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"back.out(1.8)"}, 0.058);
+tl.fromTo("#f08 .ding", {rotation:-2}, {rotation:2, duration:0.070, ease:"none", yoyo:true, repeat:5, immediateRender:false}, 0.408);
+tl.fromTo("#f08 .maki", {y:1200, rotation:4}, {y:0, rotation:0, duration:0.758, ease:"back.out(1.1)"}, 0.350);
+tl.fromTo("#f08 .maki", {scale:1}, {scale:1.04, duration:0.583, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}, 1.167);
+tl.fromTo("#f08 .paye", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.467, ease:"back.out(2)"}, 1.050);
+tl.fromTo("#f08 .ok", {scale:0}, {scale:1, duration:0.350, ease:"back.out(3)"}, 1.400);
 tl.fromTo("#f08 .bon", {y:80, opacity:0}, {y:0, opacity:1, duration:0.408, ease:"power4.out"}, 1.750);
-tl.fromTo("#f08 .push", {scale:1}, {scale:1.05, duration:2.800, ease:"sine.inOut"}, 0.233);
+tl.fromTo("#f08 .push", {scale:1}, {scale:1.04, duration:2.800, ease:"sine.inOut"}, 0.233);
 tl.fromTo("#f08 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.4, filter:"blur(14px)", duration:0.210, ease:"power2.in", immediateRender:false}, 2.893);
 
   window.__timelines["f08"] = tl;

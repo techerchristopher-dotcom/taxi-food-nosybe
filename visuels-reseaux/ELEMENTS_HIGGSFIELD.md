@@ -81,6 +81,38 @@ rejouer la loterie des neuf gobelets.
 | taxifood-sticker | `7b76b4ed-4dcb-4d4d-aca1-fdcd2f17ded9` |
 | taxifood-scooter-sr | `f2384e9b-891c-49fe-9aa8-0b5673a1a60c` |
 
+### Poses de Maki produites le 17/10/2026 (annonce Orange Money)
+
+Générées par `nano_banana_pro` avec `<<<Maki-livreur>>>` (et `<<<taxifood-scooter-sr>>>` pour le scooter), fond
+blanc puis `remove_background`, fidèles au modèle du premier coup (6/6). Fichiers détourés :
+`visuels-reseaux/paiement-orange-money/video/assets/maki-{desole,scooter,livre}.png`. À réutiliser plutôt que
+régénérer : désolé (sac à la main, paume ouverte), sur le scooter de profil, tend le sac à deux mains.
+
+## L'escale Créole — le drapeau de La Réunion
+
+| Élément | id |
+|---|---|
+| Drapeau-Reunion-EscaleCreole | `f7814ee9-16d6-4dcc-a713-cded40ee7ad7` |
+
+L'escale Créole (Ambatoloaka) est un restaurant **réunionnais**. Son emblème est la silhouette
+de La Réunion remplie du **drapeau du lever de soleil** : champ bleu, triangle rouge montant du
+bord bas, rayons jaunes en éventail depuis la pointe du triangle.
+
+**Pourquoi un élément et pas une description.** Mesuré : demandé en prose, le moteur produit un
+soleil centré symétrique — joli, mais ce n'est pas ce drapeau. La géométrie exacte (apex du
+triangle au centre, rayons partant de ce point) ne s'obtient qu'en injectant le fichier.
+
+**Tous les visuels produits du restaurant le portent en fond**, tendu comme un fond de studio et
+flou, le plat net au premier plan. Formule qui marche :
+
+> *Filling the entire background behind the food, hung flat and taut as a studio backdrop and
+> thrown softly out of focus, is `<<<f7814ee9-...>>>` — reproduce its colours and geometry exactly
+> as given, do not redraw or reinvent it.*
+
+Le reste de la mise en scène vient de **ses propres pastilles de carte** : assiette blanche à
+liseré en volute, deux coupelles de sauce (soja-piment sombre, verte aux herbes). S'y ajoutent
+natte en vacoa, pierre volcanique, gousse de vanille, piments oiseau.
+
 ## La recette du packshot
 
 Prouvée sur le Fosa : on part de photos prises sur une table de bar, on obtient un packshot

@@ -59,8 +59,11 @@ BODY['f01'] = '''
   <div class="mot">Taxi Food</div>
   <div class="filet"></div>
   <div class="lieu">Nosy Be</div>
-</div>'''
+</div>
+<div class="scoot"><img src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>'''
 CSS['f01'] = f'''
+#ID .scoot {{ position:absolute; left:0; top:1240px; width:620px; }}
+#ID .scoot img {{ width:100%; height:auto; display:block; filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }}
 #ID .bloc {{ position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }}
 #ID .carre {{ width:340px; height:340px; border-radius:84px; background:{ROUGE}; display:flex; align-items:center;
   justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }}
@@ -73,38 +76,32 @@ CSS['f01'] = f'''
 # ------------------------------------------------------------- 2. Pas de monnaie
 BODY['f02'] = '''
 <div class="lueur"></div><div class="grain"></div>
-<div class="arrivee">
-  <div class="ico"><img src="../../assets/taxifood-transparent.png" alt=""></div>
-  <div><div class="a1">Ton livreur est devant chez toi</div><div class="a2">Ding-dong !</div></div>
-</div>
+<div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
 <div class="apayer"><div class="lab">À payer</div><div class="mt"><span class="n">43 000</span> Ar</div></div>
 <div class="billet">
   <div class="b-coin">50 000</div><div class="b-centre"><div class="b-val">50 000</div><div class="b-ar">ARIARY</div></div>
   <div class="b-coin bas">50 000</div>
 </div>
-<div class="bulle"><div class="qui">Le livreur</div>Désolé… j'ai pas la monnaie sur&nbsp;50&nbsp;000&nbsp;!</div>'''
+<div class="maki"><img src="../../assets/maki-desole.png" alt="" data-layout-allow-overflow></div>
+<div class="bulle">Désolé… j'ai pas la monnaie sur&nbsp;50&nbsp;000&nbsp;!</div>'''
 CSS['f02'] = f'''
-#ID .arrivee {{ position:absolute; left:80px; right:80px; top:170px; display:flex; align-items:center; gap:36px; padding:36px 40px;
-  border-radius:48px; background:{BLANC}; box-shadow:0 30px 70px rgba(24,19,15,.14); }}
-#ID .ico {{ width:150px; height:150px; border-radius:40px; background:{ROUGE}; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }}
-#ID .ico img {{ width:112px; height:auto; display:block; }}
-#ID .a1 {{ font-size:46px; font-weight:900; letter-spacing:-1.5px; line-height:1.05; }}
-#ID .a2 {{ margin-top:10px; font-size:40px; font-weight:700; color:{ROUGE}; }}
-#ID .apayer {{ position:absolute; left:80px; right:80px; top:500px; text-align:center; }}
+#ID .ding {{ position:absolute; left:0; right:0; top:150px; text-align:center; font-size:46px; font-weight:900; letter-spacing:-1px; color:{ROUGE}; }}
+#ID .apayer {{ position:absolute; left:80px; right:80px; top:250px; text-align:center; }}
 #ID .lab {{ font-size:44px; font-weight:800; letter-spacing:12px; text-transform:uppercase; color:rgba(24,19,15,.5); }}
 #ID .mt {{ margin-top:6px; font-size:200px; font-weight:900; letter-spacing:-9px; line-height:1; font-variant-numeric:tabular-nums; }}
-#ID .billet {{ position:absolute; left:140px; top:880px; width:800px; height:400px; border-radius:30px;
+#ID .billet {{ position:absolute; left:460px; top:620px; width:560px; height:280px; border-radius:24px;
   background:linear-gradient(135deg,#c9a86b 0%,#e8d3a1 45%,#b98f4f 100%);
   box-shadow:inset 0 0 0 14px rgba(255,255,255,.35), inset 0 0 0 18px rgba(90,60,20,.35), 0 40px 80px rgba(24,19,15,.28); }}
-#ID .b-coin {{ position:absolute; left:46px; top:34px; font-size:46px; font-weight:900; color:rgba(70,45,10,.75); letter-spacing:-1px; }}
-#ID .b-coin.bas {{ left:auto; top:auto; right:46px; bottom:34px; }}
+#ID .b-coin {{ position:absolute; left:34px; top:24px; font-size:32px; font-weight:900; color:rgba(70,45,10,.75); letter-spacing:-1px; }}
+#ID .b-coin.bas {{ left:auto; top:auto; right:34px; bottom:24px; }}
 #ID .b-centre {{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; }}
-#ID .b-val {{ font-size:150px; font-weight:900; letter-spacing:-6px; white-space:nowrap; color:rgba(70,45,10,.85); line-height:1; }}
-#ID .b-ar {{ margin-top:6px; font-size:34px; font-weight:800; letter-spacing:18px; color:rgba(70,45,10,.6); }}
-#ID .bulle {{ position:absolute; left:110px; right:110px; top:1390px; padding:44px 54px; border-radius:56px 56px 56px 12px;
-  background:{ENCRE}; color:#fff; font-size:66px; font-weight:900; letter-spacing:-2px; line-height:1.08;
+#ID .b-val {{ font-size:104px; font-weight:900; letter-spacing:-4px; white-space:nowrap; color:rgba(70,45,10,.85); line-height:1; }}
+#ID .b-ar {{ margin-top:4px; font-size:24px; font-weight:800; letter-spacing:12px; color:rgba(70,45,10,.6); }}
+#ID .maki {{ position:absolute; left:-10px; top:800px; width:640px; }}
+#ID .maki img {{ width:100%; height:auto; display:block; filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }}
+#ID .bulle {{ position:absolute; left:540px; right:50px; top:1040px; padding:32px 36px; border-radius:48px 48px 48px 10px;
+  background:{ENCRE}; color:#fff; font-size:50px; font-weight:900; letter-spacing:-1.5px; line-height:1.08;
   box-shadow:0 0 0 8px {OR}, 0 30px 60px rgba(0,0,0,.3); }}
-#ID .qui {{ font-size:32px; font-weight:800; letter-spacing:6px; text-transform:uppercase; color:{OR}; margin-bottom:14px; }}
 '''
 
 # ------------------------------------------------------------- mots plein cadre
@@ -233,44 +230,24 @@ CSS['f06'] = f'''
 # ------------------------------------------------------------- 8. Le livreur est là
 BODY['f08'] = '''
 <div class="lueur om"></div><div class="grain"></div>
-<div class="tel">
-  <div class="ecran">
-    <div class="fond"></div>
-    <div class="ilot">
-      <div class="haut"><div class="ico"><img src="../../assets/taxifood-transparent.png" alt=""></div>
-        <div class="marque">Taxi Food</div><div class="eta">Arrivé</div></div>
-      <div class="l1">Ton livreur est devant chez toi</div>
-      <div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
-        <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
-    </div>
-    <div class="plat"><img src="../../assets/c2.png" alt="" data-layout-allow-overflow></div>
-    <div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>
-  </div>
-</div>'''
+<div class="ding">Ding-dong&nbsp;! Ton livreur est là.</div>
+<div class="paye"><div class="om-logo pl"><img src="../../assets/om-logo.png" alt=""></div>
+  <div class="pt">Déjà payé · Orange Money</div><div class="ok">✓</div></div>
+<div class="maki"><img src="../../assets/maki-livre.png" alt="" data-layout-allow-overflow></div>
+<div class="bon">Rien à sortir.<br><span>Bon appétit&nbsp;!</span></div>'''
 CSS['f08'] = f'''
-#ID .tel {{ position:absolute; left:110px; top:200px; width:860px; height:1580px; border-radius:130px; background:{ENCRE};
-  padding:26px; box-shadow:0 60px 120px rgba(24,19,15,.35); }}
-#ID .ecran {{ position:relative; width:100%; height:100%; border-radius:106px; overflow:hidden; }}
-#ID .fond {{ position:absolute; inset:0; background:radial-gradient(120% 90% at 20% 110%, {OR} 0%, {OM} 45%, #a33f00 100%); }}
-#ID .ilot {{ position:absolute; left:34px; right:34px; top:34px; padding:40px 44px 44px; border-radius:76px; background:#0e0b09; color:#fff; }}
-#ID .haut {{ display:flex; align-items:center; gap:24px; }}
-#ID .ico {{ width:96px; height:96px; border-radius:26px; background:{ROUGE}; display:flex; align-items:center; justify-content:center; }}
-#ID .ico img {{ width:72px; height:auto; display:block; }}
-#ID .marque {{ font-size:46px; font-weight:900; flex:1; }}
-#ID .eta {{ font-size:42px; font-weight:900; color:{OR}; }}
-#ID .l1 {{ margin-top:30px; font-size:48px; font-weight:700; line-height:1.1; }}
-#ID .paye {{ margin-top:28px; display:flex; align-items:center; gap:22px; padding:20px 24px; border-radius:36px; background:rgba(255,121,0,.18);
-  box-shadow:inset 0 0 0 3px rgba(255,121,0,.6); }}
-#ID .pl {{ width:74px; height:74px; border-radius:20px; flex:0 0 auto; }}
-#ID .pt {{ flex:1; font-size:38px; font-weight:800; color:#fff; }}
-#ID .ok {{ width:64px; height:64px; border-radius:50%; background:{OM}; color:#fff; display:flex; align-items:center; justify-content:center;
-  font-size:40px; font-weight:900; }}
-#ID .plat {{ position:absolute; left:110px; right:110px; top:640px; height:470px; border-radius:60px; overflow:hidden; background:#1d1814;
-  box-shadow:0 40px 80px rgba(0,0,0,.35); }}
-#ID .plat img {{ width:100%; height:100%; object-fit:cover; transform:scale(1.25); display:block; }}
-#ID .bon {{ position:absolute; left:0; right:0; top:1190px; text-align:center; font-size:92px; font-weight:900; letter-spacing:-4px;
-  line-height:1.02; color:#fff; }}
-#ID .bon span {{ color:{ENCRE}; }}
+#ID .ding {{ position:absolute; left:0; right:0; top:150px; text-align:center; font-size:46px; font-weight:900; letter-spacing:-1px; color:{ROUGE}; }}
+#ID .paye {{ position:absolute; left:110px; right:110px; top:250px; display:flex; align-items:center; gap:26px; padding:24px 30px; border-radius:44px;
+  background:{ENCRE}; box-shadow:0 0 0 8px {OM}, 0 30px 60px rgba(0,0,0,.25); }}
+#ID .pl {{ width:96px; height:96px; border-radius:26px; flex:0 0 auto; }}
+#ID .pt {{ flex:1; font-size:46px; font-weight:900; color:#fff; letter-spacing:-1px; }}
+#ID .ok {{ width:80px; height:80px; border-radius:50%; background:{OM}; color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:50px; font-weight:900; }}
+#ID .maki {{ position:absolute; left:180px; top:470px; width:720px; }}
+#ID .maki img {{ width:100%; height:auto; display:block; filter:drop-shadow(0 40px 50px rgba(24,19,15,.28)); }}
+#ID .bon {{ position:absolute; left:0; right:0; top:1620px; text-align:center; font-size:104px; font-weight:900; letter-spacing:-4px;
+  line-height:1.0; }}
+#ID .bon span {{ color:{OMT}; }}
 '''
 
 # ------------------------------------------------------------- 9. Fin

@@ -49,6 +49,8 @@ tl.fromTo("#f01 .carre img", {{x:-170, opacity:0}}, {{x:0, opacity:1, duration:0
 tl.fromTo("#f01 .mot", {{clipPath:"inset(0% 100% 0% 0%)", y:30}}, {{clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.4, ease:"power3.out"}}, 0.4);
 tl.fromTo("#f01 .filet", {{scaleX:0}}, {{scaleX:1, duration:0.3, ease:"power2.inOut", transformOrigin:"0% 50%"}}, 0.66);
 tl.fromTo("#f01 .lieu", {{opacity:0, y:24, scaleX:1.25}}, {{opacity:1, y:0, scaleX:1, duration:0.34, ease:"power2.out"}}, 0.78);
+tl.fromTo("#f01 .scoot", {{x:-760, rotation:-3}}, {{x:1140, rotation:0, duration:1.0, ease:"power2.inOut"}}, 0.3);
+tl.fromTo("#f01 .scoot", {{y:0}}, {{y:-10, duration:0.08, ease:"sine.inOut", yoyo:true, repeat:11, immediateRender:false}}, 0.3);
 {sortie_zoom('#f01', 1.15, 1.7, 18, 0.18)}
 '''
 
@@ -56,20 +58,22 @@ tl.fromTo("#f01 .lieu", {{opacity:0, y:24, scaleX:1.25}}, {{opacity:1, y:0, scal
 M['f02'] = f'''
 {entree_zoom('#f02', 0.8, 14, 0.3)}
 tl.fromTo("#f02 .push", {{scale:1}}, {{scale:1.06, duration:2.3, ease:"sine.inOut"}}, 0.2);
-tl.fromTo("#f02 .arrivee", {{y:-300, opacity:0}}, {{y:0, opacity:1, duration:0.45, ease:"back.out(1.6)"}}, 0.05);
-tl.fromTo("#f02 .ico", {{rotation:0}}, {{rotation:10, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}}, 0.45);
-tl.fromTo("#f02 .apayer", {{y:60, opacity:0}}, {{y:0, opacity:1, duration:0.35, ease:"power3.out"}}, 0.35);
+tl.fromTo("#f02 .ding", {{y:-80, opacity:0}}, {{y:0, opacity:1, duration:0.35, ease:"back.out(1.8)"}}, 0.05);
+tl.fromTo("#f02 .ding", {{rotation:-2}}, {{rotation:2, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}}, 0.35);
+tl.fromTo("#f02 .apayer", {{y:60, opacity:0}}, {{y:0, opacity:1, duration:0.35, ease:"power3.out"}}, 0.3);
+tl.fromTo("#f02 .maki", {{x:-700, rotation:-6}}, {{x:0, rotation:0, duration:0.6, ease:"back.out(1.2)"}}, 0.55);
 (function(){{
   var n = document.querySelector("#f02 .n"); var p = {{v:0}};
   tl.fromTo(p, {{v:0}}, {{v:43000, duration:0.55, ease:"power2.out", onUpdate:function(){{
     var v = Math.round(p.v/1000)*1000; n.textContent = v.toString().replace(/\\B(?=(\\d{{3}})+(?!\\d))/g, " ");
   }}}}, 0.4);
 }})();
-tl.fromTo("#f02 .billet", {{y:900, rotation:14}}, {{y:0, rotation:-4, duration:0.55, ease:"power4.out"}}, 0.85);
-tl.fromTo("#f02 .billet", {{rotation:-4}}, {{rotation:-2, duration:0.8, ease:"sine.inOut", immediateRender:false}}, 1.4);
-tl.fromTo("#f02 .bulle", {{scale:2.2, rotation:-8, opacity:0}}, {{scale:1, rotation:-2, opacity:1, duration:0.3, ease:"back.out(2.6)", transformOrigin:"0% 100%"}}, 1.73);
-tl.fromTo("#f02 .push", {{x:0}}, {{x:16, duration:0.05, ease:"none", yoyo:true, repeat:5, immediateRender:false}}, 1.82);
-tl.fromTo("#f02 .billet", {{opacity:1}}, {{opacity:0.45, duration:0.3, ease:"power1.out", immediateRender:false}}, 2.0);
+tl.fromTo("#f02 .billet", {{y:-600, rotation:14, opacity:0}}, {{y:0, rotation:6, opacity:1, duration:0.5, ease:"power4.out"}}, 0.95);
+tl.fromTo("#f02 .billet", {{rotation:6}}, {{rotation:3, duration:0.8, ease:"sine.inOut", immediateRender:false}}, 1.45);
+tl.fromTo("#f02 .bulle", {{scale:0, rotation:-8, opacity:0}}, {{scale:1, rotation:-2, opacity:1, duration:0.32, ease:"back.out(2.4)", transformOrigin:"0% 100%"}}, 1.73);
+tl.fromTo("#f02 .maki", {{rotation:0}}, {{rotation:-3, duration:0.18, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}}, 1.75);
+tl.fromTo("#f02 .push", {{x:0}}, {{x:12, duration:0.05, ease:"none", yoyo:true, repeat:5, immediateRender:false}}, 1.82);
+tl.fromTo("#f02 .billet", {{opacity:1}}, {{opacity:0.4, duration:0.3, ease:"power1.out", immediateRender:false}}, 2.0);
 {sortie_zoom('#f02', 2.48, 1.45, 16, 0.18)}
 '''
 
@@ -165,14 +169,14 @@ tl.fromTo("#f07 .mots", {{x:0}}, {{x:10, duration:0.04, ease:"none", yoyo:true, 
 # ------------------------------------------------------- 8. Le livreur est là (2,667 s)
 M['f08'] = f'''
 {entree_zoom('#f08', 0.85, 12, 0.3)}
-tl.fromTo("#f08 .tel", {{rotationX:38, rotationY:-28, y:560, scale:0.82}}, {{rotationX:0, rotationY:0, y:0, scale:1, duration:0.7, ease:"power3.out"}}, 0.0);
-tl.fromTo("#f08 .ilot", {{scaleX:0.34, scaleY:0.22}}, {{scaleX:1, scaleY:1, duration:0.5, ease:"back.out(1.5)", transformOrigin:"50% 0%"}}, 0.55);
-tl.fromTo("#f08 .ilot > *", {{opacity:0, y:14}}, {{opacity:1, y:0, duration:0.28, ease:"power2.out", stagger:0.08}}, 0.78);
-tl.fromTo("#f08 .ok", {{scale:0}}, {{scale:1, duration:0.3, ease:"back.out(3)"}}, 1.1);
-tl.fromTo("#f08 .plat", {{y:700, rotation:6, opacity:0}}, {{y:0, rotation:0, opacity:1, duration:0.5, ease:"power4.out"}}, 1.15);
-tl.fromTo("#f08 .plat img", {{scale:1.6}}, {{scale:1.25, duration:1.0, ease:"power2.out"}}, 1.15);
+tl.fromTo("#f08 .ding", {{y:-80, opacity:0}}, {{y:0, opacity:1, duration:0.35, ease:"back.out(1.8)"}}, 0.05);
+tl.fromTo("#f08 .ding", {{rotation:-2}}, {{rotation:2, duration:0.06, ease:"none", yoyo:true, repeat:5, immediateRender:false}}, 0.35);
+tl.fromTo("#f08 .maki", {{y:1200, rotation:4}}, {{y:0, rotation:0, duration:0.65, ease:"back.out(1.1)"}}, 0.3);
+tl.fromTo("#f08 .maki", {{scale:1}}, {{scale:1.04, duration:0.5, ease:"sine.inOut", yoyo:true, repeat:3, immediateRender:false}}, 1.0);
+tl.fromTo("#f08 .paye", {{scale:0, opacity:0}}, {{scale:1, opacity:1, duration:0.4, ease:"back.out(2)"}}, 0.9);
+tl.fromTo("#f08 .ok", {{scale:0}}, {{scale:1, duration:0.3, ease:"back.out(3)"}}, 1.2);
 tl.fromTo("#f08 .bon", {{y:80, opacity:0}}, {{y:0, opacity:1, duration:0.35, ease:"power4.out"}}, 1.5);
-tl.fromTo("#f08 .push", {{scale:1}}, {{scale:1.05, duration:2.4, ease:"sine.inOut"}}, 0.2);
+tl.fromTo("#f08 .push", {{scale:1}}, {{scale:1.04, duration:2.4, ease:"sine.inOut"}}, 0.2);
 {sortie_zoom('#f08', 2.48, 1.4, 14, 0.18)}
 '''
 

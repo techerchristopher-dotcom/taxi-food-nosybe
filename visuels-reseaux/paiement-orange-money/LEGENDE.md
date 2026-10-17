@@ -8,6 +8,8 @@ Rentanoo, invitation « WebPay Madagascar »), clés de production au Vault, `om
   (Chrome du Mac, contrôles mesurés : débord 0, police Archivo).
 - Vidéo : `VIDEO-FINALE/taxi-food-orange-money-9x16.mp4` (1080 × 1920, 28 s, motion design HyperFrames,
   sources dans `video/`, re-rendu : `cd video && python3 gen.py && npx --yes hyperframes@0.8.167 render -q delivery -o ../VIDEO-FINALE/taxi-food-orange-money-9x16.mp4`).
+- v3 (17/10) : Maki, la mascotte livreur, dans l'ouverture (scooter), la scène « pas la monnaie » et la livraison ;
+  et sur le visuel fixe (colonne droite). Poses : `video/assets/maki-*.png` (aussi dans `src/`).
 - Logo officiel Orange Money (fourni par Orange) : utilisation validée par le porteur du projet le 17/10.
 - « Sans frais » : validé par le porteur du projet le 17/10.
 

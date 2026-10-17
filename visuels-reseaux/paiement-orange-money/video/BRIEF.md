@@ -26,6 +26,9 @@ même chose ») :
 
 ## Assets
 
+- assets/maki-desole.png, maki-scooter.png, maki-livre.png — Maki, la mascotte livreur (élément Higgsfield
+  `Maki-livreur` + `taxifood-scooter-sr`, nano_banana_pro, détourés par remove_background, 17/10). v3 : « le livreur
+  illustré » demandé par le porteur du projet ; Maki est le livreur illustré déjà validé de la marque.
 - assets/om-logo.png — logo officiel « payer avec Orange Money » fourni par Orange (utilisation validée
   par le porteur du projet le 17/10).
 - assets/taxifood-transparent.png — icône Taxi Food (scooter).
@@ -37,7 +40,8 @@ même chose ») :
 ## Notes
 
 - Charte : crème #F6EFE2, rouge #E8342A, or #FFC72C, encre #18130F, orange OM #FF7900 ; police Archivo.
-- Aucune image générée par IA. Le billet de 50 000 Ar est un rectangle stylisé (aucune reproduction de billet).
+- Seules images générées : les trois poses de Maki, depuis l'élément validé (aucun texte ni logo dessiné par l'IA ;
+  le logo du top-case vient de l'élément `taxifood-topcase`). Le billet de 50 000 Ar est un rectangle stylisé (aucune reproduction de billet).
 - « Sans frais » : validé par le porteur du projet le 17/10.
 - Exemple chiffré : commande La Cabane de 43 000 Ar ; le client n'a qu'un billet de 50 000.
 - Trame validée par le porteur du projet le 17/10 (9 séquences). v2 du 17/10 : « trop rapide » → 28 s, tout ralenti.

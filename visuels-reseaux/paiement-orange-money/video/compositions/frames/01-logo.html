@@ -16,6 +16,8 @@
 #f01 .om-logo { display:block; background:#000; overflow:hidden; }
 #f01 .om-logo img { width:100%; height:100%; object-fit:contain; display:block; }
 
+#f01 .scoot { position:absolute; left:0; top:1240px; width:620px; }
+#f01 .scoot img { width:100%; height:auto; display:block; filter:drop-shadow(0 30px 40px rgba(24,19,15,.25)); }
 #f01 .bloc { position:absolute; left:0; right:0; top:560px; display:flex; flex-direction:column; align-items:center; }
 #f01 .carre { width:340px; height:340px; border-radius:84px; background:#E8342A; display:flex; align-items:center;
   justify-content:center; box-shadow:0 40px 80px rgba(232,52,42,.35); }
@@ -32,6 +34,7 @@
   <div class="filet"></div>
   <div class="lieu">Nosy Be</div>
 </div>
+<div class="scoot"><img src="../../assets/maki-scooter.png" alt="" data-layout-allow-overflow></div>
 </div></div></div>
 <script>
 (function(){
@@ -44,6 +47,8 @@ tl.fromTo("#f01 .carre img", {x:-170, opacity:0}, {x:0, opacity:1, duration:0.48
 tl.fromTo("#f01 .mot", {clipPath:"inset(0% 100% 0% 0%)", y:30}, {clipPath:"inset(0% 0% 0% 0%)", y:0, duration:0.533, ease:"power3.out"}, 0.533);
 tl.fromTo("#f01 .filet", {scaleX:0}, {scaleX:1, duration:0.400, ease:"power2.inOut", transformOrigin:"0% 50%"}, 0.880);
 tl.fromTo("#f01 .lieu", {opacity:0, y:24, scaleX:1.25}, {opacity:1, y:0, scaleX:1, duration:0.453, ease:"power2.out"}, 1.040);
+tl.fromTo("#f01 .scoot", {x:-760, rotation:-3}, {x:1140, rotation:0, duration:1.333, ease:"power2.inOut"}, 0.400);
+tl.fromTo("#f01 .scoot", {y:0}, {y:-10, duration:0.107, ease:"sine.inOut", yoyo:true, repeat:11, immediateRender:false}, 0.400);
 tl.fromTo("#f01 .cam", {scale:1, filter:"blur(0px)"}, {scale:1.7, filter:"blur(18px)", duration:0.240, ease:"power2.in", immediateRender:false}, 1.533);
 
   window.__timelines["f01"] = tl;

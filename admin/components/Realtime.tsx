@@ -109,6 +109,24 @@ function bip() {
   } catch { /* son indisponible : le reste de l'écran fonctionne */ }
 }
 
+type PositionLivreur = {
+  user_id: string;
+  nom: string | null;
+  is_available: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  position_le: string | null;
+  age_s: number | null;
+  commandes_en_cours: number;
+};
+
+function ilYa(s: number | null): string {
+  if (s == null) return 'jamais';
+  if (s < 60) return `il y a ${s} s`;
+  if (s < 3600) return `il y a ${Math.round(s / 60)} min`;
+  return `il y a ${Math.round(s / 3600)} h`;
+}
+
 export function Realtime() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [couriers, setCouriers] = useState<CourierRow[]>([]);
@@ -122,6 +140,7 @@ export function Realtime() {
   const [busy, setBusy] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [son, setSon] = useState(true);
+  const [positions, setPositions] = useState<PositionLivreur[]>([]);
 
   // Sert à ne sonner que pour une commande RÉELLEMENT nouvelle, pas au premier
   // chargement — sinon l'écran carillonne à chaque ouverture.
@@ -154,6 +173,9 @@ export function Realtime() {
 
     setOrders(rows);
     setCouriers((c.data ?? []) as CourierRow[]);
+    // Position des livreurs (app Taxi Food Livreur, 2026-10-17) : lecture admin seule.
+    const pos = await supabase.rpc('admin_positions_livreurs');
+    setPositions(((pos.data ?? []) as PositionLivreur[]).filter((x) => x.commandes_en_cours > 0 || (x.age_s != null && x.age_s < 1800)));
     setRestos((r.data ?? []) as RestoRow[]);
 
     const dj = (j.data ?? []) as { total: number; status: string }[];
@@ -319,6 +341,30 @@ export function Realtime() {
       </div>
 
       {err ? <div className="card" style={{ marginBottom: 16, color: 'var(--red)' }}>Erreur : {err}</div> : null}
+
+      {positions.length ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2 style={{ marginTop: 0 }}>📍 Livreurs en course</h2>
+          <p className="muted" style={{ marginTop: -6, fontSize: 12 }}>
+            Position envoyée par l’app Taxi Food Livreur pendant les courses (rien en dehors).
+          </p>
+          {positions.map((p) => {
+            const perdu = p.age_s == null || p.age_s > 180;
+            return (
+              <div key={p.user_id} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '8px 0', borderTop: '1px solid var(--border, #eee)' }}>
+                <strong style={{ flex: 1, minWidth: 140 }}>{p.nom ?? '—'}</strong>
+                <span className="muted">{p.commandes_en_cours} commande{p.commandes_en_cours > 1 ? 's' : ''}</span>
+                <span style={{ color: perdu ? 'var(--red, #e04b4b)' : 'var(--green, #2fbf71)' }}>{ilYa(p.age_s)}</span>
+                {p.latitude != null && p.longitude != null ? (
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`} target="_blank" rel="noreferrer">
+                    Voir sur la carte
+                  </a>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>

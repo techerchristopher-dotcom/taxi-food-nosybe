@@ -881,5 +881,21 @@
       "orangeIndisponible": "Orange Money non risponde al momento. Nessun addebito: riprova tra un istante o paga in contanti.",
       "inconnu": "Il pagamento non è potuto partire. Nessun addebito."
     }
+  },
+  "modaleWeekend": {
+    "fermer": "Chiudi",
+    "titre": "In tanti ci avete chiesto perché eravamo chiusi sabato e domenica a pranzo",
+    "sousTitre": "Ci sono due versioni. Scegli tu.",
+    "cta": "Ordino!",
+    "officielle": {
+      "bouton": "La versione ufficiale",
+      "p1": "Abbiamo messo in pausa l'app per collegarci Orange Money, grazie a una nuova collaborazione con Orange. Presto pagherai direttamente nell'app: niente più uscire dall'app né inviare uno screenshot. Durante l'installazione i team di Orange lavoravano sull'app: non doveva esserci nessun ordine vero, per non confonderlo con gli ordini di prova.",
+      "p2": "E poi, la prima sera eravate così tanti che il nostro rider non ha mai più rimesso il casco 🛵💨 Ne cerchiamo un altro, più resistente."
+    },
+    "officieuse": {
+      "bouton": "La versione ufficiosa",
+      "p1": "Certi fantasmi del passato tornano sempre quando vedono che vai avanti 👻 Abbiamo dovuto fermare tutto per un weekend per sistemarli una volta per tutte. Prete, salvia, incenso… non diremo altro. Caso chiuso ✅",
+      "p2": "Nella vita di una start-up ci sono alti, bassi e a volte fantasmi. L'importante è andare avanti. E noi andiamo avanti."
+    }
   }
 }

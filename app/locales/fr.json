@@ -881,5 +881,21 @@
       "orangeIndisponible": "Orange Money ne répond pas pour l'instant. Rien n'a été débité : réessaie dans un instant, ou paie en espèces.",
       "inconnu": "Le paiement n'a pas pu démarrer. Rien n'a été débité."
     }
+  },
+  "modaleWeekend": {
+    "fermer": "Fermer",
+    "titre": "Vous avez été nombreux à nous demander pourquoi on était fermés samedi et dimanche midi",
+    "sousTitre": "Il y a deux versions. À toi de choisir.",
+    "cta": "Je commande !",
+    "officielle": {
+      "bouton": "La version officielle",
+      "p1": "On a mis l'appli en pause pour y brancher Orange Money, grâce à un nouveau partenariat avec Orange. Bientôt, tu paieras directement dans l'appli : plus besoin d'en sortir, ni d'envoyer une capture d'écran. Pendant l'installation, les équipes d'Orange travaillaient sur l'appli. Il ne fallait donc aucune vraie commande, pour ne pas la mélanger aux commandes de test.",
+      "p2": "Et puis, vous avez été tellement nombreux le premier soir que notre livreur n'a jamais remis son casque 🛵💨 On en recrute un autre, plus endurant."
+    },
+    "officieuse": {
+      "bouton": "La version officieuse",
+      "p1": "Certains fantômes du passé reviennent toujours quand ils voient que tu avances 👻 Il a fallu tout arrêter le temps d'un week-end pour leur régler leur compte une bonne fois pour toutes. Prêtre, sauge, encens… on n'en dira pas plus. Affaire classée ✅",
+      "p2": "Dans la vie d'une start-up, il y a des hauts, des bas, et parfois des fantômes. L'essentiel, c'est de continuer. Et nous, on continue."
+    }
   }
 }

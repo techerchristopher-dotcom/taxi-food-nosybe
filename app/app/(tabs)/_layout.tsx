@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { colors, fonts } from '../../theme/tokens';
 import { useCart } from '../../store/cart';
 import { BulleWhatsApp } from '../../components/BulleWhatsApp';
+import { ModaleWeekend } from '../../components/ModaleWeekend';
 
 /**
  * Barre de navigation basse (4 onglets), reprise de la maquette :
@@ -67,6 +68,8 @@ export default function TabsLayout() {
       </Tabs>
       {/* Pas sur Panier : la bulle y couvrirait « Commander ». */}
       {surPanier ? null : <BulleWhatsApp bas={hauteurOnglets + 14} />}
+      {/* Fenêtre « pourquoi étions-nous fermés » (jetable, jusqu'au 20/10). */}
+      <ModaleWeekend />
     </View>
   );
 }

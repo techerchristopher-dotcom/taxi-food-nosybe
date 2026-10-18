@@ -1,0 +1,82 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap">
+<style>*{margin:0;padding:0;box-sizing:border-box;}
+body{width:1080px;height:1350px;overflow:hidden;font-family:Archivo,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+.cv{position:relative;width:1080px;height:1350px;background:#E8342A;overflow:hidden;}
+.hd{position:absolute;top:0;left:0;width:1080px;height:930px;background:#F6EFE2;}
+.fi{position:absolute;top:930px;left:0;width:1080px;height:8px;background:#FFC72C;}
+.rb{position:absolute;top:938px;left:0;width:1080px;height:412px;padding:30px 62px;
+  display:flex;align-items:center;justify-content:space-between;gap:34px;}
+.gc{display:flex;flex-direction:column;align-items:flex-start;flex:1 1 auto;}
+.su{display:flex;align-items:center;gap:12px;}
+.su img{width:36px;height:auto;display:block;}
+.su span{font-size:20px;font-weight:700;letter-spacing:3.8px;color:#FFC72C;text-transform:uppercase;}
+.ti{margin-top:10px;font-size:60px;font-weight:900;line-height:0.98;color:#fff;letter-spacing:-1.5px;}
+.se{margin-top:12px;font-size:23px;font-weight:400;line-height:1.28;color:rgba(255,255,255,0.92);}
+.ur{margin-top:14px;font-size:17px;font-weight:600;color:rgba(255,255,255,0.72);}
+.dc{display:flex;flex-direction:column;align-items:center;gap:14px;width:190px;flex:0 0 auto;}
+.dc .bd{display:flex;flex-direction:column;gap:10px;width:190px;}
+.dc img{width:190px;height:auto;display:block;}
+.dc .lg{width:128px;filter:drop-shadow(0 10px 22px rgba(0,0,0,0.38));}
+.st{position:absolute;top:40px;left:0;width:1080px;text-align:center;font-size:19px;font-weight:800;
+  letter-spacing:4.2px;text-transform:uppercase;}
+.st{color:rgba(19,19,19,0.52);}
+.tag{position:absolute;top:96px;left:0;width:1080px;display:flex;justify-content:center;}
+.tag span{background:#E8342A;color:#fff;font-size:24px;font-weight:900;letter-spacing:3px;text-transform:uppercase;
+  padding:12px 28px 13px;border-radius:40px;box-shadow:0 8px 20px rgba(232,52,42,0.28);}
+.bloc{position:absolute;left:84px;width:912px;background:#fff;border-radius:26px;padding:34px 40px 36px;
+  box-shadow:0 14px 34px rgba(0,0,0,0.10);border-left:10px solid #FFC72C;}
+.bloc .n{font-size:20px;font-weight:900;letter-spacing:3px;color:#E8342A;text-transform:uppercase;}
+.bloc h2{margin-top:8px;font-size:42px;font-weight:900;line-height:1.04;color:#131313;letter-spacing:-0.8px;}
+.bloc p{margin-top:14px;font-size:25px;font-weight:400;line-height:1.36;color:#3a3633;}
+.bloc p b{font-weight:800;color:#131313;}
+.teaser{background:transparent;box-shadow:none;border-left:none;padding:0;text-align:center;font-size:24px;
+  font-weight:500;color:rgba(19,19,19,0.72);}
+.teaser b{font-weight:900;color:#E8342A;}</style></head><body><div class="cv"><div class="hd">
+    <div class="st">Pourquoi on était fermés samedi et dimanche midi</div>
+    <div class="tag"><span>La version officielle</span></div>
+    <div class="bloc" style="top:188px;">
+      <div class="n">Raison n° 1</div>
+      <h2>On branchait Orange&nbsp;Money dans l'appli.</h2>
+      <p>Grâce à un nouveau partenariat avec Orange, tu paieras <b>bientôt directement dans l'appli</b>&nbsp;: plus besoin d'en sortir, ni d'envoyer une capture d'écran. Pendant l'installation, aucune vraie commande ne devait se mélanger aux commandes de test.</p>
+    </div>
+    <div class="bloc" style="top:552px;">
+      <div class="n">Raison n° 2</div>
+      <h2>Notre livreur n'a jamais remis son casque.</h2>
+      <p>Vous avez été tellement nombreux le premier soir… On en recrute un autre, <b>plus endurant</b>.</p>
+    </div>
+    <div class="teaser bloc" style="top:858px;">La version officieuse&nbsp;? <b>Passe ta commande</b>, elle s'affiche juste après 🤫</div>
+  </div>
+  <div class="fi"></div>
+  <div class="rb">
+    <div class="gc">
+      <div class="su"><img src="src/taxifood-transparent.png" alt=""><span>Taxi Food · Nosy Be</span></div>
+      <div class="ti">Et nous,<br>on continue.</div>
+      <div class="se">Ce soir, on livre à nouveau.<br>Tu commandes, on te livre là où tu es.</div>
+      <div class="ur">taxifoodnosybe.distripro207.com</div>
+    </div>
+    <div class="dc"><div class="bd"><img src="src/appstore.png" alt="App Store"><img src="src/googleplay.png" alt="Google Play"></div>
+      <img class="lg" src="src/taxifood-transparent.png" alt="Taxi Food"></div>
+  </div></div><script>
+window.addEventListener('load', () => setTimeout(() => {
+  const r = e => e.getBoundingClientRect();
+  const out = [];
+  let deb = 0;
+  document.querySelectorAll('.cv *').forEach(e => { const b = r(e); if (!b.width) return;
+    if (b.left < -.5 || b.right > 1080.5 || b.top < -.5 || b.bottom > 1350.5) deb++; });
+  out.push('debord_cadre ' + deb);
+  // le contenu du haut ne descend pas sous le filet (12 px d'air minimum)
+  let hors = 0; document.querySelectorAll('.hd > *').forEach(e => { if (r(e).bottom > 930 - 12) hors++; });
+  out.push('haut_deborde ' + hors);
+  const rb = r(document.querySelector('.rb')), gc = r(document.querySelector('.gc')), dc = r(document.querySelector('.dc'));
+  out.push('air_rouge_haut ' + Math.round(Math.min(gc.top, dc.top) - rb.top) + ' bas ' + Math.round(rb.bottom - Math.max(gc.bottom, dc.bottom)));
+  out.push('colonnes_se_touchent ' + (gc.right > dc.left - 10 ? 'OUI' : 'non'));
+  // les blocs du haut ne se chevauchent pas
+  const bs = [...document.querySelectorAll('.bloc')].map(r); let chev = 0;
+  for (let i=0;i<bs.length;i++) for (let j=i+1;j<bs.length;j++) { const a=bs[i], b=bs[j];
+    if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) chev++; }
+  out.push('chevauchements ' + chev);
+  out.push('police ' + (document.fonts.check('900 60px Archivo') ? 'Archivo' : 'REPLI'));
+  document.body.insertAdjacentHTML('beforeend', '<pre id="m" style="display:none">' + out.join('\n') + '</pre>');
+}, 1500));
+</script></body></html>

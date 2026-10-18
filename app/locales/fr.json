@@ -896,6 +896,15 @@
       "bouton": "La version officieuse",
       "p1": "Certains fantômes du passé reviennent toujours quand ils voient que tu avances 👻 Il a fallu tout arrêter le temps d'un week-end pour leur régler leur compte une bonne fois pour toutes. Prêtre, sauge, encens… on n'en dira pas plus. Affaire classée ✅",
       "p2": "Dans la vie d'une start-up, il y a des hauts, des bas, et parfois des fantômes. L'essentiel, c'est de continuer. Et nous, on continue."
+    },
+    "verrou": {
+      "titre": "Celle-là, elle se mérite 🤫",
+      "texte": "Passe ta commande : la version officieuse s'affichera juste après. Promis, ça vaut le détour."
+    },
+    "devoile": {
+      "tag": "Ta récompense · la version officieuse",
+      "titre": "Les fantômes du passé",
+      "merci": "Merci pour ta commande. Et chut 🤫"
     }
   }
 }

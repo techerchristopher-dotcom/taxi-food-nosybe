@@ -896,6 +896,15 @@
       "bouton": "La versione ufficiosa",
       "p1": "Certi fantasmi del passato tornano sempre quando vedono che vai avanti 👻 Abbiamo dovuto fermare tutto per un weekend per sistemarli una volta per tutte. Prete, salvia, incenso… non diremo altro. Caso chiuso ✅",
       "p2": "Nella vita di una start-up ci sono alti, bassi e a volte fantasmi. L'importante è andare avanti. E noi andiamo avanti."
+    },
+    "verrou": {
+      "titre": "Questa bisogna meritarsela 🤫",
+      "texte": "Fai il tuo ordine: la versione ufficiosa apparirà subito dopo. Promesso, ne vale la pena."
+    },
+    "devoile": {
+      "tag": "La tua ricompensa · la versione ufficiosa",
+      "titre": "I fantasmi del passato",
+      "merci": "Grazie per il tuo ordine. E acqua in bocca 🤫"
     }
   }
 }

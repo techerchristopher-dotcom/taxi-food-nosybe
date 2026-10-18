@@ -896,6 +896,15 @@
       "bouton": "The unofficial version",
       "p1": "Some ghosts from the past always come back when they see you moving forward 👻 We had to stop everything for a weekend to deal with them once and for all. Priest, sage, incense… we'll say no more. Case closed ✅",
       "p2": "A start-up has its ups, its downs, and sometimes its ghosts. What matters is to keep going. And we're keeping going."
+    },
+    "verrou": {
+      "titre": "This one has to be earned 🤫",
+      "texte": "Place your order: the unofficial version shows up right after. Trust us, it's worth it."
+    },
+    "devoile": {
+      "tag": "Your reward · the unofficial version",
+      "titre": "Ghosts from the past",
+      "merci": "Thanks for your order. And shhh 🤫"
     }
   }
 }

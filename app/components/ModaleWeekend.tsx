@@ -93,7 +93,7 @@ export function ModaleWeekend() {
                     accessibilityState={{ selected: actif }}
                     style={[styles.bouton, actif && (v === 'officielle' ? styles.boutonOff : styles.boutonOffi)]}
                   >
-                    <Text style={styles.boutonEmoji}>{v === 'officielle' ? '📋' : '🤫'}</Text>
+                    <Text style={styles.boutonEmoji}>{v === 'officielle' ? '📋' : '🔒'}</Text>
                     <Text style={[styles.boutonTexte, actif && styles.boutonTexteActif]}>
                       {t(`modaleWeekend.${v}.bouton`)}
                     </Text>
@@ -102,10 +102,17 @@ export function ModaleWeekend() {
               })}
             </View>
 
-            {version ? (
-              <View style={[styles.recit, version === 'officieuse' && styles.recitOffi]}>
-                <Text style={styles.recitTexte}>{t(`modaleWeekend.${version}.p1`)}</Text>
-                <Text style={styles.recitTexte}>{t(`modaleWeekend.${version}.p2`)}</Text>
+            {/* Le jeu (2026-10-18) : la version officieuse ne se lit qu'APRÈS une commande,
+                sur l'écran de confirmation (`VersionOfficieuse` plus bas). Ici, le verrou. */}
+            {version === 'officielle' ? (
+              <View style={styles.recit}>
+                <Text style={styles.recitTexte}>{t('modaleWeekend.officielle.p1')}</Text>
+                <Text style={styles.recitTexte}>{t('modaleWeekend.officielle.p2')}</Text>
+              </View>
+            ) : version === 'officieuse' ? (
+              <View style={[styles.recit, styles.recitOffi]}>
+                <Text style={styles.verrouTitre}>{t('modaleWeekend.verrou.titre')}</Text>
+                <Text style={styles.recitTexte}>{t('modaleWeekend.verrou.texte')}</Text>
               </View>
             ) : null}
 
@@ -171,6 +178,7 @@ const styles = StyleSheet.create({
   boutonTexteActif: { color: colors.ink },
   recit: { backgroundColor: colors.bg, borderRadius: radius.lg, padding: 14, gap: 10 },
   recitOffi: { backgroundColor: '#F1ECFA' },
+  verrouTitre: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.ink },
   recitTexte: { fontFamily: fonts.regular, fontSize: 14.5, lineHeight: 21, color: colors.textDark },
   cta: {
     marginTop: 4,
@@ -181,4 +189,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaTexte: { fontFamily: fonts.extrabold, fontSize: 16, color: colors.white },
+});
+
+/**
+ * La version officieuse, DÉVOILÉE sur l'écran de confirmation d'une commande (le jeu du
+ * 2026-10-18 : « pour la connaître, il faut commander »). Même date de fin que la fenêtre.
+ */
+export function VersionOfficieuse() {
+  const { t } = useTranslation();
+  const visible = Date.now() <= FIN;
+  useEffect(() => {
+    if (visible) noterSuiviAnnonce('modale_version', null, 'officieuse-devoilee');
+  }, [visible]);
+  if (!visible) return null;
+  return (
+    <View style={stylesDevoile.devoile}>
+      <Text style={stylesDevoile.devoileTag}>{t('modaleWeekend.devoile.tag')}</Text>
+      <Text style={stylesDevoile.devoileTitre}>👻 {t('modaleWeekend.devoile.titre')}</Text>
+      <Text style={stylesDevoile.devoileTexte}>{t('modaleWeekend.officieuse.p1')}</Text>
+      <Text style={stylesDevoile.devoileTexte}>{t('modaleWeekend.officieuse.p2')}</Text>
+      <Text style={stylesDevoile.devoileMerci}>{t('modaleWeekend.devoile.merci')}</Text>
+    </View>
+  );
+}
+
+const stylesDevoile = StyleSheet.create({
+  devoile: {
+    width: '100%',
+    marginTop: 16,
+    backgroundColor: colors.ink,
+    borderRadius: radius.card,
+    padding: 20,
+    gap: 10,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  devoileTag: { fontFamily: fonts.extrabold, fontSize: 12, letterSpacing: 2, color: colors.accent, textTransform: 'uppercase' },
+  devoileTitre: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.white },
+  devoileTexte: { fontFamily: fonts.regular, fontSize: 14.5, lineHeight: 21, color: 'rgba(255,255,255,0.88)' },
+  devoileMerci: { fontFamily: fonts.bold, fontSize: 13.5, color: colors.accent },
 });

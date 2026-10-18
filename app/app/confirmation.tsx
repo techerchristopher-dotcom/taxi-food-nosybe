@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icon';
 import { ProductThumb } from '../components/ProductThumb';
 import { CarteOrangeMoney } from '../components/CarteOrangeMoney';
+import { VersionOfficieuse } from '../components/ModaleWeekend';
 import { colors, fonts, formatAr, radius, shadow, spacing } from '../theme/tokens';
 import { paymentLabel, PaymentMethod } from '../data/types';
 import { getEstimationCommande, getOrderById } from '../data/api';
@@ -140,6 +141,8 @@ export default function ConfirmationScreen() {
             <Detail label={t('confirmation.eta')} value={etaAffiche} />
           ) : null}
         </View>
+        {/* Le jeu du week-end : la version officieuse se mérite par une commande. */}
+        <VersionOfficieuse />
       </ScrollView>
 
       <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 20) + 14 }]}>

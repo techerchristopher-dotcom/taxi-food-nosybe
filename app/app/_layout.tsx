@@ -1,6 +1,7 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import * as Notifications from 'expo-notifications';
+import { noterOuvertureAnnonce } from '../lib/suiviAnnonce';
 import { AppState, Image, Platform, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -143,10 +144,23 @@ export default function RootLayout() {
       const data = response.notification.request.content.data as {
         orderId?: string;
         route?: string;
+        annonceId?: string;
       };
+      // Annonce : on note qui l'a ouverte (voir `lib/suiviAnnonce.ts`).
+      if (data?.annonceId) void noterOuvertureAnnonce(data.annonceId);
       const route = data?.route ?? (data?.orderId ? `/order/${data.orderId}` : null);
       if (route) setPendingRoute(route);
     });
+    // Démarrage à froid (ou rechargement par une mise à jour) : la réponse qui a lancé
+    // l'app peut ne pas repasser par l'écouteur. La note est dédoublonnée par annonce.
+    if (Platform.OS !== 'web') {
+      void Notifications.getLastNotificationResponseAsync()
+        .then((r) => {
+          const id = (r?.notification.request.content.data as { annonceId?: string } | undefined)?.annonceId;
+          if (id) void noterOuvertureAnnonce(id);
+        })
+        .catch(() => {});
+    }
     return () => sub.remove();
   }, []);
 

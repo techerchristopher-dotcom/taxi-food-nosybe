@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { colors, fonts, radius } from '../theme/tokens';
 import { mesurer } from '../lib/mesure';
+import { noterSuiviAnnonce } from '../lib/suiviAnnonce';
 
 /**
  * 😅 « Pourquoi étiez-vous fermés ? » — fenêtre d'après la pause du week-end (2026-10-18).
@@ -35,7 +36,12 @@ export function ModaleWeekend() {
     AsyncStorage.getItem(CLE).then(
       (vu) => {
         // Un court délai : l'accueil s'affiche d'abord, la fenêtre arrive par-dessus.
-        if (actif && !vu) minuteur = setTimeout(() => actif && setVisible(true), 900);
+        if (actif && !vu)
+          minuteur = setTimeout(() => {
+            if (!actif) return;
+            setVisible(true);
+            noterSuiviAnnonce('modale_vue', null, 'weekend-2026-10-18');
+          }, 900);
       },
       () => {},
     );
@@ -53,6 +59,7 @@ export function ModaleWeekend() {
   const choisir = (v: Version) => {
     setVersion(v);
     mesurer('modale-weekend', { version: v });
+    noterSuiviAnnonce('modale_version', null, v);
   };
 
   if (!visible) return null;

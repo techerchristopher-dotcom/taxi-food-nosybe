@@ -158,3 +158,6 @@ verify_jwt = false
 # L'appelant est Orange Money. Barrieres : le notif_token (temps constant) puis
 # la reverification aupres de l'API transactionstatus. Voir son en-tete.
 verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false

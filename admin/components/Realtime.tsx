@@ -53,6 +53,9 @@ type OrderRow = {
   user_id: string | null;
   picked_up_at: string | null;
   status_updated_at: string | null;
+  attente_client_depuis?: string | null;
+  attente_client_relances?: number | null;
+  attente_client_par?: string | null;
   /** Commande programmée le jour même (2026-10-16) : heure de livraison choisie par le
    *  client, et quand la base la transmet au restaurant (à son ouverture). */
   livraison_souhaitee_a?: string | null;
@@ -163,7 +166,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, livraison_souhaitee_a, transmission_prevue_a, transmise_le, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, attente_client_depuis, attente_client_relances, attente_client_par, livraison_souhaitee_a, transmission_prevue_a, transmise_le, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -255,6 +258,23 @@ export function Realtime() {
       const { error: e2 } = await supabase.rpc('admin_definir_encaissement', { p_order_id: o.id, p_mode: mode });
       if (e2) setErr(`Livrée, mais le mode de paiement n'a pas été enregistré : ${e2.message}`);
     }
+    setBusy(null);
+    if (error) { setErr(error.message); return; }
+    await load();
+  }
+
+  // Client injoignable (2026-10-19) : la commande garde son statut, la base relance le
+  // client (push + e-mail, 3 fois en 15 min) et alerte sur Telegram « à trancher ».
+  async function attenteClient(o: OrderRow, lever: boolean) {
+    let note: string | null = null;
+    if (!lever) {
+      note = window.prompt(`${o.order_number} — client injoignable.\nIl sera relancé (notification + e-mail). Ce que tu as essayé (facultatif) :`, '');
+      if (note === null) return;
+    }
+    setBusy(o.id);
+    const { error } = lever
+      ? await supabase.rpc('lever_attente_client', { p_order_id: o.id })
+      : await supabase.rpc('signaler_client_injoignable', { p_order_id: o.id, p_note: note?.trim() || null });
     setBusy(null);
     if (error) { setErr(error.message); return; }
     await load();
@@ -437,6 +457,19 @@ export function Realtime() {
                     <td data-label="Statut">
                       <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
+                      {o.attente_client_depuis ? (
+                        <div style={{ marginTop: 4, fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>
+                          ⏸ Client injoignable depuis {timeLabel(o.attente_client_depuis)}
+                          {' '}· {Math.min(o.attente_client_relances ?? 1, 3)} relance(s){o.attente_client_par ? ` · signalé par ${o.attente_client_par}` : ''}
+                          <div style={{ marginTop: 4 }}>
+                            <button className="btn ghost" disabled={busy === o.id} onClick={() => void attenteClient(o, true)}>Client joint</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 4 }}>
+                          <button className="btn ghost" disabled={busy === o.id} onClick={() => void attenteClient(o, false)}>📞 Injoignable</button>
+                        </div>
+                      )}
                       {o.livraison_souhaitee_a ? (
                         <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700 }}>
                           📅 à livrer à {timeLabel(o.livraison_souhaitee_a)}

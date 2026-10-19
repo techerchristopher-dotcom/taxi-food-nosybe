@@ -911,5 +911,11 @@
       "titre": "I fantasmi del passato",
       "merci": "Grazie per il tuo ordine. E acqua in bocca 🤫"
     }
+  },
+  "attenteClient": {
+    "titre": "Non riusciamo a contattarti 📞",
+    "texte": "Il rider o il ristorante hanno provato a chiamarti per il tuo ordine. Dicci che ci sei: riprendiamo subito la consegna.",
+    "bouton": "Ci sono, consegnatemelo!",
+    "erreur": "Non è andata. Riprova, o richiama il rider."
   }
 }

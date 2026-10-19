@@ -37,7 +37,9 @@ type Payload = {
    * ~40 min après la livraison. 'relance' : le restaurant n'a pas répondu en 3 min,
    * on le relance et on prévient le client (`alerter_commandes_sans_reponse`, 2026-10-12).
    */
-  event?: 'nouvelle' | 'statut' | 'noter' | 'relance';
+  event?: 'nouvelle' | 'statut' | 'noter' | 'relance' | 'attente_client' | 'client_a_repondu';
+  /** Rang de la relance « client injoignable » (1 à 3). */
+  relance?: number;
   /**
    * Jalon livreur. `assigned` : il vient d'appuyer sur « Je prends la commande » et part
    * vers le restaurant (2026-10-07). `arriving` / `arrived` : après la récupération,
@@ -231,6 +233,25 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     it: { title: 'Il ristorante ci sta mettendo un po’ ⏳', body: '{resto} non ha ancora confermato il tuo ordine. Lo stiamo sollecitando per te.' },
   },
 
+  // Client injoignable (2026-10-19) : le livreur ou le restaurant n'arrive pas à le
+  // joindre. Trois relances, de plus en plus pressantes ; le tap ouvre le suivi, où un
+  // bouton « Je suis là » lève le blocage.
+  attente_client_1: {
+    fr: { title: 'On n’arrive pas à te joindre 📞', body: 'Ta commande {numero} ({resto}) t’attend. Ouvre l’appli pour nous répondre.' },
+    en: { title: 'We can’t reach you 📞', body: 'Your order {numero} ({resto}) is waiting. Open the app to reply.' },
+    it: { title: 'Non riusciamo a contattarti 📞', body: 'Il tuo ordine {numero} ({resto}) ti aspetta. Apri l’app per risponderci.' },
+  },
+  attente_client_2: {
+    fr: { title: 'Ton livreur te cherche 🛵', body: 'Réponds-nous pour ta commande {numero} : un tap sur « Je suis là » suffit.' },
+    en: { title: 'Your courier is looking for you 🛵', body: 'Reply about your order {numero}: one tap on “I’m here” is enough.' },
+    it: { title: 'Il tuo rider ti sta cercando 🛵', body: 'Rispondici per l’ordine {numero}: basta un tocco su “Ci sono”.' },
+  },
+  attente_client_3: {
+    fr: { title: 'Dernier appel pour ta commande ⏳', body: 'Sans nouvelles de toi, ta commande {numero} risque d’être annulée.' },
+    en: { title: 'Last call for your order ⏳', body: 'Without word from you, your order {numero} may be cancelled.' },
+    it: { title: 'Ultima chiamata per il tuo ordine ⏳', body: 'Senza tue notizie, l’ordine {numero} potrebbe essere annullato.' },
+  },
+
   // --- Restaurant ---
   nouvelle_commande: {
     fr: { title: 'Nouvelle commande 🛎️', body: 'Commande {numero} à confirmer.' },
@@ -257,6 +278,9 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
   course_annulee_recuperee: {
     fr: { title: 'Course annulée ❌', body: '{numero} chez {resto} est annulée. Tu l’as déjà récupérée : ne la livre pas, appelle Taxi Food.' },
   },
+  client_a_repondu: {
+    fr: { title: 'Le client a répondu ✅', body: '{numero} : le client est joignable, tu peux reprendre la course.' },
+  },
   course_disponible: {
     fr: { title: 'Course disponible 🛵', body: '{resto} — commande {numero} prête à enlever.' },
   },
@@ -273,6 +297,7 @@ const ROUTES: Record<Audience, (order: Order) => string> = {
 /** La relance « noter » ouvre le suivi de commande directement sur le bloc de notation. */
 function routeFor(audience: Audience, key: string, order: Order): string {
   if (audience === 'client' && key === 'noter') return `/order/${order.id}?noter=1`;
+  if (audience === 'client' && key.startsWith('attente_client')) return `/order/${order.id}?repondre=1`;
   return ROUTES[audience](order);
 }
 
@@ -334,6 +359,14 @@ Deno.serve(async (req: Request) => {
   } else if (payload.event === 'relance') {
     // Seulement si la commande attend toujours : acceptée entre-temps, on se tait.
     if (order.status === 'recue') envois.push({ audience: 'client', key: 'relance_resto' });
+  } else if (payload.event === 'attente_client') {
+    // La base a posé l'état ; terminée entre-temps, on se tait.
+    if (order.status !== 'livree' && order.status !== 'annulee') {
+      const rang = Math.min(Math.max(payload.relance ?? 1, 1), 3);
+      envois.push({ audience: 'client', key: `attente_client_${rang}` });
+    }
+  } else if (payload.event === 'client_a_repondu') {
+    if (order.courier_id) envois.push({ audience: 'livreur_assigne', key: 'client_a_repondu' });
   } else if (payload.event === 'noter') {
     // La base a déjà vérifié : livrée, sans avis, jamais relancée.
     if (order.status === 'livree') envois.push({ audience: 'client', key: 'noter' });

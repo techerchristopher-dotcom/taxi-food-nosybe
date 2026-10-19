@@ -911,5 +911,11 @@
       "titre": "Les fantômes du passé",
       "merci": "Merci pour ta commande. Et chut 🤫"
     }
+  },
+  "attenteClient": {
+    "titre": "On n’arrive pas à te joindre 📞",
+    "texte": "Ton livreur ou le restaurant a essayé de t’appeler pour ta commande. Dis-nous que tu es là : on reprend la livraison tout de suite.",
+    "bouton": "Je suis là, livrez-moi !",
+    "erreur": "Ça n’est pas passé. Réessaie, ou réponds au livreur par téléphone."
   }
 }

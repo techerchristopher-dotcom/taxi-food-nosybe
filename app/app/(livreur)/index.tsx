@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
+import { AttenteClientLivreur } from '../../components/livreur/AttenteClientLivreur';
+import { FinDeTournee } from '../../components/livreur/FinDeTournee';
 import { Button } from '../../components/Button';
 import { CourierHeader } from '../../components/CourierHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
@@ -118,7 +120,8 @@ export default function CourierDeliveriesScreen() {
                     order={order}
                     messagerie={{ role: 'livreur', nonLus: nonLus[order.id] ?? 0 }}
                     footer={
-                      order.pickedUp ? (
+                      <View style={{ gap: 8 }}>
+                      {order.pickedUp ? (
                         // Apres la recuperation, deux jalons pour prevenir le client
                         // (un seul appui chacun, la base refuse le second), puis la
                         // livraison. « Marquer livree » reste toujours accessible :
@@ -174,7 +177,9 @@ export default function CourierDeliveriesScreen() {
                             style={{ flex: 1.3 }}
                           />
                         </View>
-                      )
+                      )}
+                      <AttenteClientLivreur order={order} onChange={reload} />
+                      </View>
                     }
                   />
                 ))}
@@ -221,6 +226,7 @@ export default function CourierDeliveriesScreen() {
                 ))}
               </>
             )}
+            <FinDeTournee />
           </>
         )}
       </ScrollView>

@@ -36,6 +36,14 @@ export function RestaurantOrderCard({
         <StatusBadge status={order.status} />
       </View>
 
+      {/* Client injoignable (2026-10-19) : la commande reste dans son statut, mais tout le
+          monde doit voir qu'elle attend le client. */}
+      {order.attenteClientDepuis && order.status !== 'livree' && order.status !== 'annulee' ? (
+        <View style={styles.attente}>
+          <Text style={styles.attenteTexte}>⏸ En attente du client — injoignable, relances en cours</Text>
+        </View>
+      ) : null}
+
       {/* Commande programmée le jour même (2026-10-16) : sans ce bandeau, une
           réservation ressemble à une commande à préparer TOUT DE SUITE — le plat
           sortirait des heures avant l'heure voulue par le client. */}
@@ -237,6 +245,8 @@ const styles = StyleSheet.create({
   courierRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   courierText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.textDark },
   footer: { marginTop: 14, gap: 10 },
+  attente: { backgroundColor: colors.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 8 },
+  attenteTexte: { fontFamily: fonts.bold, fontSize: 13, color: colors.warnText },
   resa: {
     marginTop: 12,
     padding: 10,

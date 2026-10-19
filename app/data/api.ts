@@ -905,6 +905,9 @@ type OrderJoinRow = {
   cancellation_reason: string | null;
   cancellation_code?: string | null;
   annulee_par?: string | null;
+  attente_client_depuis?: string | null;
+  attente_client_relances?: number | null;
+  attente_client_par?: string | null;
   cancellation_detail?: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
@@ -951,7 +954,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, attente_client_depuis, attente_client_relances, attente_client_par, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
   'livraison_souhaitee_a, lancement_prevu_a, transmission_prevue_a, transmise_le, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
@@ -1013,6 +1016,9 @@ function mapOrder(o: OrderJoinRow): Order {
     cancellationReason: o.cancellation_reason,
     cancellationCode: o.cancellation_code ?? null,
     annuleePar: o.annulee_par ?? null,
+    attenteClientDepuis: o.attente_client_depuis ?? null,
+    attenteClientRelances: o.attente_client_relances ?? 0,
+    attenteClientPar: o.attente_client_par ?? null,
     cancellationDetail: o.cancellation_detail ?? null,
     mapsUrl:
       addr?.latitude != null && addr?.longitude != null
@@ -1995,6 +2001,53 @@ export async function monInteretRestaurant(restaurantId: string): Promise<boolea
 export async function markArriving(orderId: string): Promise<void> {
   const { error } = await supabase.rpc('mark_order_arriving', { p_order_id: orderId });
   if (error) throw error;
+}
+
+/**
+ * Client injoignable (2026-10-19) : la commande passe « en attente du client » sans changer
+ * de statut. La base relance le client (push + e-mail) et prévient l'admin.
+ */
+export async function signalerClientInjoignable(orderId: string, note?: string): Promise<void> {
+  const { error } = await supabase.rpc('signaler_client_injoignable', { p_order_id: orderId, p_note: note?.trim() || null });
+  if (error) throw error;
+}
+
+/** Le livreur / le restaurant a fini par joindre le client : on lève l'attente. */
+export async function leverAttenteClient(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('lever_attente_client', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/** Le client répond depuis son suivi (« Je suis là ») : le livreur en est prévenu. */
+export async function clientRepondreAttente(orderId: string): Promise<void> {
+  const { error } = await supabase.rpc('client_repondre_attente', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+export type ApercuTournee = {
+  debut: string;
+  courses: number;
+  especes_dues: number;
+  om_a_verifier: number;
+  numeros: string[];
+  en_cours: number;
+};
+
+/** Fin de tournée : ce que le livreur devrait avoir sur lui depuis sa dernière fin de tournée. */
+export async function apercuTournee(): Promise<ApercuTournee> {
+  const { data, error } = await supabase.rpc('livreur_apercu_tournee');
+  if (error) throw error;
+  return data as ApercuTournee;
+}
+
+/** Déclare les espèces en main ; l'écart part dans le groupe Telegram des clôtures. */
+export async function finDeTournee(
+  especes: number,
+  note?: string,
+): Promise<{ ok: boolean; raison?: string; ecart?: number }> {
+  const { data, error } = await supabase.rpc('livreur_fin_tournee', { p_especes_declarees: especes, p_note: note?.trim() || null });
+  if (error) throw error;
+  return data as { ok: boolean; raison?: string; ecart?: number };
 }
 
 /** « Je suis là » : le client reçoit « ton livreur est devant chez toi ». Un seul appui. */

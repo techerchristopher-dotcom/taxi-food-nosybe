@@ -525,6 +525,12 @@ export type Order = {
   cancellationCode?: string | null;
   /** Qui a annulé (2026-10-19) : restaurant | admin | client | systeme. */
   annuleePar?: string | null;
+  /** Client injoignable (2026-10-19) : depuis quand la commande attend sa réponse (null = pas bloquée). */
+  attenteClientDepuis?: string | null;
+  /** Relances déjà envoyées au client (1 à 4). */
+  attenteClientRelances?: number;
+  /** Qui l'a signalé : livreur | restaurant | admin. */
+  attenteClientPar?: string | null;
   /** Précision libre du restaurant sur son refus (jamais traduite). */
   cancellationDetail?: string | null;
   /** Lien d'itinéraire Google Maps vers la position du client (null si pas de GPS). */

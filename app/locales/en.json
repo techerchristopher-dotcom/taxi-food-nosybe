@@ -911,5 +911,11 @@
       "titre": "Ghosts from the past",
       "merci": "Thanks for your order. And shhh 🤫"
     }
+  },
+  "attenteClient": {
+    "titre": "We can’t reach you 📞",
+    "texte": "Your courier or the restaurant tried to call you about your order. Let us know you’re here and we’ll carry on with the delivery right away.",
+    "bouton": "I’m here, deliver it!",
+    "erreur": "That didn’t go through. Try again, or call the courier back."
   }
 }

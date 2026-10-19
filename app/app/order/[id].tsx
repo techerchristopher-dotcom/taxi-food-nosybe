@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlocAvis } from '../../components/BlocAvis';
+import { BlocAttenteClient } from '../../components/BlocAttenteClient';
 import { BlocEstimation } from '../../components/BlocEstimation';
 import { BlocSuiviLivreur } from '../../components/suivi/BlocSuiviLivreur';
 import { CarteOrangeMoney } from '../../components/CarteOrangeMoney';
@@ -204,6 +205,8 @@ export default function OrderTrackingScreen() {
             désormais la seule chose que le client a encore à faire sur cet écran.
             La relance push (`?noter=1`) atterrit dessus sans rien chercher. */}
         {order.status === 'livree' ? <BlocAvis order={order} /> : null}
+        {/* Client injoignable (2026-10-19) : en tête, c'est la seule action qui compte. */}
+        {!cancelled && order.status !== 'livree' ? <BlocAttenteClient order={order} onRepondu={reload} /> : null}
         {/* Suivi du livreur sur une carte (2026-10-17) : dès qu'un livreur a pris la
             commande, jusqu'à la livraison. Le bloc se cache tant qu'aucune position n'arrive. */}
         {enLivraison && order.courierId ? <BlocSuiviLivreur orderId={order.id} /> : null}

@@ -7,6 +7,8 @@ import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { DeliverSheet } from '../../components/DeliverSheet';
 import { EnTeteLivreur } from '../../components/livreur/EnTeteLivreur';
 import { BandeauGps } from '../../components/livreur/BandeauGps';
+import { AttenteClientLivreur } from '../../components/livreur/AttenteClientLivreur';
+import { FinDeTournee } from '../../components/livreur/FinDeTournee';
 import { colors, fonts, spacing } from '../../theme/tokens';
 import {
   claimDelivery,
@@ -177,6 +179,7 @@ export default function Livraisons() {
                     footer={
                       <View style={{ gap: 8 }}>
                         {boutonItineraire(order)}
+                        <AttenteClientLivreur order={order} onChange={reload} />
                         {order.pickedUp ? (
                           <>
                             {order.arrivedAt ? (
@@ -272,6 +275,7 @@ export default function Livraisons() {
                 ))}
               </>
             )}
+            <FinDeTournee />
           </>
         )}
       </ScrollView>

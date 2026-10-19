@@ -129,8 +129,11 @@ export default function OrderTrackingScreen() {
   // commande : il est en route vers le restaurant (2026-10-07, même jalon que la
   // notification `assigned`).
   const livreurVersResto = enLivraison && !order.pickedUp && !!order.courierId;
+  // Qui a annulé (2026-10-19) : « refusée par le restaurant » accusait le restaurant même
+  // quand c'était Taxi Food ou une annulation automatique.
+  const parResto = !order.annuleePar || order.annuleePar === 'restaurant';
   const bannerTitle = cancelled
-    ? t('tracking.refusedTitle')
+    ? t(parResto ? 'tracking.refusedTitle' : 'tracking.annuleeTitle')
     : relance
       ? t('tracking.relanceTitle')
     : reservee
@@ -207,14 +210,21 @@ export default function OrderTrackingScreen() {
         {cancelled ? (
           <Card style={styles.cancelledCard}>
             <Icon name="cancel" size={22} color={colors.dangerText} />
-            <Text style={styles.cancelledTitle}>{t('tracking.refusedCardTitle')}</Text>
+            <Text style={styles.cancelledTitle}>
+              {t(order.annuleePar === 'admin' ? 'tracking.annuleeTaxiFood'
+                : order.annuleePar === 'client' ? 'tracking.annuleeClient'
+                : order.annuleePar === 'systeme' ? 'tracking.annuleeAuto'
+                : 'tracking.refusedCardTitle')}
+            </Text>
             {motifRefus ? (
               <Text style={styles.cancelledReason}>{t('tracking.refusedReason', { reason: motifRefus })}</Text>
             ) : null}
             {/* « Aucun montant ne te sera debite » devient faux des qu'une
                 carte a ete prelevee : dans ce cas c'est un remboursement. */}
             <Text style={styles.cancelledHint}>
-              {t(carteReglee ? 'tracking.refusedHintCarte' : 'tracking.refusedHint')}
+              {t(carteReglee ? 'tracking.refusedHintCarte'
+                : order.omEnLigne && order.paymentStatus === 'paye' ? 'tracking.refusedHintOm'
+                : 'tracking.refusedHint')}
             </Text>
           </Card>
         ) : (

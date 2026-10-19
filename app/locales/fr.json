@@ -422,7 +422,12 @@
     "relanceSub": "{{resto}} n'a pas encore confirmé ta commande. On le relance pour toi — tu seras prévenu dès qu'il répond.",
     "payeOrangeMoney": "Déjà payé par Orange Money",
     "paiementOmEnAttente": "Paiement Orange Money en cours de vérification.",
-    "paiementOmEchoue": "Le paiement Orange Money n'a pas abouti. Le restaurant n'a pas encore reçu ta commande."
+    "paiementOmEchoue": "Le paiement Orange Money n'a pas abouti. Le restaurant n'a pas encore reçu ta commande.",
+    "annuleeTitle": "Commande annulée",
+    "annuleeTaxiFood": "Commande annulée par Taxi Food",
+    "annuleeClient": "Commande annulée à ta demande",
+    "annuleeAuto": "Commande annulée",
+    "refusedHintOm": "Ton paiement Orange Money te sera remboursé par Taxi Food."
   },
   "profile": {
     "defaultName": "Client",

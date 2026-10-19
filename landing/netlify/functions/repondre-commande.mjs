@@ -189,8 +189,15 @@ function pageDejaTraitee(d) {
   }
   // Cas le plus frequent en vrai : deja repondu depuis l'application.
   // Ce n'est pas une erreur, et le dire ainsi evite une inquietude inutile.
+  const STATUTS_FR = { recue: 'reçue', confirmee: 'acceptée', en_preparation: 'en préparation',
+    en_livraison: 'en livraison', livree: 'livrée', annulee: 'annulée' };
+  // Recuperee par le livreur : le restaurant ne peut plus l'annuler lui-meme — on lui dit
+  // a qui s'adresser au lieu de « rien de plus a faire » (TF-439, 18/10).
+  const suite = d.recuperee
+    ? 'Le livreur l’a déjà récupérée : pour l’annuler, appelle Taxi Food au +261 36 15 74 521.'
+    : 'Rien de plus à faire.';
   return rendre(page('👍', 'Déjà traitée',
-    `Cette commande est déjà en « ${esc(d.statut)} ». Rien de plus à faire.`, '#8A827A',
+    `Cette commande est déjà « ${esc(STATUTS_FR[d.statut] || d.statut)} ». ${suite}`, '#8A827A',
     { libelle: 'Ouvrir mon espace', href: `${APP}/pro` }));
 }
 
@@ -234,7 +241,8 @@ export default async (request) => {
       if (request.method !== 'POST') {
         const d = await rpc('consulter_commande_par_jeton', { p_order_id: orderId, p_token: token });
         if (!d?.ok) return pageInutilisable();
-        if (d.statut !== 'recue') return pageDejaTraitee(d);
+        // Refus possible tant que le livreur n'a pas recupere la commande (2026-10-19).
+        if (!(d.annulable ?? d.statut === 'recue')) return pageDejaTraitee(d);
         return rendre(formulaireRefus({ numero: d.numero, langue: d.langue }));
       }
 
@@ -245,7 +253,8 @@ export default async (request) => {
         // Rien n'est ecrit : on relit la commande pour reafficher le formulaire, dans sa langue.
         const d = await rpc('consulter_commande_par_jeton', { p_order_id: orderId, p_token: token });
         if (!d?.ok) return pageInutilisable();
-        if (d.statut !== 'recue') return pageDejaTraitee(d);
+        // Refus possible tant que le livreur n'a pas recupere la commande (2026-10-19).
+        if (!(d.annulable ?? d.statut === 'recue')) return pageDejaTraitee(d);
         const it = d.langue === 'it';
         const erreur = !CODES.has(code)
           ? (it ? IT.erreurMotif : 'Choisis une raison.')

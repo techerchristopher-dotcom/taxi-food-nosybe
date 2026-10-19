@@ -1,5 +1,5 @@
 import { heureNosyBe } from '../../lib/reservation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../components/Icon';
 import { Button } from '../../components/Button';
@@ -16,6 +16,7 @@ import { useSession } from '../../store/session';
 import { useNonLus } from '../../lib/useNonLus';
 import { useRestaurantQueue } from '../../store/restaurantQueue';
 import { useVisiteGuidee } from '../../store/visiteGuidee';
+import { messageErreurCommandeResto } from '../../lib/erreurCommandeResto';
 
 // Statuts « actifs » : demandent une action ou un suivi. en_livraison sort de la liste.
 const ACTIVE: OrderStatus[] = ['recue', 'confirmee', 'en_preparation'];
@@ -106,8 +107,11 @@ export default function RestaurantOrdersScreen() {
       await setOrderStatus(order.id, status, refus);
       setRefuseTarget(null);
       await reload();
-    } catch {
-      setError("Action impossible. La commande a peut-être changé — la liste se rafraîchit.");
+    } catch (e) {
+      // Le vrai motif, et la feuille de refus fermée : sinon le message restait caché
+      // derrière elle (2026-10-19).
+      setRefuseTarget(null);
+      setError(messageErreurCommandeResto(e));
       await reload();
     } finally {
       setWorking(null);
@@ -130,6 +134,8 @@ export default function RestaurantOrdersScreen() {
           Connexion perdue — cette liste date de votre dernier rafraîchissement réussi.
         </Text>
       ) : null}
+
+      {error ? <Text style={[styles.error, { marginTop: 12, paddingHorizontal: spacing.screen }]}>{error}</Text> : null}
 
       {loading && !orders ? (
         <View style={styles.center}>
@@ -158,7 +164,6 @@ export default function RestaurantOrdersScreen() {
           contentContainerStyle={{ padding: spacing.screen, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {error ? <Text style={styles.error}>{error}</Text> : null}
           {list.map((order) => (
             <RestaurantOrderCard
               key={order.id}
@@ -218,22 +223,71 @@ function OrderActions({
               ? `Acceptée — réservation : passera en préparation toute seule vers ${heureNosyBe(order.lancementPrevu, 'fr')}. Pas avant.`
               : "Acceptée — passe en préparation toute seule dans moins d'une minute."}
           </Text>
-          <Button
-            label="Démarrer maintenant"
-            icon="soup_kitchen"
-            variant="outline"
-            onPress={() => onAdvance(order, 'en_preparation')}
-            loading={busy}
-          />
+          <View style={styles.actionRow}>
+            <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
+            <Button
+              label="Démarrer maintenant"
+              icon="soup_kitchen"
+              variant="outline"
+              onPress={() => onAdvance(order, 'en_preparation')}
+              loading={busy}
+              style={{ flex: 1.6 }}
+            />
+          </View>
         </View>
       );
     }
-    return <Button label="Démarrer la préparation" icon="soup_kitchen" onPress={() => onAdvance(order, 'en_preparation')} loading={busy} />;
+    return (
+      <View style={styles.actionRow}>
+        <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
+        <Button label="Démarrer la préparation" icon="soup_kitchen" onPress={() => onAdvance(order, 'en_preparation')} loading={busy} style={{ flex: 1.6 }} />
+      </View>
+    );
   }
   if (order.status === 'en_preparation') {
-    return <Button label="Marquer comme prête" icon="check_circle" onPress={() => onAdvance(order, 'en_livraison')} loading={busy} />;
+    return (
+      <View style={styles.actionRow}>
+        <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
+        <BoutonPrete onConfirm={() => onAdvance(order, 'en_livraison')} busy={busy} />
+      </View>
+    );
   }
   return null;
+}
+
+/**
+ * « Marquer comme prête » en DEUX appuis (2026-10-19). Le soir de TF-439, « Accepter »,
+ * « Démarrer » et « Marquer prête » occupaient le même endroit de l'écran : trois appuis
+ * rapides ont envoyé la commande au livreur 9 s après l'acceptation. Le premier appui arme
+ * le bouton (« Confirmer : prête ? »), le second l'envoie ; sans second appui il se
+ * désarme seul au bout de 4 s. Pas d'`Alert` : elle n'existe pas sur le web.
+ */
+function BoutonPrete({ onConfirm, busy }: { onConfirm: () => void; busy: boolean }) {
+  const [arme, setArme] = useState(false);
+  const minuteur = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (minuteur.current) clearTimeout(minuteur.current); }, []);
+  // Un appui trop rapide après l'arrivée du bouton est ignoré (le doigt était encore là).
+  const apparuLe = useRef(Date.now());
+  return (
+    <Button
+      label={arme ? 'Confirmer : prête ?' : 'Marquer comme prête'}
+      icon="check_circle"
+      variant={arme ? 'primary' : 'outline'}
+      loading={busy}
+      style={{ flex: 1.6 }}
+      onPress={() => {
+        if (Date.now() - apparuLe.current < 800) return;
+        if (!arme) {
+          setArme(true);
+          minuteur.current = setTimeout(() => setArme(false), 4000);
+          return;
+        }
+        if (minuteur.current) clearTimeout(minuteur.current);
+        setArme(false);
+        onConfirm();
+      }}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

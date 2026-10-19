@@ -523,6 +523,8 @@ export type Order = {
   cancellationReason?: string | null;
   /** Code du motif de refus choisi par le restaurant (NULL pour un refus ancien / admin). */
   cancellationCode?: string | null;
+  /** Qui a annulé (2026-10-19) : restaurant | admin | client | systeme. */
+  annuleePar?: string | null;
   /** Précision libre du restaurant sur son refus (jamais traduite). */
   cancellationDetail?: string | null;
   /** Lien d'itinéraire Google Maps vers la position du client (null si pas de GPS). */

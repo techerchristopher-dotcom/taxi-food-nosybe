@@ -159,7 +159,12 @@ export function RestaurantOrderCard({
       {order.status === 'annulee' && order.cancellationReason ? (
         <View style={styles.reason}>
           <Icon name="info" size={16} color={colors.dangerText} />
-          <Text style={styles.reasonText}>Refusée : {order.cancellationReason}</Text>
+          <Text style={styles.reasonText}>
+            {order.annuleePar === 'admin' ? 'Annulée par Taxi Food'
+              : order.annuleePar === 'client' ? 'Annulée par le client'
+              : order.annuleePar === 'systeme' ? 'Annulée automatiquement'
+              : 'Refusée'} : {order.cancellationReason}
+          </Text>
         </View>
       ) : null}
 

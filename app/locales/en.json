@@ -422,7 +422,12 @@
     "relanceSub": "{{resto}} hasn't confirmed your order yet. We're chasing them for you — you'll be notified as soon as they reply.",
     "payeOrangeMoney": "Already paid with Orange Money",
     "paiementOmEnAttente": "Orange Money payment being checked.",
-    "paiementOmEchoue": "The Orange Money payment didn't go through. The restaurant hasn't received your order yet."
+    "paiementOmEchoue": "The Orange Money payment didn't go through. The restaurant hasn't received your order yet.",
+    "annuleeTitle": "Order cancelled",
+    "annuleeTaxiFood": "Order cancelled by Taxi Food",
+    "annuleeClient": "Order cancelled at your request",
+    "annuleeAuto": "Order cancelled",
+    "refusedHintOm": "Taxi Food will refund your Orange Money payment."
   },
   "profile": {
     "defaultName": "Customer",

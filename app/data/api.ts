@@ -904,6 +904,7 @@ type OrderJoinRow = {
   status: OrderStatus;
   cancellation_reason: string | null;
   cancellation_code?: string | null;
+  annulee_par?: string | null;
   cancellation_detail?: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
@@ -950,7 +951,7 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
   'livraison_souhaitee_a, lancement_prevu_a, transmission_prevue_a, transmise_le, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
@@ -1011,6 +1012,7 @@ function mapOrder(o: OrderJoinRow): Order {
     etaLabel: DEFAULT_ETA,
     cancellationReason: o.cancellation_reason,
     cancellationCode: o.cancellation_code ?? null,
+    annuleePar: o.annulee_par ?? null,
     cancellationDetail: o.cancellation_detail ?? null,
     mapsUrl:
       addr?.latitude != null && addr?.longitude != null

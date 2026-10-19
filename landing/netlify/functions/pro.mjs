@@ -28,7 +28,9 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SITE = 'https://taxifoodnosybe.distripro207.com';
-const WHATSAPP = '261361574521';
+// Le WhatsApp du porteur du projet, celui qui est ouvert dans son WhatsApp Web (2026-10-19).
+const WHATSAPP = '261373437912';
+const WHATSAPP_AFFICHE = '+261 37 34 379 12';
 const STOCKAGE = 'https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/';
 
 // Visuels déjà publiés sur nos réseaux (bucket produits/visuels-reseaux). Choisis le
@@ -99,25 +101,110 @@ function creneauxParJour(liste) {
   return [...jours.values()].slice(0, 5);
 }
 
+// ── Le carrousel « ça tourne déjà » ────────────────────────────────────────────
+// Modèle : le carrousel « Bilan des 28 premiers jours » publié le 2026-10-09 (10 cartes
+// 1080×1350, rouge / noir / crème, filet or, grand chiffre en Archivo noir, pied
+// « taxifoodnosybe.distripro207.com » + points). Ici en HTML, nourri par pro_bilan() :
+// toujours à jour, rien à régénérer. Demande du porteur du projet (2026-10-19) :
+// « trop de texte, pas assez de visuel sur les stats ».
+const virgule = (x) => String(x).replace('.', ',');
+const fmtCourt = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short' });
+const fmtLong = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'long' });
+
+
+/** Le grand chiffre d'une carte : plus il a de caractères, plus il est petit (« 192 » tient). */
+function G(couleur, valeur) {
+  const v = String(valeur);
+  const taille = v.length <= 2 ? 34 : v.length === 3 ? 26 : 21;
+  return `<p class="g ${couleur}" style="font-size:${taille * 3}px;font-size:${taille}cqw">${v}</p>`;
+}
+
+function carte({ fond, num, total, sur, corps }) {
+  return `<article class="c c-${fond}">
+    <div class="c-tete"><img src="/assets/logo-96.webp" alt="" width="22" height="22"><span>TAXI FOOD</span><b>${String(num).padStart(2, '0')}/${String(total).padStart(2, '0')}</b></div>
+    <div class="c-corps">${sur ? `<p class="c-sur">${sur}</p>` : ''}${corps}</div>
+    <div class="c-pied"><span>taxifoodnosybe.distripro207.com</span><i>${Array.from({ length: total }, (_, k) => `<u${k + 1 === num ? ' class="on"' : ''}></u>`).join('')}</i></div>
+  </article>`;
+}
+
+function carrousel(b) {
+  if (!b || !b.livraisons) return '';
+  const cartes = [];
+  const sem = (b.semaines ?? []).slice(-5);
+  const maxSem = Math.max(1, ...sem.map((s) => s.c));
+  const top = b.top ?? [];
+  const maxTop = Math.max(1, ...top.map((t) => Number(t.q)));
+  const logos = (b.logos ?? []).map((u) => `<img src="${img(u, 120)}" alt="" width="60" height="60">`).join('');
+  const premiere = sem[0]?.c;
+  const derniere = sem[sem.length - 1];
+  const fois = premiere && derniere && sem.length > 1 ? virgule((derniere.c / premiere).toFixed(1)) : null;
+
+  cartes.push({ fond: 'rouge', sur: '', corps: `
+    <p class="c-sur">BILAN DES ${b.jours} PREMIERS JOURS</p>
+    ${G('blanc', b.jours)}
+    <p class="t">jours de Taxi Food.</p>
+    <p class="s">Du ${fmtLong.format(new Date(b.depuis))} à aujourd’hui, à Nosy Be.</p>
+    <p class="defile">FAIS DÉFILER →</p>` });
+
+  cartes.push({ fond: 'noir', sur: 'LIVRAISONS DEPUIS LE 10 SEPTEMBRE', corps: `
+    <div class="ligne">${G('or', b.livraisons)}<p class="t">livraisons en ${b.jours} jours</p></div>
+    <div class="barres">${sem.map((s, k) => `<div class="b"><em>${s.c}</em><span style="height:${Math.round(12 + 70 * s.c / maxSem)}%"${k === sem.length - 1 ? ' class="rouge"' : ''}></span><small>Semaine ${s.n}<br>${fmtCourt.format(new Date(s.du))}</small></div>`).join('')}</div>
+    ${fois ? `<p class="t2">La semaine ${derniere.n} a fait ${fois} fois la semaine 1.</p>` : ''}` });
+
+  if (b.km_total) cartes.push({ fond: 'creme', sur: 'À MOTO', corps: `
+    <p class="t rouge-t">Plus de</p>
+    <div class="ligne">${G('rouge-t', milliers(b.km_total))}<p class="t">km</p></div>
+    <p class="s">parcourus du restaurant jusqu’à la porte du client.</p>
+    <div class="route"><span>📍</span><i></i><img src="/assets/logo-96.webp" alt="" width="26" height="26"><i></i><span>🏠</span></div>
+    <div class="pastilles"><div><b>${virgule(b.km_moyen)} km</b>par livraison en moyenne</div></div>` });
+
+  if (b.delai_median) cartes.push({ fond: 'rouge', sur: 'DÉLAI DE LIVRAISON', corps: `
+    <div class="ligne">${G('blanc', b.delai_median)}<p class="t">min</p></div>
+    <p class="s">de la commande à la porte du client. Une commande sur deux arrive plus vite.</p>
+    <div class="pastilles">${b.pct_moins_1h ? `<div><b>${b.pct_moins_1h} %</b>livrées en moins d’1 heure</div>` : ''}${b.trajet_median ? `<div><b>${b.trajet_median} min</b>de trajet à moto</div>` : ''}</div>` });
+
+  cartes.push({ fond: 'creme', sur: 'NOS RESTAURANTS', corps: `
+    <div class="ligne">${G('rouge-t', b.restaurants)}<p class="t">restaurants</p></div>
+    <p class="s">Ils étaient 2 au lancement. Le vôtre peut être le prochain.</p>
+    <div class="logos">${logos}</div>` });
+
+  if (top.length) cartes.push({ fond: 'noir', sur: 'CE QUI SE COMMANDE', corps: `
+    <div class="ligne">${G('or', b.articles)}<p class="t">articles livrés</p></div>
+    <p class="s">${b.plats_differents} plats différents.</p>
+    <div class="top">${top.map((t) => `<div><span>${echapper(t.nom)}</span><i style="width:${Math.round(25 + 60 * Number(t.q) / maxTop)}%"></i><b>${t.q}</b></div>`).join('')}</div>` });
+
+  if (b.paye_clients) cartes.push({ fond: 'rouge', sur: 'COMMANDES LIVRÉES', corps: `
+    ${G('blanc', virgule((b.paye_clients / 1e6).toFixed(1)))}
+    <p class="t">millions d’Ar</p>
+    <p class="s">payés par les clients en ${b.jours} jours.</p>
+    <div class="pastilles"><div><b>${milliers(b.panier_moyen)} Ar</b>le panier moyen</div></div>` });
+
+  if (b.revient_restaurants) cartes.push({ fond: 'creme', sur: 'POUR LES RESTAURANTS', corps: `
+    ${G('rouge-t', virgule((b.revient_restaurants / 1e6).toFixed(1)))}
+    <p class="t">millions d’Ar</p>
+    <p class="s">reviennent aux restaurants de Nosy Be, en ${b.jours} jours.</p>
+    <div class="logos petits">${logos}</div>` });
+
+  if (b.note) cartes.push({ fond: 'noir', sur: 'CE QU’EN DISENT LES CLIENTS', corps: `
+    <div class="ligne">${G('or', virgule(b.note))}<p class="t">/ 5</p></div>
+    <p class="etoiles">★★★★★ <small>sur ${b.nb_avis} avis</small></p>
+    <div class="notes">${[['Cuisine', b.note_cuisine], ['Préparation', b.note_preparation], ['Livraison', b.note_livraison]].filter((x) => x[1])
+      .map(([l, v]) => `<div><span>${l}</span><i style="width:${Math.round(Number(v) / 5 * 100)}%"></i><b>${virgule(v)}</b></div>`).join('')}</div>
+    <div class="pastilles"><div><b>${b.clients} clients ont commandé.</b>${b.clients_revenus} sont déjà revenus.</div></div>` });
+
+  return `<div class="carrousel" tabindex="0" aria-label="Bilan de Taxi Food, à faire défiler">${cartes.map((c, k) => carte({ ...c, num: k + 1, total: cartes.length })).join('')}</div>`;
+}
+
 function page(slug, d, etat) {
   const nom = d.nom;
   const n = echapper(nom);
-  const s = d.stats ?? {};
-  const depuis = s.depuis ? new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'long' }).format(new Date(s.depuis)) : null;
   const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Bonjour Christopher, je viens de voir la page Taxi Food pour ${nom}.`)}`;
   const titre = `Taxi Food × ${nom}`;
   const desc = `Une proposition préparée pour ${nom} : de la visibilité, un nouveau canal de vente, du chiffre d’affaires en plus sans charges en plus.`;
   const rdv = d.rdv ? new Date(d.rdv.debut) : null;
 
-  const chiffres = [
-    s.commandes_livrees ? { v: milliers(s.commandes_livrees), l: `commandes livrées${depuis ? ` depuis le ${depuis}` : ''}` } : null,
-    s.ventes_plats ? { v: `${millions(s.ventes_plats)} Ar`, l: 'de plats vendus pour nos restaurants' } : null,
-    s.note ? { v: `${String(s.note).replace('.', ',')}/5`, l: `note moyenne des clients (${s.nb_avis} avis)` } : null,
-    s.livrees_30j ? { v: milliers(s.livrees_30j), l: 'commandes ces 30 derniers jours' } : null,
-  ].filter(Boolean);
-
   const bandeau = etat.ok === 'rdv' && rdv
-    ? `<div class="ok">✅ C’est noté : rendez-vous le <b>${echapper(fmtJour.format(rdv))} à ${heure(rdv)}</b>. Christopher passe vous voir. À très vite !</div>`
+    ? `<div class="ok">✅ C’est noté : rendez-vous le <b>${echapper(fmtJour.format(rdv))} à ${heure(rdv)}</b>. Christopher passe vous voir.</div>`
     : etat.ok === 'rappel' ? '<div class="ok">✅ C’est noté : Christopher vous rappelle très vite.</div>'
     : etat.erreur ? `<div class="err">${echapper(ERREURS[etat.erreur] ?? ERREURS.technique)}</div>` : '';
 
@@ -125,15 +212,14 @@ function page(slug, d, etat) {
   const formRdv = rdv
     ? `<p class="confirme">📅 Rendez-vous confirmé : <b>${echapper(fmtJour.format(rdv))} à ${heure(rdv)}</b>.<br>Un empêchement ? <a href="${wa}">Prévenez-nous sur WhatsApp</a>.</p>`
     : jours.length === 0
-    ? `<p>Pas de créneau libre en ce moment : <a href="${wa}">écrivez-nous sur WhatsApp</a>, on trouve une heure.</p>`
+    ? `<p>Pas de créneau libre en ce moment : <a href="${wa}">écrivez-nous sur WhatsApp</a>.</p>`
     : `<form method="post" class="form">
         <input type="hidden" name="action" value="rdv">
         ${jours.map((j) => `<fieldset><legend>${echapper(j.titre)}</legend><div class="heures">${j.heures.map((h) =>
           `<label class="h"><input type="radio" name="debut" value="${echapper(h.iso)}" required><span>${h.h}</span></label>`).join('')}</div></fieldset>`).join('')}
         <label class="champ">Votre nom<input name="nom" autocomplete="name" required minlength="2" maxlength="80"></label>
-        <label class="champ">Votre téléphone (WhatsApp)<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="034 00 000 00" maxlength="30"></label>
-        <label class="champ">Un mot pour Christopher (facultatif)<textarea name="message" rows="2" maxlength="500"></textarea></label>
-        <button class="cta" type="submit">Réserver ce créneau</button>
+        <label class="champ">Votre téléphone<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="034 00 000 00" maxlength="30"></label>
+        <button class="cta rouge" type="submit">Réserver ce créneau</button>
         <p class="petit">20 minutes, chez vous, sans engagement.</p>
       </form>`;
 
@@ -153,73 +239,101 @@ function page(slug, d, etat) {
 <meta property="og:image" content="${SITE}/og/taxi-food-restaurateurs.jpg">
 <meta property="og:url" content="${SITE}/pro/${echapper(slug)}">
 <link rel="icon" href="/assets/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light; --rouge:#E8342A; --or:#FFC72C; --encre:#1A1A1A; --gris:#5C554E; --fond:#FFF8F0; --carte:#fff; }
+  :root { color-scheme: light; --rouge:#E8342A; --or:#FFC72C; --noir:#161616; --creme:#F7EEDD; --encre:#1A1A1A; --gris:#5C554E; --fond:#FFF8F0; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--fond); color:var(--encre); }
-  main { max-width:560px; margin:0 auto; padding:0 16px 48px; }
+  body { margin:0; font-family:Archivo,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--fond); color:var(--encre); }
+  main { max-width:560px; margin:0 auto; padding:0 16px 48px; overflow-x:hidden; }
   header { display:flex; align-items:center; gap:10px; padding:14px 0; }
   header img { width:36px; height:36px; border-radius:10px; }
-  header span { font-weight:700; }
+  header span { font-weight:800; }
   header small { margin-left:auto; color:var(--gris); font-size:12px; text-align:right; }
-  .hero { background:var(--rouge); color:#fff; border-radius:22px; padding:24px 20px; border-bottom:6px solid var(--or); }
-  .hero .sur { color:var(--or); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin:0 0 8px; }
-  .hero h1 { font-size:27px; line-height:1.15; margin:0 0 10px; }
-  .hero p { margin:0 0 18px; line-height:1.45; opacity:.95; }
+  .hero { background:var(--rouge); color:#fff; border-radius:22px; padding:22px 20px; border-bottom:6px solid var(--or); }
+  .hero .sur { color:var(--or); font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px; }
+  .hero h1 { font-size:30px; line-height:1.08; margin:0 0 18px; font-weight:900; }
   a.cta, button.cta { display:block; width:100%; text-align:center; background:var(--or); color:var(--encre); border:0; text-decoration:none;
     font-weight:800; font-size:17px; padding:15px; border-radius:999px; cursor:pointer; font-family:inherit; }
-  a.cta2 { display:block; text-align:center; margin-top:10px; color:#fff; border:2px solid rgba(255,255,255,.7); text-decoration:none;
-    font-weight:700; padding:12px; border-radius:999px; }
-  h2 { font-size:20px; margin:32px 0 12px; }
-  .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
-  .stat { background:var(--carte); border-radius:16px; padding:14px; border:1px solid #F0E6DA; }
-  .stat b { display:block; font-size:24px; color:var(--rouge); line-height:1.1; }
-  .stat span { font-size:13px; color:var(--gris); }
-  .args { display:flex; flex-direction:column; gap:10px; }
-  .arg { background:var(--carte); border-radius:16px; padding:16px; border:1px solid #F0E6DA; }
-  .arg h3 { margin:0 0 6px; font-size:17px; }
-  .arg p { margin:0; color:var(--gris); line-height:1.45; font-size:15px; }
-  .visuels { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .visuels figure { margin:0; }
-  .visuels img { width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:12px; display:block; background:#F0E6DA; }
-  .visuels figcaption { font-size:12px; color:var(--gris); margin-top:4px; line-height:1.3; }
-  .partenaires { display:flex; flex-direction:column; gap:8px; }
-  .p { display:flex; align-items:center; gap:12px; background:var(--carte); border-radius:14px; padding:10px 12px; border:1px solid #F0E6DA; }
-  .p img, .p .ini { width:44px; height:44px; border-radius:50%; object-fit:cover; background:#F0E6DA; flex:none; }
-  .p .ini { display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--rouge); }
-  .p .nm { font-weight:700; }
-  .p .cu { font-size:13px; color:var(--gris); }
-  .p .nt { margin-left:auto; font-weight:700; white-space:nowrap; font-size:14px; }
-  blockquote { margin:0 0 10px; background:var(--carte); border-left:4px solid var(--or); border-radius:12px; padding:12px 14px; }
-  blockquote p { margin:0 0 6px; line-height:1.45; }
-  blockquote cite { font-style:normal; font-size:13px; color:var(--gris); }
-  ol.etapes { padding:0; margin:0; list-style:none; counter-reset:e; display:flex; flex-direction:column; gap:10px; }
-  ol.etapes li { counter-increment:e; display:flex; gap:12px; align-items:flex-start; line-height:1.45; }
-  ol.etapes li::before { content:counter(e); flex:none; width:28px; height:28px; border-radius:50%; background:var(--rouge); color:#fff;
-    font-weight:800; display:flex; align-items:center; justify-content:center; }
-  #rdv { background:var(--carte); border-radius:20px; padding:18px 16px; border:2px solid var(--rouge); margin-top:32px; }
+  button.cta.rouge { background:var(--rouge); color:#fff; margin-top:16px; }
+  a.cta2 { display:block; text-align:center; margin-top:10px; color:#fff; border:2px solid rgba(255,255,255,.7); text-decoration:none; font-weight:700; padding:12px; border-radius:999px; }
+  h2 { font-size:22px; font-weight:900; margin:30px 0 12px; }
+
+  /* Carrousel : une carte = une carte du bilan publié (4:5). */
+  .carrousel { display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:0 16px 8px; scrollbar-width:none; }
+  .carrousel::-webkit-scrollbar { display:none; }
+  .c { flex:0 0 min(84vw, 360px); aspect-ratio:4/5; scroll-snap-align:center; border-radius:18px; overflow:hidden; display:flex; flex-direction:column;
+       container-type:inline-size; }
+  .c-rouge { background:var(--rouge); color:#fff; } .c-noir { background:var(--noir); color:#fff; } .c-creme { background:var(--creme); color:var(--encre); }
+  .c-tete { display:flex; align-items:center; gap:7px; padding:12px 16px 10px; border-bottom:2px solid var(--or); font-size:11px; font-weight:800; letter-spacing:.12em; }
+  .c-tete img { border-radius:5px; } .c-tete b { margin-left:auto; font-weight:700; }
+  .c-corps { flex:1; padding:14px 16px 0; display:flex; flex-direction:column; min-height:0; }
+  .c-sur { font-size:11px; font-weight:800; letter-spacing:.12em; margin:0 0 4px; }
+  .c-rouge .c-sur, .c-noir .c-sur { color:var(--or); } .c-creme .c-sur { color:var(--encre); }
+  .g { font-size:96px; font-size:34cqw; font-weight:900; line-height:.85; letter-spacing:-.04em; margin:0; }
+  .g.or { color:var(--or); } .g.blanc { color:#fff; } .rouge-t { color:var(--rouge); }
+  .t { font-size:24px; font-size:7.6cqw; font-weight:900; line-height:1.05; margin:6px 0 0; }
+  .t2 { font-size:15px; font-size:4.6cqw; font-weight:800; margin:10px 0 0; }
+  .s { font-size:14px; font-size:4.2cqw; line-height:1.3; margin:10px 0 0; opacity:.92; }
+  .ligne { display:flex; align-items:flex-end; gap:4px 10px; flex-wrap:wrap; } .ligne .t { margin:0 0 .2em; }
+  .defile { margin-top:auto; margin-bottom:6px; color:var(--or); font-size:12px; font-weight:800; letter-spacing:.12em; }
+  .barres { display:flex; gap:8px; align-items:flex-end; flex:1; min-height:110px; margin-top:12px; background:#232323; border-radius:12px; padding:10px 10px 8px; }
+  .barres .b { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; }
+  .barres em { font-style:normal; font-weight:900; font-size:15px; }
+  .barres span { width:100%; background:var(--or); border-radius:6px 6px 2px 2px; display:block; }
+  .barres span.rouge { background:var(--rouge); }
+  .barres small { font-size:9px; text-align:center; line-height:1.15; opacity:.85; }
+  .pastilles { display:flex; gap:8px; margin-top:auto; margin-bottom:10px; }
+  .pastilles div { flex:1; background:var(--noir); color:#fff; border-radius:12px; padding:9px 10px; font-size:11px; line-height:1.25; }
+  .c-noir .pastilles div { background:#2A2A2A; }
+  .pastilles b { display:block; color:var(--or); font-size:19px; font-size:5.6cqw; font-weight:900; margin-bottom:2px; }
+  .route { display:flex; align-items:center; gap:6px; margin:16px 0 8px; font-size:22px; }
+  .route i { flex:1; border-top:3px dotted var(--encre); } .route img { border-radius:6px; }
+  .logos { display:flex; flex-wrap:wrap; gap:10px; margin-top:auto; margin-bottom:12px; justify-content:center; }
+  .logos img { width:60px; height:60px; border-radius:50%; object-fit:cover; background:#fff; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .logos.petits img { width:44px; height:44px; }
+  .top { display:flex; flex-direction:column; gap:7px; margin-top:auto; margin-bottom:12px; }
+  .top div { display:flex; align-items:center; gap:8px; font-size:12px; }
+  .top span { flex:0 0 38%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top i { height:13px; background:var(--or); border-radius:4px; display:block; }
+  .top b { color:var(--or); }
+  .etoiles { color:var(--or); font-size:22px; margin:8px 0 0; letter-spacing:2px; } .etoiles small { color:#fff; font-size:12px; letter-spacing:0; }
+  .notes { display:flex; flex-direction:column; gap:6px; margin-top:12px; }
+  .notes div { display:flex; align-items:center; gap:8px; font-size:12px; }
+  .notes span { flex:0 0 30%; } .notes i { height:7px; background:var(--or); border-radius:4px; display:block; max-width:52%; } .notes b { color:var(--or); margin-left:auto; }
+  .c-pied { display:flex; align-items:center; padding:8px 16px 12px; font-size:10px; opacity:.85; }
+  .c-pied i { margin-left:auto; display:flex; gap:3px; } .c-pied u { width:4px; height:4px; border-radius:50%; background:currentColor; opacity:.35; display:block; }
+  .c-pied u.on { opacity:1; background:var(--or); width:10px; border-radius:3px; }
+
+  .args { display:grid; grid-template-columns:1fr; gap:8px; }
+  .arg { display:flex; gap:12px; align-items:center; background:#fff; border-radius:14px; padding:12px 14px; border:1px solid #F0E6DA; }
+  .arg span { font-size:26px; } .arg b { display:block; font-size:16px; } .arg small { color:var(--gris); font-size:13px; }
+  .visuels { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:0 16px 6px; scrollbar-width:none; }
+  .visuels::-webkit-scrollbar { display:none; }
+  .visuels img { flex:0 0 min(70vw, 300px); aspect-ratio:4/5; object-fit:cover; border-radius:14px; scroll-snap-align:center; background:#F0E6DA; }
+  ol.etapes { padding:0; margin:0; list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  ol.etapes li { background:#fff; border-radius:14px; padding:12px; border:1px solid #F0E6DA; font-size:14px; line-height:1.3; font-weight:600; }
+  ol.etapes li span { display:block; font-size:24px; margin-bottom:4px; }
+  #rdv { background:#fff; border-radius:20px; padding:18px 16px; border:2px solid var(--rouge); margin-top:30px; }
   #rdv h2 { margin-top:0; }
   fieldset { border:0; padding:0; margin:0 0 12px; }
-  legend { font-weight:700; margin-bottom:6px; font-size:15px; }
+  legend { font-weight:800; margin-bottom:6px; font-size:15px; }
   .heures { display:flex; flex-wrap:wrap; gap:8px; }
   .h input { position:absolute; opacity:0; pointer-events:none; }
-  .h span { display:inline-block; min-width:68px; text-align:center; padding:10px 8px; border-radius:10px; border:1.5px solid #E2D6C8; font-weight:600; cursor:pointer; }
+  .h span { display:inline-block; min-width:68px; text-align:center; padding:10px 8px; border-radius:10px; border:1.5px solid #E2D6C8; font-weight:700; cursor:pointer; }
   .h input:checked + span { background:var(--rouge); border-color:var(--rouge); color:#fff; }
   .h input:focus-visible + span { outline:3px solid var(--or); }
-  .champ { display:block; font-size:14px; font-weight:600; margin:12px 0 0; }
+  .champ { display:block; font-size:14px; font-weight:700; margin:12px 0 0; }
   .champ input, .champ textarea { display:block; width:100%; margin-top:6px; font-size:16px; padding:12px; border-radius:12px; border:1.5px solid #E2D6C8; font-family:inherit; background:#fff; }
-  .form .cta { margin-top:16px; background:var(--rouge); color:#fff; }
   .petit { font-size:13px; color:var(--gris); text-align:center; margin:8px 0 0; }
-  details { margin-top:16px; }
-  summary { cursor:pointer; font-weight:600; color:var(--rouge); }
-  .ok, .err { border-radius:14px; padding:14px; margin:14px 0 0; line-height:1.45; }
-  .ok { background:#E7F6EC; color:#145A2E; }
-  .err { background:#FDECEA; color:#8A1C14; }
-  .confirme { line-height:1.5; }
-  .fondateur { display:flex; gap:14px; align-items:center; margin-top:32px; }
-  .fondateur img { width:72px; height:72px; border-radius:50%; object-fit:cover; flex:none; }
-  .fondateur p { margin:0; color:var(--gris); line-height:1.45; font-size:15px; }
-  footer { margin-top:28px; text-align:center; font-size:13px; color:var(--gris); }
+  details { margin-top:16px; } summary { cursor:pointer; font-weight:700; color:var(--rouge); }
+  .ok, .err { border-radius:14px; padding:14px; margin:0 0 14px; line-height:1.45; }
+  .ok { background:#E7F6EC; color:#145A2E; } .err { background:#FDECEA; color:#8A1C14; }
+  .fondateur { display:flex; gap:14px; align-items:center; margin-top:28px; }
+  .fondateur img { width:64px; height:64px; border-radius:50%; object-fit:cover; flex:none; }
+  .fondateur p { margin:0; color:var(--gris); line-height:1.4; font-size:15px; }
+  footer { margin-top:24px; text-align:center; font-size:13px; color:var(--gris); }
   footer a { color:var(--rouge); }
 </style>
 </head>
@@ -236,69 +350,52 @@ function page(slug, d, etat) {
   <section class="hero">
     <p class="sur">Préparé pour ${n}</p>
     <h1>${n}, vos plats livrés partout à Nosy Be.</h1>
-    <p>Taxi Food, c’est l’application de livraison de repas de l’île. On s’occupe des commandes, des livreurs et de la publicité. Vous, vous cuisinez.</p>
     <a class="cta" href="#rdv">${rdv ? 'Voir mon rendez-vous' : 'Choisir un créneau (20 min)'}</a>
-    <a class="cta2" href="${wa}">Écrire à Christopher sur WhatsApp</a>
+    <a class="cta2" href="${wa}">Écrire sur WhatsApp</a>
   </section>
 
-  ${chiffres.length ? `<h2>Ça tourne déjà</h2>
-  <div class="stats">${chiffres.map((c) => `<div class="stat"><b>${echapper(c.v)}</b><span>${echapper(c.l)}</span></div>`).join('')}</div>` : ''}
+  <h2>Ça tourne déjà</h2>
+  ${carrousel(d.bilan)}
 
-  <h2>Ce que Taxi Food vous apporte</h2>
+  <h2>Ce que vous y gagnez</h2>
   <div class="args">
-    <div class="arg"><h3>📣 De la visibilité sur nos réseaux</h3>
-      <p>On réalise les visuels de vos plats et on les publie sur notre page Facebook et dans les groupes de Nosy Be. À votre arrivée, vous êtes mis en avant dans l’application avec le badge « Nouveau », et nos clients sont prévenus par notification.</p></div>
-    <div class="arg"><h3>💰 Du chiffre d’affaires en plus, sans charges en plus</h3>
-      <p>Pas de livreur à embaucher, pas de scooter, pas de matériel à acheter. Vous préparez, notre livreur récupère et livre. Vous êtes payé par Orange Money, avec le détail de chaque commande.</p></div>
-    <div class="arg"><h3>🛵 Un nouveau canal de vente</h3>
-      <p>Les touristes dans leur location, les résidents qui ne se déplacent pas le soir : des clients qui ne seraient pas venus chez vous. Ils commandent dans l’application ou sur le site, et paient à la livraison, par carte ou Orange Money.</p></div>
+    <div class="arg"><span>📣</span><div><b>De la visibilité</b><small>Vos plats sur nos réseaux et dans l’application.</small></div></div>
+    <div class="arg"><span>💰</span><div><b>Du chiffre en plus, pas de charges en plus</b><small>Pas de livreur, pas de scooter, pas d’abonnement.</small></div></div>
+    <div class="arg"><span>🛵</span><div><b>Un nouveau canal de vente</b><small>Touristes, résidents, commandes du soir.</small></div></div>
   </div>
 
-  <h2>Ce qu’on publie déjà pour nos restaurants</h2>
-  <div class="visuels">${EXEMPLES.map((e) => `<figure><img src="${img(e.f, 480)}" alt="${echapper(e.l)}" loading="lazy" width="480" height="600"><figcaption>${echapper(e.l)}</figcaption></figure>`).join('')}</div>
-
-  ${Array.isArray(d.partenaires) && d.partenaires.length ? `<h2>Ils sont déjà sur Taxi Food</h2>
-  <div class="partenaires">${d.partenaires.map((p) => `<div class="p">${p.logo
-    ? `<img src="${img(p.logo, 96)}" alt="" loading="lazy" width="44" height="44">`
-    : `<span class="ini">${echapper(String(p.nom).replace(/^(le|la|les|l’|l'|chez)\s*/i, '').charAt(0).toUpperCase())}</span>`}
-    <div><div class="nm">${echapper(p.nom)}</div>${p.cuisine ? `<div class="cu">${echapper(p.cuisine)}</div>` : ''}</div>
-    ${p.note ? `<span class="nt">★ ${String(p.note).replace('.', ',')}</span>` : ''}</div>`).join('')}</div>` : ''}
-
-  ${Array.isArray(d.avis) && d.avis.length ? `<h2>Ce que disent leurs clients</h2>
-  ${d.avis.map((a) => `<blockquote><p>« ${echapper(a.texte)} »</p><cite>${echapper(a.prenom ?? 'Un client')} · ${echapper(a.restaurant)} · ★ ${String(Number(a.note)).replace('.', ',')}</cite></blockquote>`).join('')}` : ''}
+  <h2>Ce qu’on publie pour nos restaurants</h2>
+  <div class="visuels">${EXEMPLES.map((e) => `<img src="${img(e.f, 600)}" alt="${echapper(e.l)}" width="600" height="750" decoding="async">`).join('')}</div>
 
   <h2>Comment ça se passe</h2>
   <ol class="etapes">
-    <li><span>On se rencontre 20 minutes chez vous, au moment qui vous arrange.</span></li>
-    <li><span>On met votre carte en ligne avec vos photos. On s’en charge.</span></li>
-    <li><span>Les commandes arrivent sur votre téléphone (Telegram et application). Vous acceptez d’un appui.</span></li>
-    <li><span>Notre livreur récupère la commande et la livre. Vous êtes payé par Orange Money.</span></li>
+    <li><span>🤝</span>On se voit 20 min chez vous</li>
+    <li><span>📸</span>On met votre carte en ligne</li>
+    <li><span>📲</span>Vous acceptez les commandes d’un appui</li>
+    <li><span>🛵</span>On livre, vous êtes payé (Orange Money)</li>
   </ol>
 
   <section id="rdv">
     <h2>${rdv ? 'Votre rendez-vous' : 'Choisissez un créneau'}</h2>
-    ${rdv ? '' : '<p class="petit" style="text-align:left;margin:0 0 12px">Christopher passe vous voir au restaurant. Heure de Nosy Be.</p>'}
     ${formRdv}
     ${rdv ? '' : `<details>
-      <summary>Aucun créneau ne vous convient ? Être rappelé</summary>
+      <summary>Aucun créneau ne vous va ? Être rappelé</summary>
       <form method="post" class="form">
         <input type="hidden" name="action" value="rappel">
         <label class="champ">Votre nom<input name="nom" autocomplete="name" required minlength="2" maxlength="80"></label>
         <label class="champ">Votre téléphone<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="30"></label>
         <label class="champ">Quand vous joindre ? (facultatif)<textarea name="message" rows="2" maxlength="500"></textarea></label>
-        <button class="cta" type="submit">Me rappeler</button>
+        <button class="cta rouge" type="submit">Me rappeler</button>
       </form>
     </details>`}
   </section>
 
   <div class="fondateur">
-    <img src="/img/fondateur/christopher-192.webp" alt="Christopher" width="72" height="72" loading="lazy">
-    <p><b>Christopher</b>, fondateur de Taxi Food. « J’ai créé Taxi Food pour que les bons restaurants de Nosy Be soient livrés partout sur l’île. Je serais ravi d’y ajouter ${n}. »</p>
+    <img src="/img/fondateur/christopher-192.webp" alt="Christopher" width="64" height="64">
+    <p><b>Christopher</b>, fondateur de Taxi Food.<br>« Je serais ravi d’ajouter ${n} sur Taxi Food. »</p>
   </div>
 
-  <footer>
-    <a href="${wa}">WhatsApp +261 36 15 74 521</a> · <a href="${SITE}/restaurants-partenaires/">taxifoodnosybe.distripro207.com</a>
-  </footer>
+  <footer><a href="${wa}">WhatsApp ${WHATSAPP_AFFICHE}</a></footer>
 </main>
 </body>
 </html>`;

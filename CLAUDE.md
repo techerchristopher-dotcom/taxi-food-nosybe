@@ -177,6 +177,15 @@ de `om-publication`).
   (publiés + consentement), « comment ça se passe », **créneaux** (5 jours affichés) + formulaire,
   « être rappelé ». Formulaires sans JavaScript, POST → 303. `?apercu=1` et les robots d'aperçu
   ne comptent pas comme ouverture.
+- **Retour du porteur du projet (19/10 soir)** : trop de texte, stats pas assez visuelles, visuels
+  invisibles. → Le bloc « Ça tourne déjà » est un **carrousel de 9 cartes sur le modèle du « Bilan
+  des 28 premiers jours »** (publié le 09/10, base Rentanoo `editorial_calendar`
+  `ee1089fb-…`, images `social-media/libre/2026-10-09-*.png` ; source du gabarit introuvable sur
+  le Mac, refait en HTML/CSS dans `pro.mjs`, Archivo, cartes 4:5 rouge/noir/crème). Données :
+  **`pro_bilan()`** (migration `20261019200000`, depuis le lancement du 10/09, semaines complètes
+  seulement, Taxi Be exclu). Texte réduit au minimum, visuels chargés d'office (plus de `lazy`),
+  WhatsApp affiché **+261 37 34 379 12** (`261373437912`, celui de son WhatsApp Web). Le message
+  WhatsApp reprend les chiffres du bilan (migration `…200100`).
 - **Base** : `prospects_restaurant.slug` (unique, trigger à l'insertion) et `accroche` (phrase
   perso facultative, ≤ 300) ; `prospect_restaurant_actions.etape` (`whatsapp_1`/`whatsapp_relance`)
   et canal `page` ; `prospect_restaurant_ouvertures` ; `rdv_disponibilites` (lun.–sam. 9h30–11h30

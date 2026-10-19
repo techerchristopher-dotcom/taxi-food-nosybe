@@ -24,7 +24,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 type Lang = 'fr' | 'en' | 'it';
-type Audience = 'client' | 'restaurant' | 'livreur';
+type Audience = 'client' | 'restaurant' | 'livreur' | 'livreur_assigne';
 
 type Payload = {
   order_id: string;
@@ -58,6 +58,9 @@ type Order = {
   cancellation_code: string | null;
   /** Précision libre du restaurant, déjà nettoyée par la base. */
   cancellation_detail: string | null;
+  /** Qui a annulé (2026-10-19) : restaurant | admin | client | systeme. */
+  annulee_par: string | null;
+  picked_up_at: string | null;
   restaurants: { name: string } | null;
 };
 
@@ -121,7 +124,7 @@ type TokenRow = { token: string; language: Lang; platform: string; app?: string;
  * app). Sans ce tri, un même téléphone avec les deux apps recevrait tout en double.
  */
 function trierParApplication(rows: TokenRow[], audience: Audience): TokenRow[] {
-  if (audience !== 'livreur') return rows.filter((r) => (r.app ?? 'client') === 'client');
+  if (audience !== 'livreur' && audience !== 'livreur_assigne') return rows.filter((r) => (r.app ?? 'client') === 'client');
   const avecApp = new Set(rows.filter((r) => r.app === 'livreur').map((r) => r.user_id));
   return rows.filter((r) => (avecApp.has(r.user_id) ? r.app === 'livreur' : (r.app ?? 'client') === 'client'));
 }
@@ -233,7 +236,27 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     fr: { title: 'Nouvelle commande 🛎️', body: 'Commande {numero} à confirmer.' },
   },
 
+  // Annulée par TAXI FOOD (admin) : ne pas accuser le restaurant (2026-10-19).
+  annulee_taxifood: {
+    fr: { title: 'Commande annulée', body: 'Taxi Food a dû annuler ta commande chez {resto}.' },
+    en: { title: 'Order cancelled', body: 'Taxi Food had to cancel your order from {resto}.' },
+    it: { title: 'Ordine annullato', body: 'Taxi Food ha dovuto annullare il tuo ordine da {resto}.' },
+  },
+  // Annulée automatiquement (paiement non abouti, restaurant fermé à l'heure prévue…).
+  annulee_systeme: {
+    fr: { title: 'Commande annulée', body: 'Ta commande chez {resto} a été annulée.' },
+    en: { title: 'Order cancelled', body: 'Your order from {resto} has been cancelled.' },
+    it: { title: 'Ordine annullato', body: 'Il tuo ordine da {resto} è stato annullato.' },
+  },
   // --- Livreurs ---
+  // Le livreur qui avait PRIS la course (2026-10-19) : sans ce message, la course
+  // disparaissait de son écran sans un mot, le repas parfois déjà en main.
+  course_annulee: {
+    fr: { title: 'Course annulée ❌', body: '{numero} chez {resto} est annulée : ne la livre pas.' },
+  },
+  course_annulee_recuperee: {
+    fr: { title: 'Course annulée ❌', body: '{numero} chez {resto} est annulée. Tu l’as déjà récupérée : ne la livre pas, appelle Taxi Food.' },
+  },
   course_disponible: {
     fr: { title: 'Course disponible 🛵', body: '{resto} — commande {numero} prête à enlever.' },
   },
@@ -244,6 +267,7 @@ const ROUTES: Record<Audience, (order: Order) => string> = {
   client: (order) => `/order/${order.id}`,
   restaurant: () => '/(restaurant)',
   livreur: () => '/(livreur)',
+  livreur_assigne: () => '/(livreur)',
 };
 
 /** La relance « noter » ouvre le suivi de commande directement sur le bloc de notation. */
@@ -261,7 +285,7 @@ function buildText(order: Order, key: string, lang: Lang) {
   let body = text.body.replaceAll('{resto}', resto).replaceAll('{numero}', order.order_number ?? '');
   // Motif de refus : libellé du code traduit dans la langue du client, précision libre
   // du restaurant telle quelle. Sans code (refus ancien, annulation admin) : texte en base.
-  const motif = key === 'annulee' ? motifRefus(order, lang) : null;
+  const motif = key === 'annulee' || key === 'annulee_taxifood' ? motifRefus(order, lang) : null;
   if (motif) {
     body = `${body} ${MOT_MOTIF[lang] ?? MOT_MOTIF.fr} ${motif}`;
   }
@@ -294,7 +318,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, cancellation_code, cancellation_detail, restaurants(name)')
+    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, picked_up_at, restaurants(name)')
     .eq('id', payload.order_id)
     .single<Order>();
   if (orderError || !order) {
@@ -316,9 +340,17 @@ Deno.serve(async (req: Request) => {
   } else {
     const parLeClient = payload.status === 'annulee' && order.cancellation_code === 'autre'
       && order.cancellation_detail === ANNULEE_PAR_LE_CLIENT;
+    const annulee = payload.status === 'annulee' && !payload.phase && !payload.picked_up;
+    const cleAnnulation = parLeClient || order.annulee_par === 'client' ? 'annulee_client'
+      : order.annulee_par === 'admin' ? 'annulee_taxifood'
+      : order.annulee_par === 'systeme' ? 'annulee_systeme' : 'annulee';
     const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up'
-      : parLeClient ? 'annulee_client' : payload.status;
+      : annulee ? cleAnnulation : payload.status;
     if (MESSAGES[key]) envois.push({ audience: 'client', key });
+    // Le livreur qui avait pris la course est prévenu de l'annulation.
+    if (annulee && order.courier_id) {
+      envois.push({ audience: 'livreur_assigne', key: order.picked_up_at ? 'course_annulee_recuperee' : 'course_annulee' });
+    }
     // Course libérée par le restaurant et pas encore prise : les livreurs disponibles
     // sont prévenus. Si `courier_id` est déjà rempli, la course est attribuée — inutile
     // de réveiller tout le monde pour rien.
@@ -335,6 +367,8 @@ Deno.serve(async (req: Request) => {
     let userIds: string[];
     if (audience === 'client') {
       userIds = [order.user_id];
+    } else if (audience === 'livreur_assigne') {
+      userIds = order!.courier_id ? [order!.courier_id] : [];
     } else if (audience === 'restaurant') {
       const { data } = await supabase
         .from('restaurant_staff')

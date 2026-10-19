@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { ClotureService } from './ClotureService';
 import type { CSSProperties } from 'react';
 import { formatAr, minutesSince, PAYMENT_LABEL, PAYMENT_STATUS_LABEL, STATUS_LABEL, timeLabel, un } from '../lib/util';
 
@@ -353,6 +354,8 @@ export function Realtime() {
       </div>
 
       {err ? <div className="card" style={{ marginBottom: 16, color: 'var(--red)' }}>Erreur : {err}</div> : null}
+
+      <ClotureService />
 
       {positions.length ? (
         <div className="card" style={{ marginBottom: 16 }}>

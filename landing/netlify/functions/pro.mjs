@@ -31,6 +31,10 @@ const SITE = 'https://taxifoodnosybe.distripro207.com';
 // Le WhatsApp du porteur du projet, celui qui est ouvert dans son WhatsApp Web (2026-10-19).
 const WHATSAPP = '261373437912';
 const WHATSAPP_AFFICHE = '+261 37 34 379 12';
+// « Voir Taxi Food sur Facebook et sur le web » (demande du porteur du projet, 19/10) :
+// la Page Facebook et l'APPLICATION web (le vrai catalogue, sans rien installer).
+const FACEBOOK = 'https://www.facebook.com/profile.php?id=61594104278047';
+const APP_WEB = 'https://taxifood.distripro207.com';
 const STOCKAGE = 'https://bmdveawomizjpiebgtkj.supabase.co/storage/v1/object/public/';
 
 // Visuels déjà publiés sur nos réseaux (bucket produits/visuels-reseaux). Choisis le
@@ -59,6 +63,8 @@ const TZ = 'Indian/Antananarivo';
 const fmtJour = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
 const fmtHeure = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 const fmtCle = new Intl.DateTimeFormat('fr-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmtSemaine = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'short' });
+const fmtNum = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short' });
 const heure = (d) => fmtHeure.format(d).replace(':', 'h');
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const milliers = (n) => Number(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
@@ -95,10 +101,10 @@ function creneauxParJour(liste) {
   for (const iso of liste) {
     const d = new Date(iso);
     const cle = fmtCle.format(d);
-    if (!jours.has(cle)) jours.set(cle, { titre: capital(fmtJour.format(d)), heures: [] });
+    if (!jours.has(cle)) jours.set(cle, { titre: capital(fmtJour.format(d)), jour: capital(fmtSemaine.format(d)).replace('.', ''), num: fmtNum.format(d), heures: [] });
     jours.get(cle).heures.push({ iso, h: heure(d) });
   }
-  return [...jours.values()].slice(0, 5);
+  return [...jours.values()].slice(0, 8);
 }
 
 // ── Le carrousel « ça tourne déjà » ────────────────────────────────────────────
@@ -215,8 +221,17 @@ function page(slug, d, etat) {
     ? `<p>Pas de créneau libre en ce moment : <a href="${wa}">écrivez-nous sur WhatsApp</a>.</p>`
     : `<form method="post" class="form">
         <input type="hidden" name="action" value="rdv">
-        ${jours.map((j) => `<fieldset><legend>${echapper(j.titre)}</legend><div class="heures">${j.heures.map((h) =>
-          `<label class="h"><input type="radio" name="debut" value="${echapper(h.iso)}" required><span>${h.h}</span></label>`).join('')}</div></fieldset>`).join('')}
+        ${/* D'abord le jour, puis ses heures (demande du porteur du projet, 19/10). Sans JavaScript :
+             radios de jour cachés + sélecteur de frère « ~ », pour le navigateur intégré de WhatsApp. */ ''}
+        ${jours.map((j, k) => `<input class="choix-jour" type="radio" name="jour" id="j${k}">`).join('')}
+        <p class="etape-rdv">1. Le jour</p>
+        <div class="jours">${jours.map((j, k) => `<label for="j${k}" class="jr"><small>${echapper(j.jour)}</small><b>${echapper(j.num)}</b></label>`).join('')}</div>
+        <p class="etape-rdv">2. L’heure</p>
+        <div class="panneaux">
+          <p class="aide">Choisissez d’abord un jour.</p>
+          ${jours.map((j, k) => `<div class="heures p${k}">${j.heures.map((h) =>
+            `<label class="h"><input type="radio" name="debut" value="${echapper(h.iso)}" required><span>${h.h}</span></label>`).join('')}</div>`).join('')}
+        </div>
         <label class="champ">Votre nom<input name="nom" autocomplete="name" required minlength="2" maxlength="80"></label>
         <label class="champ">Votre téléphone<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="034 00 000 00" maxlength="30"></label>
         <button class="cta rouge" type="submit">Réserver ce créneau</button>
@@ -311,12 +326,52 @@ function page(slug, d, etat) {
   .arg span { font-size:26px; } .arg b { display:block; font-size:16px; } .arg small { color:var(--gris); font-size:13px; }
   .visuels { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; margin:0 -16px; padding:0 16px 6px; scrollbar-width:none; }
   .visuels::-webkit-scrollbar { display:none; }
-  .visuels img { flex:0 0 min(70vw, 300px); aspect-ratio:4/5; object-fit:cover; border-radius:14px; scroll-snap-align:center; background:#F0E6DA; }
+  .visuels img { flex:0 0 auto; width:min(70vw, 300px); height:auto; aspect-ratio:4/5; object-fit:cover; border-radius:14px; scroll-snap-align:center; background:#F0E6DA; }
+  .liens { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  a.lien { display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; font-weight:800; font-size:14px;
+           padding:13px 10px; border-radius:999px; text-align:center; line-height:1.15; }
+  a.lien.fb { background:#1877F2; color:#fff; }
+  a.lien.web { background:var(--noir); color:#fff; }
   ol.etapes { padding:0; margin:0; list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   ol.etapes li { background:#fff; border-radius:14px; padding:12px; border:1px solid #F0E6DA; font-size:14px; line-height:1.3; font-weight:600; }
   ol.etapes li span { display:block; font-size:24px; margin-bottom:4px; }
   #rdv { background:#fff; border-radius:20px; padding:18px 16px; border:2px solid var(--rouge); margin-top:30px; }
   #rdv h2 { margin-top:0; }
+  .choix-jour { position:absolute; opacity:0; pointer-events:none; }
+  .etape-rdv { font-weight:800; font-size:14px; margin:14px 0 8px; color:var(--gris); text-transform:uppercase; letter-spacing:.06em; }
+  .jours { display:flex; gap:8px; overflow-x:auto; margin:0 -16px; padding:0 16px 4px; scrollbar-width:none; }
+  .jours::-webkit-scrollbar { display:none; }
+  .jr { flex:0 0 auto; min-width:70px; text-align:center; padding:10px 8px; border-radius:12px; border:1.5px solid #E2D6C8; cursor:pointer; }
+  .jr small { display:block; font-size:12px; color:var(--gris); font-weight:700; }
+  .jr b { display:block; font-size:16px; }
+  .panneaux .heures { display:none; }
+  .panneaux .aide { color:var(--gris); font-size:14px; margin:0; }
+  .choix-jour:checked ~ .panneaux .aide { display:none; }
+  #j0:checked ~ .panneaux .p0 { display:flex; }
+  #j0:checked ~ .jours .jr[for="j0"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j0:checked ~ .jours .jr[for="j0"] small { color:#fff; }
+  #j1:checked ~ .panneaux .p1 { display:flex; }
+  #j1:checked ~ .jours .jr[for="j1"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j1:checked ~ .jours .jr[for="j1"] small { color:#fff; }
+  #j2:checked ~ .panneaux .p2 { display:flex; }
+  #j2:checked ~ .jours .jr[for="j2"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j2:checked ~ .jours .jr[for="j2"] small { color:#fff; }
+  #j3:checked ~ .panneaux .p3 { display:flex; }
+  #j3:checked ~ .jours .jr[for="j3"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j3:checked ~ .jours .jr[for="j3"] small { color:#fff; }
+  #j4:checked ~ .panneaux .p4 { display:flex; }
+  #j4:checked ~ .jours .jr[for="j4"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j4:checked ~ .jours .jr[for="j4"] small { color:#fff; }
+  #j5:checked ~ .panneaux .p5 { display:flex; }
+  #j5:checked ~ .jours .jr[for="j5"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j5:checked ~ .jours .jr[for="j5"] small { color:#fff; }
+  #j6:checked ~ .panneaux .p6 { display:flex; }
+  #j6:checked ~ .jours .jr[for="j6"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j6:checked ~ .jours .jr[for="j6"] small { color:#fff; }
+  #j7:checked ~ .panneaux .p7 { display:flex; }
+  #j7:checked ~ .jours .jr[for="j7"] { background:var(--rouge); border-color:var(--rouge); color:#fff; }
+  #j7:checked ~ .jours .jr[for="j7"] small { color:#fff; }
+  .choix-jour:focus-visible ~ .jours { outline:3px solid var(--or); }
   fieldset { border:0; padding:0; margin:0 0 12px; }
   legend { font-weight:800; margin-bottom:6px; font-size:15px; }
   .heures { display:flex; flex-wrap:wrap; gap:8px; }
@@ -366,6 +421,10 @@ function page(slug, d, etat) {
 
   <h2>Ce qu’on publie pour nos restaurants</h2>
   <div class="visuels">${EXEMPLES.map((e) => `<img src="${img(e.f, 600)}" alt="${echapper(e.l)}" width="600" height="750" decoding="async">`).join('')}</div>
+  <div class="liens">
+    <a class="lien fb" href="${FACEBOOK}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8h3.3z"/></svg>Voir notre page Facebook</a>
+    <a class="lien web" href="${APP_WEB}" target="_blank" rel="noopener"><span aria-hidden="true">🛵</span>Voir l’application</a>
+  </div>
 
   <h2>Comment ça se passe</h2>
   <ol class="etapes">

@@ -159,6 +159,53 @@ test `MERCISULLI` avec Sulli.
 
 > ✏️ 2026-09-28 : le partenaire s'écrit désormais **« Chez Bidule & Truc »** (avec un e) — renommé en base (restaurants, prospects_restaurant, sélection) ; les noms de fichiers/dossiers « bidul » et l'historique (annonces envoyées) restent inchangés.
 
+## 📲 Prospection des restaurants : page /pro, rendez-vous et séquence WhatsApp (2026-10-19)
+
+Décisions du porteur du projet : **tout gratuit** (pas d'API WhatsApp officielle), les messages
+partent de **son WhatsApp Web, piloté par la compétence `prospection-whatsapp-restaurants`**
+(`~/.claude/skills/`, Claude in Chrome), **lentement** ; trois arguments : visibilité sur nos
+réseaux (exemples à l'appui), chiffre d'affaires en plus sans charges en plus, nouveau canal de
+vente ; **les chiffres réels** pour montrer que ça tourne. Aucun taux de commission nulle part.
+Migrations `20261019180000` (tout), `…180100` (cuisine au lieu de zone), `…180200` (`nom_affiche`),
+`…180300` (slug dans la vue). Branche `prospection-pro` (worktree `../taxi-food-nosybe-pro`, partie
+de `om-publication`).
+
+- **Page `/pro/<slug>`** (`landing/netlify/functions/pro.mjs`, noindex) : héros au nom du
+  restaurant, « Ça tourne déjà » (`pro_stats()` : commandes livrées depuis le 8/09, plats vendus,
+  note moyenne, 30 derniers jours — agrégés, Taxi Be exclu), les 3 arguments, 4 visuels publiés
+  (`produits/visuels-reseaux/…`, liste en dur dans la fonction), partenaires visibles, 3 avis
+  (publiés + consentement), « comment ça se passe », **créneaux** (5 jours affichés) + formulaire,
+  « être rappelé ». Formulaires sans JavaScript, POST → 303. `?apercu=1` et les robots d'aperçu
+  ne comptent pas comme ouverture.
+- **Base** : `prospects_restaurant.slug` (unique, trigger à l'insertion) et `accroche` (phrase
+  perso facultative, ≤ 300) ; `prospect_restaurant_actions.etape` (`whatsapp_1`/`whatsapp_relance`)
+  et canal `page` ; `prospect_restaurant_ouvertures` ; `rdv_disponibilites` (lun.–sam. 9h30–11h30
+  et 14h30–17h, 30 min — à éditer en SQL) ; `rdv_prospects` (un par créneau, un par restaurant).
+  RPC anon : `pro_page`, `pro_compter_ouverture` (1re ouverture → Telegram admin), `pro_reserver`
+  et `pro_etre_rappele` (→ Telegram admin, statut `rdv`/`interesse`). Service seul (compétence) :
+  `prospects_whatsapp_a_envoyer(n)` (file + **texte exact**, un numéro une fois),
+  `prospect_whatsapp_noter`, `prospect_whatsapp_reponse` (→ Telegram). Admin :
+  `admin_texte_whatsapp_prospect`, `admin_prospect_whatsapp_envoye`, `admin_rdv_prospects`,
+  `admin_rdv_marquer`.
+- **LA règle de la séquence** : `prospect_restaurant_etape(p)` (vue `prospects_restaurant_sequence`,
+  security_invoker) : rendez-vous > répondre (réponse entrante non traitée) > intéressé → appel >
+  WhatsApp 1 (mobile malgache ou étranger, `numero_whatsapp()`) > relance J+2 si page pas ouverte /
+  appel J+1 si page ouverte > appel J+2 après relance > visite J+3 si injoignable ; sans mobile :
+  fixe → appel, Facebook → Messenger, rien → visite. Au 19/10 : 209 WhatsApp, 144 visites, 6
+  Messenger, 5 appels.
+- **Admin → 🍽️ Restos à démarcher** : file triée par la séquence, étape et « 👀 page ouverte »,
+  le texte WhatsApp de la base + « Envoyé ✓ », lien de la page (avec `?apercu=1`), vue
+  **📅 Rendez-vous** (Fait / Absent / Annulé), tuile « Pages ouvertes ».
+- Vérifié : clé publique refusée sur la file, les textes, les rendez-vous, les créneaux et les
+  stats (401) ; réservation en transaction annulée (ok, doublon `deja_rdv`, créneau pris, nom
+  invalide, Telegram mis en file) ; page en production à 375 px, images et logos chargés.
+  ⏳ **Aucun message WhatsApp envoyé** au 19/10 : le premier attend le « go » du porteur du projet.
+- ⛔ **Déployer la vitrine depuis un worktree** : `netlify deploy --functions=<chemin>` est
+  **ignoré** au profit du `[functions] directory` du `netlify.toml` du dossier courant. Lancé depuis
+  la copie principale, il a publié SES fonctions (sans `pro`, `repondre-commande` d'une autre
+  branche) pendant ~2 min. Remède : copier `landing/` du worktree dans le scratchpad (hors git) et
+  déployer depuis cette copie (`--dir=.`) ; contrôler `available_functions` du déploiement.
+
 ## 🍽️ Prospection des restaurants — recensement web, étape 1 (2026-09-28)
 
 But : lister **tous** les établissements où l'on mange ou boit à Nosy Be (restaurant, bar,

@@ -5,7 +5,9 @@
  * la tournée des hôtes (Prospection.tsx), pour une autre cible.
  *
  * Base : `prospects_restaurant` (422 fiches, recensement web du 2026-09-28),
- * journal append-only `prospect_restaurant_actions`, vue `prospects_restaurant_pilotage`
+ * journal append-only `prospect_restaurant_actions`, vue `prospects_restaurant_sequence`
+ * (le pilotage + la prochaine étape de la séquence de contact, décidée en base par
+ * `prospect_restaurant_etape` ; page /pro/<slug> et rendez-vous : migration 20261019180000)
  * (security_invoker — la RLS admin s'applique). Le geste « J'ai fait » passe par la RPC
  * `admin_prospect_restaurant_agir`, qui écrit le journal ET fait avancer le statut dans
  * la même transaction : l'écran n'écrit jamais le statut à côté.
@@ -47,6 +49,28 @@ type Fiche = {
   dernier_canal: string | null;
   dernier_resultat: string | null;
   km_resto_en_ligne: number | null;
+  // Séquence (vue prospects_restaurant_sequence, règle prospect_restaurant_etape en base).
+  etape: string | null;
+  a_faire_le: string | null;
+  raison: string | null;
+  numero_wa: string | null;
+  nb_ouvertures: number;
+  derniere_ouverture: string | null;
+  rdv_le: string | null;
+  rang: number | null;
+  slug: string;
+};
+
+type Rdv = {
+  id: string; prospect_id: string; nom: string; zone: string | null; adresse: string | null;
+  google_maps_url: string | null; debut: string; contact_nom: string; contact_telephone: string;
+  message: string | null; statut: string;
+};
+
+const PAGE_PRO = 'https://taxifoodnosybe.distripro207.com/pro/';
+const ETAPES: Record<string, string> = {
+  whatsapp_1: 'WhatsApp', whatsapp_relance: 'Relance WhatsApp', appel: 'Appeler', visite: 'Passer le voir',
+  messenger: 'Messenger', repondre: 'Répondre', rdv: 'Rendez-vous',
 };
 
 type Action = {
@@ -54,7 +78,7 @@ type Action = {
   offre_faite: string | null; note: string | null; fait_le: string;
 };
 
-type Vue = 'a_faire' | 'autour' | 'tout';
+type Vue = 'a_faire' | 'autour' | 'tout' | 'rdv';
 
 const TYPES: Record<string, string> = {
   restaurant: 'Restaurant', hotel_restaurant: 'Hôtel-restaurant', bar: 'Bar / lounge', gargote: 'Gargote',
@@ -87,14 +111,6 @@ const RESULTATS_PAR_CANAL: Record<string, string[]> = {
 };
 const INACTIFS = new Set(['hors_zone', 'exclu', 'doublon', 'ferme', 'refuse', 'partenaire']);
 
-/** Le message de premier contact. Pas de chiffre de commission : il se négocie par restaurant. */
-function message(f: Fiche): string {
-  return `Bonjour, Christopher de Taxi Food, l'application de livraison de repas à Nosy Be. `
-    + `Je voudrais proposer ${f.nom} dans l'application : vos plats commandés par les touristes et les résidents, `
-    + `livrés par nos livreurs. Vous ne payez qu'une commission sur les commandes livrées. `
-    + `La Cabane, Chez Bidule & Truc, La Plage et Chez M&K y sont déjà. Je peux passer vous montrer ?`;
-}
-
 function dateCourte(iso: string | null): string {
   if (!iso) return '';
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
@@ -112,9 +128,10 @@ export function ProspectionRestaurants() {
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [ouverte, setOuverte] = useState<Fiche | null>(null);
   const [ajout, setAjout] = useState(false);
+  const finDuJour = useMemo(() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); }, []);
 
   const charger = useCallback(async () => {
-    const { data, error } = await supabase.from('prospects_restaurant_pilotage').select('*').limit(2000);
+    const { data, error } = await supabase.from('prospects_restaurant_sequence').select('*').limit(2000);
     if (error) setErreur(error.message);
     else { setFiches((data ?? []) as Fiche[]); setErreur(null); }
     setChargement(false);
@@ -136,6 +153,7 @@ export function ProspectionRestaurants() {
     const q = texte.trim().toLowerCase();
     let l = fiches.filter((f) => {
       if (vue !== 'tout' && INACTIFS.has(f.statut)) return false;
+      if (vue === 'a_faire' && (!f.etape || (f.a_faire_le && new Date(f.a_faire_le).getTime() > finDuJour))) return false;
       if (zone && f.zone !== zone) return false;
       if (type && f.type_etablissement !== type) return false;
       if (canal && f.canal_contact !== canal) return false;
@@ -147,14 +165,16 @@ export function ProspectionRestaurants() {
     if (vue === 'autour' && position) {
       l = l.filter((f) => dist(f) !== null).sort((a, b) => (dist(a)! - dist(b)!));
     } else {
-      // File de travail : d'abord ceux qu'on peut livrer (proches d'un resto en ligne), joignables sans se déplacer.
-      const poids = (f: Fiche) => (f.km_resto_en_ligne ?? 50) + (f.canal_contact === 'visite' ? 5 : 0) + (f.nb_actions > 0 ? 2 : 0);
+      // File de travail : l'ordre de la séquence (rang décidé en base : rendez-vous, répondre,
+      // page ouverte, relance, premier message, appel, visite), puis les plus proches d'un resto en ligne.
+      const poids = (f: Fiche) => (f.rang ?? 20) * 100 + Math.min(f.km_resto_en_ligne ?? 50, 99);
       l = [...l].sort((a, b) => poids(a) - poids(b) || a.nom.localeCompare(b.nom));
     }
     return l.map((f) => ({ f, d: dist(f) }));
-  }, [fiches, vue, zone, type, canal, texte, position]);
+  }, [fiches, vue, zone, type, canal, texte, position, finDuJour]);
 
   const compte = (s: string) => fiches.filter((f) => f.statut === s).length;
+  const pagesOuvertes = fiches.filter((f) => f.nb_ouvertures > 0).length;
 
   return (
     <div>
@@ -162,6 +182,7 @@ export function ProspectionRestaurants() {
         {(['a_contacter', 'contacte', 'interesse', 'rdv', 'partenaire'] as const).map((s) => (
           <div className="stat" key={s}><div className="label">{STATUTS[s]}</div><div className="value">{compte(s)}</div></div>
         ))}
+        <div className="stat"><div className="label">Pages ouvertes</div><div className="value">{pagesOuvertes}</div></div>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -169,6 +190,7 @@ export function ProspectionRestaurants() {
           <button className={`btn petit ${vue === 'a_faire' ? '' : 'ghost'}`} onClick={() => setVue('a_faire')}>À faire</button>
           <button className={`btn petit ${vue === 'autour' ? '' : 'ghost'}`} onClick={localiser}>📍 Autour de moi</button>
           <button className={`btn petit ${vue === 'tout' ? '' : 'ghost'}`} onClick={() => setVue('tout')}>Toutes les fiches</button>
+          <button className={`btn petit ${vue === 'rdv' ? '' : 'ghost'}`} onClick={() => setVue('rdv')}>📅 Rendez-vous</button>
           <button className="btn petit ghost" style={{ marginLeft: 'auto' }} onClick={() => setAjout(true)}>+ Trouvé sur place</button>
         </div>
         <div className="gestes">
@@ -187,6 +209,7 @@ export function ProspectionRestaurants() {
       </div>
 
       {erreur ? <div className="warn" style={{ marginBottom: 12 }}>{erreur}</div> : null}
+      {vue === 'rdv' ? <RendezVous onMaj={charger} /> : <>
       {chargement ? <p className="muted">Chargement…</p> : null}
       {!chargement && liste.length === 0 ? <p className="empty">Aucune fiche pour ces filtres.</p> : null}
 
@@ -200,6 +223,13 @@ export function ProspectionRestaurants() {
                 {d !== null ? ` · ${d.toFixed(1)} km de moi` : (f.km_resto_en_ligne !== null ? ` · ${Number(f.km_resto_en_ligne).toFixed(1)} km d'un resto en ligne` : '')}
                 {f.derniere_action_le ? ` · ${RESULTATS[f.dernier_resultat ?? ''] ?? ''} ${dateCourte(f.derniere_action_le)}` : ''}
               </div>
+              {f.etape ? (
+                <div style={{ fontSize: 12, marginTop: 3 }}>
+                  <strong>→ {ETAPES[f.etape] ?? f.etape}</strong>
+                  {f.etape === 'rdv' ? ` ${dateCourte(f.rdv_le)}` : f.a_faire_le && new Date(f.a_faire_le).getTime() > Date.now() ? ` le ${dateCourte(f.a_faire_le)}` : ''}
+                  {f.nb_ouvertures > 0 ? ` · 👀 page ouverte ${f.nb_ouvertures} fois` : ''}
+                </div>
+              ) : null}
             </div>
             <span className={`pill ${f.canal_contact === 'telephone' ? 'confirmee' : f.canal_contact === 'facebook' ? 'en_livraison' : 'sans_objet'}`}>
               {f.canal_contact === 'telephone' ? '☎' : f.canal_contact === 'facebook' ? 'FB' : 'sur place'}
@@ -209,6 +239,7 @@ export function ProspectionRestaurants() {
         ))}
         {liste.length > 300 ? <p className="muted" style={{ padding: 12 }}>{liste.length - 300} fiches de plus : affinez les filtres.</p> : null}
       </div>
+      </>}
 
       {ouverte ? <FicheRestaurant fiche={ouverte} onFermer={() => setOuverte(null)} onMaj={async () => { await charger(); }} /> : null}
       {ajout ? <AjoutSurPlace position={position} onFermer={() => setAjout(false)} onFait={async () => { setAjout(false); await charger(); }} /> : null}
@@ -266,7 +297,24 @@ function FicheRestaurant({ fiche, onFermer, onMaj }: { fiche: Fiche; onFermer: (
     setEdition(false); setFait('Fiche mise à jour.'); await onMaj();
   }
 
-  const wa = lienWhatsApp(fiche.telephone ?? fiche.telephone_2, message(fiche));
+  const etapeWa = fiche.etape === 'whatsapp_relance' ? 'whatsapp_relance' : 'whatsapp_1';
+  const [texteWa, setTexteWa] = useState('');
+  useEffect(() => {
+    supabase.rpc('admin_texte_whatsapp_prospect', { p_prospect: fiche.id, p_etape: etapeWa })
+      .then(({ data }) => setTexteWa((data as string) ?? ''));
+  }, [fiche.id, etapeWa]);
+  const wa = lienWhatsApp(fiche.numero_wa ? `+${fiche.numero_wa}` : (fiche.telephone ?? fiche.telephone_2), texteWa);
+  const pagePro = PAGE_PRO + fiche.slug;
+
+  async function waEnvoye() {
+    if (verrou.current) return;
+    verrou.current = true; setErreur(null);
+    const { error } = await supabase.rpc('admin_prospect_whatsapp_envoye', { p_prospect: fiche.id, p_etape: etapeWa });
+    verrou.current = false;
+    if (error) { setErreur(error.message); return; }
+    setFait('Message WhatsApp noté comme envoyé.');
+    await chargerJournal(); await onMaj();
+  }
   const appel = lienTel(fiche.telephone ?? fiche.telephone_2);
   const carte = fiche.google_maps_url ?? lienCarte(fiche.latitude, fiche.longitude);
 
@@ -296,10 +344,32 @@ function FicheRestaurant({ fiche, onFermer, onMaj }: { fiche: Fiche; onFermer: (
           {carte ? <a className="btn petit ghost" href={carte} target="_blank" rel="noreferrer">📍 Carte</a> : null}
         </div>
 
-        <details style={{ marginTop: 10 }}>
-          <summary className="muted" style={{ cursor: 'pointer', fontSize: 12 }}>Message de premier contact</summary>
-          <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{message(fiche)}</p>
-        </details>
+        <div className="recap" style={{ marginTop: 12 }}>
+          {fiche.etape ? (
+            <p style={{ margin: '0 0 6px', fontSize: 13 }}>
+              <strong>Prochaine étape : {ETAPES[fiche.etape] ?? fiche.etape}</strong>
+              {fiche.a_faire_le ? ` · ${new Date(fiche.a_faire_le).getTime() > Date.now() ? 'le ' : 'depuis le '}${dateCourte(fiche.a_faire_le)}` : ''}
+              {fiche.raison ? <><br /><span className="muted">{fiche.raison}</span></> : null}
+            </p>
+          ) : <p className="muted" style={{ margin: '0 0 6px', fontSize: 13 }}>Aucune étape automatique pour cette fiche.</p>}
+          <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+            Sa page : <a href={`${pagePro}?apercu=1`} target="_blank" rel="noreferrer">{pagePro.replace('https://', '')}</a>
+            {' · '}{fiche.nb_ouvertures > 0 ? `👀 ouverte ${fiche.nb_ouvertures} fois (dernière : ${dateCourte(fiche.derniere_ouverture)})` : 'pas encore ouverte'}
+          </p>
+          <p className="muted" style={{ margin: '4px 0 0', fontSize: 11 }}>Le lien de l&apos;admin porte « ?apercu=1 » : ton ouverture n&apos;est pas comptée.</p>
+        </div>
+
+        {fiche.numero_wa && (fiche.etape === 'whatsapp_1' || fiche.etape === 'whatsapp_relance') ? (
+          <div className="recap" style={{ marginTop: 10 }}>
+            <strong style={{ fontSize: 13 }}>{etapeWa === 'whatsapp_relance' ? 'Relance WhatsApp' : 'Premier message WhatsApp'}</strong>
+            <p style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{texteWa || '…'}</p>
+            <div className="gestes">
+              {wa ? <a className="btn petit" href={wa} target="_blank" rel="noreferrer">Ouvrir dans WhatsApp</a> : null}
+              <button className="btn petit ghost" onClick={waEnvoye}>Envoyé ✓</button>
+            </div>
+            <p className="muted" style={{ fontSize: 11, margin: '6px 0 0' }}>D&apos;habitude, c&apos;est la compétence WhatsApp Web qui envoie et note. « Envoyé ✓ » sert si tu l&apos;as envoyé toi-même.</p>
+          </div>
+        ) : null}
 
         <div className="recap" style={{ marginTop: 14 }}>
           <strong style={{ fontSize: 13 }}>J&apos;ai fait</strong>
@@ -328,7 +398,7 @@ function FicheRestaurant({ fiche, onFermer, onMaj }: { fiche: Fiche; onFermer: (
           <strong style={{ fontSize: 13 }}>Historique</strong>
           {actions.length === 0 ? <p className="muted" style={{ fontSize: 12 }}>Aucun contact pour l&apos;instant.</p> : actions.map((a) => (
             <div key={a.id} className="muted" style={{ fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-              {dateCourte(a.fait_le)} · {CANAUX.find((c) => c.canal === a.canal)?.libelle ?? a.canal} · <strong>{RESULTATS[a.resultat] ?? a.resultat}</strong>
+              {dateCourte(a.fait_le)} · {CANAUX.find((c) => c.canal === a.canal)?.libelle ?? (a.canal === 'page' ? 'Sa page' : a.canal)} · <strong>{RESULTATS[a.resultat] ?? a.resultat}</strong>
               {a.interlocuteur ? ` · ${a.interlocuteur}` : ''}{a.note ? ` — ${a.note}` : ''}
             </div>
           ))}
@@ -411,6 +481,53 @@ function AjoutSurPlace({ position, onFermer, onFait }: { position: { lat: number
           <button className="btn petit" onClick={ajouter}>Ajouter</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Les rendez-vous pris par les restaurateurs sur leur page /pro/<slug>. */
+function RendezVous({ onMaj }: { onMaj: () => Promise<void> }) {
+  const [liste, setListe] = useState<Rdv[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const verrou = useRef(false);
+  const charger = useCallback(async () => {
+    const { data, error } = await supabase.rpc('admin_rdv_prospects');
+    if (error) setErreur(error.message); else setListe((data ?? []) as Rdv[]);
+  }, []);
+  useEffect(() => { charger(); }, [charger]);
+
+  async function marquer(id: string, statut: string) {
+    if (verrou.current) return;
+    verrou.current = true; setErreur(null);
+    const { error } = await supabase.rpc('admin_rdv_marquer', { p_rdv: id, p_statut: statut });
+    verrou.current = false;
+    if (error) { setErreur(error.message); return; }
+    await charger(); await onMaj();
+  }
+
+  const avenir = liste.filter((r) => r.statut === 'confirme');
+  const passes = liste.filter((r) => r.statut !== 'confirme');
+  return (
+    <div>
+      {erreur ? <div className="warn" style={{ marginBottom: 12 }}>{erreur}</div> : null}
+      <p className="muted" style={{ fontSize: 12 }}>Pris par les restaurateurs sur leur page. Créneaux proposés : lun.–sam., 9h30–11h30 et 14h30–17h (table rdv_disponibilites).</p>
+      {avenir.length === 0 ? <p className="empty">Aucun rendez-vous à venir.</p> : null}
+      {avenir.map((r) => (
+        <div key={r.id} className="card" style={{ marginBottom: 10 }}>
+          <div style={{ fontWeight: 700 }}>{dateCourte(r.debut)} · {r.nom}</div>
+          <div className="muted" style={{ fontSize: 13 }}>
+            {r.contact_nom} · <a href={lienTel(r.contact_telephone) ?? '#'}>{r.contact_telephone}</a>{r.zone ? ` · ${r.zone}` : ''}
+          </div>
+          {r.message ? <p style={{ fontSize: 13, margin: '6px 0 0' }}>« {r.message} »</p> : null}
+          <div className="gestes" style={{ marginTop: 8 }}>
+            {r.google_maps_url ? <a className="btn petit ghost" href={r.google_maps_url} target="_blank" rel="noreferrer">📍 Y aller</a> : null}
+            <button className="btn petit" onClick={() => marquer(r.id, 'fait')}>Fait</button>
+            <button className="btn petit ghost" onClick={() => marquer(r.id, 'absent')}>Absent</button>
+            <button className="btn petit ghost danger" onClick={() => marquer(r.id, 'annule')}>Annulé</button>
+          </div>
+        </div>
+      ))}
+      {passes.length ? <p className="muted" style={{ fontSize: 12, marginTop: 14 }}>14 derniers jours : {passes.map((r) => `${r.nom} (${r.statut})`).join(' · ')}</p> : null}
     </div>
   );
 }

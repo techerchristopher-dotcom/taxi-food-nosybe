@@ -1,0 +1,6 @@
+-- Google Agenda par un script Google Apps (compte techerchristopher@gmail.com, projet « Taxi Food — RDV
+-- prospection → Agenda », application web déployée le 20/10) au lieu de n8n (connexion n8n indisponible).
+-- Copie du script : scripts/agenda-rdv-apps-script.gs. Vault : agenda_apps_script_url, agenda_apps_script_secret.
+-- Appliqué par MCP le 20/10 : rdv_agenda_charge (+ debut_utc / fin_utc), rdv_agenda_envoyer (secret dans le
+-- corps, URL Apps Script), rdv_agenda_rattraper (teste agenda_apps_script_url). Les 3 RDV existants envoyés
+-- (réponse « cree » ×3, vérifiés dans l'agenda).

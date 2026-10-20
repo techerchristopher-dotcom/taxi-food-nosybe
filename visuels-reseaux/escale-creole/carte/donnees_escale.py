@@ -12,8 +12,8 @@ Les prix des deux sources concordent partout ou elles se recoupent
 
 CHOIX PAR DEFAUT VALIDES PAR LE PORTEUR DU PROJET LE 2026-10-20 :
   1. amuses-bouches : prix a la piece ET prix du lot de 5 ;
-  2. bol renverse : poulet, zebu OU CREVETTES (sa carte papier) — la base
-     n'a que poulet ou zebu ;
+  2. bol renverse : poulet ou zebu (tableau du 20/10 ; les crevettes de sa carte
+     papier ne sont plus proposees) ;
   3. tout ce qui n'est pas dans l'appli (alcools, desserts, cafes,
      omelettes) est imprime, mais marque « sur place » ;
   4. prix ouverts (beignets, soupe chinoise) : « des ».
@@ -34,7 +34,7 @@ PLATS = [
  dict(nom="Saucisse frite", prix=38000, porc=1,
       ig="Saucisses de porc dorées à la poêle, croustillantes dehors, fondantes dedans."),
  dict(nom="Bol renversé", prix=32000, photo="pj-bol-renverse",
-      ig="Poulet, zébu ou crevettes, légumes sautés au wok, sauce soja, riz blanc, œuf au plat.",
+      ig="Poulet ou zébu, légumes sautés au wok, sauce soja, riz blanc, œuf au plat.",
       pr="Tassé à l'envers dans le bol, retourné sur l'assiette au moment de servir."),
  dict(nom="Riz frit poulet ou zébu", prix=35000,
       ig="Riz sauté au wok, œuf, oignon, petits légumes, sauce soja."),
@@ -43,14 +43,14 @@ PLATS = [
          "<b>poivre vert</b>, <b>oignons</b> ou <b>gingembre</b>."),
  dict(nom="Émincé de poulet", prix=35000, photo="pj-emince-poulet-brede",
       ig="Fines lamelles de poulet saisies à feu vif, au choix : <b>brède chinois</b>, "
-         "<b>poivre vert</b>, <b>oignons</b> ou <b>gingembre</b>.",
+         "<b>poivre vert</b> (38 000), <b>oignons</b> ou <b>gingembre</b>.",
       pr="Le brède tombe juste le temps qu'il faut : il reste croquant."),
 ]
-PLATS_SS = "Servis avec du riz et des grains (haricots blancs)."
+PLATS_SS = "Servis avec riz ou pâtes, grains (haricots blancs) et piment. Frites en supplément : 10 000 Ar."
 
 # L'ardoise : AUCUN PRIX, des exemples seulement (les plats a l'affiche en base).
-ARDOISE_EX = ["Massalé cabri", "Rôti de porc à la créole",
-              "Poisson frit entier", "Sauté de porc aux gros piments"]
+ARDOISE_EX = ["Rougail morue", "Cari poulet pays", "Filet de vivaneau sauce combava",
+              "Massalé cabri", "Rôti de porc à la créole"]
 
 AMUSES = [
  dict(nom="Demi-lunes poulet", prix=3000, unite="la pièce", lot="15 000 Ar le lot de 5",

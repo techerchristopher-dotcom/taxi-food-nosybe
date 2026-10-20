@@ -13,15 +13,20 @@ se recoupent.
 
 | Point | Ce qui est imprimé | Pourquoi demander |
 |---|---|---|
-| **Bol renversé** | « Poulet, zébu ou crevettes » | Sa carte papier dit crevettes ; l'appli n'a que poulet ou zébu. S'il en fait encore, ajouter l'option dans l'appli. |
 | **Horaires** | lun.–sam. 11 h 30 – 13 h 45 et 18 h – 21 h 45, fermé le dimanche | Ce sont les horaires en base. 13 h 45 et 21 h 45 sont peut-être des fins de commande, pas la fermeture. |
 | **Desserts sans prix** | « Et selon le jour : mousse au chocolat, nougat glacé, gâteau au chocolat. Prix au comptoir. » | Sa carte les montre en photo, sans prix. |
 | **Beignets** | « dès 20 000 », 8 à 12 pièces selon la portion | Le prix exact des deux portions ? |
 | **Soupe chinoise** | « dès 25 000 » | Les déclinaisons et leurs prix ? |
 | **Sambos zébu ou poulet** | 2 000 Ar la pièce, 10 000 Ar le lot de 5 | Conforme au papier et à la base : juste à vérifier. |
-| **Accompagnement** | « Servis avec du riz et des grains (haricots blancs) » | Lu dans les descriptions en base, écrites par nous. |
+| **Accompagnement** | « Servis avec riz ou pâtes, grains et piment. Frites en supplément : 10 000 Ar. » | Repris de son tableau (20/10). |
 | **Présentations en italique** | 3 phrases (rougail, bol renversé, émincé de poulet) | Écrites par nous, pas par lui. |
 | **Rhum menthe** | « glace arak » | Recopié tel quel de sa carte. |
+
+## Mis à jour le 2026-10-20 d'après son tableau
+
+- Bol renversé : **poulet ou zébu** (plus de crevettes).
+- Émincé de poulet au poivre vert : **38 000 Ar** (35 000 pour les autres émincés).
+- Ardoise : exemples = rougail morue, cari poulet pays, filet de vivaneau sauce combava, massalé cabri, rôti de porc.
 
 ## Choix faits (validés par le porteur du projet le 20/10)
 

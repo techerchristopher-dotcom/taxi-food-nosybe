@@ -4,16 +4,18 @@
   python3 carte_siciliens.py   ->  CARTE-LES-SICILIENS.pdf
 
 Generee le 2026-10-20 pour Rentanoo (telechargement de la carte sur la fiche et le site du restaurant).
-SOURCE UNIQUE : la base Taxi Food (restaurant aee1c612-…), copiee dans donnees_siciliens.json
-(categories Entree / Pizza / Pates / Burger, 46 plats, prix, ingredients, photos dans ./visuels).
-Pas de boissons en base : la carte ne les imprime pas (rien d'invente).
+SOURCES : la base Taxi Food (restaurant aee1c612-…), copiee dans donnees_siciliens.json (46 plats, prix,
+ingredients, photos dans ./visuels) — identique a la carte papier ligne a ligne ; et la carte papier
+(donnees_papier.py) pour ce que Taxi Food n'a pas : boissons, desserts, supplements.
+CETTE CARTE REMPLACE LA CARTE PAPIER DU RESTAURANT (demande du 2026-10-20) : elle doit etre complete.
 
 PALETTE = SON LOGO (logo-siciliens-rond.png) : brun #2B1D18, orange #D86A2C, sable #E8CFA8.
 L'orange est assombri a teinte constante jusqu'a 4,5:1 pour les titres et les prix.
-La frise reprend les trois teintes du logo. Photos rondes seulement pour les plats signature
-(SIGNATURES) ; les autres plats en ligne avec leurs ingredients.
+La frise reprend les trois teintes du logo. Chaque plat qui a une photo dans Taxi Food la porte
+(toutes les pizzas comprises).
 """
 import asyncio, base64, json, os
+import donnees_papier as PAP
 import numpy as np
 from playwright.async_api import async_playwright
 
@@ -191,20 +193,32 @@ TITRES = {'Entrée': ('Entrées', ''),
           'Pizza': ('Pizzas', 'Base tomate et mozzarella, sauf la focaccia.'),
           'Pâtes': ('Pâtes', ''),
           'Burger': ('Burgers & poulet', '')}
-SIGNATURES = {'Parmigiana', 'Plats mixtes', 'Margherita', 'Les Siciliens', '4 fromages',
-              'Jambon cru et parmesan', 'Fruits de la mer', 'Lasagne', 'Norma', 'Pâtes aux moules',
-              'Big cheeseburger', 'Poulet milanese'}
 SECTIONS = json.load(open('donnees_siciliens.json'))
 ITEMS = []
 for cat, plats in SECTIONS:
     titre, ss = TITRES.get(cat, (cat, ''))
+    if cat in PAP.SUPPLEMENTS:
+        ss = (ss + ' ' if ss else '') + PAP.SUPPLEMENTS[cat] + '.'
     ITEMS.append(('ent', entete(titre, ss), titre))
     ITEMS.append(('ent_suite', entete(titre, ss, True), titre))
-    # plats signature (avec photo) d'abord, dans l'ordre de la carte
-    for x in sorted(plats, key=lambda p: 0 if (p['nom'] in SIGNATURES and p['photo']) else 1):
-        d = dict(nom=x['nom'], prix=x['prix'], ig=x['ig'], porc=x['porc'],
-                 photo=x['photo'] if (x['nom'] in SIGNATURES and x['photo']) else None)
-        ITEMS.append(('item', bloc_plat(d), titre))
+    # la carte du restaurant : chaque plat qui a une photo dans Taxi Food la porte (toutes les pizzas)
+    for x in plats:
+        ITEMS.append(('item', bloc_plat(dict(nom=x['nom'], prix=x['prix'], ig=x['ig'], porc=x['porc'], photo=x['photo'])), titre))
+
+# Desserts : sur la carte papier, sans prix → prix au comptoir
+titre = 'Desserts'
+ITEMS.append(('ent', entete(titre, 'Servis sur place. Prix au comptoir.'), titre))
+ITEMS.append(('ent_suite', entete(titre, '', True), titre))
+ITEMS.append(('item', '<div class="grp">' + ''.join(f'<div class="bl"><span class="nm">{d}</span></div>' for d in PAP.DESSERTS) + '</div>', titre))
+
+# Boissons : carte papier, servies sur place
+titre = 'Boissons'
+ITEMS.append(('ent', entete(titre, 'Servies sur place.'), titre))
+ITEMS.append(('ent_suite', entete(titre, '', True), titre))
+for sous, lignes in PAP.BOISSONS:
+    for k, x in enumerate(lignes):
+        h = (f'<div class="sous">{sous}</div>' if k == 0 else '') + bloc_ligne(x)
+        ITEMS.append(('item', f'<div class="grp">{h}</div>', titre))
 
 # ---- Taxi Food -----------------------------------------------------------------
 TF = asset('taxifood-transparent')

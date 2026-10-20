@@ -100,13 +100,17 @@ const ERREURS = {
   technique: 'Un souci technique nous a empêché d’enregistrer. Écrivez-nous sur WhatsApp, on s’en occupe.',
 };
 
-function creneauxParJour(liste) {
+// Créneaux libres ET déjà pris (20/10 : un créneau pris reste affiché, grisé, « RDV avec <restaurant> » :
+// le restaurateur voit que ça marche ; le double rendez-vous reste refusé par la base).
+function creneauxParJour(liste, pris = []) {
   const jours = new Map();
-  for (const iso of liste) {
-    const d = new Date(iso);
+  const items = [...liste.map((iso) => ({ iso })), ...pris.map((p) => ({ iso: p.debut, pris: p.nom }))]
+    .sort((a, b) => Date.parse(a.iso) - Date.parse(b.iso));
+  for (const it of items) {
+    const d = new Date(it.iso);
     const cle = fmtCle.format(d);
     if (!jours.has(cle)) jours.set(cle, { titre: capital(fmtJour.format(d)), jour: capital(fmtSemaine.format(d)).replace('.', ''), num: fmtNum.format(d), heures: [] });
-    jours.get(cle).heures.push({ iso, h: heure(d) });
+    jours.get(cle).heures.push({ iso: it.iso, h: heure(d), pris: it.pris ?? null });
   }
   return [...jours.values()].slice(0, 8);
 }
@@ -227,7 +231,7 @@ function pageFr(slug, d, etat, it) {
     : etat.ok === 'rappel' ? '<div class="ok">✅ C’est noté : Christopher vous rappelle très vite.</div>'
     : etat.erreur ? `<div class="err">${echapper(ERREURS[etat.erreur] ?? ERREURS.technique)}</div>` : '';
 
-  const jours = creneauxParJour(d.creneaux ?? []);
+  const jours = creneauxParJour(d.creneaux ?? [], d.creneaux_pris ?? []);
   const formRdv = rdv
     ? `<p class="confirme">📅 Rendez-vous confirmé : <b>${echapper(fmtJour.format(rdv))} à ${heure(rdv)}</b>.<br>Un empêchement ? <a href="${wa}">Prévenez-nous sur WhatsApp</a>.</p>`
     : jours.length === 0
@@ -242,8 +246,9 @@ function pageFr(slug, d, etat, it) {
         <p class="etape-rdv">2. L’heure</p>
         <div class="panneaux">
           <p class="aide">Choisissez d’abord un jour.</p>
-          ${jours.map((j, k) => `<div class="heures p${k}">${j.heures.map((h) =>
-            `<label class="h"><input type="radio" name="debut" value="${echapper(h.iso)}" required><span>${h.h}</span></label>`).join('')}</div>`).join('')}
+          ${jours.map((j, k) => `<div class="heures p${k}">${j.heures.map((h) => h.pris
+            ? `<span class="h pris" aria-disabled="true"><span>${h.h}<small>RDV avec ${echapper(h.pris)}</small></span></span>`
+            : `<label class="h"><input type="radio" name="debut" value="${echapper(h.iso)}" required><span>${h.h}</span></label>`).join('')}</div>`).join('')}
         </div>
         <label class="champ">Votre nom<input name="nom" autocomplete="name" required minlength="2" maxlength="80"></label>
         <label class="champ">Votre téléphone<input name="telephone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="034 00 000 00" maxlength="30"></label>
@@ -390,6 +395,8 @@ function pageFr(slug, d, etat, it) {
   .heures { display:flex; flex-wrap:wrap; gap:8px; }
   .h input { position:absolute; opacity:0; pointer-events:none; }
   .h span { display:inline-block; min-width:68px; text-align:center; padding:10px 8px; border-radius:10px; border:1.5px solid #E2D6C8; font-weight:700; cursor:pointer; }
+  .h.pris > span { background:#EFE9E1; color:#9A9088; border-style:dashed; cursor:not-allowed; text-decoration:none; }
+  .h.pris small { display:block; font-size:10px; font-weight:700; color:#8A1C14; margin-top:2px; line-height:1.1; max-width:92px; white-space:normal; }
   .h input:checked + span { background:var(--rouge); border-color:var(--rouge); color:#fff; }
   .h input:focus-visible + span { outline:3px solid var(--or); }
   .champ { display:block; font-size:14px; font-weight:700; margin:12px 0 0; }
@@ -482,7 +489,7 @@ const IT = [
     'Una proposta preparata per $1: visibilità, un nuovo canale di vendita, più fatturato senza costi in più.'],
   ['Proposition pour<br>', 'Proposta per<br>'], [/Préparé pour /g, 'Preparato per '],
   [/, vos plats livrés partout à Nosy Be\./g, ', i vostri piatti consegnati in tutta Nosy Be.'],
-  ['Voir mon rendez-vous', 'Vedi il mio appuntamento'], ['Choisir un créneau (20 min)', 'Scegli un orario (20 min)'],
+  ['Voir mon rendez-vous', 'Vedi il mio appuntamento'], [/RDV avec /g, 'Appuntamento con '], ['Choisir un créneau (20 min)', 'Scegli un orario (20 min)'],
   ['Écrire sur WhatsApp', 'Scrivere su WhatsApp'], ['Ça tourne déjà', 'Funziona già'],
   [/BILAN DES (\d+) PREMIERS JOURS/g, 'BILANCIO DEI PRIMI $1 GIORNI'], ['jours de Taxi Food.', 'giorni di Taxi Food.'],
   [/Du (.+?) à aujourd’hui, à Nosy Be\./g, 'Dal $1 a oggi, a Nosy Be.'], ['FAIS DÉFILER →', 'SCORRI →'],

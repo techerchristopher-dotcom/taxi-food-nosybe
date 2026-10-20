@@ -1,0 +1,480 @@
+[
+ {
+  "titre": "Sandwichs & Repas",
+  "ss": "Sauce au choix incluse : ketchup, mayonnaise, andalouse, algérienne, blanche, harissa ou samouraï. Sauce en plus : + 2 000 Ar. Tacos, kebab, panini, américain : frites + 3 000 Ar · fromage + 3 000 Ar · viande + 5 000 Ar.",
+  "plats": [
+   {
+    "nom": "Tacos",
+    "prix": 30000,
+    "ig": "Viande au choix (agneau, poulet, steak, merguez, nugget ou tenders). Sauce au choix incluse.",
+    "photo": "sandwichs-tacos",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Salade Tenders",
+    "prix": 25000,
+    "ig": "Salade, Tomate, Oignon, Poulet croustillant, Cheddar.",
+    "photo": "sandwichs-salade-tenders",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Bowl Frites",
+    "prix": 30000,
+    "ig": "Frites, tomate, oignon, fromage, origan. Viande au choix, sauce au choix.",
+    "photo": "sandwichs-bowl-frites",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Salade Bleu / Poulet",
+    "prix": 25000,
+    "ig": "Tomate, Oignon, Bleu, Poulet, Cheddar.",
+    "photo": "sandwichs-salade-bleu-poulet",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Kebab (ou assiette)",
+    "prix": 25000,
+    "ig": "Viande au choix (agneau, poulet, steak ou merguez). Sauce au choix incluse. En sandwich ou en assiette.",
+    "photo": "sandwichs-kebab-ou-assiette",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Américain",
+    "prix": 30000,
+    "ig": "Viande au choix (agneau, poulet, steak ou merguez). Frites incluses, sauce au choix incluse.",
+    "photo": "sandwichs-americain",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Panini",
+    "prix": 25000,
+    "ig": "Viande au choix (agneau, poulet, steak ou merguez). Sauce au choix incluse.",
+    "photo": "sandwichs-panini",
+    "porc": false,
+    "source": "base"
+   }
+  ]
+ },
+ {
+  "titre": "Extras",
+  "ss": "",
+  "plats": [
+   {
+    "nom": "Assiette de frites",
+    "prix": 5000,
+    "ig": "",
+    "photo": "extras-assiette-de-frites",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Nuggets × 5",
+    "prix": 15000,
+    "ig": "",
+    "photo": "extras-nuggets-5",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Tenders × 4",
+    "prix": 20000,
+    "ig": "",
+    "photo": "extras-tenders-4",
+    "porc": false,
+    "source": "base"
+   }
+  ]
+ },
+ {
+  "titre": "Burgers",
+  "ss": "Sauce au choix incluse. Chaque ingrédient en plus : + 5 000 Ar.",
+  "plats": [
+   {
+    "nom": "Burger Bleu Cheese",
+    "prix": 35000,
+    "ig": "2 steak, 2 cheddar, bacon, bleu, oignons caramélisés, salade, tomate. Frites incluses.",
+    "photo": "burgers-burger-bleu-cheese",
+    "porc": true,
+    "source": "base"
+   },
+   {
+    "nom": "Hamburger",
+    "prix": 25000,
+    "ig": "Steak, cheddar, salade, oignon, tomate. Frites incluses.",
+    "photo": "burgers-hamburger",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Double Cheese Burger",
+    "prix": 29000,
+    "ig": "2 steak, 2 cheddar, salade, oignon, tomate. Frites incluses.",
+    "photo": "burgers-double-cheese-burger",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Burger Tenders",
+    "prix": 35000,
+    "ig": "Poulet croustillant, cheddar, oignon, salade, tomate. Frites incluses.",
+    "photo": "burgers-burger-tenders",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Burger Crevettes",
+    "prix": 29000,
+    "ig": "Crevettes, cheddar, oignon, salade, tomate. Frites incluses.",
+    "photo": "burgers-burger-crevettes",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Burger Montagnard",
+    "prix": 35000,
+    "ig": "Steak, raclette, poitrine, cheddar, oignon caramélisé. Frites incluses.",
+    "photo": "burgers-burger-montagnard",
+    "porc": false,
+    "source": "base"
+   }
+  ]
+ },
+ {
+  "titre": "Milkshakes",
+  "ss": "",
+  "plats": [
+   {
+    "nom": "Milkshake Vanille",
+    "prix": 15000,
+    "ig": "Milkshake vanille, chantilly.",
+    "photo": "milkshakes-milkshake-vanille",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Spéculoos",
+    "prix": 20000,
+    "ig": "Milkshake spéculoos, chantilly.",
+    "photo": "milkshakes-milkshake-speculoos",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Chocolat",
+    "prix": 15000,
+    "ig": "Milkshake chocolat, chantilly.",
+    "photo": "milkshakes-milkshake-chocolat",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Fraise",
+    "prix": 15000,
+    "ig": "Milkshake fraise, chantilly.",
+    "photo": "milkshakes-milkshake-fraise",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Oreo",
+    "prix": 20000,
+    "ig": "Milkshake Oreo, chantilly.",
+    "photo": "milkshakes-milkshake-oreo",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Kinder Bueno",
+    "prix": 20000,
+    "ig": "Milkshake Kinder Bueno, chantilly.",
+    "photo": "milkshakes-milkshake-kinder-bueno",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Snickers",
+    "prix": 20000,
+    "ig": "Morceaux de Snickers, coulis caramel-chocolat, chantilly.",
+    "photo": "milkshakes-milkshake-snickers",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Milkshake Twix",
+    "prix": 20000,
+    "ig": "Morceaux de Twix, coulis de caramel, chantilly.",
+    "photo": "milkshakes-milkshake-twix",
+    "porc": false,
+    "source": "base"
+   }
+  ]
+ },
+ {
+  "titre": "Crêpes",
+  "ss": "Garniture en plus (Oreos, spéculoos, brownie, cookies) : + 5 000 Ar.",
+  "plats": [
+   {
+    "nom": "Crêpe Gourmandise",
+    "prix": 15000,
+    "ig": "Garniture au choix (Oreos, Spéculoos, Brownie, Cookies, Banane) et nappage au choix (Chocolat, Caramel, Fraise, Lait concentré).",
+    "photo": "crepes-crepe-gourmandise",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Fraise",
+    "prix": 11000,
+    "ig": "Crêpe à la fraise.",
+    "photo": "crepes-crepe-fraise",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Caramel",
+    "prix": 11000,
+    "ig": "Crêpe au caramel.",
+    "photo": "crepes-crepe-caramel",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Chocolat",
+    "prix": 11000,
+    "ig": "Crêpe au chocolat.",
+    "photo": "crepes-crepe-chocolat",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Confiture",
+    "prix": 13000,
+    "ig": "Crêpe à la confiture.",
+    "photo": "crepes-crepe-confiture",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Nutella",
+    "prix": 18000,
+    "ig": "Crêpe au Nutella.",
+    "photo": "crepes-crepe-nutella",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Sucre",
+    "prix": 9000,
+    "ig": "Crêpe au sucre.",
+    "photo": "crepes-crepe-sucre",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Miel",
+    "prix": 11000,
+    "ig": "Crêpe au miel.",
+    "photo": "crepes-crepe-miel",
+    "porc": false,
+    "source": "base"
+   },
+   {
+    "nom": "Crêpe Lait Concentré",
+    "prix": 11000,
+    "ig": "Crêpe au lait concentré.",
+    "photo": "crepes-crepe-lait-concentre",
+    "porc": false,
+    "source": "base"
+   }
+  ]
+ },
+ {
+  "titre": "Boissons",
+  "ss": "Bières et softs : aussi livrés par Taxi Food. Cocktails, alcools et sirop : servis sur place.",
+  "boisson": true,
+  "groupes": [
+   {
+    "sous": "Bières",
+    "lignes": [
+     {
+      "nom": "Fresh",
+      "det": "petit modèle",
+      "prix": 6000,
+      "source": "base"
+     },
+     {
+      "nom": "THB",
+      "det": "petit modèle",
+      "prix": 6000,
+      "source": "base"
+     },
+     {
+      "nom": "Gold",
+      "det": "",
+      "prix": 10000,
+      "source": "base"
+     },
+     {
+      "nom": "THB",
+      "det": "grand modèle",
+      "prix": 8000,
+      "source": "base"
+     },
+     {
+      "nom": "Beaufort",
+      "det": "",
+      "prix": 8000,
+      "source": "base"
+     }
+    ]
+   },
+   {
+    "sous": "Softs",
+    "lignes": [
+     {
+      "nom": "Eau Vive",
+      "det": "petit modèle",
+      "prix": 6000,
+      "source": "base"
+     },
+     {
+      "nom": "Eau Vive",
+      "det": "grand modèle",
+      "prix": 7000,
+      "source": "base"
+     },
+     {
+      "nom": "Tonic",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Bonbon Anglais",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Cristal",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Caprice Orange",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Caprice Grenadine",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Caprice Citron",
+      "det": "",
+      "prix": 4500,
+      "source": "base"
+     },
+     {
+      "nom": "World Cola",
+      "det": "",
+      "prix": 5000,
+      "source": "base"
+     },
+     {
+      "nom": "Sirop",
+      "det": "servi sur place",
+      "prix": 4000,
+      "source": "papier (en base mais hors menu)"
+     }
+    ]
+   },
+   {
+    "sous": "Cocktails · servis sur place",
+    "cocktails": true,
+    "lignes": [
+     {
+      "nom": "Mojito",
+      "ig": "Menthe fraîche, citron vert, sucre de canne, rhum, eau gazeuse",
+      "prix": 9000,
+      "source": "papier"
+     },
+     {
+      "nom": "Sex on the Beach",
+      "ig": "Vodka, pêche, orange, cranberry",
+      "prix": 9000,
+      "source": "papier"
+     },
+     {
+      "nom": "Caipirinha",
+      "ig": "Cachaça, citron vert, sucre de canne",
+      "prix": 9000,
+      "source": "papier"
+     },
+     {
+      "nom": "Cuba Libre",
+      "ig": "Rhum, coca, citron vert",
+      "prix": 9000,
+      "source": "papier"
+     },
+     {
+      "nom": "Gin Tonic",
+      "ig": "Gin, tonic, citron",
+      "prix": 9000,
+      "source": "papier"
+     },
+     {
+      "nom": "Tequila Sunrise",
+      "ig": "Tequila, orange, grenadine",
+      "prix": 9000,
+      "source": "papier"
+     }
+    ]
+   },
+   {
+    "sous": "Alcools · servis sur place",
+    "lignes": [
+     {
+      "nom": "Pastis",
+      "det": "",
+      "prix": 5000,
+      "source": "papier"
+     },
+     {
+      "nom": "Vodka locale",
+      "det": "",
+      "prix": 5000,
+      "source": "papier"
+     },
+     {
+      "nom": "Rhum Mangoustan",
+      "det": "",
+      "prix": 7000,
+      "source": "papier"
+     },
+     {
+      "nom": "Rhum blanc",
+      "det": "",
+      "prix": 6000,
+      "source": "papier"
+     },
+     {
+      "nom": "Gin",
+      "det": "",
+      "prix": 6000,
+      "source": "papier"
+     }
+    ]
+   }
+  ]
+ }
+]

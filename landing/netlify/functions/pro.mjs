@@ -60,12 +60,16 @@ const img = (url, w) => {
 };
 
 const TZ = 'Indian/Antananarivo';
-const fmtJour = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
-const fmtHeure = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+// Langue de la page en cours de rendu (fiche `langue` : 'fr' ou 'it', depuis le 20/10).
+// Rendu synchrone : la variable est posée au début de page() et ne change pas pendant le rendu.
+let LOC = 'fr-FR';
+const F = (o) => new Intl.DateTimeFormat(LOC, { timeZone: TZ, ...o });
+const fmtJour = { format: (d) => F({ weekday: 'long', day: 'numeric', month: 'long' }).format(d) };
+const fmtHeure = { format: (d) => F({ hour: '2-digit', minute: '2-digit' }).format(d) };
 const fmtCle = new Intl.DateTimeFormat('fr-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
-const fmtSemaine = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'short' });
-const fmtNum = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short' });
-const heure = (d) => fmtHeure.format(d).replace(':', 'h');
+const fmtSemaine = { format: (d) => F({ weekday: 'short' }).format(d) };
+const fmtNum = { format: (d) => F({ day: 'numeric', month: 'short' }).format(d) };
+const heure = (d) => (LOC === 'it-IT' ? fmtHeure.format(d) : fmtHeure.format(d).replace(':', 'h'));
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const milliers = (n) => Number(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
 
@@ -114,8 +118,8 @@ function creneauxParJour(liste) {
 // toujours à jour, rien à régénérer. Demande du porteur du projet (2026-10-19) :
 // « trop de texte, pas assez de visuel sur les stats ».
 const virgule = (x) => String(x).replace('.', ',');
-const fmtCourt = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short' });
-const fmtLong = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'long' });
+const fmtCourt = { format: (d) => F({ day: 'numeric', month: 'short' }).format(d) };
+const fmtLong = { format: (d) => F({ day: 'numeric', month: 'long' }).format(d) };
 
 
 /** Le grand chiffre d'une carte : plus il a de caractères, plus il est petit (« 192 » tient). */
@@ -202,9 +206,18 @@ function carrousel(b) {
 }
 
 function page(slug, d, etat) {
+  const it = d.langue === 'it';
+  LOC = it ? 'it-IT' : 'fr-FR';
+  const html = pageFr(slug, d, etat, it);
+  return it ? enItalien(html) : html;
+}
+
+function pageFr(slug, d, etat, it) {
   const nom = d.nom;
   const n = echapper(nom);
-  const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Bonjour Christopher, je viens de voir la page Taxi Food pour ${nom}.`)}`;
+  const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(it
+    ? `Buongiorno Christopher, ho visto la pagina Taxi Food per ${nom}.`
+    : `Bonjour Christopher, je viens de voir la page Taxi Food pour ${nom}.`)}`;
   const titre = `Taxi Food × ${nom}`;
   const desc = `Une proposition préparée pour ${nom} : de la visibilité, un nouveau canal de vente, du chiffre d’affaires en plus sans charges en plus.`;
   const rdv = d.rdv ? new Date(d.rdv.debut) : null;
@@ -458,6 +471,72 @@ function page(slug, d, etat) {
 </main>
 </body>
 </html>`;
+}
+
+// ── Version italienne (20/10 : « garder les Italiens et adapter le message pour eux »).
+// Un seul gabarit : le HTML français rendu est traduit par cette table. Toute phrase ajoutée au
+// gabarit doit avoir sa ligne ici, sinon elle restera en français sur les pages italiennes.
+const IT = [
+  ['<html lang="fr">', '<html lang="it">'], ['content="fr_FR"', 'content="it_IT"'],
+  [/Une proposition préparée pour (.+?) : de la visibilité, un nouveau canal de vente, du chiffre d’affaires en plus sans charges en plus\./g,
+    'Una proposta preparata per $1: visibilità, un nuovo canale di vendita, più fatturato senza costi in più.'],
+  ['Proposition pour<br>', 'Proposta per<br>'], [/Préparé pour /g, 'Preparato per '],
+  [/, vos plats livrés partout à Nosy Be\./g, ', i vostri piatti consegnati in tutta Nosy Be.'],
+  ['Voir mon rendez-vous', 'Vedi il mio appuntamento'], ['Choisir un créneau (20 min)', 'Scegli un orario (20 min)'],
+  ['Écrire sur WhatsApp', 'Scrivere su WhatsApp'], ['Ça tourne déjà', 'Funziona già'],
+  [/BILAN DES (\d+) PREMIERS JOURS/g, 'BILANCIO DEI PRIMI $1 GIORNI'], ['jours de Taxi Food.', 'giorni di Taxi Food.'],
+  [/Du (.+?) à aujourd’hui, à Nosy Be\./g, 'Dal $1 a oggi, a Nosy Be.'], ['FAIS DÉFILER →', 'SCORRI →'],
+  ['LIVRAISONS DEPUIS LE 10 SEPTEMBRE', 'CONSEGNE DAL 10 SETTEMBRE'], [/livraisons en (\d+) jours/g, 'consegne in $1 giorni'],
+  [/Semaine (\d+)<br>/g, 'Settimana $1<br>'], [/La semaine (\d+) a fait ([\d,]+) fois la semaine 1\./g, 'La settimana $1 ha fatto $2 volte la settimana 1.'],
+  ['À MOTO', 'IN MOTO'], ['>Plus de<', '>Più di<'], ['parcourus du restaurant jusqu’à la porte du client.', 'percorsi dal ristorante fino alla porta del cliente.'],
+  ['par livraison en moyenne', 'per consegna in media'], ['DÉLAI DE LIVRAISON', 'TEMPI DI CONSEGNA'],
+  ['de la commande à la porte du client. Une commande sur deux arrive plus vite.', 'dall’ordine alla porta del cliente. Un ordine su due arriva prima.'],
+  ['livrées en moins d’1 heure', 'consegnati in meno di 1 ora'], ['de trajet à moto', 'di tragitto in moto'],
+  ['NOS RESTAURANTS', 'I NOSTRI RISTORANTI'], ['<p class="t">restaurants</p>', '<p class="t">ristoranti</p>'],
+  ['Ils étaient 2 au lancement. Le vôtre peut être le prochain.', 'Erano 2 al lancio. Il vostro può essere il prossimo.'],
+  ['CE QUI SE COMMANDE', 'COSA SI ORDINA'], ['articles livrés', 'articoli consegnati'], [/(\d+) plats différents\./g, '$1 piatti diversi.'],
+  ['COMMANDES LIVRÉES', 'ORDINI CONSEGNATI'], [/millions d’Ar/g, 'milioni di Ar'], [/payés par les clients en (\d+) jours\./g, 'pagati dai clienti in $1 giorni.'],
+  ['le panier moyen', 'lo scontrino medio'], ['POUR LES RESTAURANTS', 'PER I RISTORANTI'],
+  [/reviennent aux restaurants de Nosy Be, en (\d+) jours\./g, 'vanno ai ristoranti di Nosy Be, in $1 giorni.'],
+  ['CE QU’EN DISENT LES CLIENTS', 'COSA DICONO I CLIENTI'], [/sur (\d+) avis/g, 'su $1 recensioni'],
+  ['<span>Cuisine</span>', '<span>Cucina</span>'], ['<span>Préparation</span>', '<span>Preparazione</span>'], ['<span>Livraison</span>', '<span>Consegna</span>'],
+  [/(\d+) clients ont commandé\.<\/b>(\d+) sont déjà revenus\./g, '$1 clienti hanno ordinato.</b>$2 sono già tornati.'],
+  ['Bilan de Taxi Food, à faire défiler', 'Bilancio di Taxi Food, da scorrere'],
+  ['Ce que vous y gagnez', 'Cosa ci guadagnate'], ['De la visibilité', 'Visibilità'],
+  ['Vos plats sur nos réseaux et dans l’application.', 'I vostri piatti sui nostri social e nell’app.'],
+  ['Du chiffre en plus, pas de charges en plus', 'Più fatturato, nessun costo in più'],
+  ['Pas de livreur, pas de scooter, pas d’abonnement.', 'Niente fattorino, niente scooter, nessun abbonamento.'],
+  ['Un nouveau canal de vente', 'Un nuovo canale di vendita'], ['Touristes, résidents, commandes du soir.', 'Turisti, residenti, ordini serali.'],
+  ['Ce qu’on publie pour nos restaurants', 'Cosa pubblichiamo per i nostri ristoranti'],
+  ['Annonce de l’arrivée de L’escale Créole', 'Annuncio dell’arrivo de L’escale Créole'], ['Les plats du soir, deux restaurants', 'I piatti della sera, due ristoranti'],
+  ['Promotion de la semaine de La Cabane', 'Promozione della settimana de La Cabane'], ['Nouveauté : commander à l’avance', 'Novità: ordinare in anticipo'],
+  ['Voir notre page Facebook', 'La nostra pagina Facebook'], ['Voir l’application', 'Vedi l’app'],
+  ['Comment ça se passe', 'Come funziona'], ['On se voit 20 min chez vous', 'Ci vediamo 20 min da voi'],
+  ['On met votre carte en ligne', 'Mettiamo online il vostro menù'], ['Vous acceptez les commandes d’un appui', 'Accettate gli ordini con un tocco'],
+  ['On livre, vous êtes payé (Orange Money)', 'Consegniamo, voi venite pagati (Orange Money)'],
+  ['Votre rendez-vous', 'Il vostro appuntamento'], ['Choisissez un créneau', 'Scegliete un orario'],
+  ['1. Le jour', '1. Il giorno'], ['2. L’heure', '2. L’ora'], ['Choisissez d’abord un jour.', 'Scegliete prima un giorno.'],
+  [/>Votre nom</g, '>Il vostro nome<'], [/>Votre téléphone</g, '>Il vostro telefono<'],
+  ['Réserver ce créneau', 'Prenota questo orario'], ['20 minutes, chez vous, sans engagement.', '20 minuti, da voi, senza impegno.'],
+  ['Aucun créneau ne vous va ? Être rappelé', 'Nessun orario va bene? Fatevi richiamare'],
+  ['Quand vous joindre ? (facultatif)', 'Quando chiamarvi? (facoltativo)'], ['Me rappeler', 'Richiamatemi'],
+  [/fondateur de Taxi Food\.<br>« Je serais ravi d’ajouter (.+?) sur Taxi Food\. »/g, 'fondatore di Taxi Food.<br>« Sarei felice di aggiungere $1 su Taxi Food. »'],
+  [/C’est noté : rendez-vous le <b>(.+?) à (.+?)<\/b>\. Christopher passe vous voir\./g, 'Fatto: appuntamento <b>$1 alle $2</b>. Christopher passa a trovarvi.'],
+  ['C’est noté : Christopher vous rappelle très vite.', 'Fatto: Christopher vi richiama molto presto.'],
+  [/Rendez-vous confirmé : <b>(.+?) à (.+?)<\/b>\.<br>Un empêchement \? <a href="([^"]+)">Prévenez-nous sur WhatsApp<\/a>\./g,
+    'Appuntamento confermato: <b>$1 alle $2</b>.<br>Un imprevisto? <a href="$3">Avvisateci su WhatsApp</a>.'],
+  [/Pas de créneau libre en ce moment : <a href="([^"]+)">écrivez-nous sur WhatsApp<\/a>\./g, 'Nessun orario libero al momento: <a href="$1">scriveteci su WhatsApp</a>.'],
+  ['Indiquez votre nom (2 lettres au moins).', 'Indicate il vostro nome (almeno 2 lettere).'],
+  ['Le numéro de téléphone ne semble pas complet.', 'Il numero di telefono non sembra completo.'],
+  ['Ce créneau vient d’être pris. Choisissez-en un autre.', 'Questo orario è appena stato preso. Sceglietene un altro.'],
+  ['Choisissez un créneau.', 'Scegliete un orario.'], ['Un rendez-vous est déjà pris pour votre restaurant.', 'C’è già un appuntamento per il vostro ristorante.'],
+  ['Trop de demandes aujourd’hui. Écrivez-nous sur WhatsApp.', 'Troppe richieste oggi. Scriveteci su WhatsApp.'],
+  ['Cette page n’existe plus.', 'Questa pagina non esiste più.'],
+  ['Un souci technique nous a empêché d’enregistrer. Écrivez-nous sur WhatsApp, on s’en occupe.', 'Un problema tecnico ci ha impedito di salvare. Scriveteci su WhatsApp, ce ne occupiamo noi.'],
+];
+function enItalien(html) {
+  // Les traductions plus longues d'abord ne sont pas nécessaires : les clés ne se recouvrent pas.
+  return IT.reduce((h, [de, a]) => h.replaceAll(de, a), html);
 }
 
 const html = (corps, statut = 200) => new Response(corps, {

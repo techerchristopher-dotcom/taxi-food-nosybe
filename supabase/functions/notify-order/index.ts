@@ -37,7 +37,9 @@ type Payload = {
    * ~40 min après la livraison. 'relance' : le restaurant n'a pas répondu en 3 min,
    * on le relance et on prévient le client (`alerter_commandes_sans_reponse`, 2026-10-12).
    */
-  event?: 'nouvelle' | 'statut' | 'noter' | 'relance' | 'attente_client' | 'client_a_repondu';
+  event?: 'nouvelle' | 'statut' | 'noter' | 'relance' | 'attente_client' | 'client_a_repondu'
+    /** Plat manquant (2026-10-20) : au client (relance 1 ou 2), puis au restaurant quand c'est tranché. */
+    | 'modification' | 'modification_retiree' | 'modification_faite';
   /** Rang de la relance « client injoignable » (1 à 3). */
   relance?: number;
   /**
@@ -63,6 +65,9 @@ type Order = {
   /** Qui a annulé (2026-10-19) : restaurant | admin | client | systeme. */
   annulee_par: string | null;
   picked_up_at: string | null;
+  /** Plat manquant (2026-10-20) : 'retire' | 'annule' une fois que le client a choisi. */
+  modif_resolution: string | null;
+  modif_attente_depuis: string | null;
   restaurants: { name: string } | null;
 };
 
@@ -252,7 +257,35 @@ const MESSAGES: Record<string, Partial<Record<Lang, { title: string; body: strin
     it: { title: 'Ultima chiamata per il tuo ordine ⏳', body: 'Senza tue notizie, l’ordine {numero} potrebbe essere annullato.' },
   },
 
+  // Plat manquant (2026-10-20) : le restaurant n'a plus un plat. Le client choisit dans
+  // son suivi : retirer ce plat (le reste arrive) ou tout annuler.
+  modification_1: {
+    fr: { title: 'Un plat manque dans ta commande ✏️', body: '{resto} n’a plus un des plats de ta commande {numero}. Choisis : le retirer et recevoir le reste, ou annuler.' },
+    en: { title: 'A dish is missing from your order ✏️', body: '{resto} has run out of one dish in your order {numero}. Choose: remove it and get the rest, or cancel.' },
+    it: { title: 'Manca un piatto nel tuo ordine ✏️', body: '{resto} ha finito un piatto del tuo ordine {numero}. Scegli: toglierlo e ricevere il resto, o annullare.' },
+  },
+  modification_2: {
+    fr: { title: 'Ta commande attend ton choix ⏳', body: 'Un plat manque chez {resto} ({numero}). Un tap : retirer ce plat ou annuler.' },
+    en: { title: 'Your order is waiting for your choice ⏳', body: 'A dish is missing at {resto} ({numero}). One tap: remove it or cancel.' },
+    it: { title: 'Il tuo ordine aspetta la tua scelta ⏳', body: 'Manca un piatto da {resto} ({numero}). Un tocco: toglierlo o annullare.' },
+  },
+  // Le restaurant (ou Taxi Food) a retiré le plat manquant après avoir eu le client au téléphone.
+  modification_faite: {
+    fr: { title: 'Ta commande est modifiée ✏️', body: 'Le plat manquant a été retiré de {numero}, comme convenu. {resto} prépare le reste.' },
+    en: { title: 'Your order has been updated ✏️', body: 'The missing dish was removed from {numero}, as agreed. {resto} is preparing the rest.' },
+    it: { title: 'Il tuo ordine è stato modificato ✏️', body: 'Il piatto mancante è stato tolto da {numero}, come concordato. {resto} prepara il resto.' },
+  },
+  // Le client (ou le restaurant après un appel) a annulé parce qu'un plat manquait.
+  annulee_modif: {
+    fr: { title: 'Commande annulée', body: 'Ta commande chez {resto} est annulée : un plat manquait. Tu n’as rien à payer.' },
+    en: { title: 'Order cancelled', body: 'Your order from {resto} is cancelled: a dish was missing. You have nothing to pay.' },
+    it: { title: 'Ordine annullato', body: 'Il tuo ordine da {resto} è annullato: mancava un piatto. Non devi pagare nulla.' },
+  },
+
   // --- Restaurant ---
+  modification_retiree: {
+    fr: { title: 'Commande modifiée ✏️', body: '{numero} : le plat manquant est retiré. Préparez le reste.' },
+  },
   nouvelle_commande: {
     fr: { title: 'Nouvelle commande 🛎️', body: 'Commande {numero} à confirmer.' },
   },
@@ -296,6 +329,7 @@ const ROUTES: Record<Audience, (order: Order) => string> = {
 
 /** La relance « noter » ouvre le suivi de commande directement sur le bloc de notation. */
 function routeFor(audience: Audience, key: string, order: Order): string {
+  if (audience === 'client' && key.startsWith('modification_')) return `/order/${order.id}?modifier=1`;
   if (audience === 'client' && key === 'noter') return `/order/${order.id}?noter=1`;
   if (audience === 'client' && key.startsWith('attente_client')) return `/order/${order.id}?repondre=1`;
   return ROUTES[audience](order);
@@ -343,7 +377,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, picked_up_at, restaurants(name)')
+    .select('id, order_number, user_id, restaurant_id, courier_id, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, picked_up_at, modif_resolution, modif_attente_depuis, restaurants(name)')
     .eq('id', payload.order_id)
     .single<Order>();
   if (orderError || !order) {
@@ -365,6 +399,15 @@ Deno.serve(async (req: Request) => {
       const rang = Math.min(Math.max(payload.relance ?? 1, 1), 3);
       envois.push({ audience: 'client', key: `attente_client_${rang}` });
     }
+  } else if (payload.event === 'modification') {
+    // Seulement si on attend toujours le client : tranché entre-temps, on se tait.
+    if (order.modif_attente_depuis && order.status !== 'livree' && order.status !== 'annulee') {
+      envois.push({ audience: 'client', key: (payload.relance ?? 1) >= 2 ? 'modification_2' : 'modification_1' });
+    }
+  } else if (payload.event === 'modification_retiree') {
+    envois.push({ audience: 'restaurant', key: 'modification_retiree' });
+  } else if (payload.event === 'modification_faite') {
+    if (order.status !== 'annulee') envois.push({ audience: 'client', key: 'modification_faite' });
   } else if (payload.event === 'client_a_repondu') {
     if (order.courier_id) envois.push({ audience: 'livreur_assigne', key: 'client_a_repondu' });
   } else if (payload.event === 'noter') {
@@ -374,7 +417,8 @@ Deno.serve(async (req: Request) => {
     const parLeClient = payload.status === 'annulee' && order.cancellation_code === 'autre'
       && order.cancellation_detail === ANNULEE_PAR_LE_CLIENT;
     const annulee = payload.status === 'annulee' && !payload.phase && !payload.picked_up;
-    const cleAnnulation = parLeClient || order.annulee_par === 'client' ? 'annulee_client'
+    const cleAnnulation = order.modif_resolution === 'annule' ? 'annulee_modif'
+      : parLeClient || order.annulee_par === 'client' ? 'annulee_client'
       : order.annulee_par === 'admin' ? 'annulee_taxifood'
       : order.annulee_par === 'systeme' ? 'annulee_systeme' : 'annulee';
     const key = payload.phase ? payload.phase : payload.picked_up ? 'picked_up'

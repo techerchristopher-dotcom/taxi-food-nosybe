@@ -25,7 +25,17 @@
  *        un motif en un tap, une precision libre facultative (200 car.), « Confirmer ».
  *   POST /r-refus/<id>/<jeton> → le refus, avec p_code + p_precision. La base compose le
  *        texte lisible (orders.cancellation_reason) : l'ecran n'est jamais l'autorite.
- * L'acceptation (/a/…) reste en un seul GET, comme avant.
+ *
+ * ⚠️ ACCEPTER = VÉRIFIER (2026-10-20, après TF-442 : acceptée en 51 s, annulée 4 min après
+ * faute de nuggets — le client est parti). Le GET /a/… n'accepte plus rien : il affiche la
+ * LISTE DES PLATS, chacun à cocher « Je l'ai » ou « Il manque ». Seul le POST agit :
+ *   - tout est là            → repondre_commande_par_jeton('accepter') ;
+ *   - un ou plusieurs manquent → signaler_manquants_par_jeton : le client est prévenu et
+ *     choisit (retirer le plat ou annuler), le plat passe en rupture jusqu'au lendemain ;
+ *   - tout manque            → on renvoie vers le refus (motif « rupture »).
+ * Après acceptation, le même lien sert à signaler un plat manquant. Pendant l'attente du
+ * client, il montre son numéro et deux boutons pour répondre à sa place après l'avoir appelé.
+ * Un robot d'aperçu de lien qui ouvre l'URL ne peut donc plus accepter une commande.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -74,9 +84,74 @@ const IT = {
   erreurMotif: 'Scegli un motivo.',
   erreurAutre: 'Con « Altro motivo », scrivi due parole per il cliente.',
   motifTransmis: 'Motivo inviato al cliente:',
+  // Verifica prima di accettare (2026-10-20)
+  verifTitre: (n) => `Ordine ${n}: avete tutto?`,
+  verifSous: 'Controllate ogni piatto con la cucina prima di accettare.',
+  jeLai: 'Ce l’ho',
+  manque: 'Manca',
+  verifValider: 'Confermare',
+  verifNote: 'Tutto « Ce l’ho » → l’ordine è accettato. Un piatto « Manca » → il cliente sceglie: toglierlo o annullare.',
+  erreurVerif: 'Indicate per ogni piatto « Ce l’ho » o « Manca ».',
+  toutManque: 'Mancano tutti i piatti: rifiutate l’ordine (motivo « piatti non disponibili »).',
+  refuserLien: 'Rifiutare l’ordine',
+  manqueTitre: (n) => `Manca un piatto nell’ordine ${n}?`,
+  manqueSous: 'Selezionate i piatti che non avete più. Il cliente sceglierà: toglierli o annullare.',
+  manqueValider: 'Avvisare il cliente',
+  erreurManque: 'Selezionate almeno un piatto.',
+  dejaAcceptee: 'Ordine già accettato.',
+  rienAFaire: 'Va tutto bene? Chiudete semplicemente questa pagina.',
+  previentTitre: (n) => `Cliente avvisato — ${n}`,
+  previentCorps: (m) => `Il cliente sceglie nell’app: togliere « ${m} » o annullare. Il piatto è segnato esaurito fino a domani mattina.`,
+  attenteTitre: (n) => `${n}: in attesa del cliente`,
+  attenteCorps: (m) => `Manca: ${m}. Il cliente è stato avvisato e sceglie nell’app.`,
+  appeler: 'Chiamare il cliente',
+  pourLui: 'Lo avete sentito al telefono? Indicate la sua scelta:',
+  retirer: 'Togliere il piatto e preparare il resto',
+  annuler: 'Annullare l’ordine',
+  payeeEnLigne: 'Ordine già pagato online: per ora si può solo annullare (rimborso totale).',
+  retireTitre: (n) => `Ordine ${n} modificato`,
+  retireCorps: 'Il piatto mancante è stato tolto. Il cliente è stato avvisato. Preparate il resto.',
+  annuleTitre: (n) => `Ordine ${n} annullato`,
+  annuleCorps: 'Il cliente è stato avvisato. Non deve pagare nulla.',
+  erreurGenerique: 'Impossibile salvare. Riprovate o rispondete dall’app.',
   statuts: { confirmee: 'confermato', en_preparation: 'in preparazione', en_livraison: 'in consegna',
              livree: 'consegnato', annulee: 'annullato' },
 };
+
+// Textes français des écrans de vérification / plat manquant (2026-10-20). Même jeu de
+// clés que IT ci-dessus : `tx(langue)` choisit.
+const FR = {
+  verifTitre: (n) => `Commande ${n} : vous avez tout ?`,
+  verifSous: 'Vérifiez chaque plat avec la cuisine avant d’accepter.',
+  jeLai: 'Je l’ai',
+  manque: 'Il manque',
+  verifValider: 'Valider',
+  verifNote: 'Tout « Je l’ai » → la commande est acceptée. Un plat « Il manque » → le client choisit : le retirer ou annuler.',
+  erreurVerif: 'Indiquez pour chaque plat « Je l’ai » ou « Il manque ».',
+  toutManque: 'Tous les plats manquent : refusez la commande (motif « plats plus disponibles »).',
+  refuserLien: 'Refuser la commande',
+  manqueTitre: (n) => `Il manque un plat dans la commande ${n} ?`,
+  manqueSous: 'Cochez les plats que vous n’avez plus. Le client choisira : les retirer ou annuler.',
+  manqueValider: 'Prévenir le client',
+  erreurManque: 'Cochez au moins un plat.',
+  dejaAcceptee: 'Commande déjà acceptée.',
+  rienAFaire: 'Tout va bien ? Fermez simplement cette page.',
+  previentTitre: (n) => `Client prévenu — ${n}`,
+  previentCorps: (m) => `Le client choisit dans l’appli : retirer « ${m} » ou annuler. Le plat est mis en rupture jusqu’à demain matin.`,
+  attenteTitre: (n) => `${n} : en attente du client`,
+  attenteCorps: (m) => `Il manque : ${m}. Le client a été prévenu et choisit dans l’appli.`,
+  appeler: 'Appeler le client',
+  pourLui: 'Vous l’avez eu au téléphone ? Indiquez son choix :',
+  retirer: 'Retirer le plat et préparer le reste',
+  annuler: 'Annuler la commande',
+  payeeEnLigne: 'Commande déjà payée en ligne : pour l’instant, on ne peut que l’annuler (remboursement intégral).',
+  retireTitre: (n) => `Commande ${n} modifiée`,
+  retireCorps: 'Le plat manquant est retiré. Le client est prévenu. Préparez le reste.',
+  annuleTitre: (n) => `Commande ${n} annulée`,
+  annuleCorps: 'Le client est prévenu. Il n’a rien à payer.',
+  erreurGenerique: 'Impossible d’enregistrer. Réessayez ou répondez depuis l’application.',
+};
+const tx = (langue) => (langue === 'it' ? IT : FR);
 
 // Motifs de refus : MEMES codes que la base (orders_cancellation_code_check,
 // libelle_motif_refus). Le libelle affiche ici est la phrase que lira le client.
@@ -100,7 +175,7 @@ const HTML = { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-
                'referrer-policy': 'no-referrer' };
 
 /** Formulaire de refus. Aucun JavaScript : boutons radio + textarea + un bouton. */
-function formulaireRefus({ numero, langue, erreur = null, code = null, precision = '' }) {
+function formulaireRefus({ numero, langue, erreur = null, code = null, precision = '', lienModifier = null }) {
   const it = langue === 'it';
   const titre = it ? IT.refusTitre(numero) : `Refuser la commande ${numero} ?`;
   const choix = MOTIFS.map((m) => `<label class="m"><input type="radio" name="code" value="${m.code}"${
@@ -140,7 +215,99 @@ ${choix}
 <p class="n">${PRECISION_MAX} max.</p>
 <button type="submit">${esc(it ? IT.confirmer : 'Confirmer le refus')}</button>
 <p class="x">${esc(it ? IT.renoncer : 'Tu ne veux pas refuser ? Ferme simplement cette page.')}</p>
+${lienModifier ? `<p class="x"><a href="${lienModifier}">${esc(it
+  ? 'Manca solo un piatto? Modificate l’ordine invece di rifiutarlo →'
+  : 'Il ne manque qu’un plat ? Modifiez la commande au lieu de la refuser →')}</a></p>` : ''}
 </form></body></html>`;
+}
+
+const STYLE_FORM = `
+ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:#F5F2EF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:16px}
+ .c{background:#fff;border-radius:24px;padding:26px 18px;max-width:460px;width:100%;
+    box-shadow:0 4px 24px rgba(26,26,26,.08)}
+ h1{font-size:21px;margin:0;color:#1A1A1A;text-align:center;line-height:1.3}
+ .s{color:#4A4744;line-height:1.5;margin:8px 0 16px;text-align:center}
+ .l{border:2px solid #E5DFD9;border-radius:16px;padding:12px 12px 10px;margin:0 0 10px}
+ .t{font-size:16px;font-weight:700;color:#1A1A1A;line-height:1.35}
+ .p{font-size:14px;color:#B3261E;font-weight:600;margin-top:2px}
+ .ch{display:flex;gap:8px;margin-top:10px}
+ .ch label{flex:1;cursor:pointer}
+ .ch input,.m input{position:absolute;opacity:0;pointer-events:none}
+ .ch span{display:block;text-align:center;border:2px solid #E5DFD9;border-radius:999px;padding:10px 6px;
+          font-size:15px;font-weight:700;color:#4A4744}
+ .ch input.ok:checked+span{border-color:#157F3C;background:#E7F4EC;color:#157F3C}
+ .ch input.ko:checked+span{border-color:#DF3228;background:#FDECEA;color:#B3261E}
+ .ch input:focus-visible+span,.m input:focus-visible+span{outline:3px solid #1A1A1A;outline-offset:2px}
+ .m{display:block;margin:0 0 10px;cursor:pointer}
+ .m span{display:block;border:2px solid #E5DFD9;border-radius:16px;padding:14px 16px;font-size:16px;color:#1A1A1A}
+ .m input:checked+span{border-color:#DF3228;background:#FDECEA;font-weight:700}
+ .err{background:#FDECEA;color:#9B1C14;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-weight:600}
+ .n{color:#8A827A;font-size:13px;line-height:1.45;text-align:center;margin:12px 0 0}
+ button{display:block;width:100%;margin-top:14px;background:#157F3C;color:#fff;border:0;font:inherit;
+        font-size:17px;font-weight:700;padding:16px;border-radius:999px;cursor:pointer}
+ button.r{background:#DF3228} button.g{background:#fff;color:#1A1A1A;border:2px solid #E5DFD9}
+ a.b{display:block;text-align:center;margin-top:14px;background:#1A1A1A;color:#fff;text-decoration:none;
+     font-weight:700;padding:14px;border-radius:999px}
+ a.x{display:block;text-align:center;color:#B3261E;font-weight:700;margin-top:12px}
+`;
+
+function enTete(titre, langue) {
+  return `<!doctype html><html lang="${langue === 'it' ? 'it' : 'fr'}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${esc(titre)} — Taxi Food</title><style>${STYLE_FORM}</style></head><body>`;
+}
+
+const lignePrecision = (l) => (l.precision ? `<div class="p">✎ ${esc(l.precision)}</div>` : '');
+
+/** Commande « reçue » : chaque plat à cocher « Je l'ai » / « Il manque » avant d'accepter. */
+function formulaireVerif({ d, erreur = null, choix = {} }) {
+  const t = tx(d.langue);
+  const titre = t.verifTitre(d.numero);
+  const lignes = (d.lignes ?? []).map((l) => `<div class="l"><div class="t">${esc(l.texte)}</div>${lignePrecision(l)}
+<div class="ch"><label><input class="ok" type="radio" name="l_${esc(l.id)}" value="ok"${choix[l.id] === 'ok' ? ' checked' : ''} required><span>✅ ${esc(t.jeLai)}</span></label>
+<label><input class="ko" type="radio" name="l_${esc(l.id)}" value="manque"${choix[l.id] === 'manque' ? ' checked' : ''}><span>❌ ${esc(t.manque)}</span></label></div></div>`).join('');
+  return `${enTete(titre, d.langue)}<form class="c" method="post">
+<input type="hidden" name="action" value="verifier">
+<h1>${esc(titre)}</h1><p class="s">${esc(t.verifSous)}</p>
+${erreur ? `<p class="err">${erreur}</p>` : ''}
+${lignes}
+<button type="submit">${esc(t.verifValider)}</button>
+<p class="n">${esc(t.verifNote)}</p>
+</form></body></html>`;
+}
+
+/** Commande déjà acceptée : signaler un plat qu'on n'a plus. */
+function formulaireManquants({ d, erreur = null }) {
+  const t = tx(d.langue);
+  const titre = t.manqueTitre(d.numero);
+  const lignes = (d.lignes ?? []).map((l) => `<label class="m"><input type="checkbox" name="m" value="${esc(l.id)}"><span>${esc(l.texte)}${
+    l.precision ? ` <small>✎ ${esc(l.precision)}</small>` : ''}</span></label>`).join('');
+  return `${enTete(titre, d.langue)}<form class="c" method="post">
+<input type="hidden" name="action" value="manquants">
+<p class="s">✅ ${esc(t.dejaAcceptee)}</p>
+<h1>${esc(titre)}</h1><p class="s">${esc(t.manqueSous)}</p>
+${erreur ? `<p class="err">${esc(erreur)}</p>` : ''}
+${lignes}
+<button class="r" type="submit">${esc(t.manqueValider)}</button>
+<p class="n">${esc(t.rienAFaire)}</p>
+</form></body></html>`;
+}
+
+/** On attend le choix du client : son numéro, et répondre à sa place après l'appel. */
+function pageAttente(d, juste = null) {
+  const t = tx(d.langue);
+  const titre = juste ? `✅ ${juste.titre}` : `⏳ ${t.attenteTitre(d.numero)}`;
+  const manquants = (d.lignes ?? []).filter((l) => l.manquant).map((l) => l.texte).join(', ');
+  const tel = d.telephone ? String(d.telephone).replace(/[^0-9+]/g, '') : '';
+  return `${enTete(titre, d.langue)}<div class="c">
+<h1>${esc(titre)}</h1><p class="s">${esc(juste ? juste.corps : t.attenteCorps(manquants))}</p>
+${tel ? `<a class="b" href="tel:${esc(tel)}">📞 ${esc(t.appeler)} — ${esc(d.telephone)}</a>` : ''}
+<p class="s" style="margin-top:20px">${esc(t.pourLui)}</p>
+${d.payee_en_ligne ? `<p class="n">${esc(t.payeeEnLigne)}</p>` : `<form method="post"><input type="hidden" name="action" value="retirer"><button type="submit">✂️ ${esc(t.retirer)}</button></form>`}
+<form method="post"><input type="hidden" name="action" value="annuler"><button class="r" type="submit">${esc(t.annuler)}</button></form>
+</div></body></html>`;
 }
 
 function page(emoji, titre, corps, couleur = '#157F3C', cta = null, langue = 'fr') {
@@ -243,7 +410,9 @@ export default async (request) => {
         if (!d?.ok) return pageInutilisable();
         // Refus possible tant que le livreur n'a pas recupere la commande (2026-10-19).
         if (!(d.annulable ?? d.statut === 'recue')) return pageDejaTraitee(d);
-        return rendre(formulaireRefus({ numero: d.numero, langue: d.langue }));
+        // Plusieurs plats : proposer de modifier plutôt que tout refuser (2026-10-20).
+        const lienModifier = (d.lignes?.length ?? 0) > 1 && !d.attente_modif ? `/a/${orderId}/${token}` : null;
+        return rendre(formulaireRefus({ numero: d.numero, langue: d.langue, lienModifier }));
       }
 
       const form = new URLSearchParams(await request.text());
@@ -272,10 +441,77 @@ export default async (request) => {
       return pageInutilisable();
     }
 
-    // --- Acceptation : inchangee (un GET accepte) -----------------------------------------
+    // --- /a/ : vérifier puis accepter, signaler un plat manquant, répondre pour le client ---
+    const c = await rpc('consulter_commande_par_jeton', { p_order_id: orderId, p_token: token });
+    if (!c?.ok) return pageInutilisable();
+    const t = tx(c.langue);
+
+    async function signaler(ids) {
+      const r = await rpc('signaler_manquants_par_jeton', { p_order_id: orderId, p_token: token, p_items: ids });
+      if (r?.ok) {
+        // Relire : la page d'attente montre le numéro du client et les deux réponses possibles.
+        const apres = await rpc('consulter_commande_par_jeton', { p_order_id: orderId, p_token: token });
+        const juste = { titre: t.previentTitre(r.numero ?? c.numero), corps: t.previentCorps(r.manquants ?? '') };
+        if (apres?.ok && apres.attente_modif) return rendre(pageAttente(apres, juste));
+        return rendre(page('✅', esc(juste.titre), esc(juste.corps), '#157F3C', null, c.langue));
+      }
+      if (r?.raison === 'modif:tout_manque') {
+        return rendre(formulaireVerif({ d: c, erreur: `${esc(t.toutManque)} <a class="x" href="/r-refus/${orderId}/${token}">${esc(t.refuserLien)} →</a>` }), 422);
+      }
+      if (r?.raison === 'modif:trop_tard') return pageDejaTraitee(c);
+      return rendre(page('⚠️', c.numero ?? '', esc(t.erreurGenerique), '#8A827A', null, c.langue), 500);
+    }
+
+    if (request.method !== 'POST') {
+      if (c.attente_modif && c.annulable) return rendre(pageAttente(c));
+      if (c.statut === 'recue') return rendre(formulaireVerif({ d: c }));
+      if (c.annulable && (c.lignes?.length ?? 0) > 1) return rendre(formulaireManquants({ d: c }));
+      return pageDejaTraitee(c);
+    }
+
+    const form = new URLSearchParams(await request.text());
+    const action = String(form.get('action') ?? '');
+
+    // Répondre à la place du client (après l'avoir eu au téléphone).
+    if (action === 'retirer' || action === 'annuler') {
+      const r = await rpc('resoudre_manquants_par_jeton', { p_order_id: orderId, p_token: token, p_choix: action });
+      if (r?.ok && action === 'retirer') return rendre(page('✂️', t.retireTitre(esc(r.numero)), esc(t.retireCorps), '#157F3C',
+        { libelle: c.langue === 'it' ? IT.voir(r.numero) : `Voir la commande ${r.numero ?? ''}`.trim(), href: `${APP}/pro` }, c.langue));
+      if (r?.ok) return rendre(page('❌', t.annuleTitre(esc(r.numero)), esc(t.annuleCorps), '#DF3228',
+        { libelle: c.langue === 'it' ? IT.historique : 'Voir mon historique', href: `${APP}/history` }, c.langue));
+      if (r?.raison === 'modif:rien_en_attente' || r?.raison === 'modif:trop_tard') return pageDejaTraitee(c);
+      return rendre(page('⚠️', c.numero ?? '', esc(t.erreurGenerique), '#8A827A', null, c.langue), 500);
+    }
+
+    // Signaler des plats manquants sur une commande déjà acceptée.
+    if (action === 'manquants') {
+      const ids = form.getAll('m').map(String).filter((x) => /^[0-9a-f-]{36}$/i.test(x));
+      if (!ids.length) return rendre(formulaireManquants({ d: c, erreur: t.erreurManque }), 422);
+      return signaler(ids);
+    }
+
+    // Vérification avant d'accepter.
+    if (action !== 'verifier') return pageInutilisable();
+    if (c.attente_modif) return rendre(pageAttente(c));
+    if (c.statut !== 'recue') return pageDejaTraitee(c);
+    const choix = {};
+    for (const l of c.lignes ?? []) choix[l.id] = String(form.get(`l_${l.id}`) ?? '');
+    const lignes = c.lignes ?? [];
+    if (lignes.some((l) => choix[l.id] !== 'ok' && choix[l.id] !== 'manque')) {
+      return rendre(formulaireVerif({ d: c, erreur: esc(t.erreurVerif), choix }), 422);
+    }
+    const manquants = lignes.filter((l) => choix[l.id] === 'manque').map((l) => l.id);
+    if (manquants.length === lignes.length) {
+      return rendre(formulaireVerif({ d: c, choix,
+        erreur: `${esc(t.toutManque)} <a class="x" href="/r-refus/${orderId}/${token}">${esc(t.refuserLien)} →</a>` }), 422);
+    }
+    if (manquants.length) return signaler(manquants);
+
     const d = await rpc('repondre_commande_par_jeton', {
       p_order_id: orderId, p_token: token, p_action: 'accepter', p_motif: null,
     });
+
+    if (d?.raison === 'attente_client') return rendre(pageAttente(c));
 
     if (d?.ok && d?.langue === 'it') {
       return rendre(page('✅', IT.acceptee(esc(d.numero)),

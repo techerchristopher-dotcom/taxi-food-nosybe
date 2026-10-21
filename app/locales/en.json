@@ -917,5 +917,17 @@
     "texte": "Your courier or the restaurant tried to call you about your order. Let us know you’re here and we’ll carry on with the delivery right away.",
     "bouton": "I’m here, deliver it!",
     "erreur": "That didn’t go through. Try again, or call the courier back."
+  },
+  "platManquant": {
+    "titre": "A dish is missing from your order ✏️",
+    "texte": "{{resto}} has run out of:",
+    "retirer": "Remove this dish and get the rest",
+    "retirerTotal": "Remove this dish — new total {{total}}",
+    "annuler": "Cancel my order",
+    "annulerConfirmer": "Confirm: cancel the whole order",
+    "note": "You only pay for what you receive. If you cancel, you have nothing to pay.",
+    "payeeEnLigne": "Your order is already paid online: we can’t remove a dish yet. You can cancel it (full refund) or call the restaurant.",
+    "erreur": "That didn’t go through. Try again in a moment.",
+    "retire": "The missing dish was removed from your order."
   }
 }

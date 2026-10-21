@@ -454,6 +454,10 @@ export function getMapsNavigationUrl(latitude: number, longitude: number): strin
 }
 
 export type OrderItemSnapshot = {
+  /** Identifiant de la ligne (order_items.id) — sert à signaler un plat manquant. */
+  id?: string;
+  /** Le restaurant a signalé ce plat comme manquant (2026-10-20). */
+  manquant?: boolean;
   productId: string;
   name: string;
   quantity: number;
@@ -525,6 +529,15 @@ export type Order = {
   cancellationCode?: string | null;
   /** Qui a annulé (2026-10-19) : restaurant | admin | client | systeme. */
   annuleePar?: string | null;
+  /**
+   * Plat manquant (2026-10-20) : depuis quand on attend le choix du client — retirer le plat
+   * ou annuler (null = rien en attente). Un ÉTAT, pas un statut.
+   */
+  modifAttenteDepuis?: string | null;
+  /** Une fois tranché : 'retire' | 'annule'. */
+  modifResolution?: string | null;
+  /** Qui a tranché : client | restaurant | admin. */
+  modifResoluePar?: string | null;
   /** Client injoignable (2026-10-19) : depuis quand la commande attend sa réponse (null = pas bloquée). */
   attenteClientDepuis?: string | null;
   /** Relances déjà envoyées au client (1 à 4). */

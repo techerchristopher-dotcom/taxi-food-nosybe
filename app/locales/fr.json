@@ -917,5 +917,17 @@
     "texte": "Ton livreur ou le restaurant a essayé de t’appeler pour ta commande. Dis-nous que tu es là : on reprend la livraison tout de suite.",
     "bouton": "Je suis là, livrez-moi !",
     "erreur": "Ça n’est pas passé. Réessaie, ou réponds au livreur par téléphone."
+  },
+  "platManquant": {
+    "titre": "Un plat manque dans ta commande ✏️",
+    "texte": "{{resto}} n’a plus :",
+    "retirer": "Retirer ce plat et recevoir le reste",
+    "retirerTotal": "Retirer ce plat — nouveau total {{total}}",
+    "annuler": "Annuler ma commande",
+    "annulerConfirmer": "Confirmer : annuler toute la commande",
+    "note": "Tu ne paies que ce que tu reçois. En annulant, tu n’as rien à payer.",
+    "payeeEnLigne": "Ta commande est déjà payée en ligne : on ne peut pas encore retirer un plat. Tu peux l’annuler (remboursement intégral) ou appeler le restaurant.",
+    "erreur": "Ça n’est pas passé. Réessaie dans un instant.",
+    "retire": "Le plat manquant a été retiré de ta commande."
   }
 }

@@ -56,6 +56,8 @@ type OrderRow = {
   attente_client_depuis?: string | null;
   attente_client_relances?: number | null;
   attente_client_par?: string | null;
+  /** Plat manquant (2026-10-20) : on attend le choix du client (retirer ou annuler). */
+  modif_attente_depuis?: string | null;
   /** Commande programmée le jour même (2026-10-16) : heure de livraison choisie par le
    *  client, et quand la base la transmet au restaurant (à son ouverture). */
   livraison_souhaitee_a?: string | null;
@@ -166,7 +168,7 @@ export function Realtime() {
     const [o, c, r, j] = await Promise.all([
       supabase
         .from('orders')
-        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, attente_client_depuis, attente_client_relances, attente_client_par, livraison_souhaitee_a, transmission_prevue_a, transmise_le, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
+        .select('id, order_number, status, total, promo_code, promo_discount, remise_porte_monnaie, created_at, courier_id, user_id, picked_up_at, status_updated_at, attente_client_depuis, attente_client_relances, attente_client_par, modif_attente_depuis, livraison_souhaitee_a, transmission_prevue_a, transmise_le, payment_method, payment_status, restaurants ( id, name, phone ), profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, latitude, longitude )')
         .not('status', 'in', '(livree,annulee)')
         .order('created_at', { ascending: true }),
       // Tous les livreurs, pas seulement les disponibles : l'assignation
@@ -275,6 +277,19 @@ export function Realtime() {
     const { error } = lever
       ? await supabase.rpc('lever_attente_client', { p_order_id: o.id })
       : await supabase.rpc('signaler_client_injoignable', { p_order_id: o.id, p_note: note?.trim() || null });
+    setBusy(null);
+    if (error) { setErr(error.message); return; }
+    await load();
+  }
+
+  /** Plat manquant : répondre à la place du client, après l'avoir appelé. */
+  async function resoudreManquant(o: OrderRow, choix: 'retirer' | 'annuler') {
+    const q = choix === 'retirer'
+      ? `${o.order_number} : retirer le(s) plat(s) manquant(s) et garder le reste ?\nLe total est recalculé par la base, le restaurant et le client sont prévenus.`
+      : `${o.order_number} : ANNULER toute la commande (accord du client) ?`;
+    if (!window.confirm(q)) return;
+    setBusy(o.id);
+    const { error } = await supabase.rpc('resoudre_plats_manquants', { p_order_id: o.id, p_choix: choix });
     setBusy(null);
     if (error) { setErr(error.message); return; }
     await load();
@@ -457,6 +472,15 @@ export function Realtime() {
                     <td data-label="Statut">
                       <span className={`pill ${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span>
                       {isLate(o) ? <span className="badge-late">RETARD</span> : null}
+                      {o.modif_attente_depuis ? (
+                        <div style={{ marginTop: 4, fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>
+                          ✏️ Plat manquant — le client choisit depuis {timeLabel(o.modif_attente_depuis)}
+                          <div style={{ marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button className="btn ghost" disabled={busy === o.id} onClick={() => void resoudreManquant(o, 'retirer')}>Retirer le plat</button>
+                            <button className="btn ghost" disabled={busy === o.id} onClick={() => void resoudreManquant(o, 'annuler')}>Annuler</button>
+                          </div>
+                        </div>
+                      ) : null}
                       {o.attente_client_depuis ? (
                         <div style={{ marginTop: 4, fontSize: 12, fontWeight: 700, color: 'var(--red)' }}>
                           ⏸ Client injoignable depuis {timeLabel(o.attente_client_depuis)}

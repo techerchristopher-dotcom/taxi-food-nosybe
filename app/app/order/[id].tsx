@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BlocAvis } from '../../components/BlocAvis';
 import { BlocAttenteClient } from '../../components/BlocAttenteClient';
+import { BlocPlatManquant } from '../../components/BlocPlatManquant';
 import { BlocEstimation } from '../../components/BlocEstimation';
 import { BlocSuiviLivreur } from '../../components/suivi/BlocSuiviLivreur';
 import { CarteOrangeMoney } from '../../components/CarteOrangeMoney';
@@ -205,6 +206,11 @@ export default function OrderTrackingScreen() {
             désormais la seule chose que le client a encore à faire sur cet écran.
             La relance push (`?noter=1`) atterrit dessus sans rien chercher. */}
         {order.status === 'livree' ? <BlocAvis order={order} /> : null}
+        {/* Plat manquant (2026-10-20) : le client choisit — retirer le plat ou annuler. */}
+        {!cancelled && order.status !== 'livree' ? <BlocPlatManquant order={order} onRepondu={reload} /> : null}
+        {order.modifResolution === 'retire' && !cancelled && order.status !== 'livree' ? (
+          <Text style={styles.modifFaite}>✏️ {t('platManquant.retire')}</Text>
+        ) : null}
         {/* Client injoignable (2026-10-19) : en tête, c'est la seule action qui compte. */}
         {!cancelled && order.status !== 'livree' ? <BlocAttenteClient order={order} onRepondu={reload} /> : null}
         {/* Suivi du livreur sur une carte (2026-10-17) : dès qu'un livreur a pris la
@@ -301,7 +307,7 @@ export default function OrderTrackingScreen() {
           {order.items.map((it, i) => (
             <View key={i} style={styles.itemRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.itemName}>
+                <Text style={[styles.itemName, it.manquant && styles.itemManquant]}>
                   {it.quantity} × {it.name}
                 </Text>
                 {it.options && it.options.length > 0 ? (
@@ -416,6 +422,8 @@ function EtatPaiement({ order, onReprendre }: { order: Order; onReprendre: () =>
 }
 
 const styles = StyleSheet.create({
+  modifFaite: { fontFamily: fonts.semibold, fontSize: 13, color: '#157F3C', marginBottom: spacing.gap },
+  itemManquant: { textDecorationLine: 'line-through', color: colors.textMuted },
   container: { flex: 1, backgroundColor: colors.bg },
   paiementCarte: { gap: 0 },
   paiementLigne: { flexDirection: 'row', alignItems: 'center', gap: 10 },

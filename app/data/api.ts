@@ -908,6 +908,9 @@ type OrderJoinRow = {
   attente_client_depuis?: string | null;
   attente_client_relances?: number | null;
   attente_client_par?: string | null;
+  modif_attente_depuis?: string | null;
+  modif_resolution?: string | null;
+  modif_resolue_par?: string | null;
   cancellation_detail?: string | null;
   courier_id: string | null;
   picked_up_at: string | null;
@@ -937,6 +940,8 @@ type OrderJoinRow = {
     longitude: number | null;
   } | null;
   order_items: {
+    id?: string;
+    manquant_le?: string | null;
     product_id: string | null;
     product_name_snapshot: string;
     quantity: number;
@@ -954,11 +959,11 @@ type OrderJoinRow = {
 };
 
 const ORDER_SELECT =
-  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, attente_client_depuis, attente_client_relances, attente_client_par, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
+  'id, order_number, restaurant_id, subtotal, delivery_fee, packaging_fee, promo_code, promo_discount, remise_porte_monnaie, total, payment_method, payment_status, om_en_ligne, status, cancellation_reason, cancellation_code, cancellation_detail, annulee_par, attente_client_depuis, attente_client_relances, attente_client_par, modif_attente_depuis, modif_resolution, modif_resolue_par, courier_id, picked_up_at, ready_at, arriving_at, arrived_at, relance_restaurant_le, delivered_at, created_at, ' +
   'livraison_souhaitee_a, lancement_prevu_a, transmission_prevue_a, transmise_le, ' +
   'restaurants ( name, logo_url, phone, preparation_auto ), profiles ( full_name, phone ), ' +
   'addresses ( label, zone, landmark, phone, latitude, longitude ), ' +
-  'order_items ( product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
+  'order_items ( id, manquant_le, product_id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, packaging_label_snapshot, ' +
   'order_item_options ( option_id, option_name_snapshot, price_delta_snapshot, quantity ) )';
 
 function mapOrder(o: OrderJoinRow): Order {
@@ -981,6 +986,8 @@ function mapOrder(o: OrderJoinRow): Order {
     preparationAuto: o.restaurants?.preparation_auto === true,
     clientName: clientTelephone ?? o.profiles?.full_name ?? null,
     items: (o.order_items ?? []).map((it) => ({
+      id: it.id,
+      manquant: !!it.manquant_le,
       productId: it.product_id ?? '',
       name: it.product_name_snapshot,
       quantity: it.quantity,
@@ -1019,6 +1026,9 @@ function mapOrder(o: OrderJoinRow): Order {
     attenteClientDepuis: o.attente_client_depuis ?? null,
     attenteClientRelances: o.attente_client_relances ?? 0,
     attenteClientPar: o.attente_client_par ?? null,
+    modifAttenteDepuis: o.modif_attente_depuis ?? null,
+    modifResolution: o.modif_resolution ?? null,
+    modifResoluePar: o.modif_resolue_par ?? null,
     cancellationDetail: o.cancellation_detail ?? null,
     mapsUrl:
       addr?.latitude != null && addr?.longitude != null
@@ -2015,6 +2025,47 @@ export async function signalerClientInjoignable(orderId: string, note?: string):
 /** Le livreur / le restaurant a fini par joindre le client : on lève l'attente. */
 export async function leverAttenteClient(orderId: string): Promise<void> {
   const { error } = await supabase.rpc('lever_attente_client', { p_order_id: orderId });
+  if (error) throw error;
+}
+
+/**
+ * Plat manquant (2026-10-20). Le restaurant coche les plats qu'il n'a plus : la base prévient
+ * le client (push + e-mail), met le plat en rupture jusqu'au lendemain matin et attend son choix.
+ */
+export async function signalerPlatsManquants(orderId: string, itemIds: string[]): Promise<void> {
+  const { error } = await supabase.rpc('signaler_plats_manquants', { p_order_id: orderId, p_items: itemIds });
+  if (error) throw error;
+}
+
+export type MontantsModification = {
+  plats: number;
+  emballage: number;
+  remise: number;
+  porte_monnaie: number;
+  livraison: number;
+  total: number;
+  porte_monnaie_rendu?: number;
+};
+
+/** Ce que deviendrait la commande sans les plats manquants (calculé par la base, rien n'est écrit). */
+export async function apercuRetraitManquants(
+  orderId: string,
+): Promise<{ avant: MontantsModification; apres: MontantsModification; payeeEnLigne: boolean }> {
+  const { data, error } = await supabase.rpc('resoudre_plats_manquants', {
+    p_order_id: orderId, p_choix: 'retirer', p_apercu: true,
+  });
+  if (error) throw error;
+  const d = data as { avant: MontantsModification; apres: MontantsModification; payee_en_ligne?: boolean };
+  return { avant: d.avant, apres: d.apres, payeeEnLigne: !!d.payee_en_ligne };
+}
+
+/**
+ * Le choix : retirer les plats manquants (la base recalcule tout, et accepte la commande si
+ * elle était encore « reçue ») ou annuler. Le client, le restaurant (après l'avoir appelé)
+ * ou l'admin — la base sait qui appelle.
+ */
+export async function resoudrePlatsManquants(orderId: string, choix: 'retirer' | 'annuler'): Promise<void> {
+  const { error } = await supabase.rpc('resoudre_plats_manquants', { p_order_id: orderId, p_choix: choix });
   if (error) throw error;
 }
 

@@ -6,9 +6,10 @@ import { Button } from '../../components/Button';
 import { RestaurantHeader } from '../../components/RestaurantHeader';
 import { RestaurantOrderCard } from '../../components/RestaurantOrderCard';
 import { RefuseSheet } from '../../components/RefuseSheet';
+import { VerificationCommande } from '../../components/VerificationCommande';
 import { VisiteGuidee } from '../../components/VisiteGuidee';
 import { colors, fonts, spacing } from '../../theme/tokens';
-import { listRestaurantOrders, marquerVisiteProVue, setOrderStatus } from '../../data/api';
+import { listRestaurantOrders, marquerVisiteProVue, resoudrePlatsManquants, setOrderStatus, signalerPlatsManquants } from '../../data/api';
 import { Order, OrderStatus, RefusalCode } from '../../data/types';
 import { useLoad } from '../../lib/useLoad';
 import { useSondage } from '../../lib/useSondage';
@@ -52,6 +53,8 @@ export default function RestaurantOrdersScreen() {
 
   const [working, setWorking] = useState<string | null>(null);
   const [refuseTarget, setRefuseTarget] = useState<Order | null>(null);
+  // Vérification des plats (2026-10-20) : avant d'accepter, ou pour signaler un manque après.
+  const [verif, setVerif] = useState<{ order: Order; mode: 'accepter' | 'manquant' } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // ------------------------------------------------------------------ Visite
@@ -118,6 +121,38 @@ export default function RestaurantOrdersScreen() {
     }
   }
 
+  /** Plats manquants : le client est prévenu et choisit (retirer ou annuler). */
+  async function signaler(order: Order, itemIds: string[]) {
+    setError(null);
+    setWorking(order.id);
+    try {
+      await signalerPlatsManquants(order.id, itemIds);
+      setVerif(null);
+      await reload();
+    } catch (e) {
+      setVerif(null);
+      setError(messageErreurCommandeResto(e));
+      await reload();
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  /** Le restaurant a eu le client au téléphone et indique son choix. */
+  async function resoudre(order: Order, choix: 'retirer' | 'annuler') {
+    setError(null);
+    setWorking(order.id);
+    try {
+      await resoudrePlatsManquants(order.id, choix);
+      await reload();
+    } catch (e) {
+      setError(messageErreurCommandeResto(e));
+      await reload();
+    } finally {
+      setWorking(null);
+    }
+  }
+
   const list = orders ?? [];
 
   return (
@@ -169,7 +204,16 @@ export default function RestaurantOrdersScreen() {
               key={order.id}
               order={order}
               messagerie={{ role: 'restaurant', nonLus: nonLus[order.id] ?? 0 }}
-              footer={<OrderActions order={order} busy={working === order.id} onAdvance={advance} onRefuse={setRefuseTarget} />}
+              footer={
+                <OrderActions
+                  order={order}
+                  busy={working === order.id}
+                  onAdvance={advance}
+                  onRefuse={setRefuseTarget}
+                  onVerifier={(o, mode) => setVerif({ order: o, mode })}
+                  onResoudre={resoudre}
+                />
+              }
             />
           ))}
         </ScrollView>
@@ -183,6 +227,24 @@ export default function RestaurantOrdersScreen() {
         onConfirm={(refus) => refuseTarget && advance(refuseTarget, 'annulee', refus)}
       />
 
+      {verif ? (
+        <VerificationCommande
+          order={verif.order}
+          mode={verif.mode}
+          submitting={working === verif.order.id}
+          onCancel={() => setVerif(null)}
+          onAccepter={(o) => {
+            setVerif(null);
+            advance(o, 'confirmee');
+          }}
+          onSignaler={signaler}
+          onRefuser={(o) => {
+            setVerif(null);
+            setRefuseTarget(o);
+          }}
+        />
+      ) : null}
+
       <VisiteGuidee visible={visite} onFermer={fermerVisite} />
     </View>
   );
@@ -194,17 +256,38 @@ function OrderActions({
   busy,
   onAdvance,
   onRefuse,
+  onVerifier,
+  onResoudre,
 }: {
   order: Order;
   busy: boolean;
   onAdvance: (o: Order, s: OrderStatus) => void;
   onRefuse: (o: Order) => void;
+  onVerifier: (o: Order, mode: 'accepter' | 'manquant') => void;
+  onResoudre: (o: Order, choix: 'retirer' | 'annuler') => void;
 }) {
+  // Un plat manque : on attend le client. Après l'avoir eu au téléphone, le restaurant
+  // indique son choix ; sinon le client choisit dans son appli (2026-10-20).
+  if (order.modifAttenteDepuis) {
+    return (
+      <View style={{ gap: 8 }}>
+        <Text style={styles.autoNote}>Vous avez eu le client au téléphone ? Indiquez son choix :</Text>
+        <Button label="Retirer le plat et préparer le reste" icon="content_cut" onPress={() => onResoudre(order, 'retirer')} loading={busy} />
+        <Button label="Le client annule" variant="outline" onPress={() => onResoudre(order, 'annuler')} disabled={busy} />
+      </View>
+    );
+  }
+  // Plusieurs plats : on peut signaler qu'un seul manque au lieu de tout annuler.
+  const manque = order.items.length > 1 ? (
+    <Button label="Il manque un plat" icon="remove_shopping_cart" variant="outline" onPress={() => onVerifier(order, 'manquant')} disabled={busy} />
+  ) : null;
   if (order.status === 'recue') {
+    // « Accepter » ouvre la vérification plat par plat : on n'accepte plus sans avoir
+    // demandé à la cuisine (TF-442, 20/10).
     return (
       <View style={styles.actionRow}>
         <Button label="Refuser" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
-        <Button label="Accepter" icon="check" onPress={() => onAdvance(order, 'confirmee')} loading={busy} style={{ flex: 1.3 }} />
+        <Button label="Vérifier et accepter" icon="checklist" onPress={() => onVerifier(order, 'accepter')} loading={busy} style={{ flex: 1.6 }} />
       </View>
     );
   }
@@ -223,6 +306,7 @@ function OrderActions({
               ? `Acceptée — réservation : passera en préparation toute seule vers ${heureNosyBe(order.lancementPrevu, 'fr')}. Pas avant.`
               : "Acceptée — passe en préparation toute seule dans moins d'une minute."}
           </Text>
+          {manque}
           <View style={styles.actionRow}>
             <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
             <Button
@@ -238,17 +322,23 @@ function OrderActions({
       );
     }
     return (
-      <View style={styles.actionRow}>
-        <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
-        <Button label="Démarrer la préparation" icon="soup_kitchen" onPress={() => onAdvance(order, 'en_preparation')} loading={busy} style={{ flex: 1.6 }} />
+      <View style={{ gap: 8 }}>
+        {manque}
+        <View style={styles.actionRow}>
+          <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
+          <Button label="Démarrer la préparation" icon="soup_kitchen" onPress={() => onAdvance(order, 'en_preparation')} loading={busy} style={{ flex: 1.6 }} />
+        </View>
       </View>
     );
   }
   if (order.status === 'en_preparation') {
     return (
-      <View style={styles.actionRow}>
-        <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
-        <BoutonPrete onConfirm={() => onAdvance(order, 'en_livraison')} busy={busy} />
+      <View style={{ gap: 8 }}>
+        {manque}
+        <View style={styles.actionRow}>
+          <Button label="Annuler" variant="outline" onPress={() => onRefuse(order)} disabled={busy} style={{ flex: 1 }} />
+          <BoutonPrete onConfirm={() => onAdvance(order, 'en_livraison')} busy={busy} />
+        </View>
       </View>
     );
   }

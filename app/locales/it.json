@@ -917,5 +917,17 @@
     "texte": "Il rider o il ristorante hanno provato a chiamarti per il tuo ordine. Dicci che ci sei: riprendiamo subito la consegna.",
     "bouton": "Ci sono, consegnatemelo!",
     "erreur": "Non è andata. Riprova, o richiama il rider."
+  },
+  "platManquant": {
+    "titre": "Manca un piatto nel tuo ordine ✏️",
+    "texte": "{{resto}} ha finito:",
+    "retirer": "Togli questo piatto e ricevi il resto",
+    "retirerTotal": "Togli questo piatto — nuovo totale {{total}}",
+    "annuler": "Annulla il mio ordine",
+    "annulerConfirmer": "Conferma: annulla tutto l’ordine",
+    "note": "Paghi solo ciò che ricevi. Se annulli, non devi pagare nulla.",
+    "payeeEnLigne": "Il tuo ordine è già pagato online: per ora non possiamo togliere un piatto. Puoi annullarlo (rimborso totale) o chiamare il ristorante.",
+    "erreur": "Non è andata. Riprova tra un attimo.",
+    "retire": "Il piatto mancante è stato tolto dal tuo ordine."
   }
 }

@@ -44,6 +44,18 @@ export function RestaurantOrderCard({
         </View>
       ) : null}
 
+      {/* Plat manquant (2026-10-20) : on attend le choix du client. */}
+      {order.modifAttenteDepuis && order.status !== 'livree' && order.status !== 'annulee' ? (
+        <View style={styles.attente}>
+          <Text style={styles.attenteTexte}>✏️ Plat manquant — le client choisit : le retirer ou annuler</Text>
+          <Text style={styles.modifTexte}>Il a été prévenu dans son appli. Pas de réponse en 5 min : appelez-le.</Text>
+        </View>
+      ) : order.modifResolution === 'retire' && order.status !== 'livree' && order.status !== 'annulee' ? (
+        <View style={styles.modif}>
+          <Text style={styles.modifTitre}>✏️ Commande modifiée : le plat manquant a été retiré</Text>
+        </View>
+      ) : null}
+
       {/* Commande programmée le jour même (2026-10-16) : sans ce bandeau, une
           réservation ressemble à une commande à préparer TOUT DE SUITE — le plat
           sortirait des heures avant l'heure voulue par le client. */}
@@ -70,7 +82,8 @@ export function RestaurantOrderCard({
       {order.items.map((it, i) => (
         <View key={i} style={styles.itemRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.itemName}>
+            {it.manquant ? <Text style={styles.tagManquant}>MANQUE</Text> : null}
+            <Text style={[styles.itemName, it.manquant && styles.itemManquant]}>
               {it.quantity} × {it.name}
             </Text>
             {it.options && it.options.length > 0 ? (
@@ -245,6 +258,11 @@ const styles = StyleSheet.create({
   courierRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   courierText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.textDark },
   footer: { marginTop: 14, gap: 10 },
+  itemManquant: { textDecorationLine: 'line-through', color: colors.textMuted },
+  tagManquant: { fontFamily: fonts.extrabold, fontSize: 11, color: colors.dangerText, textDecorationLine: 'none' },
+  modifTexte: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.warnText, marginTop: 2 },
+  modif: { backgroundColor: '#E7F4EC', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 8 },
+  modifTitre: { fontFamily: fonts.bold, fontSize: 13, color: '#157F3C' },
   attente: { backgroundColor: colors.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginTop: 8 },
   attenteTexte: { fontFamily: fonts.bold, fontSize: 13, color: colors.warnText },
   resa: {

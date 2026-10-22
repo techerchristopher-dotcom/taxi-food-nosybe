@@ -53,6 +53,10 @@ Liste unique, à tenir à jour. Le détail de chaque point vit dans sa section.
 - 🟡 **Message privé au restaurant** (2026-10-07) : base en place, app + admin prêts, **rien de
   déployé** — voir « Message privé au restaurant (2026-10-07) ».
 
+- 🥤 **Vente additionnelle** (2026-10-22, voir sa section) : boisson proposée après l'ajout d'un plat,
+  au panier et avant paiement ; onglet admin. Départ : **11 % des commandes avec boisson**. Relire
+  l'onglet début novembre. Photos en verre à fournir (Coca, Sprite, Fanta de L'escale, World Cola).
+
 **Nouveaux chantiers (demandés le 2026-09-17)**
 - ✅ **Taxi Be retiré du catalogue** (2026-09-17) : `hidden` en base (migration
   `20260917140000_taxi_be_quitte_le_catalogue`), vitrine redéployée (bloc de repli nettoyé, logos
@@ -1449,6 +1453,44 @@ restaurant. Le code de lancement est **`TAXIFOOD50`** — 50 %, soit 10 000 → 
 3. ⏳ **Tester `MERCISULLI` avec Sulli** — le porteur du projet le fera lui-même, **à lui
    rappeler**. Sans la ligne Telegram, prévenir Chez Bidule & Truc par téléphone que la commande
    est le geste, sinon il verra une commande à 10 000 Ar pour une pizza.
+
+## 🥤 Vente additionnelle — boissons et desserts mis en avant (2026-10-22)
+
+Constat du porteur du projet : la plupart des clients commandent sans boisson. **Point de départ
+mesuré le 22/10 (52 semaines, commandes livrées, hors Taxi Be) : 11 commandes sur 101 (11 %) avec
+une boisson**, boissons = moins de 2 % du CA plats. Branche `vente-additionnelle` (partie de
+`encaisse-taxifood`), worktree `../taxi-food-nosybe-vente`.
+
+- **Trois moments, une seule source** (`app/data/venteAdditionnelle.ts`, lit `getMenu(…, {traduire})` :
+  mêmes prix promo, même consigne, `Product` complet jusqu'au panier) :
+  1. **fiche plat** : après « Ajouter » d'un PLAT (ni boisson ni dessert), feuille
+     `components/vente/ProposeBoisson.tsx` « Une boisson bien fraîche avec ça ? » (sinon
+     « Un petit dessert ? »). « Non merci » = plus reproposé chez ce restaurant pendant la session
+     (mémoire, pas AsyncStorage). Si la liste n'est pas encore chargée : rien, jamais d'attente ;
+  2. **panier** : rangée sous les plats, avant le total (boissons tant qu'il n'y en a pas, puis desserts) ;
+  3. **récapitulatif** : un seul rappel « Pas de boisson ? » (pas de relance dessert).
+  Rendu commun `components/vente/RangeeAdditionnels.tsx` : [+] puis sélecteur de quantité,
+  **« + 1 000 Ar consigne » sous le prix**. Ordre : photographiés d'abord, sodas, alcool, eau.
+  Ancien carrousel `data/suggestions.ts` supprimé. Textes `vente.*` FR/EN/IT. Événement Umami
+  `vente-additionnelle` (web).
+- **Boisson / dessert** = `categories.est_boisson` OU nom/emoji de catégorie (« Boissons »,
+  « Cocktails », 🥤…) ; dessert = nom (dessert, glace, crêpe, gâteau…). Même règle dans la base.
+- **Mesure** : RPC `admin_vente_additionnelle(p_semaines)` (is_admin) — par restaurant et par semaine
+  (lundi, heure de Nosy Be) : commandes livrées, avec boisson, avec dessert, CA plats/boissons/desserts
+  (sans emballage ni consigne). Onglet admin **🥤 Vente additionnelle** : avant / depuis le 22/10.
+- **Boissons en verre** (même jour, demande du porteur) : La Cabane et L'escale **n'ont aucune
+  canette**. Consigne **1 000 Ar** sur toutes leurs bouteilles en verre (La Cabane passe de 2 000 à
+  1 000 ; World Cola consigné ; Eau Vive PET et Sirop sans). Photos canette retirées : Caprice
+  Grenadine de L'escale → bouteille de La Cabane ; Coca-Cola 30 cl de L'escale et World Cola de
+  La Cabane (lien mort) **sans photo**. Migration `20261022130000_…`.
+- ⚠️ Le connecteur MCP Supabase habituel (`2eecce02…`) était en délai dépassé le 22/10 ; le
+  connecteur `c200031e…` (avec `project_id`) atteignait la base.
+- Publié le 22/10 : OTA ×3 (1.2.3 `c12ce143`, 1.2.2 `c10abcdd`, 1.2.1 `5f05d919`), web, admin.
+  Vérifié sur l'app web à 375 px : feuille après l'ajout du Rougail, ajout en un tap, retour à la
+  carte, rangée au panier. ⏳ **Non vus** : le rappel du récapitulatif (exige une session), un vrai
+  téléphone, l'onglet admin connecté (fonction testée en SQL sous identité admin).
+- ⏳ **Reste** : photos en VERRE de Coca, Sprite, Fanta 30 cl (L'escale) et World Cola (La Cabane) ;
+  relire l'onglet dans 2 à 3 semaines ; ensuite seulement, envisager une formule plat + boisson.
 
 ## 📅 Commande programmée le jour même (2026-10-16/17)
 

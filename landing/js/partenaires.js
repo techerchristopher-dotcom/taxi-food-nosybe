@@ -182,12 +182,14 @@
 
   function carte(r, photos, idx) {
     var bientot = r.listing_status === 'coming_soon';
-    // Famille Taxi Food (2026-10-22) : le PERSONNAGE du restaurant remplace son logo,
-    // au même gabarit pour tous (avatar carré). Repli : le logo, puis les initiales.
-    var avatar = r.mascotte_url || r.logo_url;
-    var logo = avatar
-      ? '<img src="' + esc(visuel(avatar, 76)) + '" alt="' + esc(r.name) + '" width="76" height="76" loading="lazy" decoding="async" style="width:76px;height:76px;border-radius:18px;flex:none;object-fit:cover;background:#F7ECDE">'
+    var logo = r.logo_url
+      ? '<img src="' + esc(visuel(r.logo_url, 56)) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
       : '<div style="width:56px;height:56px;border-radius:15px;flex:none;background:#1A1A1A;color:#FFC72C;display:flex;align-items:center;justify-content:center;font:800 19px/1 Archivo,sans-serif">' + esc(initiales(r.name)) + '</div>';
+    // Famille Taxi Food (2026-10-22) : le PERSONNAGE du restaurant s'AJOUTE au logo
+    // (demande du porteur du projet : « ne supprime pas le logo »), à droite de l'en-tête.
+    var perso = r.mascotte_url
+      ? '<img src="' + esc(visuel(r.mascotte_url, 84)) + '" alt="Personnage de ' + esc(r.name) + '" width="84" height="84" loading="lazy" decoding="async" style="width:84px;height:84px;border-radius:18px;flex:none;object-fit:cover;background:#F7ECDE;margin-left:auto">'
+      : '';
     var pastille = bientot
       ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + t.negociation + '</div>'
       : '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#E7F6EC;color:#157F3C;font:700 11px/1 Archivo,sans-serif">' + t.actif + '</div>';
@@ -196,10 +198,10 @@
 
     return '<div style="flex:1 1 320px;min-width:min(280px,100%);background:#fff;border-radius:20px;padding:22px;box-shadow:0 2px 8px rgba(26,26,26,.06);border:1px solid #E9E5E0;display:flex;flex-direction:column;gap:14px">'
       + '<div style="display:flex;align-items:center;gap:13px">' + logo
-      + '<div style="min-width:0">'
+      + '<div style="min-width:0;flex:1">'
       + '<div style="font:500 9px/1 \'JetBrains Mono\',monospace;letter-spacing:.18em;color:#6B6662">' + esc((r.zone_served || 'Nosy Be').toUpperCase()) + '</div>'
       + '<div style="font:800 20px/1.15 Archivo,sans-serif;letter-spacing:-.02em;margin-top:5px">' + esc(r.name) + '</div>'
-      + '</div></div>'
+      + '</div>' + perso + '</div>'
       + pastille
       // ⚠️ « A PARTIR DE » : depuis le 2026-09-24 la livraison se paie au
       // kilometre (socle jusqu'a 3 km, puis 1 000 Ar/km). La vitrine ne connait

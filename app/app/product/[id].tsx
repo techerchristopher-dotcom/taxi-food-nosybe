@@ -40,6 +40,8 @@ import { useSession } from '../../store/session';
 import { RestaurantContext, useCart } from '../../store/cart';
 import { lienProduit, textePartageProduit } from '../../lib/partage';
 import { PartageEnLigne, PartageSheet } from '../../components/PartageSheet';
+import { dejaProposee, ProposeBoisson } from '../../components/vente/ProposeBoisson';
+import { aUnDessert, aUneBoisson, estPlatPrincipal, getAdditionnels } from '../../data/venteAdditionnelle';
 
 /** Écran 04 — Détail d'un produit + configuration des options (choix guidés). */
 export default function ProductDetailScreen() {
@@ -65,6 +67,11 @@ export default function ProductDetailScreen() {
   const replaceWith = useCart((s) => s.replaceWith);
   const canAdd = useCart((s) => s.canAdd);
   const cartRestaurantName = useCart((s) => s.restaurantName);
+
+  // Vente additionnelle : boissons et desserts de ce restaurant, chargés en fond. S'ils
+  // ne sont pas encore là au moment d'« Ajouter », on ne propose rien — jamais d'attente.
+  const { data: additionnels } = useLoad(() => getAdditionnels(restaurant?.id), [restaurant?.id]);
+  const [proposition, setProposition] = useState<'boisson' | 'dessert' | null>(null);
 
   const [qty, setQty] = useState(1);
   // Précision libre (« sans tomate ») : transmise au restaurant avec la ligne.
@@ -236,11 +243,25 @@ export default function ProductDetailScreen() {
     else router.replace('/');
   }
 
+  /**
+   * Après l'ajout d'un PLAT : « Une boisson avec ça ? » s'il n'y en a pas encore au
+   * panier, sinon « Un petit dessert ? » s'il n'y en a pas non plus. Rien après une
+   * boisson ou un dessert, rien si le client a déjà dit non chez ce restaurant.
+   */
+  function apresAjout() {
+    if (!product || !restaurant?.id || !additionnels || dejaProposee(restaurant.id)) return retour();
+    if (!estPlatPrincipal(additionnels, product.id)) return retour();
+    const ids = useCart.getState().lines.map((l) => l.product.id);
+    if (!aUneBoisson(additionnels, ids) && additionnels.boissons.length > 0) return setProposition('boisson');
+    if (!aUnDessert(additionnels, ids) && additionnels.desserts.length > 0) return setProposition('dessert');
+    retour();
+  }
+
   function handleAdd() {
     if (!product || !ctx || !valid) return;
     if (canAdd(product)) {
       add(product, ctx, qty, selectedOptions, comment.trim() || null);
-      retour();
+      apresAjout();
     } else {
       setConflict(true);
     }
@@ -541,6 +562,19 @@ export default function ProductDetailScreen() {
         legende={product.name}
         onClose={() => setPhotoOuverte(false)}
       />
+      {proposition && restaurant?.id && additionnels ? (
+        <ProposeBoisson
+          visible
+          restaurantId={restaurant.id}
+          platAjoute={product.name}
+          genre={proposition}
+          produits={proposition === 'boisson' ? additionnels.boissons : additionnels.desserts}
+          onFermer={() => {
+            setProposition(null);
+            retour();
+          }}
+        />
+      ) : null}
       <ConflictSheet
         visible={conflict}
         currentName={cartRestaurantName}
@@ -549,7 +583,7 @@ export default function ProductDetailScreen() {
         onClear={() => {
           if (ctx) replaceWith(product, ctx, qty, selectedOptions, comment.trim() || null);
           setConflict(false);
-          retour();
+          apresAjout();
         }}
       />
     </View>

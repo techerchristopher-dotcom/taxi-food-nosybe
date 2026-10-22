@@ -216,9 +216,6 @@
     "emptyText": "Browse the restaurants of Nosy Be and add your favourite dishes.",
     "emptyAction": "See restaurants",
     "oneRestaurant": "One cart = one restaurant",
-    "suggestDrink": "Add a drink 🥤",
-    "suggestDessert": "Round it off with a dessert",
-    "suggestOther": "You may also like",
     "subtotal": "Subtotal",
     "order": "Order",
     "restaurantFerme": "This restaurant is closed right now. Your cart is kept.",
@@ -929,5 +926,20 @@
     "payeeEnLigne": "Your order is already paid online: we can’t remove a dish yet. You can cancel it (full refund) or call the restaurant.",
     "erreur": "That didn’t go through. Try again in a moment.",
     "retire": "The missing dish was removed from your order."
+  },
+  "vente": {
+    "ajouter": "Add {{nom}}",
+    "consigne": "+ {{montant}} bottle deposit",
+    "platAjoute": "{{nom}} is in your basket",
+    "titreBoisson": "A nice cold drink with that? 🥤",
+    "sousTitreBoisson": "Delivered with your meal, no extra delivery fee.",
+    "titreDessert": "A little dessert to finish? 🍰",
+    "sousTitreDessert": "Delivered with your meal, no extra delivery fee.",
+    "continuer": "Perfect, let's go on",
+    "nonMerci": "No thanks",
+    "titreBoissonPanier": "🥤 A drink with your meal?",
+    "titreDessertPanier": "🍰 A dessert to finish?",
+    "rappelTitre": "🥤 No drink?",
+    "rappelTexte": "It's hot in Nosy Be! Add one in a tap, it comes with your order."
   }
 }

@@ -216,9 +216,6 @@
     "emptyText": "Parcours les restaurants de Nosy Be et ajoute tes plats préférés.",
     "emptyAction": "Voir les restaurants",
     "oneRestaurant": "Un panier = un seul restaurant",
-    "suggestDrink": "Ajoute une boisson 🥤",
-    "suggestDessert": "Complète avec un dessert",
-    "suggestOther": "Tu aimeras aussi",
     "subtotal": "Sous-total",
     "order": "Commander",
     "restaurantFerme": "Ce restaurant est fermé pour le moment. Ton panier est gardé.",
@@ -929,5 +926,20 @@
     "payeeEnLigne": "Ta commande est déjà payée en ligne : on ne peut pas encore retirer un plat. Tu peux l’annuler (remboursement intégral) ou appeler le restaurant.",
     "erreur": "Ça n’est pas passé. Réessaie dans un instant.",
     "retire": "Le plat manquant a été retiré de ta commande."
+  },
+  "vente": {
+    "ajouter": "Ajouter {{nom}}",
+    "consigne": "+ {{montant}} consigne",
+    "platAjoute": "{{nom}} est dans ton panier",
+    "titreBoisson": "Une boisson bien fraîche avec ça ? 🥤",
+    "sousTitreBoisson": "Livrée avec ton repas, sans frais de livraison en plus.",
+    "titreDessert": "Un petit dessert pour finir ? 🍰",
+    "sousTitreDessert": "Livré avec ton repas, sans frais de livraison en plus.",
+    "continuer": "C'est parfait, on continue",
+    "nonMerci": "Non merci",
+    "titreBoissonPanier": "🥤 Une boisson avec ton repas ?",
+    "titreDessertPanier": "🍰 Un dessert pour finir ?",
+    "rappelTitre": "🥤 Pas de boisson ?",
+    "rappelTexte": "Il fait chaud à Nosy Be ! Ajoute-la en un tap, elle arrive avec ta commande."
   }
 }

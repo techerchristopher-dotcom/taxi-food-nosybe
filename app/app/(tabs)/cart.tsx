@@ -11,17 +11,17 @@ import { ProductThumb } from '../../components/ProductThumb';
 import { QtyStepper } from '../../components/QtyStepper';
 import { Button } from '../../components/Button';
 import { BottomBar } from '../../components/BottomBar';
-import { colors, fonts, formatAr, radius, shadow, spacing } from '../../theme/tokens';
-import { lineUnitPrice, packagingLines, RestaurantContext, useCart } from '../../store/cart';
+import { colors, fonts, formatAr, radius, spacing } from '../../theme/tokens';
+import { lineUnitPrice, packagingLines, useCart } from '../../store/cart';
 import { usePromo } from '../../store/promo';
 import { useCheckout } from '../../store/checkout';
 import { useLoad } from '../../lib/useLoad';
 import { useQuandOuvre } from '../../lib/ouverture';
 import { reservableAujourdhui } from '../../lib/reservation';
 import { useFraisLivraisonAJour } from '../../lib/fraisLivraison';
-import { getCartSuggestions, Suggestion } from '../../data/suggestions';
+import { aUnDessert, aUneBoisson, getAdditionnels } from '../../data/venteAdditionnelle';
+import { RangeeAdditionnels } from '../../components/vente/RangeeAdditionnels';
 import { getRestaurant } from '../../data/api';
-import { Product } from '../../data/types';
 import { nombre } from '../../lib/nombre';
 
 /** Écran 05 — Panier (et 05b — état vide). */
@@ -38,8 +38,6 @@ export default function CartScreen() {
   const setQuantity = useCart((s) => s.setQuantity);
   const setLineComment = useCart((s) => s.setComment);
   const remove = useCart((s) => s.remove);
-  const add = useCart((s) => s.add);
-  const deliveryFeeValue = useCart((s) => s.deliveryFeeValue);
   const subtotal = useCart((s) => s.subtotal());
   const deliveryFee = useCart((s) => s.deliveryFee());
   const cartLines = useCart((s) => s.lines);
@@ -76,60 +74,14 @@ export default function CartScreen() {
   const promo = usePromo();
   const totalAPayer = Math.max(0, total - promo.remise);
 
-  // Suggestions d'upsell (« faire gonfler le panier ») du restaurant courant.
-  // Les ids en panier servent d'exclusion ET de bascule boisson → dessert : ajouter
-  // une boisson change la clé de dépendance, donc la section se recharge et propose
-  // alors un dessert.
-  const cartProductIds = lines.map((l) => l.product.id);
-  const { data: suggestions } = useLoad(
-    () => getCartSuggestions(restaurantId ?? '', cartProductIds),
-    [restaurantId, cartProductIds.join(',')],
-  );
-
-  // Ajout rapide : on mirroir l'ajout sans option de l'écran restaurant. Un produit
-  // à options passe par sa fiche (comme le [+] du menu) ; boissons/desserts n'en ont
-  // normalement pas → ajout direct au panier du même restaurant (aucun conflit possible).
-  function addSuggestion(s: Suggestion) {
-    if (!restaurantId) return;
-    if (s.hasOptions) {
-      router.push(`/product/${s.id}`);
-      return;
-    }
-    const product: Product = {
-      id: s.id,
-      restaurantId,
-      categoryId: '',
-      name: s.name,
-      description: '',
-      price: s.price,
-      isAvailable: true,
-      photoUrl: s.photoUrl,
-      hasOptions: false,
-      // ⚠️ L'emballage voyage avec le produit, sinon le panier l'oublie à
-      // l'affichage pendant que `create_order` le facture : deux totaux
-      // différents pour la même commande. Le carrousel propose les articles les
-      // moins chers, aujourd'hui tous sans boîte — mais un jour où une pizza y
-      // passera, l'écart serait de 2 000 Ar par article, invisible jusqu'à la
-      // confirmation.
-      packagingFee: s.packagingFee,
-      packagingLabel: s.packagingLabel,
-    };
-    const ctx: RestaurantContext = {
-      id: restaurantId,
-      name: restaurantName,
-      initials: restaurantInitials,
-      logoUrl: restaurantLogoUrl,
-      deliveryFee: deliveryFeeValue,
-    };
-    add(product, ctx);
-  }
-
-  const suggestHeading =
-    suggestions?.mode === 'drink'
-      ? t('cart.suggestDrink')
-      : suggestions?.mode === 'dessert'
-        ? t('cart.suggestDessert')
-        : t('cart.suggestOther');
+  // Vente additionnelle : boissons tant que le panier n'en a pas, puis desserts.
+  // Une seule source avec la fiche plat et le récapitulatif (`data/venteAdditionnelle.ts`).
+  const { data: additionnels } = useLoad(() => getAdditionnels(restaurantId), [restaurantId]);
+  const idsPanier = lines.map((l) => l.product.id);
+  const proposerBoissons =
+    !!additionnels && additionnels.boissons.length > 0 && !aUneBoisson(additionnels, idsPanier);
+  const proposerDesserts =
+    !!additionnels && !proposerBoissons && additionnels.desserts.length > 0 && !aUnDessert(additionnels, idsPanier);
 
   if (lines.length === 0) {
     return (
@@ -212,33 +164,19 @@ export default function CartScreen() {
           ))}
         </View>
 
-        {/* Suggestions d'upsell — boissons, sinon dessert, sinon autres produits */}
-        {/* Restaurant ferme : pas de suggestions. Leur bouton [+] rajoutait au
-            panier alors que « Commander » etait grise juste en dessous — on
-            proposait d'alourdir un panier qu'on refusait d'envoyer. */}
-        {commandable && suggestions && suggestions.items.length > 0 ? (
+        {/* Vente additionnelle — juste sous les plats, AVANT le total : le client la
+            voit avant de décider. Restaurant fermé : rien (on ne propose pas d'alourdir
+            un panier qu'on refuse d'envoyer). Une fois une boisson ajoutée, elle rejoint
+            les lignes au-dessus et la rangée passe aux desserts. */}
+        {commandable && additionnels && (proposerBoissons || proposerDesserts) ? (
           <View style={styles.suggestWrap}>
-            <Text style={styles.suggestTitle}>{suggestHeading}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingRight: 4 }}
-            >
-              {suggestions.items.map((s) => (
-                <View key={s.id} style={styles.suggestCard}>
-                  <View>
-                    <ProductThumb uri={s.photoUrl} size={116} radius={radius.tile} />
-                    <Pressable onPress={() => addSuggestion(s)} style={styles.suggestAdd} hitSlop={6}>
-                      <Icon name="add" size={20} color={colors.white} />
-                    </Pressable>
-                  </View>
-                  <Text style={styles.suggestName} numberOfLines={2}>
-                    {s.name}
-                  </Text>
-                  <Text style={styles.suggestPrice}>{formatAr(s.price)}</Text>
-                </View>
-              ))}
-            </ScrollView>
+            <Text style={styles.suggestTitle}>
+              {proposerBoissons ? t('vente.titreBoissonPanier') : t('vente.titreDessertPanier')}
+            </Text>
+            <RangeeAdditionnels
+              produits={proposerBoissons ? additionnels.boissons : additionnels.desserts}
+              ecran="panier"
+            />
           </View>
         ) : null}
 
@@ -376,34 +314,6 @@ const styles = StyleSheet.create({
   linePrice: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
   suggestWrap: { marginTop: 18 },
   suggestTitle: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink, marginBottom: 12 },
-  suggestCard: {
-    width: 132,
-    backgroundColor: colors.surface,
-    borderRadius: radius.card,
-    padding: 8,
-    ...shadow.card,
-  },
-  suggestAdd: {
-    position: 'absolute',
-    right: 6,
-    bottom: 6,
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.button,
-  },
-  suggestName: {
-    fontFamily: fonts.semibold,
-    fontSize: 13,
-    lineHeight: 17,
-    color: colors.ink,
-    marginTop: 8,
-    minHeight: 34,
-  },
-  suggestPrice: { fontFamily: fonts.bold, fontSize: 14, color: colors.primary, marginTop: 2 },
   promoBloc: {
     marginTop: 14,
     paddingTop: 14,

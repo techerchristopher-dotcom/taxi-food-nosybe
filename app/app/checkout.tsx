@@ -38,6 +38,8 @@ import { lineUnitPrice, packagingLines, useCart } from '../store/cart';
 import { LignesEmballage } from '../components/LignesEmballage';
 import { usePromo, usePromoStore } from '../store/promo';
 import { oublierApercuPorteMonnaie, usePorteMonnaie } from '../store/porteMonnaie';
+import { aUneBoisson, getAdditionnels } from '../data/venteAdditionnelle';
+import { RangeeAdditionnels } from '../components/vente/RangeeAdditionnels';
 import { useCheckout } from '../store/checkout';
 import { useSession } from '../store/session';
 import { useAuthIntent } from '../store/authIntent';
@@ -94,6 +96,13 @@ function CheckoutForm() {
   const packaging = useMemo(() => packagingLines(lines), [lines]);
   const total = useCart((s) => s.total());
   const clear = useCart((s) => s.clear);
+  // Vente additionnelle : dernier rappel avant de payer, seulement s'il n'y a TOUJOURS
+  // aucune boisson. Les desserts ne sont pas relancés ici : un seul rappel, pas deux.
+  const { data: additionnels } = useLoad(() => getAdditionnels(restaurantId), [restaurantId]);
+  const rappelBoisson =
+    !!additionnels &&
+    additionnels.boissons.length > 0 &&
+    !aUneBoisson(additionnels, lines.map((l) => l.product.id));
 
   // Dernier écran avant le débit : les frais de livraison affichés doivent être
   // ceux que `create_order` va facturer, pas ceux mémorisés au premier ajout au
@@ -331,6 +340,14 @@ function CheckoutForm() {
           ))}
         </Card>
 
+        {rappelBoisson && additionnels ? (
+          <View style={styles.rappelBoisson}>
+            <Text style={styles.rappelTitre}>{t('vente.rappelTitre')}</Text>
+            <Text style={[styles.rappelTexte, { marginBottom: 10 }]}>{t('vente.rappelTexte')}</Text>
+            <RangeeAdditionnels produits={additionnels.boissons} ecran="recap" taille={92} />
+          </View>
+        ) : null}
+
         <Card style={styles.addrCard}>
           <Icon name="location_on" size={22} color={colors.primary} />
           <View style={{ flex: 1 }}>
@@ -548,6 +565,7 @@ const styles = StyleSheet.create({
   pmTexte: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 3 },
   pmBascule: { alignItems: 'center', gap: 4 },
   pmUtiliser: { fontFamily: fonts.bold, fontSize: 11, color: colors.textDark },
+  rappelBoisson: { marginTop: 16 },
   rappelPrecision: {
     flexDirection: 'row',
     alignItems: 'center',

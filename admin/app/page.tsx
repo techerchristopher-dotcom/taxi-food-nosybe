@@ -13,6 +13,7 @@ import { PorteMonnaie } from '../components/PorteMonnaie';
 import { OrangeMoney } from '../components/OrangeMoney';
 import { Messages } from '../components/Messages';
 import { Delais } from '../components/Delais';
+import { VenteAdditionnelle } from '../components/VenteAdditionnelle';
 import { CommandeTelephone } from '../components/CommandeTelephone';
 import { Realtime } from '../components/Realtime';
 import { Remboursements } from '../components/Remboursements';
@@ -23,7 +24,7 @@ import { Requests } from '../components/Requests';
 import { Restaurants } from '../components/Restaurants';
 import { Selections } from '../components/Selections';
 
-type Tab = 'realtime' | 'messages' | 'telephone' | 'annonces' | 'bandeau' | 'promos' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
+type Tab = 'realtime' | 'messages' | 'telephone' | 'annonces' | 'bandeau' | 'promos' | 'audience' | 'avis' | 'remboursements' | 'orange_money' | 'codes' | 'porte_monnaie' | 'delais' | 'vente_additionnelle' | 'selections' | 'report' | 'requests' | 'restaurants' | 'prospection' | 'prospection_restos';
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -149,6 +150,9 @@ export default function AdminPage() {
         <button className={`tab ${tab === 'delais' ? 'active' : ''}`} onClick={() => setTab('delais')}>
           ⏱️ Délais
         </button>
+        <button className={`tab ${tab === 'vente_additionnelle' ? 'active' : ''}`} onClick={() => setTab('vente_additionnelle')}>
+          🥤 Vente additionnelle
+        </button>
         <button className={`tab ${tab === 'selections' ? 'active' : ''}`} onClick={() => setTab('selections')}>
           Sélections
         </button>
@@ -182,6 +186,7 @@ export default function AdminPage() {
       {tab === 'codes' && <CodesOfferts />}
       {tab === 'porte_monnaie' && <PorteMonnaie />}
       {tab === 'delais' && <Delais />}
+      {tab === 'vente_additionnelle' && <VenteAdditionnelle />}
       {tab === 'report' && <Report />}
       {tab === 'requests' && <Requests />}
       {tab === 'restaurants' && <Restaurants />}

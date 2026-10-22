@@ -39,6 +39,15 @@ def entier(f, marge=0.0, uni=None):
     out.paste(im, ((W - im.width) // 2, (H - im.height) // 2), a)
     return out
 
+def plat(f, fy=0.5):
+    """Le plat LE PLUS VENDU, plein cadre (décision du 2026-10-22) : photo mise à la largeur
+    du bandeau, bande de 2,5:1 centrée sur `fy` (fraction de hauteur où est le plat)."""
+    im = Image.open(SRC + f).convert('RGB')
+    s = W / im.width
+    im = im.resize((W, round(im.height * s)), Image.LANCZOS)
+    y = max(0, min(int(fy * im.height - H / 2), im.height - H))
+    return im.crop((0, y, W, y + H))
+
 def mosaique(fs):
     out = Image.new('RGB', (W, H), 'white'); w = W // len(fs)
     for k, f in enumerate(fs):
@@ -49,23 +58,18 @@ def mosaique(fs):
         out.paste(im.crop((x, y, x + w, y + H)), (k * w, 0))
     return out
 
+# 2026-10-22 (2e version, demande du porteur du projet) : le bandeau montre le plat le plus
+# vendu du restaurant (commandes livrées, hors boissons). Sans vente : son plat phare.
+# Les anciennes fonctions (bande, entier, mosaique) restent pour d'autres usages.
 BANDEAUX = {
-    'la-cabane': lambda: bande('cover-la-cabane.jpg', 0.22),
-    'la-plage': lambda: bande('cover-la-plage.jpg', 0.12),
-    'chez-m-et-k': lambda: entier('cover-chez-m-et-k.jpg', marge=0.06),
-    'manson': lambda: entier('cover-manson.jpg', uni=(0, 0, 0)),
-    'escale-creole': lambda: mosaique(['escale-creole--pj-rougail-saucisses.jpg',
-                                       'escale-creole--ab-sambos-zebu.jpg',
-                                       'escale-creole--ab-bouchon-porc.jpg']),
-    'les-siciliens': lambda: mosaique(['les-siciliens--pizza-les-siciliens.png',
-                                       'les-siciliens--pates-lasagne.png',
-                                       'les-siciliens--burger-burger.png']),
-    'madame-oh': lambda: mosaique(['madame-oh--plat-pad-thai-royal.png',
-                                   'madame-oh--plat-curry-vert.png',
-                                   'madame-oh--entree-nem-poulet.png']),
-    'oh-hazar': lambda: mosaique(['oh-hazar--plat-tajine-agneau-pruneaux.png',
-                                  'oh-hazar--plat-couscous-royal.png',
-                                  'oh-hazar--plat-brochette-kefta.png']),
+    'la-cabane': lambda: plat('plat-la-cabane.png', 0.50),          # Tacos — 24 vendus
+    'escale-creole': lambda: plat('plat-escale-creole.jpg', 0.55),  # Sambos zébu/poulet — 6
+    'la-plage': lambda: plat('plat-la-plage.png', 0.55),            # Poulet coco — 4
+    'les-siciliens': lambda: plat('plat-les-siciliens.png', 0.50),  # Pizza Salame — 4
+    'chez-m-et-k': lambda: plat('plat-chez-m-et-k.jpg', 0.69),      # Soupe spéciale MK — 1
+    'manson': lambda: plat('plat-manson.jpg', 0.62),                # Cannibal (aucune vente)
+    'madame-oh': lambda: plat('plat-madame-oh.png', 0.55),          # Pad thaï royal (aucune vente)
+    'oh-hazar': lambda: plat('plat-oh-hazar.png', 0.55),            # Couscous royal (aucune vente)
 }
 
 if __name__ == '__main__':

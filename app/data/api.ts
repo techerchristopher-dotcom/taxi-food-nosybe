@@ -2173,6 +2173,74 @@ export async function setProductAvailable(productId: string, available: boolean)
   if (error) throw error;
 }
 
+/**
+ * Les suppléments et accompagnements du restaurant, regroupés par NOM (2026-10-22).
+ * « Frites » existe sur une quinzaine de plats : le restaurateur coupe les frites UNE
+ * fois, pas plat par plat. Né de TF-454, commandée avec des frites qu'il n'avait pas.
+ * Lecture publique (product_option_groups / product_options sont en lecture libre).
+ */
+export type SupplementResto = {
+  /** Clé de regroupement : nom sans casse ni espaces superflus. */
+  cle: string;
+  nom: string;
+  ids: string[];
+  /** Vrai si TOUTES les options de ce nom sont disponibles. */
+  dispo: boolean;
+  /** Une partie seulement est coupée (coupée à la main ailleurs) : l'écran le dit. */
+  partiel: boolean;
+  /** Prix distincts (price_delta), du plus petit au plus grand. */
+  prix: number[];
+  nbPlats: number;
+};
+
+export async function listSupplementsRestaurant(restaurantId: string): Promise<SupplementResto[]> {
+  const { data, error } = await supabase
+    .from('product_option_groups')
+    .select('product_id, products!inner ( restaurant_id, is_archived ), product_options ( id, name, price_delta, is_available )')
+    .eq('products.restaurant_id', restaurantId)
+    .eq('products.is_archived', false);
+  if (error) throw error;
+  type Ligne = {
+    product_id: string;
+    product_options: { id: string; name: string; price_delta: number; is_available: boolean }[] | null;
+  };
+  const parCle = new Map<string, { nom: string; ids: string[]; dispo: number; prix: Set<number>; plats: Set<string> }>();
+  for (const g of (data ?? []) as unknown as Ligne[]) {
+    for (const o of g.product_options ?? []) {
+      const nom = o.name.trim().replace(/\s+/g, ' ');
+      const cle = nom.toLowerCase();
+      const e = parCle.get(cle) ?? { nom, ids: [], dispo: 0, prix: new Set<number>(), plats: new Set<string>() };
+      e.ids.push(o.id);
+      if (o.is_available) e.dispo += 1;
+      e.prix.add(o.price_delta ?? 0);
+      e.plats.add(g.product_id);
+      parCle.set(cle, e);
+    }
+  }
+  return [...parCle.entries()]
+    .map(([cle, e]) => ({
+      cle,
+      nom: e.nom,
+      ids: e.ids,
+      dispo: e.dispo === e.ids.length,
+      partiel: e.dispo > 0 && e.dispo < e.ids.length,
+      prix: [...e.prix].sort((a, b) => a - b),
+      nbPlats: e.plats.size,
+    }))
+    // Les vrais suppléments payants d'abord : ce sont eux qu'on coupe en plein service.
+    .sort((a, b) => (b.prix[b.prix.length - 1] > 0 ? 1 : 0) - (a.prix[a.prix.length - 1] > 0 ? 1 : 0)
+      || a.nom.localeCompare(b.nom, 'fr'));
+}
+
+/** Couper ou remettre un supplément sur tous les plats qui le proposent. */
+export async function setOptionsAvailable(optionIds: string[], available: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_options_available', {
+    p_option_ids: optionIds,
+    p_available: available,
+  });
+  if (error) throw error;
+}
+
 /** Telephone public du restaurant, affiche au client sur ses commandes. */
 export async function setRestaurantPhone(phone: string | null): Promise<void> {
   const { error } = await supabase.rpc('set_restaurant_phone', { p_phone: phone });

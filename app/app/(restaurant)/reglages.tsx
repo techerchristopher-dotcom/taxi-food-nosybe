@@ -31,6 +31,9 @@ import {
   getMyRestaurant,
   langueRestaurant,
   getMenu,
+  listSupplementsRestaurant,
+  setOptionsAvailable,
+  SupplementResto,
   saveFeaturedProduct,
   setProductAvailable,
   setProductDietTags,
@@ -289,7 +292,11 @@ export default function RestaurantSettingsScreen() {
     const resto = await getMyRestaurant(restaurantId);
     const menu = restaurantId ? await getMenu(restaurantId) : null;
     const bibliotheque = await getFeaturedLibrary(restaurantId);
-    return { resto, menu, bibliotheque };
+    // Un échec ici ne doit pas vider l'écran : le bloc des suppléments disparaît, c'est tout.
+    const supplements: SupplementResto[] = restaurantId
+      ? await listSupplementsRestaurant(restaurantId).catch(() => [])
+      : [];
+    return { resto, menu, bibliotheque, supplements };
   }, [restaurantId]);
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -306,6 +313,7 @@ export default function RestaurantSettingsScreen() {
   const [optDispo, setOptDispo] = useState<Record<string, boolean>>({});
   const [optVedette, setOptVedette] = useState<Record<string, boolean>>({});
   const [optPorc, setOptPorc] = useState<Record<string, boolean>>({});
+  const [optSupp, setOptSupp] = useState<Record<string, boolean>>({});
   const [optResto, setOptResto] = useState<{ autoOpen?: boolean; isOpen?: boolean }>({});
   const [brouillon, setBrouillon] = useState<Brouillon | null>(null);
   // null = le champ suit la base ; une chaîne = saisie en cours, pas encore enregistrée.
@@ -338,6 +346,7 @@ export default function RestaurantSettingsScreen() {
     setOptDispo((o) => purger(o, enVolRef.current, 'dispo-'));
     setOptVedette((o) => purger(o, enVolRef.current, 'star-'));
     setOptPorc((o) => purger(o, enVolRef.current, 'porc-'));
+    setOptSupp((o) => purger(o, enVolRef.current, 'supp-'));
     setOptResto((o) => {
       const suite: typeof o = {};
       if (enVolRef.current.auto && o.autoOpen !== undefined) suite.autoOpen = o.autoOpen;
@@ -366,6 +375,7 @@ export default function RestaurantSettingsScreen() {
   const resto = data?.resto ?? null;
   const menu = data?.menu ?? null;
   const bibliotheque = data?.bibliotheque ?? [];
+  const supplements = data?.supplements ?? [];
   const alAffiche = menu?.featured ?? [];
   // Créations dormantes : déjà prêtes (photo, prix, description), il suffit d'un
   // tap pour les remettre à l'affiche.
@@ -1273,6 +1283,66 @@ export default function RestaurantSettingsScreen() {
                     </View>
                   </View>
                 ))}
+              </View>
+            </>
+          ) : null}
+
+          {/* ------------------------------------------- Suppléments (2026-10-22)
+              Un interrupteur par NOM d'option, valable sur tous les plats : plus
+              de frites = un seul tap. Né de TF-454, commandée avec des frites que
+              le restaurant n'avait pas. La base refuse déjà toute commande qui
+              porte une option coupée. */}
+          {supplements.length ? (
+            <>
+              <Text style={styles.section}>Suppléments et accompagnements</Text>
+              <Text style={styles.intro}>
+                Plus de frites, plus de riz ? Coupez-le ici : il disparaît d'un coup de tous
+                vos plats, et le client ne peut plus le choisir. Pensez à le rallumer quand
+                vous en avez de nouveau. Attention : si c'était le seul choix possible d'un
+                plat, ce plat ne pourra plus être commandé.
+              </Text>
+              <View style={styles.carte}>
+                {supplements.map((sp, i) => {
+                  const dispo = optSupp[sp.cle] ?? sp.dispo;
+                  const max = sp.prix[sp.prix.length - 1] ?? 0;
+                  const prix =
+                    max <= 0
+                      ? 'inclus'
+                      : sp.prix.length > 1 && sp.prix[0] !== max
+                        ? `+${formatAr(sp.prix[0])} à +${formatAr(max)}`
+                        : `+${formatAr(max)}`;
+                  return (
+                    <View key={sp.cle}>
+                      {i ? <View style={styles.separateur} /> : null}
+                      <View style={styles.ligne}>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={[styles.produitNom, !dispo && styles.produitCoupe]}>
+                            {sp.nom}
+                          </Text>
+                          <Text style={styles.produitPrix}>
+                            {prix}  ·  {sp.nbPlats} plat{sp.nbPlats > 1 ? 's' : ''}
+                            {!dispo ? '  ·  Coupé' : sp.partiel && optSupp[sp.cle] === undefined ? '  ·  Coupé sur certains plats' : ''}
+                          </Text>
+                        </View>
+                        <Switch
+                          value={dispo}
+                          disabled={!!enVol[`supp-${sp.cle}`]}
+                          onValueChange={(v) =>
+                            bascule(
+                              `supp-${sp.cle}`,
+                              poseur(setOptSupp, sp.cle),
+                              v,
+                              () => setOptionsAvailable(sp.ids, v),
+                              'Modification impossible.',
+                            )
+                          }
+                          trackColor={{ true: colors.success, false: colors.borderStrong }}
+                          thumbColor={colors.white}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             </>
           ) : null}

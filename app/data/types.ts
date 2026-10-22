@@ -271,6 +271,13 @@ export type Restaurant = {
   initials: string; // dérivé du nom
   logoUrl?: string | null; // logo du restaurant (Supabase Storage), null si absent
   coverUrl?: string | null; // bannière du restaurant, null si absente
+  /**
+   * Famille Taxi Food (2026-10-22). Sur l'ACCUEIL, le personnage du restaurant remplace
+   * son logo, et le bandeau (1200 x 480, même format pour tous) remplace l'aplat. Le logo
+   * et la couverture restent ceux de la fiche restaurant. Null = repli logo / couverture.
+   */
+  mascotteUrl?: string | null;
+  banniereUrl?: string | null;
   cuisineType: string;
   zone: string; // = zone_served
   isOpen: boolean;

@@ -182,8 +182,11 @@
 
   function carte(r, photos, idx) {
     var bientot = r.listing_status === 'coming_soon';
-    var logo = r.logo_url
-      ? '<img src="' + esc(visuel(r.logo_url, 56)) + '" alt="Logo ' + esc(r.name) + '" width="56" height="56" loading="lazy" decoding="async" style="width:56px;height:56px;border-radius:15px;flex:none;object-fit:cover;background:#EAE5E0">'
+    // Famille Taxi Food (2026-10-22) : le PERSONNAGE du restaurant remplace son logo,
+    // au même gabarit pour tous (avatar carré). Repli : le logo, puis les initiales.
+    var avatar = r.mascotte_url || r.logo_url;
+    var logo = avatar
+      ? '<img src="' + esc(visuel(avatar, 76)) + '" alt="' + esc(r.name) + '" width="76" height="76" loading="lazy" decoding="async" style="width:76px;height:76px;border-radius:18px;flex:none;object-fit:cover;background:#F7ECDE">'
       : '<div style="width:56px;height:56px;border-radius:15px;flex:none;background:#1A1A1A;color:#FFC72C;display:flex;align-items:center;justify-content:center;font:800 19px/1 Archivo,sans-serif">' + esc(initiales(r.name)) + '</div>';
     var pastille = bientot
       ? '<div style="display:inline-flex;align-self:flex-start;align-items:center;height:26px;padding:0 12px;border-radius:999px;background:#FFF4E0;color:#A75B09;font:700 11px/1 Archivo,sans-serif">' + t.negociation + '</div>'
@@ -260,7 +263,7 @@
     : Promise.resolve();
 
   traductionsPretes.then(function () {
-    return api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,delivery_fee,listing_status,rang_ouverture&order=rang_ouverture.asc,created_at.asc');
+    return api('restaurants?listing_status=neq.hidden&select=id,name,cuisine_type,zone_served,logo_url,mascotte_url,delivery_fee,listing_status,rang_ouverture&order=rang_ouverture.asc,created_at.asc');
   })
     .then(function (restos) {
       if (!restos.length) return;

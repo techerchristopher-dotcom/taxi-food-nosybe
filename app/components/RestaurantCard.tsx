@@ -1,10 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 import { NotePastille } from './Etoiles';
 import { OpenBadge, RestaurantLogo } from './primitives';
 import { colors, fonts, radius, shadow } from '../theme/tokens';
-import { CategoryTag, Restaurant, todayServicesLabel } from '../data/types';
+import { CategoryTag, imageUrl, Restaurant, todayServicesLabel } from '../data/types';
 import { libelleOuverture } from '../lib/ouverture';
 import { useMaintenant } from '../lib/horloge';
 import { formatAr } from '../theme/tokens';
@@ -84,22 +85,44 @@ function CategoryTags({ tags }: { tags: CategoryTag[] }) {
   );
 }
 
-/** Carte vedette avec bandeau (1er restaurant de la liste), badges Ouvert/Populaire. */
-export function FeaturedRestaurantCard({
-  r,
-  onPress,
-}: {
-  r: Restaurant;
-  onPress: () => void;
-}) {
+/**
+ * Carte restaurant de l'accueil — UNE seule forme pour tous (2026-10-22).
+ *
+ * Avant : seul le 1er restaurant avait un bandeau (un aplat de couleur), les autres une
+ * ligne avec leur logo. Demande du porteur du projet : chaque restaurant montre sa photo
+ * de couverture ET son personnage de la famille Taxi Food, au même gabarit.
+ *  - bandeau : `banniereUrl` (1200 x 480, fabriqué au même format pour tous, l'enseigne
+ *    jamais rognée), à défaut la couverture, à défaut l'aplat chaud d'avant ;
+ *  - avatar : le personnage (`mascotteUrl`), à défaut le logo, à défaut les initiales.
+ * Le LOGO reste sur la fiche du restaurant, sous sa couverture.
+ *
+ * ⚠️ Un restaurant FERMÉ se grise ; un restaurant EN NÉGOCIATION, jamais : ses photos
+ * doivent donner envie. La commande, elle, reste coupée (bouton grisé + refus en base).
+ */
+function CarteRestaurant({ r, onPress }: { r: Restaurant; onPress: () => void }) {
   const { t } = useTranslation();
+  // Le compte à rebours ne tourne que s'il y a quelque chose à compter : fermé,
+  // et une ouverture encore à venir AUJOURD'HUI. Sinon, aucun minuteur.
+  const maintenant = useMaintenant(!r.isOpen && r.opensInDays === 0);
+  const bandeau = r.banniereUrl ?? r.coverUrl ?? null;
   return (
-    <Pressable onPress={onPress} style={styles.featured}>
-      <View style={styles.banner}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.carte, !r.isOpen && r.listingStatus !== 'coming_soon' && { opacity: 0.55 }]}
+    >
+      <View style={styles.bandeau}>
+        {bandeau ? (
+          <Image
+            source={{ uri: imageUrl(bandeau, 720, 288) }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
         <View style={styles.bannerGauche}>
           <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
           {r.estNouveau ? <BadgeNouveau /> : null}
-          <HorairesDuJour r={r} sombre />
         </View>
         {r.popular ? (
           <View style={styles.popular}>
@@ -107,70 +130,67 @@ export function FeaturedRestaurantCard({
           </View>
         ) : null}
       </View>
-      <View style={styles.featuredBody}>
-        <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={44} r={12} bg={colors.white} color={colors.primary} />
+      <View style={styles.corps}>
+        <RestaurantLogo
+          uri={r.mascotteUrl ?? r.logoUrl}
+          initials={r.initials}
+          size={88}
+          r={16}
+          bg={colors.white}
+          color={colors.primary}
+        />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.name}>{r.name}</Text>
+          <View style={styles.rowHead}>
+            <Text style={styles.name}>{r.name}</Text>
+            <HorairesDuJour r={r} />
+          </View>
           <Text style={styles.sub}>
             {/* Sans zone connue, pas de tiret orphelin : « Cuisine thaïlandaise — ». */}
             {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
           </Text>
           <CategoryTags tags={r.categoryTags} />
-          <Meta eta={r.etaLabel} fee={r.deliveryFee} note={r.noteMoyenne} nb={r.nbAvis} />
+          {r.isOpen ? (
+            <Meta eta={r.etaLabel} fee={r.deliveryFee} note={r.noteMoyenne} nb={r.nbAvis} />
+          ) : (
+            // « Ouvre dans 35 min », « Ouvre à 19h », « Ouvre demain à 10h » ou
+            // « Fermé » — même règle que les plats du jour (`lib/ouverture.ts`).
+            // ⚠️ Plus jamais `todayHours.opensAt` : c'est le PREMIER service du
+            // jour, qui annonçait « 12h » à 18 h 20 pour un soir ouvrant à 19 h.
+            <Text style={styles.closedText}>{libelleOuverture(r, t, maintenant)}</Text>
+          )}
         </View>
       </View>
     </Pressable>
   );
 }
 
-/** Carte compacte (ligne) : vignette + infos. Grisée si fermé. */
-export function RestaurantRow({
-  r,
-  onPress,
-}: {
-  r: Restaurant;
-  onPress: () => void;
-}) {
-  const { t } = useTranslation();
-  // Le compte à rebours ne tourne que s'il y a quelque chose à compter : fermé,
-  // et une ouverture encore à venir AUJOURD'HUI. Sinon, aucun minuteur.
-  const maintenant = useMaintenant(!r.isOpen && r.opensInDays === 0);
-  return (
-    // ⚠️ Un restaurant FERMÉ se grise ; un restaurant EN NÉGOCIATION, jamais.
-    // Ses photos doivent donner envie avant même qu'on puisse commander — c'est
-    // tout l'intérêt de le montrer. La commande, elle, reste coupée : bouton
-    // grisé sur la fiche, et refus en base (commandable_maintenant).
-    <Pressable
-      onPress={onPress}
-      style={[styles.row, !r.isOpen && r.listingStatus !== 'coming_soon' && { opacity: 0.55 }]}
-    >
-      <RestaurantLogo uri={r.logoUrl} initials={r.initials} size={64} r={radius.tile} />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={styles.rowHead}>
-          <Text style={styles.rowName}>{r.name}</Text>
-          {r.estNouveau ? <BadgeNouveau /> : null}
-          <OpenBadge open={r.isOpen} comingSoon={r.listingStatus === 'coming_soon'} />
-          <HorairesDuJour r={r} />
-        </View>
-        <Text style={styles.sub}>
-          {[r.cuisineType, r.zone].filter(Boolean).join(' — ')}
-        </Text>
-        <CategoryTags tags={r.categoryTags} />
-        {r.isOpen ? (
-          <Meta eta={r.etaLabel} fee={r.deliveryFee} note={r.noteMoyenne} nb={r.nbAvis} />
-        ) : (
-          // « Ouvre dans 35 min », « Ouvre à 19h », « Ouvre demain à 10h » ou
-          // « Fermé » — même règle que les plats du jour (`lib/ouverture.ts`).
-          // ⚠️ Plus jamais `todayHours.opensAt` : c'est le PREMIER service du
-          // jour, qui annonçait « 12h » à 18 h 20 pour un soir ouvrant à 19 h.
-          <Text style={styles.closedText}>{libelleOuverture(r, t, maintenant)}</Text>
-        )}
-      </View>
-    </Pressable>
-  );
+/** 1er restaurant de la liste : même carte que les autres depuis le 2026-10-22. */
+export function FeaturedRestaurantCard(props: { r: Restaurant; onPress: () => void }) {
+  return <CarteRestaurant {...props} />;
+}
+
+/** Restaurants suivants : même carte (bandeau + personnage). */
+export function RestaurantRow(props: { r: Restaurant; onPress: () => void }) {
+  return <CarteRestaurant {...props} />;
 }
 
 const styles = StyleSheet.create({
+  carte: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    ...shadow.card,
+  },
+  // 2,5:1 = le format des bandeaux fabriqués (1200 x 480) : rien n'est rogné.
+  bandeau: {
+    aspectRatio: 2.5,
+    backgroundColor: colors.photoWarmB,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: 10,
+  },
+  corps: { flexDirection: 'row', gap: 12, padding: 12, alignItems: 'flex-start' },
   featured: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,

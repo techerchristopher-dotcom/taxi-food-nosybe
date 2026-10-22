@@ -49,6 +49,9 @@ type RestaurantRow = {
   cuisine_type: string | null;
   logo_url: string | null;
   cover_url: string | null;
+  /** Famille Taxi Food (2026-10-22) : personnage et bandeau d'accueil, au gabarit commun. */
+  mascotte_url?: string | null;
+  banniere_url?: string | null;
   is_open: boolean;
   listing_status?: string | null;
   phone?: string | null;
@@ -179,6 +182,8 @@ function mapRestaurant(r: RestaurantRow): Restaurant {
     initials: initialsFromName(r.name),
     logoUrl: r.logo_url,
     coverUrl: r.cover_url,
+    mascotteUrl: r.mascotte_url ?? null,
+    banniereUrl: r.banniere_url ?? null,
     cuisineType: r.cuisine_type ?? '',
     zone: r.zone_served ?? '',
     // L'ouverture EFFECTIVE, calculee par la base : deduite des horaires si
@@ -322,7 +327,7 @@ export async function listRestaurants(): Promise<Restaurant[]> {
   await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, mascotte_url, banniere_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     // ⚠️ Le filtre est ici, PAS dans la RLS : la lecture des restaurants reste
     // publique, parce que l'historique d'un client doit continuer d'afficher le
     // nom d'un restaurant retire du catalogue. `hidden` masque la LISTE, il ne
@@ -366,7 +371,7 @@ export async function getRestaurant(id: string): Promise<Restaurant | null> {
   await preparerTraductions();
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+    .select('id, name, cuisine_type, logo_url, cover_url, mascotte_url, banniere_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -2405,7 +2410,7 @@ export async function getMyRestaurant(
   const [{ data, error }, { data: hoursRows, error: hoursError }] = await Promise.all([
     supabase
       .from('restaurants')
-      .select('id, name, cuisine_type, logo_url, cover_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
+      .select('id, name, cuisine_type, logo_url, cover_url, mascotte_url, banniere_url, is_open, listing_status, phone, ouvert_maintenant, auto_open, ouvre_a, ouvre_dans_jours, note_moyenne, nb_avis, est_nouveau, duree_mediane_min, horaires_du_jour(weekday,opens_at,closes_at,is_closed), services_du_jour(weekday,service,opens_at,closes_at,is_closed), delivery_fee, min_order, zone_served, food_types')
       .eq('id', restaurantId)
       .maybeSingle(),
     supabase

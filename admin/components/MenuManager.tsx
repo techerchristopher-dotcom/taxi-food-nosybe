@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatAr } from '../lib/util';
+import { OptionsProduit, SupplementsResto } from './OptionsProduit';
 
 type Category = { id: string; name: string; icon: string | null; sort_order: number; is_active: boolean };
 type Product = {
@@ -22,6 +23,8 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
   const [busy, setBusy] = useState<string | null>(null);
   const [pform, setPform] = useState<ProductForm | null>(null);
   const [newCat, setNewCat] = useState({ name: '', icon: '', sort_order: '0' });
+  // Relit le bloc « Suppléments du restaurant » quand on modifie les choix d'un plat.
+  const [versionOptions, setVersionOptions] = useState(0);
 
   const load = useCallback(async () => {
     const [c, p] = await Promise.all([
@@ -114,8 +117,13 @@ export function MenuManager({ restaurant, onBack }: { restaurant: { id: string; 
             <button className="btn" onClick={saveProd} disabled={busy === 'saveprod'}>Enregistrer</button>
             <button className="btn ghost" onClick={() => setPform(null)}>Annuler</button>
           </div>
+          {pform.id ? <OptionsProduit productId={pform.id} onChange={() => setVersionOptions((v) => v + 1)} /> : (
+            <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>Les suppléments et choix s’ajoutent une fois le produit enregistré.</p>
+          )}
         </div>
       ) : null}
+
+      <SupplementsResto restaurantId={restaurant.id} version={versionOptions} />
 
       <div className="grid cols-2">
         <div className="card">

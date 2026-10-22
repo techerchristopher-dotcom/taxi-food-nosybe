@@ -210,3 +210,17 @@ que le modèle, laissé libre, converge vers le plat le plus banal du lot :
 Chez Bidul, **ce qui a du liquide va dans le bol noir, ce qui se dresse va sur l'ardoise.**
 Elle n'est écrite nulle part : elle se lit sur les photos déjà en ligne. La blanquette part
 donc au bol, la basquaise et le tartare à l'ardoise.
+
+## La famille Taxi Food — un personnage par restaurant (22/10/2026)
+
+Compétence `famille-taxi-food`. Chaque élément contient le personnage AVEC le logo de son
+restaurant sur le t-shirt : on l'injecte, on ne le redécrit pas.
+
+| Élément | id |
+|---|---|
+| Famille-Tacos-LaCabane | `76c5b7a6-eb40-42e0-9016-89694ad8d4b0` |
+| Famille-Pizza-Siciliens | `55c827cf-d610-46cd-a030-5057a41a3d1d` |
+| Famille-Bouchon-Escale | `a12a1395-3c21-48f5-9bba-9b2f9c1d4442` |
+| Famille-Croustille-LaPlage | `5e9f6165-a558-482c-b136-ac29da7e1549` |
+| Famille-Nem-ChezMK | `98340367-7a3a-44e5-a715-0be90f25c504` |
+| Famille-Serpent-Manson | `5e21b1ae-7716-4ffe-bc97-3be05843bee7` |

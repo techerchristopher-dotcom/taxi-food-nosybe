@@ -1,0 +1,16 @@
+# Essais intermédiaires : gardés sur le disque, pas dans le dépôt (trop lourds).
+# Les images de base utilisées par les scripts restent versionnées (exceptions « ! »).
+v2/
+v4-logos/
+v5-logos-grands/
+retenus/
+v1/*
+!v1/1-tacos-la-cabane.png
+!v1/5-pizza-les-siciliens.png
+v3/*
+!v3/I-bouchon-escale-a.png
+!v3/K-croustille-filet.png
+!v3/M-nem-a.png
+manson/*
+!manson/piste1-v2-A.png
+!manson/planche-manson.jpg

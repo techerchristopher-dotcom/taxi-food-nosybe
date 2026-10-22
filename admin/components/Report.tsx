@@ -30,6 +30,7 @@ type DeliveredRow = CommandeLivree & {
   remise_charge_restaurant: number | null;
   /** Porte-monnaie client (2026-10-07), payé par Taxi Food, déjà déduit de `total`. */
   remise_porte_monnaie?: number | null;
+  encaisse_taxifood?: number | null;
   payment_method: string;
   payment_status?: string | null;
   courier_id: string | null;
@@ -60,7 +61,7 @@ type Line = Cumul & {
   reglees: Cumul;
 };
 
-const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, payment_status, courier_id, commission_amount, commission_rate';
+const COLONNES = 'id, order_number, restaurant_id, subtotal, packaging_fee, emballage_taxifood, delivery_fee, promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, encaisse_taxifood, total, payment_method, payment_status, courier_id, commission_amount, commission_rate';
 
 const AUCUNE_REGLE: ReglesDesCodes = new Map();
 
@@ -424,6 +425,9 @@ export function Report() {
               <tr><td>− Remises sur la livraison <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remiseLivraison)}</td></tr>
               <tr><td>− Remises sur les plats <span className="muted">(payées par toi)</span></td><td className="num">−{formatAr(totals.remisePlats)}</td></tr>
               <tr><td>− Porte-monnaie des clients <span className="muted">(payé par toi, restaurant au prix plein)</span></td><td className="num">−{formatAr(totals.remisePorteMonnaie)}</td></tr>
+              {totals.encaisseTaxiFood > 0 ? (
+                <tr><td>+ Fourni par Taxi Food <span className="muted">(payé par le client, gardé hors restaurant)</span></td><td className="num">+{formatAr(totals.encaisseTaxiFood)}</td></tr>
+              ) : null}
               <tr><td style={{ fontWeight: 700 }}>= Ma marge</td><td className="num" style={{ fontWeight: 700, color: 'var(--green)' }}>{formatAr(margin)}</td></tr>
             </tbody>
           </table>

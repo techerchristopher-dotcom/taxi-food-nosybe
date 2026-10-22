@@ -422,6 +422,15 @@ export function FicheContenu({ fiche, reversee }: { fiche: FicheLue; reversee: C
             <span>−{formatAr(o.remise_porte_monnaie ?? 0)}</span>
           </div>
         ) : null}
+        {(o.encaisse_taxifood ?? 0) > 0 ? (
+          <div className="fiche-ligne">
+            <span>
+              Fourni par Taxi Food
+              <span className="muted"> · gardé par Taxi Food, pas reversé{o.encaisse_taxifood_motif ? ` — ${o.encaisse_taxifood_motif}` : ''}</span>
+            </span>
+            <span>+{formatAr(o.encaisse_taxifood ?? 0)}</span>
+          </div>
+        ) : null}
         <div className="fiche-ligne fiche-total"><span>Total payé</span><span>{formatAr(o.total)}</span></div>
         <div className="muted" style={{ fontSize: 13 }}>
           {PAYMENT_LABEL[o.payment_method] ?? o.payment_method}
@@ -744,7 +753,7 @@ export function FenetreVersement({ ligne, debut, fin, selection, canal, moyen, o
 type ResumeCorrection = {
   plats: number; emballage: number; montant: number; commission: number; offert: number;
   remise: number; porte_monnaie: number; livraison: number; total: number; net: number;
-  porte_monnaie_rendu?: number;
+  encaisse_taxifood?: number; porte_monnaie_rendu?: number;
 };
 type ReponseCorrection = { avant: ResumeCorrection; apres: ResumeCorrection; taux: number };
 type LigneEdition = { retirer: boolean; quantite: string; prix: string };
@@ -757,6 +766,8 @@ function messageCorrection(m: string): string {
   if (m.includes('correction:tout_retire')) return 'Retirer toutes les lignes revient à annuler la commande : ce n’est pas une correction.';
   if (m.includes('correction:quantite_invalide')) return 'Quantité invalide : au moins 1 (sinon coche « Retirer »).';
   if (m.includes('correction:non_livree')) return 'Seule une commande livrée se corrige ici.';
+  if (m.includes('correction:garder_total_porte_monnaie')) return 'Le porte-monnaie du client devrait être rendu : décoche « Le client a payé l’ancien total ».';
+  if (m.includes('correction:garder_total_hausse')) return 'La correction fait monter le total : rien à garder pour Taxi Food, décoche la case.';
   return m;
 }
 
@@ -768,6 +779,9 @@ function FenetreCorrection({ commande, onFermer }: {
   const items = fiche.etat === 'pret' ? (fiche.fiche.commande.order_items ?? []).filter((i) => !i.retire_le) : [];
   const [edition, setEdition] = useState<Record<string, LigneEdition>>({});
   const [motif, setMotif] = useState('');
+  // Le client a payé l'ancien total (ex. TF-454 : frites fournies par Taxi Food) :
+  // l'écart ne lui est pas rendu, il revient à Taxi Food (`encaisse_taxifood`).
+  const [garderTotal, setGarderTotal] = useState(false);
   const [apercu, setApercu] = useState<ReponseCorrection | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
@@ -801,6 +815,7 @@ function FenetreCorrection({ commande, onFermer }: {
       p_lignes: demande,
       p_motif: apercuSeul ? null : motif,
       p_apercu: apercuSeul,
+      p_garder_total: garderTotal,
     });
     if (error) { setErr(messageCorrection(error.message)); return null; }
     setErr(null);
@@ -834,6 +849,7 @@ function FenetreCorrection({ commande, onFermer }: {
     { libelle: 'Livraison', cle: 'livraison' },
     { libelle: 'Remise code promo', cle: 'remise', signe: '−' },
     { libelle: 'Porte-monnaie client', cle: 'porte_monnaie', signe: '−' },
+    { libelle: 'Gardé par Taxi Food (hors restaurant)', cle: 'encaisse_taxifood' },
     { libelle: 'Total client (caisse du livreur)', cle: 'total', fort: true },
   ];
 
@@ -848,7 +864,8 @@ function FenetreCorrection({ commande, onFermer }: {
           <>
             <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
               Rien n’est effacé : une ligne retirée reste affichée barrée, avec ton motif. Le total client baisse
-              d’autant — la caisse du livreur doit tomber juste.
+              d’autant — la caisse du livreur doit tomber juste. Sauf si tu coches la case plus bas : le total
+              reste celui payé, et l’écart va à Taxi Food.
             </p>
             {items.map((it) => {
               const l = ligne(it.id);
@@ -885,6 +902,13 @@ function FenetreCorrection({ commande, onFermer }: {
               <span className="sel-label">Motif — obligatoire</span>
               <input className="sel-champ" value={motif} onChange={(e) => setMotif(e.target.value)}
                 placeholder="ex. World Cola non livrés" maxLength={200} />
+            </label>
+            <label className="vers-case" style={{ marginTop: 12 }}>
+              <input type="checkbox" checked={garderTotal} onChange={(e) => { setGarderTotal(e.target.checked); setApercu(null); }} />
+              <span>
+                Le client a payé l’ancien total : l’écart revient à Taxi Food
+                <span className="muted"> (ex. un supplément fourni par toi, pas par le restaurant)</span>
+              </span>
             </label>
           </>
         ) : null}

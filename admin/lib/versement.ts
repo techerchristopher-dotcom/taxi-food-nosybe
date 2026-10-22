@@ -243,7 +243,7 @@ export async function lireErreurFonction(e: unknown): Promise<{ statut?: string;
  */
 export const COLONNES_FICHE =
   'id, order_number, status, created_at, picked_up_at, delivered_at, subtotal, packaging_fee, emballage_taxifood, delivery_fee, '
-  + 'promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, total, payment_method, payment_status, '
+  + 'promo_code, promo_discount, promo_porte_sur, remise_charge_restaurant, remise_porte_monnaie, encaisse_taxifood, encaisse_taxifood_motif, total, payment_method, payment_status, '
   + 'commission_rate, courier_id, '
   + 'profiles ( full_name, phone ), addresses ( label, zone, landmark, phone, instructions ), '
   + 'order_items ( id, product_name_snapshot, quantity, unit_price, comment, packaging_fee_snapshot, '
@@ -269,6 +269,9 @@ export type CommandeFiche = {
   remise_charge_restaurant: number | null;
   /** Porte-monnaie client (2026-10-07) : payé par Taxi Food, déjà déduit de `total`. */
   remise_porte_monnaie?: number | null;
+  /** Payé par le client, gardé par Taxi Food hors restaurant (2026-10-22), et pourquoi. */
+  encaisse_taxifood?: number | null;
+  encaisse_taxifood_motif?: string | null;
   total: number;
   payment_method: string;
   payment_status: string | null;

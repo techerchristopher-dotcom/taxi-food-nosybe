@@ -48,6 +48,13 @@ export type CommandeLivree = {
    * lectures et des jeux d'essai : 0.
    */
   remise_porte_monnaie?: number | null;
+  /**
+   * Part du total client gardée par TAXI FOOD, hors restaurant et hors commission
+   * (`orders.encaisse_taxifood`, 2026-10-22 — ex. TF-454 : frites fournies par Taxi Food).
+   * Le client l'a payée : elle est dans `total`, pas dans le dû. Absente des anciennes
+   * lectures : 0.
+   */
+  encaisse_taxifood?: number | null;
   total: number;
   commission_amount: number | null;
   /** Taux figé avec la commission : c'est lui, pas le taux actuel, qui l'a produite. */
@@ -145,7 +152,7 @@ export function ventiler(c: CommandeLivree, tauxRestaurant: number, regles: Regl
   // il doit entrer dans la marge, sinon dû + marge ≠ encaissé et l'écart de caisse s'allume.
   // Le porte-monnaie client sort aussi de la marge : le restaurant est payé du prix plein.
   const marge = commission + c.delivery_fee - remiseLivraison - remisePlatsTaxiFood - remisePorteMonnaie
-    + (c.emballage_taxifood ?? 0);
+    + (c.emballage_taxifood ?? 0) + (c.encaisse_taxifood ?? 0);
 
   // Contrôles par commande. `remise_charge_restaurant` et `commission_amount`
   // entrent à la fois dans le dû et dans la marge : faussés, ils déplacent de
@@ -218,6 +225,8 @@ export type TotauxCaisse = {
   remisePlats: number;
   /** Porte-monnaie client utilisé (payé par Taxi Food, déjà déduit de l'encaissé). */
   remisePorteMonnaie: number;
+  /** Payé par le client, gardé par Taxi Food hors restaurant (`encaisse_taxifood`). */
+  encaisseTaxiFood: number;
 };
 
 /** Les totaux d'un restaurant, ou de toute la période. */
@@ -236,7 +245,7 @@ export type Cumul = TotauxCaisse & {
 
 export const CUMUL_VIDE: Cumul = {
   count: 0, encaisse: 0, caPlats: 0, emballages: 0, commission: 0, offertRestaurant: 0, net: 0,
-  deliveryBrut: 0, deliveryFees: 0, remiseLivraison: 0, remisePlats: 0, remisePorteMonnaie: 0, incoherentes: 0, aVerifier: [],
+  deliveryBrut: 0, deliveryFees: 0, remiseLivraison: 0, remisePlats: 0, remisePorteMonnaie: 0, encaisseTaxiFood: 0, incoherentes: 0, aVerifier: [],
 };
 
 /** Ajoute une commande livrée à un cumul. Seul chemin d'une commande vers le rapport. */
@@ -255,6 +264,7 @@ export function cumulerCommande(t: Cumul, c: CommandeLivree, tauxRestaurant: num
     remiseLivraison: t.remiseLivraison + v.remiseLivraison,
     remisePlats: t.remisePlats + v.remisePlatsTaxiFood,
     remisePorteMonnaie: t.remisePorteMonnaie + v.remisePorteMonnaie,
+    encaisseTaxiFood: t.encaisseTaxiFood + (c.encaisse_taxifood ?? 0),
     incoherentes: t.incoherentes + (v.incoherente ? 1 : 0),
     aVerifier: v.incoherente
       ? [...t.aVerifier, `${c.order_number ?? 'Commande sans numéro'} : ${v.anomalies.join(' ; ')}`]
@@ -276,14 +286,15 @@ export function additionnerCumuls(a: Cumul, b: Cumul): Cumul {
     remiseLivraison: a.remiseLivraison + b.remiseLivraison,
     remisePlats: a.remisePlats + b.remisePlats,
     remisePorteMonnaie: a.remisePorteMonnaie + b.remisePorteMonnaie,
+    encaisseTaxiFood: a.encaisseTaxiFood + b.encaisseTaxiFood,
     incoherentes: a.incoherentes + b.incoherentes,
     aVerifier: [...a.aVerifier, ...b.aVerifier],
   };
 }
 
-/** Ta marge : commission + livraison facturée − remises que Taxi Food finance (porte-monnaie compris). */
+/** Ta marge : commission + livraison facturée − remises que Taxi Food finance (porte-monnaie compris) + ce que Taxi Food a fourni lui-même (`encaisse_taxifood`). */
 export function margeTaxiFood(t: TotauxCaisse): number {
-  return t.commission + t.deliveryBrut - t.remiseLivraison - t.remisePlats - t.remisePorteMonnaie;
+  return t.commission + t.deliveryBrut - t.remiseLivraison - t.remisePlats - t.remisePorteMonnaie + t.encaisseTaxiFood;
 }
 
 /**

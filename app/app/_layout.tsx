@@ -213,7 +213,8 @@ export default function RootLayout() {
     // — quatre secondes de spinner pour finir sur « Commande introuvable ». On l'ignore.
     if ((pendingRoute.startsWith('/order/') || pendingRoute.startsWith('/messages/')) && !userId) return;
 
-    if (pendingRoute === '/(restaurant)') {
+    // `/(restaurant)/…` : un écran précis de l'espace (ex. une commande DistriPro).
+    if (pendingRoute === '/(restaurant)' || pendingRoute.startsWith('/(restaurant)/')) {
       const ok = !!roles?.some((r) => r.role === 'restaurant' && r.status === 'active') && !!restaurantId;
       if (!ok) return;
       void setMode('restaurant');

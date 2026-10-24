@@ -168,3 +168,8 @@ verify_jwt = false
 # La fonction exige un utilisateur reel ET `is_active_restaurant_staff_of` evalue
 # avec son jeton. Le secret du pont reste au Vault (distripro_pont_secret()).
 verify_jwt = false
+
+[functions.distripro-statut]
+# L'appelant est la base DISTRIPRO (pg_net, sens retour du pont). Barriere : l'en-tete
+# `x-pont-retour`, compare au SHA-256 garde par `distripro_retour_ok()`.
+verify_jwt = false

@@ -161,3 +161,10 @@ verify_jwt = false
 
 [functions.telegram-webhook]
 verify_jwt = false
+
+[functions.distripro]
+# L'appelant est un PARTENAIRE (onglet « Commander » de l'espace restaurant).
+# `false` pour la meme raison qu'`envoyer-annonce` : la cle anon est un JWT valide.
+# La fonction exige un utilisateur reel ET `is_active_restaurant_staff_of` evalue
+# avec son jeton. Le secret du pont reste au Vault (distripro_pont_secret()).
+verify_jwt = false

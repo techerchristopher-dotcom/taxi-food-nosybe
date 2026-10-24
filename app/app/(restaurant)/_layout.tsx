@@ -5,9 +5,12 @@ import { ZoneVisite } from '../../components/ZoneVisite';
 import { colors, fonts } from '../../theme/tokens';
 import { useRestaurantQueue } from '../../store/restaurantQueue';
 import { useSession } from '../../store/session';
+import { DistriproTaxiFood } from '../../distripro/hoteTaxiFood';
 
 /**
- * Espace restaurant : 4 onglets — Commandes · En livraison · Historique · Réglages.
+ * Espace restaurant : 5 onglets — Commandes · En livraison · Historique · Commander · Réglages.
+ * « Commander » = la commande fournisseur DistriPro (emballages, frites, légumes), module
+ * `distripro/`, monté sous `DistriproTaxiFood` (identité = session Taxi Food, via le pont).
  *
  * Chaque icône est enveloppée d'une `ZoneVisite` : la visite guidée du premier
  * lancement désigne ces onglets un par un, et elle est jouée depuis l'écran
@@ -19,13 +22,13 @@ export default function RestaurantLayout() {
 
   /**
    * Marges de la mise en évidence autour d'une icône d'onglet. On ne peut
-   * mesurer que l'icône (24 px) ; la cellule d'onglet, elle, fait un quart de
+   * mesurer que l'icône (24 px) ; la cellule d'onglet, elle, fait un cinquième de
    * la largeur et porte son intitulé JUSTE EN DESSOUS. Sans ces marges le
    * contour serrerait l'icône et laisserait le mot dans l'ombre.
    */
   const margeOnglet = {
-    gauche: Math.max(width / 8 - 12, 10),
-    droite: Math.max(width / 8 - 12, 10),
+    gauche: Math.max(width / 10 - 12, 10),
+    droite: Math.max(width / 10 - 12, 10),
     haut: 8,
     bas: 20,
   };
@@ -47,6 +50,7 @@ export default function RestaurantLayout() {
   if (!allowed) return <Redirect href="/(tabs)" />;
 
   return (
+    <DistriproTaxiFood>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -97,6 +101,17 @@ export default function RestaurantLayout() {
         }}
       />
       <Tabs.Screen
+        name="commander"
+        options={{
+          title: 'Commander',
+          tabBarIcon: ({ color }) => (
+            <ZoneVisite nom="commander" marge={margeOnglet}>
+              <Icon name="inventory_2" size={24} color={color} />
+            </ZoneVisite>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="reglages"
         options={{
           title: 'Réglages',
@@ -110,6 +125,11 @@ export default function RestaurantLayout() {
       />
       {/* « Mes versements » s'ouvre depuis les Réglages : ce n'est pas un onglet. */}
       <Tabs.Screen name="versements" options={{ href: null }} />
+      {/* Panier, commandes et détail DistriPro : ouverts depuis l'onglet Commander. */}
+      <Tabs.Screen name="commander-panier" options={{ href: null }} />
+      <Tabs.Screen name="commander-commandes" options={{ href: null }} />
+      <Tabs.Screen name="commander-commande" options={{ href: null }} />
     </Tabs>
+    </DistriproTaxiFood>
   );
 }

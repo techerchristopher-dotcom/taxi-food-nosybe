@@ -20,7 +20,7 @@
 import { create } from 'zustand';
 
 /** Les cinq reperes de la visite, dans l'ordre ou elle les parcourt. */
-export type NomZone = 'commandes' | 'livraison' | 'historique' | 'reglages' | 'bascule';
+export type NomZone = 'commandes' | 'livraison' | 'historique' | 'commander' | 'reglages' | 'bascule';
 
 /** Rectangle en coordonnees fenetre, marges de confort deja appliquees. */
 export type Zone = { x: number; y: number; largeur: number; hauteur: number };

@@ -484,12 +484,14 @@
     "livraisonTexte": "Appena un ordine è segnato come pronto, lascia la prima scheda e arriva qui. Appena un fattorino lo prende, il suo nome e il suo numero compaiono sull'ordine, fino alla consegna al cliente.",
     "historiqueTitre": "Storico",
     "historiqueTexte": "Tutti i tuoi ordini conclusi, consegnati e rifiutati, con il dettaglio e l'importo di ciascuno.",
+    "commanderTitre": "Ordina le tue forniture",
+    "commanderTexte": "La scheda « Commander » apre DistriPro: imballaggi, patatine fresche Frity e verdure, consegnati al tuo ristorante e pagati alla consegna. È un ordine al fornitore, separato dagli ordini dei clienti.",
     "reglagesTitre": "Impostazioni",
     "reglagesTexte": "Il tuo logo e la tua foto di copertina, il numero mostrato ai clienti, i tuoi orari giorno per giorno, apertura e chiusura. Sotto « Offre du jour » aggiungi un piatto del giorno o un'offerta del momento; la stella mette in evidenza un piatto della tua carta e l'interruttore segnala ciò che è esaurito.",
     "basculeTitre": "Vedi l'app come i tuoi clienti",
     "basculeTexte": "Il pulsante « App client », in alto a destra, ti mostra l'app esattamente come la vedono i tuoi clienti. Per tornare nel tuo spazio: Profilo, poi « {{lien}} ».",
     "revoirTitre": "Scopri il tuo spazio",
-    "revoirTexte": "Cinque passaggi per capire le tue quattro schede, con un ordine di esempio.",
+    "revoirTexte": "Sei passaggi per capire le tue cinque schede, con un ordine di esempio.",
     "revoirBouton": "Rivedi la visita"
   },
   "authEmail": {

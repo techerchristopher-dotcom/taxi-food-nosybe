@@ -25,7 +25,7 @@ import { NomZone, useVisiteGuidee } from '../store/visiteGuidee';
 /**
  * VISITE GUIDEE DE L'ESPACE PARTENAIRE
  *
- * Cinq etapes, jouees a la premiere entree du restaurateur dans son espace, et
+ * Six etapes, jouees a la premiere entree du restaurateur dans son espace, et
  * rejouables depuis les Reglages. Objectif dicte par le porteur du projet :
  * « il faut qu'il comprenne comment fonctionne son application rapidement ».
  *
@@ -72,7 +72,7 @@ import { NomZone, useVisiteGuidee } from '../store/visiteGuidee';
  */
 
 // ---------------------------------------------------------------------------
-// Les cinq etapes
+// Les six etapes
 // ---------------------------------------------------------------------------
 
 type Etape = {
@@ -87,6 +87,7 @@ const ETAPES: Etape[] = [
   { zone: 'commandes', cle: 'commandes', exemple: true },
   { zone: 'livraison', cle: 'livraison' },
   { zone: 'historique', cle: 'historique' },
+  { zone: 'commander', cle: 'commander' },
   { zone: 'reglages', cle: 'reglages' },
   { zone: 'bascule', cle: 'bascule' },
 ];

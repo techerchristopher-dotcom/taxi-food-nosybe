@@ -129,6 +129,7 @@ export default function RestaurantLayout() {
       <Tabs.Screen name="commander-panier" options={{ href: null }} />
       <Tabs.Screen name="commander-commandes" options={{ href: null }} />
       <Tabs.Screen name="commander-commande" options={{ href: null }} />
+      <Tabs.Screen name="commander-conseil" options={{ href: null }} />
     </Tabs>
     </DistriproTaxiFood>
   );

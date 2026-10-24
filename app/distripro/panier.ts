@@ -33,6 +33,8 @@ type Etat = {
   /** -1 pas ; sous le minimum, la ligne disparaît. */
   retirer: (produitId: number) => void;
   supprimer: (produitId: number) => void;
+  /** Pose une quantité (bornée par le minimum et le stock) ; renvoie la quantité retenue. */
+  fixer: (p: ProduitDP, quantite: number) => number;
   vider: () => void;
   /** Resynchronise prix et règles avec le catalogue relu (prix changé en base). */
   rafraichir: (produits: ProduitDP[]) => void;
@@ -84,6 +86,18 @@ export const usePanierDP = create<Etat>((set, get) => ({
     const lignes = get().lignes.filter((l) => l.produitId !== produitId);
     set({ lignes });
     sauver(lignes);
+  },
+  fixer(p, quantite) {
+    let q = Math.max(quantite, p.qteMin);
+    if (p.pas > 1) q = Math.ceil(q / p.pas) * p.pas;
+    if (p.stock !== null) q = Math.min(q, p.stock);
+    const lignes = get().lignes.filter((l) => l.produitId !== p.id);
+    if (q > 0 && q >= p.qteMin) {
+      lignes.push({ produitId: p.id, quantite: q, nom: p.nom, prix: p.prix, unite: p.unite, qteMin: p.qteMin, pas: p.pas, stock: p.stock });
+    }
+    set({ lignes });
+    sauver(lignes);
+    return q >= p.qteMin ? q : 0;
   },
   vider() {
     set({ lignes: [] });

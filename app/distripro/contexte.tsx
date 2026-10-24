@@ -12,6 +12,8 @@ export type LiensDP = {
   panier: string;
   commandes: string;
   commande: (numero: string) => string;
+  /** « Ma liste conseillée » (app seulement : elle repose sur les ventes Taxi Food). */
+  conseil?: string;
   /** Connexion (site seulement) ; absent dans l'app : la session Taxi Food suffit. */
   connexion?: string;
 };

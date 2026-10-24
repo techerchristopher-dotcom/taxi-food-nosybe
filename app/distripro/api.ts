@@ -72,6 +72,12 @@ export type DocumentDP = {
   };
 };
 
+export type ContenantConseil = { contenant: string; quantite: number; produit_id: number | null; produit: string | null; prix_piece: number | null };
+export type FicheConseil = { nom: string; cout_plat: number | null; complet: boolean; contenants: ContenantConseil[] };
+export type CategorieConseil = { categorie: string; plats: number; forfait: number | null; fiches: FicheConseil[] };
+export type LigneConseil = { produit_id: number; nom: string; pieces: number; qte_par_lot: number; lots: number; prix_lot: number; stock: number | null; prix_provisoire: boolean };
+export type ConseilDP = { jours: number; categories: CategorieConseil[]; liste: LigneConseil[]; sans_fiche: string[] };
+
 export type Resultat<T> = { ok: true; valeur: T } | { ok: false; reason: string; message: string };
 
 export const PAIEMENTS: { code: string; libelle: string }[] = [
@@ -179,6 +185,8 @@ export type Identite = {
   }): Promise<Resultat<CommandeDP>>;
   mesCommandes(): Promise<Resultat<CommandeDP[]>>;
   document(numero: string): Promise<Resultat<DocumentDP>>;
+  /** Conseil emballage d'après les ventes Taxi Food (pont seulement). */
+  conseil?: () => Promise<Resultat<ConseilDP>>;
 };
 
 const MESSAGES: Record<string, string> = {
@@ -236,6 +244,19 @@ export function identitePont(
       const r = await appel({ action: 'document', numero });
       if (!r.ok) return echec(String(r.reason ?? 'reseau'), r.message as string);
       return { ok: true, valeur: r.document as DocumentDP };
+    },
+    async conseil() {
+      const r = await appel({ action: 'conseil', jours: 30 });
+      if (!r.ok) return echec(String(r.reason ?? 'reseau'), r.message as string);
+      return {
+        ok: true,
+        valeur: {
+          jours: Number(r.jours ?? 30),
+          categories: (r.categories as CategorieConseil[]) ?? [],
+          liste: (r.liste as LigneConseil[]) ?? [],
+          sans_fiche: (r.sans_fiche as string[]) ?? [],
+        },
+      };
     },
   };
 }

@@ -20,6 +20,7 @@
  *   commander      → { lignes, date_livraison, paiement_mode, commentaire }
  *   mes_commandes  → liste
  *   document       → { numero }  (bon de commande / BL / facture)
+ *   conseil        → { jours? }  emballages conseillés d'après les ventes réelles
  *
  * `verify_jwt = false` dans config.toml (la clé anon est un JWT valide : `true` ne
  * prouverait rien) ; la fonction exige elle-même un utilisateur réel.
@@ -121,6 +122,17 @@ Deno.serve(async (req: Request) => {
 
   if (action === 'mes_commandes') {
     const r = await dp('pont_mes_commandes', { p_secret: secret, p_restaurant_id: resto.id });
+    return json(200, { ...r, restaurant });
+  }
+
+  if (action === 'conseil') {
+    // Volumes RÉELS du restaurant (30 j), relus ici côté serveur : l'app n'envoie rien.
+    const jours = Math.min(Math.max(Number(corps.jours ?? 30) || 30, 7), 90);
+    const { data: volumes, error } = await service.rpc('distripro_volumes', { p_restaurant: resto.id, p_jours: jours });
+    if (error) return json(500, { ok: false, reason: 'volumes' });
+    const r = await dp('pont_conseil', {
+      p_secret: secret, p_restaurant_nom: resto.name, p_volumes: volumes ?? [], p_jours: jours,
+    });
     return json(200, { ...r, restaurant });
   }
 

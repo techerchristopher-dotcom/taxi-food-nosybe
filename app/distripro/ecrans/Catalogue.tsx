@@ -7,6 +7,7 @@ import { ar, chargerCatalogue, type CatalogueDP } from '../api';
 import { dp, useDistripro } from '../contexte';
 import { BarreBas, BoutonPanier, Chargement, EnteteDP, LigneProduit, Message } from '../composants';
 import { totalIndicatif, usePanierDP } from '../panier';
+import { CarteConseil } from './Conseil';
 
 /** Catalogue DistriPro : rayons, recherche, ajout au panier. Lisible sans compte. */
 export function EcranCatalogue({
@@ -122,9 +123,12 @@ export function EcranCatalogue({
             stickySectionHeadersEnabled={false}
             refreshControl={<RefreshControl refreshing={rafraichit} onRefresh={async () => { setRafraichit(true); await charger(); setRafraichit(false); }} />}
             ListHeaderComponent={
+              <>
+              <CarteConseil />
               <Text style={st.info}>
                 Paiement à la livraison. Les prix marqués « provisoire » seront confirmés à l'arrivée du stock.
               </Text>
+              </>
             }
             renderSectionHeader={({ section }) => <Text style={st.section}>{section.title}</Text>}
             renderItem={({ item }) => (

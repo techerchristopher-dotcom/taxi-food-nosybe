@@ -14,6 +14,7 @@ export const LIENS_TAXIFOOD = {
   panier: '/(restaurant)/commander-panier',
   commandes: '/(restaurant)/commander-commandes',
   commande: (numero: string) => `/(restaurant)/commander-commande?numero=${encodeURIComponent(numero)}`,
+  conseil: '/(restaurant)/commander-conseil',
 };
 
 export function DistriproTaxiFood({ children }: { children: ReactNode }) {

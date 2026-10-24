@@ -2,6 +2,8 @@
  * Deux applications, un seul projet (2026-10-17) — docs/APP-LIVREUR-CAHIER-DES-CHARGES.md § 3.
  *
  *   - sans variable            → « Taxi Food », l'app client : `app.json` tel quel, RIEN ne change ;
+ *   - `APP_VARIANT=distripro`  → le site distripro207.com (web seulement), écrans dans
+ *     `app-distripro/`, module partagé `distripro/` (le même que l'onglet « Commander ») ;
  *   - `APP_VARIANT=livreur`    → « Taxi Food Livreur » : autre identifiant, autre projet EAS
  *     (donc flux de mises à jour séparé), écrans dans `app-livreur/`, position en arrière-plan.
  *
@@ -14,6 +16,8 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const LIVREUR = process.env.APP_VARIANT === 'livreur';
+/** Le site distripro207.com (web seulement) : le module `distripro/`, sans rien de Taxi Food. */
+const DISTRIPRO = process.env.APP_VARIANT === 'distripro';
 
 /** Projet EAS de l'app livreur (créé le 2026-10-17). */
 const PROJET_EAS_LIVREUR = 'e0d5567e-9321-4071-94e8-44910ab1434d'; // @chris97416/taxi-food-livreur
@@ -26,6 +30,26 @@ function nomDuPlugin(p: unknown): string {
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const base = config as ExpoConfig;
+  if (DISTRIPRO) {
+    // Web seulement : aucun build natif, aucune mise à jour à distance. Les écrans viennent
+    // de `app-distripro/` ; Stripe, la position, la galerie n'ont rien à faire ici.
+    const garde = new Set(['expo-font', 'expo-web-browser']);
+    const plugins: Plugin[] = (base.plugins ?? []).filter((p) => garde.has(nomDuPlugin(p))) as Plugin[];
+    plugins.unshift(['expo-router', { root: './app-distripro' }]);
+    return {
+      ...base,
+      name: 'DistriPro',
+      slug: 'distripro',
+      scheme: 'distripro',
+      web: { ...(base.web ?? {}), themeColor: '#1A3B31', name: 'DistriPro', shortName: 'DistriPro', lang: 'fr' } as ExpoConfig['web'],
+      plugins,
+      extra: {
+        ...base.extra,
+        variante: 'distripro',
+        router: { ...(base.extra?.router ?? {}), root: './app-distripro' },
+      },
+    };
+  }
   if (!LIVREUR) return base;
 
   const projetEas = PROJET_EAS_LIVREUR;

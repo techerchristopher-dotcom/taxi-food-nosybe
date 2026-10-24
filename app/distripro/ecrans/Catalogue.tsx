@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Icon } from '../../components/Icon';
@@ -9,7 +9,19 @@ import { BarreBas, BoutonPanier, Chargement, EnteteDP, LigneProduit, Message } f
 import { totalIndicatif, usePanierDP } from '../panier';
 
 /** Catalogue DistriPro : rayons, recherche, ajout au panier. Lisible sans compte. */
-export function EcranCatalogue({ sousTitre, enHaut = true }: { sousTitre?: string | null; enHaut?: boolean }) {
+export function EcranCatalogue({
+  sousTitre,
+  enHaut = true,
+  rayonInitial,
+  droiteEnPlus,
+}: {
+  sousTitre?: string | null;
+  enHaut?: boolean;
+  /** slug du rayon à ouvrir d'emblée (ex. `frites`, depuis la page Frity). */
+  rayonInitial?: string | null;
+  /** bouton supplémentaire dans l'en-tête (site : compte). */
+  droiteEnPlus?: React.ReactNode;
+}) {
   const router = useRouter();
   const { liens } = useDistripro();
   const [cat, setCat] = useState<CatalogueDP | null>(null);
@@ -18,17 +30,23 @@ export function EcranCatalogue({ sousTitre, enHaut = true }: { sousTitre?: strin
   const [rayon, setRayon] = useState<number | null>(null);
   const [recherche, setRecherche] = useState('');
   const panier = usePanierDP();
+  const rayonPose = useRef(false);
 
   const charger = useCallback(async () => {
     try {
       const c = await chargerCatalogue();
       setCat(c);
       setErreur(false);
+      if (rayonInitial && !rayonPose.current) {
+        rayonPose.current = true;
+        const r = c.rayons.find((x) => x.slug === rayonInitial);
+        if (r) setRayon(r.id);
+      }
       usePanierDP.getState().rafraichir(c.produits);
     } catch {
       setErreur(true);
     }
-  }, []);
+  }, [rayonInitial]);
 
   useEffect(() => {
     void panier.charger();
@@ -66,6 +84,7 @@ export function EcranCatalogue({ sousTitre, enHaut = true }: { sousTitre?: strin
         enHaut={enHaut}
         droite={
           <View style={{ flexDirection: 'row' }}>
+            {droiteEnPlus}
             <Pressable onPress={() => router.push(liens.commandes as never)} style={st.icone} accessibilityLabel="Mes commandes DistriPro" hitSlop={6}>
               <Icon name="receipt_long" size={22} color={dp.blanc} />
             </Pressable>

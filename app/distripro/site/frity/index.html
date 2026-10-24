@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FRITY — Vos frites sont déjà coupées | Distripro Nosy Be</title>
+<meta name="description" content="Frites fraîches découpées à Nosy Be, congelées crues, livrées en sachets de 2,5 kg. Livraison en moins de 24 h. Un produit Distripro.">
+<meta property="og:title" content="FRITY — Vos frites sont déjà coupées">
+<meta property="og:description" content="Frites fraîches découpées à Nosy Be, congelées crues, livrées en sachets de 2,5 kg.">
+<meta property="og:image" content="assets/sachet.png">
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="ds/fonts/fonts.css">
+<link rel="stylesheet" href="ds/_ds_bundle.css">
+<link rel="stylesheet" href="ds/styles.css">
+<style>
+  :root { color-scheme: light; --rouge-logo: #D00908; --or-logo: #FCB705; }
+  html, body { margin: 0; padding: 0; background: var(--creme); }
+  img { max-width: 100%; }
+  a { color: var(--rouge-logo); }
+  a:hover { color: var(--encre); }
+
+  /* Le paquet de tokens FRITY v1.0 embarque un thème sombre automatique.
+     La landing est volontairement verrouillée en clair (rendu marque). */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="dark"]) {
+      --or: #EFA00B; --or-fonce: #C9840A; --rouge: #C0442A; --rouge-fonce: #9E3520;
+      --encre: #2A1F16; --creme: #FFF6E4; --sable: #F5E1BC; --paille: #FBE7BC;
+      --tuile: #F6DCCB; --carte: #FFFCF4; --trait: #E3CDA6;
+      --texte: var(--encre); --texte-doux: #6B5741; --texte-inverse: #FFF6E4;
+      --ombre-bouton: 0 3px 0 rgba(42,31,22,.22); --ombre-carte: 0 4px 0 var(--encre);
+    }
+  }
+
+  .topbar { background: var(--sable); border-bottom: 1px solid var(--trait); padding: var(--e-3) var(--e-5);
+            display: flex; align-items: center; gap: var(--e-3);
+            font-family: var(--texte-f); font-size: var(--pas-2); color: var(--texte); }
+  .topbar img { width: 72px; height: 72px; display: block; }
+
+  .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--e-4);
+               align-items: end; margin: calc(var(--e-6) * -1) 0 calc(var(--e-5) * -1); }
+  .hero-copy { padding-bottom: var(--e-3); }
+  .hero-logo { width: clamp(96px, 14vw, 150px); height: auto; display: block; margin-bottom: var(--e-4); }
+  .hero-copy h1 { font-family: var(--titre); font-weight: 600; font-size: var(--pas-8); line-height: var(--inter-titre);
+                  margin: 0 0 var(--e-3); color: var(--encre); text-wrap: balance; }
+  .hero-copy p { font-family: var(--texte-f); font-size: var(--pas-4); line-height: 1.45; max-width: 34ch;
+                 margin: 0 0 var(--e-4); color: var(--texte); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: var(--e-3); }
+  .hero-mascot { display: flex; justify-content: center; align-items: flex-end; margin-bottom: calc(var(--e-7) * -1); }
+  .hero-mascot img { width: auto; height: clamp(165px, 46vw, 560px); display: block; }
+
+  .bandeau-photo { display: block; width: 100%; height: clamp(220px, 38vw, 460px);
+                   object-fit: cover; object-position: center 55%; }
+
+  .h2 { font-family: var(--titre); font-weight: 600; font-size: var(--pas-7); line-height: var(--inter-titre);
+        margin: 0 0 var(--e-5); color: var(--encre); }
+  .h2--xl { font-size: var(--pas-8); text-wrap: balance; }
+  .lede { font-family: var(--texte-f); font-size: var(--pas-4); line-height: var(--inter-texte);
+          max-width: var(--mesure); margin: 0 0 var(--e-4); color: var(--texte); }
+  .punch { font-family: var(--titre); font-weight: 600; font-size: var(--pas-6); line-height: var(--inter-titre);
+           max-width: var(--mesure); margin: 0 0 var(--e-8); color: var(--rouge-logo); }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--e-4); }
+  .tile-img { display: block; width: 100%; height: 170px; object-fit: cover;
+              border-radius: var(--r-champ); margin-top: var(--e-4); }
+  .famille-img { display: block; width: 100%; height: 280px; object-fit: contain;
+                 object-position: center bottom; margin-top: var(--e-4); }
+  .famille-img--photo { height: 240px; object-fit: cover; border-radius: var(--r-champ); margin: var(--e-4) 0 var(--e-5); }
+
+  .calc-band { background: var(--sable); padding: var(--e-8) var(--e-5) var(--e-9); }
+  .calc-card { max-width: 860px; margin: 0 auto; background: var(--carte);
+               border: var(--trait-large) solid var(--encre); border-radius: var(--r-tuile);
+               box-shadow: var(--ombre-carte); padding: var(--e-7) var(--e-5); }
+  .calc-intro { font-family: var(--texte-f); font-size: var(--pas-3); line-height: var(--inter-texte);
+                color: var(--texte-doux); margin: 0 0 var(--e-7); max-width: var(--mesure); }
+  .step { display: flex; gap: var(--e-4); margin-bottom: var(--e-6); }
+  .step:last-of-type { margin-bottom: 0; }
+  .step__n { font-family: var(--chiffre); font-weight: 700; font-size: var(--pas-6); line-height: 1;
+             color: var(--or-logo); -webkit-text-stroke: 1.5px var(--encre); margin: 0; flex: none; }
+  .step__body { flex: 1; min-width: 0; }
+  .step .f-field { margin-bottom: 0; }
+  .slider-label { display: block; font-family: var(--texte-f); font-weight: 700; font-size: var(--pas-3);
+                  color: var(--encre); margin-bottom: var(--e-2); }
+  .slider-row { display: flex; align-items: center; gap: var(--e-4); }
+  .slider-row input[type="range"] { flex: 1; min-height: 44px; accent-color: var(--rouge-logo); background: transparent; }
+  .slider-row output { font-family: var(--chiffre); font-size: var(--pas-5); color: var(--encre);
+                       min-width: 4ch; text-align: right; }
+  .hint { font-family: var(--texte-f); font-size: var(--pas-2); line-height: var(--inter-texte);
+          color: var(--texte-doux); margin: var(--e-3) 0 0; max-width: var(--mesure); }
+  .calc-out { margin-top: var(--e-7); border-top: 1px solid var(--trait); padding-top: var(--e-6);
+              display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e-5); }
+  .calc-out__k { font-family: var(--texte-f); font-size: var(--pas-3); color: var(--texte-doux); margin: 0 0 var(--e-2); }
+  .calc-out__big { font-family: var(--chiffre); font-weight: 700; font-size: clamp(2.2rem, 8vw, 3.4rem);
+                   line-height: 1; letter-spacing: -0.02em; color: var(--encre); margin: 0; }
+  .calc-out__frity { font-family: var(--chiffre); font-weight: 700; font-size: var(--pas-6); line-height: 1;
+                     color: var(--rouge-logo); margin: 0; }
+  .calc-detail { font-family: var(--texte-f); font-size: var(--pas-2); line-height: var(--inter-texte);
+                 color: var(--texte-doux); margin: var(--e-4) 0 0; max-width: var(--mesure); }
+
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--e-7); align-items: center; }
+  .duo__img { display: flex; justify-content: center; }
+  .duo__img img { width: auto; height: clamp(280px, 48vw, 520px); display: block; }
+  .badges { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+
+  .etapes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e-6); }
+  .etape p.etape__n { font-family: var(--chiffre); font-weight: 700; font-size: clamp(3rem, 7vw, 4.5rem); line-height: 1;
+              color: var(--or-logo); -webkit-text-stroke: 2px var(--encre); margin: 0 0 var(--e-3); }
+  .etape img { display: block; width: 100%; height: 180px; object-fit: cover;
+               border-radius: var(--r-tuile); margin-bottom: var(--e-4); }
+  .etape h3 { font-family: var(--titre); font-weight: 600; font-size: var(--pas-5); line-height: var(--inter-titre);
+              margin: 0 0 var(--e-2); color: var(--encre); }
+  .etape p { font-family: var(--texte-f); font-size: var(--pas-3); line-height: var(--inter-texte); margin: 0; color: var(--texte); }
+  .note-fin { font-family: var(--texte-f); font-size: var(--pas-4); line-height: var(--inter-texte);
+              max-width: var(--mesure); margin: var(--e-7) 0 0; color: var(--texte-doux); }
+
+  .cta { background: var(--rouge-logo); color: var(--texte-inverse); position: relative; }
+  .cta__inner { max-width: 1200px; margin: 0 auto; padding: var(--e-8) var(--e-5) var(--e-9);
+                display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: var(--e-7); align-items: center; }
+  .cta h2 { font-family: var(--titre); font-weight: 600; font-size: var(--pas-7); line-height: var(--inter-titre);
+            margin: 0 0 var(--e-5); color: var(--texte-inverse); }
+  .plaque { display: inline-block; background: var(--or-logo); border: 3px solid var(--encre);
+            border-radius: var(--r-etiquette); box-shadow: var(--ombre-carte); padding: var(--e-4) var(--e-5);
+            color: var(--encre); --texte-doux: var(--encre); --texte-inverse: var(--encre); --rouge: var(--encre); }
+  .cta__sachet { display: flex; justify-content: center; align-items: center; }
+  .cta__sachet img { width: auto; height: clamp(240px, 34vw, 420px); display: block; }
+  .cta__contact { display: flex; flex-direction: column; align-items: center; gap: var(--e-3); }
+  .cta__contact img { width: clamp(150px, 32vw, 210px); height: auto; display: block;
+                      border: var(--trait-large) solid var(--encre); border-radius: var(--r-etiquette);
+                      background: var(--creme); padding: var(--e-2); }
+  .cta__tel { font-family: var(--chiffre); font-weight: 700; font-size: var(--pas-5); color: var(--texte-inverse);
+              text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+  .cta__tel:hover { color: var(--texte-inverse); }
+  .cta__contact p { font-family: var(--texte-f); font-size: var(--pas-3); margin: 0; color: var(--texte-inverse); }
+
+  footer { background: var(--creme); position: relative; }
+  .foot { max-width: 1200px; margin: 0 auto; padding: var(--e-7) var(--e-5) var(--e-8);
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e-6); align-items: start; }
+  .foot__logo { width: 96px; height: 96px; display: block; margin-bottom: var(--e-3); }
+  .foot__links { display: flex; flex-direction: column; gap: var(--e-2); font-family: var(--texte-f); font-size: var(--pas-3); }
+  .foot__links a { min-height: 44px; display: inline-flex; align-items: center; }
+  .foot__end { display: flex; flex-direction: column; gap: var(--e-3); align-items: flex-start; }
+  .foot__sign { font-family: var(--texte-f); font-size: var(--pas-2); line-height: var(--inter-texte);
+                margin: 0; color: var(--texte-doux); max-width: 32ch; }
+</style>
+</head>
+<body class="f-body">
+
+<div class="topbar">
+  <img src="assets/logo.png" alt="FRITY" width="460" height="460">
+  <span>Un produit <strong>Distripro</strong> — Nosy Be</span>
+</div>
+
+<!-- 1. HÉROS -->
+<section class="f-section f-section--creme">
+  <div class="f-wide">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <img class="hero-logo" src="assets/logo.png" alt="FRITY — Made in Nosy Be" width="460" height="460">
+        <h1>Vos frites sont déjà coupées.</h1>
+        <p>Frites fraîches découpées à Nosy Be, congelées crues, livrées en sachets de 2,5 kg. Vous ouvrez, vous versez dans l'huile.</p>
+        <div class="hero-actions">
+          <a class="f-btn f-btn--md f-btn--primaire" href="#commander">commander un échantillon gratuit <span class="f-btn__arrow" aria-hidden="true">→</span></a>
+          <a class="f-btn f-btn--md f-btn--secondaire" href="#calcul">calculer mon vrai coût <span class="f-btn__arrow" aria-hidden="true">→</span></a>
+        </div>
+      </div>
+      <div class="hero-mascot">
+        <img src="assets/monsieur.png" alt="Monsieur Frity, la frite allumette" width="620" height="1292">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. BANDEAU PHOTO -->
+<img class="bandeau-photo" src="assets/cuisine-propre.jpg" width="1600" height="893" loading="lazy"
+     alt="Un commis épluche des pommes de terre pendant que le patron surveille, une bassine d'épluchures au premier plan">
+
+<!-- 3. LE VRAI COÛT -->
+<div data-cut="haut" data-cut-fill="var(--sable)" data-cut-variant="1"></div>
+<section class="f-section f-section--sable">
+  <div class="f-col">
+    <p class="f-label" style="margin: 0 0 var(--e-3)">Le vrai coût de votre commis</p>
+    <h2 class="h2 h2--xl">1 kg de pommes de terre à 5 000 Ar ne coûte jamais 5 000 Ar.</h2>
+    <p class="lede">Entre le sac et la friteuse, il y a un homme, un couteau, une poubelle. Chaque matin, un employé passe une partie de son service à éplucher. Ce qu'il jette, vous l'avez payé au kilo. Ce qu'il fait pendant ce temps-là, il ne le fait pas ailleurs.</p>
+    <p class="punch">Le sachet Frity ne remplace pas une pomme de terre. Il remplace un poste.</p>
+    <div class="grid-3">
+      <div class="f-tile f-tile--paille">
+        <h3 class="f-tile__title">Du temps, tous les matins</h3>
+        <p class="f-tile__note">L'épluchage disparaît du service. Votre équipe démarre sur la cuisine.</p>
+        <img class="tile-img" src="assets/avantage-temps.jpg" width="800" height="597" loading="lazy"
+             alt="Un couteau d'office accroché au mur, propre, à côté d'une planche vide">
+      </div>
+      <div class="f-tile f-tile--tuile">
+        <h3 class="f-tile__title">Un poste de moins à gérer</h3>
+        <p class="f-tile__note">Un employé réaffecté, sans recruter, sans licencier. Une chose de moins à surveiller.</p>
+        <img class="tile-img" src="assets/avantage-poste.jpg" width="800" height="597" loading="lazy"
+             alt="Un tablier plié sur un tabouret vide">
+      </div>
+      <div class="f-tile f-tile--creme">
+        <h3 class="f-tile__title">Un poids net, sans épluchures</h3>
+        <p class="f-tile__note">2,5 kg de frites, c'est 2,5 kg de frites. Vous ne payez plus la peau ni la poubelle.</p>
+        <img class="tile-img" src="assets/avantage-poids.jpg" width="800" height="597" loading="lazy"
+             alt="Une bassine de bâtonnets crus à côté d'une poubelle fermée et vide">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. CALCULATEUR -->
+<div class="calc-band" id="calcul">
+  <div class="calc-card">
+    <p class="f-label" style="margin: 0 0 var(--e-3)">Pesez vos épluchures</p>
+    <h2 class="h2" style="margin-bottom: var(--e-3)">Combien vous coûte vraiment votre kilo de frites ?</h2>
+    <p class="calc-intro">Quatre chiffres que vous avez en tête. Remplissez-les dans l'ordre, le total se met à jour tout seul en bas.</p>
+
+    <div class="step">
+      <p class="step__n">01</p>
+      <div class="step__body">
+        <div class="f-field">
+          <label class="f-field__label" for="prix-achat">Votre prix d'achat de la pomme de terre</label>
+          <p class="f-field__help" id="prix-achat-help">Prix au kilo, brut, non épluchée.</p>
+          <div class="f-field__box">
+            <input id="prix-achat" type="number" inputmode="numeric" min="0" step="100" value="5000" aria-describedby="prix-achat-help">
+            <span class="f-field__unit" aria-hidden="true">Ar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <p class="step__n">02</p>
+      <div class="step__body">
+        <div class="f-field">
+          <label class="f-field__label" for="brut">Ce que vous commandez en pommes de terre</label>
+          <p class="f-field__help" id="brut-help">Kilos de pommes de terre brutes commandés chaque semaine.</p>
+          <div class="f-field__box">
+            <input id="brut" type="number" inputmode="numeric" min="1" step="5" value="40" aria-describedby="brut-help">
+            <span class="f-field__unit" aria-hidden="true">kg / sem.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <p class="step__n">03</p>
+      <div class="step__body">
+        <label class="slider-label" for="perte">Votre taux de perte à l'épluchage</label>
+        <div class="slider-row">
+          <input id="perte" type="range" min="10" max="45" step="1" value="25">
+          <output id="perte-out" for="perte">25 %</output>
+        </div>
+        <p class="hint">Nous ne connaissons pas votre taux réel — personne ne le connaît. Pesez vos épluchures pendant une semaine, vous aurez le vrai chiffre.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <p class="step__n">04</p>
+      <div class="step__body">
+        <div class="f-field">
+          <label class="f-field__label" for="salaire">Le salaire de celui qui épluche</label>
+          <p class="f-field__help" id="salaire-help">Salaire mensuel chargé, en entier : c'est le poste que le sachet remplace.</p>
+          <div class="f-field__box">
+            <input id="salaire" type="number" inputmode="numeric" min="0" step="10000" value="300000" aria-describedby="salaire-help">
+            <span class="f-field__unit" aria-hidden="true">Ar / mois</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-out">
+      <div>
+        <p class="calc-out__k">Votre kilo vous coûte</p>
+        <p class="calc-out__big" id="cout" aria-live="polite">6 667 Ar</p>
+      </div>
+      <div style="align-self: end">
+        <p class="calc-out__k">Frity</p>
+        <p class="calc-out__frity">8 000 Ar/kg</p>
+      </div>
+    </div>
+    <p class="calc-detail" id="detail"></p>
+  </div>
+</div>
+
+<!-- 5. LE SACHET -->
+<div data-cut="haut" data-cut-fill="var(--creme)" data-cut-variant="3"></div>
+<section class="f-section f-section--creme">
+  <div class="f-wide">
+    <div class="duo">
+      <div class="duo__img">
+        <img src="assets/sachet.png" alt="Le sachet Frity 2,5 kg, transparent, bâtonnets crus" width="760" height="1018" loading="lazy">
+      </div>
+      <div>
+        <h2 class="h2" style="margin-bottom: var(--e-4)">Le sachet est transparent. Vous voyez ce que vous achetez.</h2>
+        <p class="lede" style="margin-bottom: var(--e-5)">Des bâtonnets crus, coupés main, congelés tels quels. Pas de précuisson à l'huile, pas d'additif, pas de sachet opaque qui cache la marchandise. 2,5 kg net.</p>
+        <div class="badges">
+          <span class="f-badge f-badge--marque">Coupé à Nosy Be</span>
+          <span class="f-badge f-badge--marque">Congelé cru</span>
+          <span class="f-badge f-badge--neutre">2,5 kg net</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. LA FAMILLE -->
+<section class="f-section f-section--creme">
+  <div class="f-wide">
+    <h2 class="h2" style="margin-bottom: var(--e-6)">Une famille, pas un catalogue.</h2>
+    <div class="f-tiles">
+      <div class="f-tile f-tile--paille">
+        <div class="f-tile__badge"><span class="f-badge f-badge--marque">Disponible</span></div>
+        <h3 class="f-tile__title">Monsieur Frity</h3>
+        <p class="f-tile__note">La frite allumette. Le patron.</p>
+        <img class="famille-img" src="assets/monsieur.png" alt="Monsieur Frity" width="620" height="1292" loading="lazy">
+      </div>
+      <div class="f-tile f-tile--tuile">
+        <div class="f-tile__badge"><span class="f-badge f-badge--neutre">Bientôt</span></div>
+        <h3 class="f-tile__title">Madame Frity</h3>
+        <p class="f-tile__note">Les rondelles. La généreuse.</p>
+        <img class="famille-img" src="assets/madame.png" alt="Madame Frity" width="420" height="641" loading="lazy">
+      </div>
+      <div class="f-tile f-tile--sable">
+        <div class="f-tile__badge"><span class="f-badge f-badge--neutre">Bientôt</span></div>
+        <h3 class="f-tile__title">Les enfants Frity</h3>
+        <p class="f-tile__note">Les dés rissolés. Les turbulents.</p>
+        <img class="famille-img" src="assets/enfants.png" alt="Les enfants Frity" width="520" height="381" loading="lazy">
+      </div>
+      <div class="f-tile f-tile--creme">
+        <h3 class="f-tile__title">Et la suite</h3>
+        <p class="f-tile__note">Purée, légumes découpés, format collectivité. On y vient.</p>
+        <img class="famille-img famille-img--photo" src="assets/la-suite.jpg" width="900" height="900" loading="lazy"
+             alt="Trois futurs membres de la famille Frity sous un drap, avant de se montrer">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. COMMENT ÇA MARCHE -->
+<div data-cut="haut" data-cut-fill="var(--sable)" data-cut-variant="5"></div>
+<section class="f-section f-section--sable">
+  <div class="f-wide">
+    <h2 class="h2" style="margin-bottom: var(--e-7)">Comment ça marche ?</h2>
+    <div class="etapes">
+      <div class="etape">
+        <p class="etape__n">01</p>
+        <img src="assets/etape-1.jpg" alt="Un chef au téléphone avec Monsieur Frity" width="1200" height="896" loading="lazy">
+        <h3>Vous commandez</h3>
+        <p>SMS, appel, WhatsApp — comme vous voulez. Ou sur le catalogue Distripro.</p>
+      </div>
+      <div class="etape">
+        <p class="etape__n">02</p>
+        <img src="assets/etape-2.jpg" alt="Monsieur Frity livre les sachets à scooter" width="800" height="597" loading="lazy">
+        <h3>On livre</h3>
+        <p>Livraison en moins de 24 h, sur le créneau qui vous arrange. Vous commandez, c'est livré.</p>
+      </div>
+      <div class="etape">
+        <p class="etape__n">03</p>
+        <img src="assets/etape-3.jpg" alt="Une pile de sachets Frity dans le congélateur du restaurant" width="800" height="597" loading="lazy">
+        <h3>Vous stockez</h3>
+        <p>Les sachets partent au congélateur, où ils se gardent 48 h sans souci. Et c'est tout.</p>
+      </div>
+    </div>
+    <p class="note-fin">Notre production est artisanale. Nous servons quelques restaurants, bien, plutôt que beaucoup, mal.</p>
+  </div>
+</section>
+
+<!-- 8. COMMANDER -->
+<div class="cta" id="commander">
+  <div data-cut="haut" data-cut-fill="var(--rouge-logo)" data-cut-variant="7"></div>
+  <div class="cta__inner">
+    <div>
+      <h2>Commander</h2>
+      <div class="plaque">
+        <div class="f-price">
+          <div class="f-price__weight">2,5 kg</div>
+          <div class="f-price__amount">9 000<span class="f-price__unit"> Ar / kg</span></div>
+          <p class="f-price__note">Sachet de 2,5 kg : 22 500 Ar</p>
+        </div>
+      </div>
+    </div>
+    <div class="cta__sachet">
+      <img src="assets/sachet.png" alt="Le sachet Frity 2,5 kg" width="760" height="1018" loading="lazy">
+    </div>
+    <div class="cta__contact">
+      <img src="assets/qr.png" alt="QR code vers la commande WhatsApp Frity" width="420" height="420" loading="lazy">
+      <a class="cta__tel" href="https://wa.me/261373437912">+261 37 34 379 12</a>
+      <p>Commandez par téléphone</p>
+      <a class="f-btn f-btn--md f-btn--primaire" href="/?rayon=frites" style="margin-top:12px">Commander en ligne <span class="f-btn__arrow" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- 9. PIED DE PAGE -->
+<footer>
+  <div data-cut="haut" data-cut-fill="var(--creme)" data-cut-variant="9"></div>
+  <div class="foot">
+    <div>
+      <img class="foot__logo" src="assets/logo.png" alt="FRITY — Made in Nosy Be" width="460" height="460" loading="lazy">
+      <p class="f-label" style="margin: 0">Made in Nosy Be</p>
+    </div>
+    <div class="foot__links">
+      <a href="https://wa.me/261373437912">WhatsApp</a>
+    </div>
+    <div class="foot__end">
+      <button class="f-btn f-btn--md f-btn--texte" type="button" id="to-top">remonter en haut</button>
+      <p class="foot__sign">C'est la seule chose qu'on épluche encore ici.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.documentElement.setAttribute('data-theme', 'light');
+
+/* --- Coupes au couteau (portage 1:1 de Frity.CutEdge) --------------------- */
+(function () {
+  var SEED = 24301;
+  function cuts(height, seedOffset) {
+    var s = SEED + seedOffset;
+    var rnd = function () { return (s = (s * 1103515245 + 12345) & 2147483647) / 2147483647; };
+    var xs = [0];
+    while (xs[xs.length - 1] < 1200) xs.push(xs[xs.length - 1] + 42 + Math.round(rnd() * 54));
+    xs[xs.length - 1] = 1200;
+    return xs.map(function (x) { return [x, 3 + Math.round(rnd() * (height - 9))]; });
+  }
+  document.querySelectorAll('[data-cut]').forEach(function (host) {
+    var height = 34;
+    var variant = Number(host.dataset.cutVariant || 0);
+    var fill = host.dataset.cutFill || 'var(--creme)';
+    var pts = cuts(height, variant * 977);
+    var d = host.dataset.cut === 'haut'
+      ? 'M0 ' + pts[0][1] + pts.slice(1).map(function (p) { return 'L' + p[0] + ' ' + p[1]; }).join('') + 'L1200 ' + height + 'L0 ' + height + 'Z'
+      : 'M0 0L1200 0' + pts.slice().reverse().map(function (p) { return 'L' + p[0] + ' ' + (height - p[1]); }).join('') + 'Z';
+    host.outerHTML = '<svg class="f-cut" viewBox="0 0 1200 ' + height + '" preserveAspectRatio="none" aria-hidden="true" style="height:' + height + 'px"><path d="' + d + '" fill="' + fill + '"></path></svg>';
+  });
+})();
+
+/* --- Calculateur du vrai coût --------------------------------------------- */
+(function () {
+  var PRIX_FRITY = 8000;              // Ar / kg — prix de lancement
+  var SEMAINES_PAR_MOIS = 4.33;
+  var els = {
+    prix: document.getElementById('prix-achat'),
+    brut: document.getElementById('brut'),
+    perte: document.getElementById('perte'),
+    perteOut: document.getElementById('perte-out'),
+    salaire: document.getElementById('salaire'),
+    cout: document.getElementById('cout'),
+    detail: document.getElementById('detail')
+  };
+  function fmt(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'); }
+  function calc() {
+    var prix = Number(els.prix.value) || 0;
+    var brut = Number(els.brut.value) || 0;
+    var perte = Number(els.perte.value);
+    var salaire = Number(els.salaire.value) || 0;
+    var matiere = perte >= 100 ? 0 : prix / (1 - perte / 100);
+    var fritesMois = brut * (1 - perte / 100) * SEMAINES_PAR_MOIS;
+    var main = fritesMois > 0 ? salaire / fritesMois : 0;
+    els.perteOut.textContent = perte + ' %';
+    els.cout.textContent = fmt(matiere + main) + ' Ar';
+    els.detail.textContent = fmt(brut) + ' kg de pommes de terre par semaine à ' + fmt(perte)
+      + ' % de perte font ' + fmt(fritesMois) + ' kg de frites par mois. Sur ce volume, votre kilo se compose de '
+      + fmt(matiere) + ' Ar de pommes de terre et ' + fmt(main) + ' Ar de salaire.';
+  }
+  ['prix', 'brut', 'perte', 'salaire'].forEach(function (k) {
+    els[k].addEventListener('input', calc);
+  });
+  calc();
+})();
+
+document.getElementById('to-top').addEventListener('click', function () {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

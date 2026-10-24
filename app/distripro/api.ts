@@ -36,7 +36,7 @@ export type ProduitDP = {
 };
 
 export type SousCategorieDP = { id: number; nom: string; ordre: number; rayonId: number };
-export type RayonDP = { id: number; nom: string; emoji: string | null; ordre: number; sousCategories: SousCategorieDP[] };
+export type RayonDP = { id: number; nom: string; slug: string | null; emoji: string | null; ordre: number; sousCategories: SousCategorieDP[] };
 export type CatalogueDP = { rayons: RayonDP[]; produits: ProduitDP[] };
 
 export type LigneCommandeDP = { libelle: string; quantite: number; prix_unitaire: number; sous_total: number; motif?: string | null; origine?: string };
@@ -126,14 +126,15 @@ export async function chargerCatalogue(): Promise<CatalogueDP> {
     `sous_categories?select=id,nom,ordre,rayon_id&id=in.(${idsSc.join(',')})`,
   );
   const idsR = [...new Set(scs.map((s) => s.rayon_id))];
-  const rayons = await lire<{ id: number; nom: string; emoji: string | null; ordre: number | null }[]>(
-    `rayons?select=id,nom,emoji,ordre&id=in.(${idsR.join(',')})`,
+  const rayons = await lire<{ id: number; nom: string; slug: string | null; emoji: string | null; ordre: number | null }[]>(
+    `rayons?select=id,nom,slug,emoji,ordre&id=in.(${idsR.join(',')})`,
   );
   return {
     rayons: rayons
       .map((r) => ({
         id: r.id,
         nom: r.nom,
+        slug: r.slug,
         emoji: r.emoji,
         ordre: r.ordre ?? 0,
         sousCategories: scs

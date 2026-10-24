@@ -1,0 +1,358 @@
+/* FRITY — feuille de style distribuable (GENEREE, ne pas editer)
+   Source : src/tokens.css + src/components.css — modifier la source, puis `npm run build`. */
+
+/* ==========================================================================
+   FRITY — DESIGN TOKENS  v1.1  ·  30 août 2026
+   Marque produit de Distripro · Nosy Be, Madagascar
+   --------------------------------------------------------------------------
+   Source de vérité. Aucune valeur en dur ailleurs : toute couleur, taille,
+   espacement ou rayon écrit à la main dans un composant est un bug.
+
+   v1.1 — deux corrections pour le compilateur de design system :
+   · les valeurs sombres sont déclarées d'abord sous :root[data-theme="dark"],
+     hors media query, seule portée de thème que le compilateur reconnaît ;
+     le bloc « système » les rejoue en groupant les deux sélecteurs.
+   · les tokens dont le type ne se déduit pas de leur valeur portent une
+     annotation de type en fin de ligne.
+   ========================================================================== */
+
+:root {
+  /* --- ENCRES DE MARQUE — issues du logo, ne jamais modifier --------------- */
+  --or:             #EFA00B;  /* dominante */
+  --or-fonce:       #C9840A;  /* survol, contours sur fond clair */
+  --rouge:          #C0442A;  /* pastille du logo, actions, accents */
+  --rouge-fonce:    #9E3520;  /* survol */
+  --encre:          #2A1F16;  /* textes et contours — JAMAIS de noir pur */
+  --peau:           #A8703C;  /* réservé aux produits avec peau */
+
+  /* --- SURFACES — dérivées des encres ------------------------------------- */
+  --creme:          #FFF6E4;  /* fond de page, par défaut partout */
+  --sable:          #F5E1BC;  /* bandes pleine largeur, respiration */
+  --paille:         #FBE7BC;  /* tuile chaude, encadrés */
+  --tuile:          #F6DCCB;  /* tuile rouge, alertes douces */
+  --carte:          #FFFCF4;  /* cartes posées sur le crème */
+  --trait:          #E3CDA6;  /* filets, bordures, séparateurs */
+
+  /* --- TEXTE -------------------------------------------------------------- */
+  --texte:          var(--encre);
+  --texte-doux:     #6B5741;  /* légendes, aides, texte secondaire */
+  --texte-inverse:  #FFF6E4;  /* sur fonds encre, rouge ou or foncé */
+
+  /* --- SÉMANTIQUE — interface uniquement ---------------------------------
+     Ces trois couleurs ne sont PAS des couleurs de marque. Elles ne
+     paraissent jamais sur un visuel, une étiquette ou une affiche.     */
+  --dispo:          #4E7A3A;  /* en stock, commande confirmée */
+  --dispo-fond:     #E7F0DC;
+  --attente:        #B07A16;  /* bientôt, en préparation */
+  --attente-fond:   #FBEED0;
+  --erreur:         #A8321C;  /* échec, rupture */
+  --erreur-fond:    #F8DFD7;
+
+  /* --- TYPOGRAPHIE -------------------------------------------------------- */
+  --titre:   Fredoka, "Trebuchet MS", Verdana, sans-serif;      /* @kind font */
+  --texte-f: Karla, -apple-system, "Segoe UI", Roboto, sans-serif; /* @kind font */
+  --chiffre: "Space Mono", ui-monospace, "Courier New", monospace; /* @kind font */
+
+  --pas-1: 0.78rem;   /* étiquettes mono, mentions légales */
+  --pas-2: 0.90rem;   /* légendes, aides de champ */
+  --pas-3: 1.00rem;   /* texte courant */
+  --pas-4: 1.15rem;   /* chapô */
+  --pas-5: 1.45rem;   /* h4 */
+  --pas-6: 1.90rem;   /* h3 */
+  --pas-7: clamp(2.1rem, 5vw, 3rem);   /* h2 @kind font */
+  --pas-8: clamp(2.8rem, 9vw, 5rem);   /* h1 — interlignage serré obligatoire @kind font */
+
+  --inter-titre: 0.96;   /* les gros titres sont TASSÉS @kind other */
+  --inter-texte: 1.62;   /* @kind other */
+  --chasse-mono: 0.14em; /* interlettrage des étiquettes capitales @kind other */
+
+  /* --- ESPACEMENT — base 4 ------------------------------------------------ */
+  --e-1: 4px;  --e-2: 8px;  --e-3: 12px; --e-4: 16px; --e-5: 24px;
+  --e-6: 32px; --e-7: 48px; --e-8: 64px; --e-9: 96px;
+  --mesure: 66ch;         /* largeur maximale d'un paragraphe */
+  --colonne: 760px;       /* largeur de la colonne de contenu */
+
+  /* --- FORMES ------------------------------------------------------------- */
+  --r-tuile:     18px;
+  --r-champ:     10px;
+  --r-etiquette: 14px;
+  --r-pilule:    999px;
+  --trait-large: 2px;
+
+  /* --- OMBRES — décalage franc, jamais de flou seul ----------------------- */
+  --ombre-bouton:       0 3px 0 rgba(42, 31, 22, .22);
+  --ombre-bouton-appui: 0 1px 0 rgba(42, 31, 22, .22);
+  --ombre-carte:        0 4px 0 var(--encre);
+  --ombre-perso:        drop-shadow(0 14px 22px rgba(42, 31, 22, .20)); /* @kind shadow */
+
+  /* --- MOTION ------------------------------------------------------------- */
+  --vite:   120ms;   /* @kind other */
+  --moyen:  240ms;   /* @kind other */
+  --lent:   420ms;   /* @kind other */
+  --courbe: cubic-bezier(.2, .7, .3, 1); /* @kind other */
+
+  /* --- POINTS DE RUPTURE (pour mémoire, à recopier en media queries) ------
+     390px  téléphone de référence — on conçoit ici d'abord
+     640px  téléphone large / petite tablette
+     900px  tablette, passage à deux colonnes
+     1200px bureau, largeur maximale                                     */
+}
+
+/* ==========================================================================
+   THÈME SOMBRE — bloc canonique
+   Déclaré hors media query : c'est la seule portée de thème que le
+   compilateur de design system sait lire. Les encres ne changent pas de
+   rôle — l'or reste l'or. On éclaircit ce qui doit rester lisible sur brun.
+   ========================================================================== */
+:root[data-theme="dark"] {
+  --or:            #F2AE2E;
+  --or-fonce:      #FFC85E;
+  --rouge:         #E06A4E;
+  --rouge-fonce:   #F0876C;
+  --encre:         #F7EAD3;
+
+  --creme:         #1B1309;
+  --sable:         #2E2214;
+  --paille:        #241A0F;
+  --tuile:         #33231A;
+  --carte:         #241A0F;
+  --trait:         #43331F;
+
+  --texte:         var(--encre);
+  --texte-doux:    #BCA588;
+  --texte-inverse: #1B1309;
+
+  --dispo:         #8FBF6E;  --dispo-fond:   #24331B;
+  --attente:       #E5B54B;  --attente-fond: #33280F;
+  --erreur:        #F08A70;  --erreur-fond:  #38201A;
+
+  --ombre-bouton:       0 3px 0 rgba(0, 0, 0, .45);
+  --ombre-bouton-appui: 0 1px 0 rgba(0, 0, 0, .45);
+  --ombre-carte:        0 4px 0 var(--trait);
+  --ombre-perso:        drop-shadow(0 14px 22px rgba(0, 0, 0, .45)); /* @kind shadow */
+}
+
+/* ==========================================================================
+   THÈME SOMBRE — état « système »
+   Le lecteur qui n'a rien choisi ne porte aucun attribut data-theme : seul
+   prefers-color-scheme le distingue. On rejoue donc le bloc, en groupant
+   avec le sélecteur canonique pour que le compilateur reconnaisse la portée.
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]) {
+    --or:            #F2AE2E;
+    --or-fonce:      #FFC85E;
+    --rouge:         #E06A4E;
+    --rouge-fonce:   #F0876C;
+    --encre:         #F7EAD3;
+
+    --creme:         #1B1309;
+    --sable:         #2E2214;
+    --paille:        #241A0F;
+    --tuile:         #33231A;
+    --carte:         #241A0F;
+    --trait:         #43331F;
+
+    --texte:         var(--encre);
+    --texte-doux:    #BCA588;
+    --texte-inverse: #1B1309;
+
+    --dispo:         #8FBF6E;  --dispo-fond:   #24331B;
+    --attente:       #E5B54B;  --attente-fond: #33280F;
+    --erreur:        #F08A70;  --erreur-fond:  #38201A;
+
+    --ombre-bouton:       0 3px 0 rgba(0, 0, 0, .45);
+    --ombre-bouton-appui: 0 1px 0 rgba(0, 0, 0, .45);
+    --ombre-carte:        0 4px 0 var(--trait);
+    --ombre-perso:        drop-shadow(0 14px 22px rgba(0, 0, 0, .45)); /* @kind shadow */
+  }
+}
+
+
+/* ==========================================================================
+   FRITY — COMPOSANTS  v1.0
+   Dépend de tokens.css. Aucune valeur en dur : tout passe par les variables.
+   ========================================================================== */
+
+/* --- BASE ---------------------------------------------------------------- */
+.f-body {
+  margin: 0;
+  background: var(--creme);
+  color: var(--texte);
+  font-family: var(--texte-f);
+  font-size: var(--pas-3);
+  line-height: var(--inter-texte);
+  -webkit-font-smoothing: antialiased;
+}
+.f-col   { max-width: var(--colonne); margin-inline: auto; padding-inline: var(--e-5); }
+.f-wide  { max-width: 1200px;         margin-inline: auto; padding-inline: var(--e-5); }
+.f-col p, .f-wide p { max-width: var(--mesure); }
+
+h1, h2, h3, h4, .f-title {
+  font-family: var(--titre);
+  font-weight: 600;          /* UNE SEULE GRAISSE — la hiérarchie se fait par la taille */
+  line-height: var(--inter-titre);
+  text-wrap: balance;
+  margin: 0;
+}
+h1 { font-size: var(--pas-8); letter-spacing: -.025em; }
+h2 { font-size: var(--pas-7); letter-spacing: -.015em; }
+h3 { font-size: var(--pas-6); }
+h4 { font-size: var(--pas-5); }
+
+.f-label {                    /* étiquette mono en capitales */
+  font-family: var(--chiffre);
+  font-size: var(--pas-1);
+  letter-spacing: var(--chasse-mono);
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.f-num { font-family: var(--chiffre); font-variant-numeric: tabular-nums; }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+  border-radius: var(--e-1);
+}
+
+/* --- SECTION ------------------------------------------------------------- */
+.f-section { padding-block: var(--e-8); }
+.f-section--creme  { background: var(--creme); }
+.f-section--sable  { background: var(--sable); }
+.f-section--paille { background: var(--paille); }
+.f-section--encre  { background: var(--encre); color: var(--texte-inverse); }
+.f-section--encre .f-label { color: var(--or); }
+
+/* --- COUPE AU COUTEAU ---------------------------------------------------- */
+.f-cut { display: block; width: 100%; }
+.f-cut + .f-section { margin-top: -1px; }   /* pas de filet parasite */
+
+/* --- BOUTON -------------------------------------------------------------- */
+.f-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--e-2);
+  font-family: var(--titre); font-weight: 600;
+  border: 0; border-radius: var(--r-pilule);
+  text-decoration: none; cursor: pointer;
+  min-height: 44px;                          /* zone tactile minimale */
+  transition: transform var(--vite) var(--courbe),
+              box-shadow var(--vite) var(--courbe),
+              background-color var(--vite) var(--courbe);
+}
+.f-btn--sm { font-size: var(--pas-2); padding: var(--e-2) var(--e-4); min-height: 40px; }
+.f-btn--md { font-size: var(--pas-3); padding: var(--e-3) var(--e-5); }
+.f-btn--lg { font-size: var(--pas-4); padding: var(--e-4) var(--e-6); }
+
+.f-btn--primaire {
+  background: var(--rouge); color: var(--texte-inverse);
+  box-shadow: var(--ombre-bouton);
+}
+.f-btn--primaire:hover  { background: var(--rouge-fonce); }
+.f-btn--primaire:active { transform: translateY(2px); box-shadow: var(--ombre-bouton-appui); }
+
+.f-btn--secondaire {
+  background: transparent; color: var(--rouge);
+  border: var(--trait-large) solid var(--rouge);
+}
+.f-btn--secondaire:hover { background: color-mix(in srgb, var(--rouge) 10%, transparent); }
+
+.f-btn--texte {
+  background: transparent; color: var(--rouge); padding-inline: var(--e-2);
+  text-decoration: underline; text-underline-offset: 4px;
+}
+.f-btn[disabled], .f-btn[aria-disabled="true"] {
+  opacity: .45; cursor: not-allowed; box-shadow: none; transform: none;
+}
+.f-btn__arrow { font-family: var(--texte-f); font-weight: 700; }
+
+/* --- ÉTIQUETTE ----------------------------------------------------------- */
+.f-badge {
+  display: inline-flex; align-items: center; gap: var(--e-1);
+  font-family: var(--titre); font-weight: 600; font-size: var(--pas-2);
+  padding: var(--e-1) var(--e-3);
+  border-radius: var(--r-pilule);
+}
+.f-badge--marque  { background: var(--or);          color: var(--encre); }
+.f-badge--dispo   { background: var(--dispo-fond);  color: var(--dispo); }
+.f-badge--attente { background: var(--attente-fond);color: var(--attente); }
+.f-badge--erreur  { background: var(--erreur-fond); color: var(--erreur); }
+.f-badge--neutre  { background: transparent; color: var(--texte-doux);
+                    border: 1.5px solid var(--trait); }
+
+/* --- TUILE --------------------------------------------------------------- */
+.f-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-3); }
+@media (max-width: 640px) { .f-tiles { grid-template-columns: 1fr; } }
+
+.f-tile {
+  position: relative;
+  border-radius: var(--r-tuile);
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.f-tile--paille { background: var(--paille); }
+.f-tile--tuile  { background: var(--tuile); }
+.f-tile--sable  { background: var(--sable); }
+.f-tile--creme  { background: var(--carte); border: 1px solid var(--trait); }
+
+.f-tile__badge { position: absolute; top: var(--e-3); right: var(--e-3); z-index: 1; }
+.f-tile__title { font-size: var(--pas-5); padding: var(--e-4) var(--e-4) var(--e-1); }
+.f-tile__note  { font-size: var(--pas-2); color: var(--texte-doux);
+                 padding: 0 var(--e-4) var(--e-4); margin: 0; }
+.f-tile__img   { display: block; width: 100%; aspect-ratio: 1 / 1;
+                 object-fit: cover; object-position: center 22%; }
+
+/* --- CHAMP --------------------------------------------------------------- */
+.f-field { margin-bottom: var(--e-5); }
+.f-field__label { display: block; font-family: var(--titre); font-weight: 600;
+                  font-size: var(--pas-3); margin-bottom: var(--e-1); }
+.f-field__help  { font-size: var(--pas-2); color: var(--texte-doux);
+                  margin: 0 0 var(--e-2); }
+.f-field__box   { position: relative; display: flex; align-items: center; }
+.f-field__box input {
+  width: 100%; min-height: 44px;
+  font-family: var(--chiffre); font-size: var(--pas-3);
+  padding: var(--e-3) var(--e-4);
+  border: 1.5px solid var(--trait); border-radius: var(--r-champ);
+  background: var(--creme); color: var(--texte);
+}
+.f-field__unit  { position: absolute; right: var(--e-4);
+                  font-family: var(--chiffre); font-size: var(--pas-2); color: var(--texte-doux); }
+.f-field.is-error .f-field__box input { border-color: var(--erreur); }
+.f-field__error { font-size: var(--pas-2); color: var(--erreur); margin: var(--e-2) 0 0; }
+
+/* --- PRIX ---------------------------------------------------------------- */
+.f-price { display: inline-block; }
+.f-price__weight { font-family: var(--titre); font-weight: 600;
+                   font-size: var(--pas-6); line-height: 1; }   /* le POIDS d'abord */
+.f-price__amount { font-family: var(--chiffre); font-variant-numeric: tabular-nums;
+                   font-size: var(--pas-5); color: var(--rouge); margin-top: var(--e-1); }
+.f-price__unit   { font-size: var(--pas-2); color: var(--texte-doux); }
+.f-price__note   { font-size: var(--pas-2); color: var(--texte-doux); margin: var(--e-1) 0 0; }
+
+/* --- PERSONNAGE ---------------------------------------------------------- */
+.f-perso { position: relative; margin: 0; display: inline-block; }
+.f-perso__img { display: block; width: 100%; height: auto; filter: var(--ombre-perso); }
+.f-perso--sm { width: 120px; } .f-perso--md { width: 220px; } .f-perso--lg { width: 340px; }
+.f-perso__splat {
+  position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%);
+  width: 78%; height: 9%; border-radius: 50%;
+  background: var(--or); opacity: .35; filter: blur(2px);
+}
+.f-perso--madame  .f-perso__splat { background: var(--rouge); }
+.f-perso--enfants .f-perso__splat { background: var(--peau); }
+
+/* --- ENCADRÉ ------------------------------------------------------------- */
+.f-callout { border-radius: var(--r-tuile); padding: var(--e-5); margin: var(--e-5) 0; }
+.f-callout--note      { background: var(--paille); border-left: 3px solid var(--or); border-radius: 0 var(--r-tuile) var(--r-tuile) 0; }
+.f-callout--attention { background: var(--tuile); }
+.f-callout--attention .f-callout__title { color: var(--rouge); }
+.f-callout--citation  { background: transparent; border-left: 3px solid var(--trait);
+                        border-radius: 0; font-size: var(--pas-4); }
+.f-callout__title { font-size: var(--pas-5); margin-bottom: var(--e-2); }
+.f-callout__body > :last-child { margin-bottom: 0; }
+
+/* --- MOTION -------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
